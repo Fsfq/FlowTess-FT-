@@ -1,0 +1,31 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    "users": {
+      "$uid": {
+        ".read": "true",
+        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('player_name').val() === 'FsFq'"
+      }
+    },
+    "high_scores": {
+      "$uid": {
+        ".read": "true",
+        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('player_name').val() === 'FsFq'"
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".read": "true",
+        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('player_name').val() === 'FsFq'"
+      }
+    },
+    "lobby_chat": {
+      ".read": "true",
+      ".write": "auth != null"
+    },
+    "rooms": {
+      ".read": "true",
+      ".write": "auth != null"
+    }
+  }
+}
