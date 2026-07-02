@@ -102,6 +102,10 @@ val allLootItems = listOf(
     LootItem("material", "cube_skin", "MATERIAL 3", "Материал 3", DropRarity.UNCOMMON),
     LootItem("glowing_jewel", "cube_skin", "GLOWING GEMSTONE", "Драгоценный Камень", DropRarity.RARE),
     LootItem("steampunk", "cube_skin", "STEAM BRASS", "Стимпанк Латунь", DropRarity.EPIC),
+    LootItem("red_gradient", "cube_skin", "CRIMSON GRADIENT", "Кровавый Градиент", DropRarity.RED),
+    LootItem("green_gradient", "cube_skin", "EMERALD GRADIENT", "Изумрудный Градиент", DropRarity.RED),
+    LootItem("blue_gradient", "cube_skin", "SAPPHIRE GRADIENT", "Сапфировый Градиент", DropRarity.RED),
+    LootItem("purple_gradient", "cube_skin", "AMETHYST GRADIENT", "Аметистовый Градиент", DropRarity.RED),
 
     // Avatar Frames
     LootItem("neon_ae", "avatar_frame", "Neon Aegis", "Неоновая Эгида", DropRarity.UNCOMMON),
@@ -109,18 +113,14 @@ val allLootItems = listOf(
     LootItem("chrono_gl", "avatar_frame", "Chrono Glitch", "Глитч Спектр", DropRarity.EPIC),
     LootItem("omega_ti", "avatar_frame", "Titanium Singularity", "Металл. Титан", DropRarity.LEGENDARY),
 
-    // Sound Packs
-    LootItem("synthwave", "sound_pack", "Synthwave 198X", "Синтвейв 198X", DropRarity.UNCOMMON),
-    LootItem("cyber_metal", "sound_pack", "Industrial Cyber", "Тяжёлый Бас", DropRarity.RARE),
-    LootItem("ai_voice", "sound_pack", "AI Samantha", "Помощник Саманта", DropRarity.EPIC),
 
     // Credit Drops
-    LootItem("credits_50", "credits", "+50 K", "+50 K", DropRarity.COMMON, 50),
-    LootItem("credits_100", "credits", "+100 K", "+100 K", DropRarity.COMMON, 100),
-    LootItem("credits_250", "credits", "+250 K", "+250 K", DropRarity.UNCOMMON, 250),
-    LootItem("credits_500", "credits", "+500 K", "+500 K", DropRarity.RARE, 500),
-    LootItem("credits_1000", "credits", "+1000 K", "+1000 K", DropRarity.EPIC, 1000),
-    LootItem("credits_2500", "credits", "+2500 K", "+2500 K", DropRarity.LEGENDARY, 2500),
+    LootItem("credits_50", "credits", "+50 🪙", "+50 🪙", DropRarity.COMMON, 50),
+    LootItem("credits_100", "credits", "+100 🪙", "+100 🪙", DropRarity.COMMON, 100),
+    LootItem("credits_250", "credits", "+250 🪙", "+250 🪙", DropRarity.UNCOMMON, 250),
+    LootItem("credits_500", "credits", "+500 🪙", "+500 🪙", DropRarity.RARE, 500),
+    LootItem("credits_1000", "credits", "+1000 🪙", "+1000 🪙", DropRarity.EPIC, 1000),
+    LootItem("credits_2500", "credits", "+2500 🪙", "+2500 🪙", DropRarity.LEGENDARY, 2500),
     LootItem("nick_gradient", "nick_gradient", "NICK GRADIENT", "Градиент Ника", DropRarity.RED),
     LootItem("bonus_xp_5000", "bonus_xp", "+5000 XP", "+5000 Опыта", DropRarity.RED, 5000)
 )
@@ -129,7 +129,7 @@ val allLootItems = listOf(
 val lootCrates = listOf(
     LootCrate(
         id = "wooden", name = "Wooden Crate", nameRu = "Деревянный Ящик",
-        cost = 100, accentColor = Color(0xFF8D6E63), secondaryColor = Color(0xFFA1887F),
+        cost = 125, accentColor = Color(0xFF8D6E63), secondaryColor = Color(0xFFA1887F),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
             DropRarity.COMMON to 70f,
@@ -141,7 +141,7 @@ val lootCrates = listOf(
     ),
     LootCrate(
         id = "iron", name = "Iron Crate", nameRu = "Железный Ящик",
-        cost = 300, accentColor = Color(0xFF78909C), secondaryColor = Color(0xFF90A4AE),
+        cost = 375, accentColor = Color(0xFF78909C), secondaryColor = Color(0xFF90A4AE),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
             DropRarity.COMMON to 40f,
@@ -153,7 +153,7 @@ val lootCrates = listOf(
     ),
     LootCrate(
         id = "golden", name = "Golden Crate", nameRu = "Золотой Ящик",
-        cost = 600, accentColor = Color(0xFFFFB300), secondaryColor = Color(0xFFFFD54F),
+        cost = 750, accentColor = Color(0xFFFFB300), secondaryColor = Color(0xFFFFD54F),
         icon = Icons.Default.CardGiftcard,
         dropChances = mapOf(
             DropRarity.COMMON to 20f,
@@ -165,7 +165,7 @@ val lootCrates = listOf(
     ),
     LootCrate(
         id = "platinum", name = "Platinum Crate", nameRu = "Платиновый Ящик",
-        cost = 1000, accentColor = Color(0xFF7E57C2), secondaryColor = Color(0xFFB39DDB),
+        cost = 1250, accentColor = Color(0xFF7E57C2), secondaryColor = Color(0xFFB39DDB),
         icon = Icons.Default.AutoAwesome,
         dropChances = mapOf(
             DropRarity.COMMON to 8f,
@@ -177,7 +177,7 @@ val lootCrates = listOf(
     ),
     LootCrate(
         id = "legendary", name = "Legendary Crate", nameRu = "Легендарный Ящик",
-        cost = 2000, accentColor = Color(0xFFFF6F00), secondaryColor = Color(0xFFFFAB40),
+        cost = 2500, accentColor = Color(0xFFFF6F00), secondaryColor = Color(0xFFFFAB40),
         icon = Icons.Default.Diamond,
         dropChances = mapOf(
             DropRarity.COMMON to 2f,
@@ -189,7 +189,7 @@ val lootCrates = listOf(
     ),
     LootCrate(
         id = "red_crate", name = "Mystic Red Crate", nameRu = "Красный Ящик",
-        cost = 20000, accentColor = Color(0xFFD32F2F), secondaryColor = Color(0xFFFF5252),
+        cost = 25000, accentColor = Color(0xFFD32F2F), secondaryColor = Color(0xFFFF5252),
         icon = Icons.Default.Whatshot,
         dropChances = mapOf(
             DropRarity.COMMON to 0f,
@@ -198,6 +198,19 @@ val lootCrates = listOf(
             DropRarity.EPIC to 30f,
             DropRarity.LEGENDARY to 40f,
             DropRarity.RED to 20f
+        )
+    ),
+    LootCrate(
+        id = "red_crate_lite", name = "Lite Red Crate", nameRu = "Лайт Красный Ящик",
+        cost = 12500, accentColor = Color(0xFFE57373), secondaryColor = Color(0xFFFFCDD2),
+        icon = Icons.Default.Whatshot,
+        dropChances = mapOf(
+            DropRarity.COMMON to 30f,
+            DropRarity.UNCOMMON to 30f,
+            DropRarity.RARE to 26f,
+            DropRarity.EPIC to 8f,
+            DropRarity.LEGENDARY to 4f,
+            DropRarity.RED to 2f
         )
     )
 )
@@ -219,7 +232,45 @@ fun rollDrop(crate: LootCrate): LootItem {
     return if (pool.isNotEmpty()) pool.random() else allLootItems.filter { it.rarity == DropRarity.COMMON }.random()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class InventoryItem(
+    val uuid: String,
+    val item: LootItem
+)
+
+fun deserializeInventoryItem(raw: String): InventoryItem? {
+    val parts = raw.split(";")
+    if (parts.size < 6) return null
+    val uuid = parts[0]
+    val id = parts[1]
+    val type = parts[2]
+    val displayName = parts[3]
+    val displayNameRu = parts[4]
+    val rarityName = parts[5]
+    val creditValue = parts.getOrNull(6)?.toIntOrNull() ?: 0
+
+    val rarity = try {
+        DropRarity.valueOf(rarityName)
+    } catch (e: Exception) {
+        DropRarity.COMMON
+    }
+    return InventoryItem(
+        uuid = uuid,
+        item = LootItem(
+            id = id,
+            type = type,
+            displayName = displayName,
+            displayNameRu = displayNameRu,
+            rarity = rarity,
+            creditValue = creditValue
+        )
+    )
+}
+
+fun serializeInventoryItem(uuid: String, item: LootItem): String {
+    return "$uuid;${item.id};${item.type};${item.displayName};${item.displayNameRu};${item.rarity.name};${item.creditValue}"
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CasesScreen(
     viewModel: MainViewModel,
@@ -240,11 +291,97 @@ fun CasesScreen(
             .getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
     }
 
+    var activeSubTab by remember { mutableIntStateOf(0) } // 0 = Crates, 1 = Inventory
+
+    var inventorySet by remember {
+        mutableStateOf(sharedPrefs.getStringSet("case_inventory", emptySet()) ?: emptySet())
+    }
+
+    val inventoryItems = remember(inventorySet) {
+        inventorySet.mapNotNull { deserializeInventoryItem(it) }
+            .sortedByDescending { it.item.rarity.ordinal }
+    }
+
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            delay(2000)
+            toastMessage = null
+        }
+    }
+
+    fun sellInventoryItem(invItem: InventoryItem) {
+        val item = invItem.item
+        val sellPrice = when (item.rarity) {
+            DropRarity.COMMON -> 20
+            DropRarity.UNCOMMON -> 50
+            DropRarity.RARE -> 120
+            DropRarity.EPIC -> 250
+            DropRarity.LEGENDARY -> 600
+            DropRarity.RED -> 3000
+        }
+        viewModel.addCredits(sellPrice)
+        viewModel.triggerAudioFeedback("selling")
+        toastMessage = if (currentLang == Language.RU) "Продано за $sellPrice 🪙!" else "Sold for $sellPrice 🪙!"
+
+        val currentSet = sharedPrefs.getStringSet("case_inventory", emptySet()) ?: emptySet()
+        val updatedInv = currentSet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
+        sharedPrefs.edit().putStringSet("case_inventory", updatedInv).apply()
+        inventorySet = updatedInv
+        viewModel.saveCurrentProfileToDb()
+    }
+
+    fun useInventoryItem(invItem: InventoryItem) {
+        val item = invItem.item
+        when (item.type) {
+            "skin" -> {
+                val current = sharedPrefs.getStringSet("purchased_skins", setOf("cyberpunk")) ?: setOf("cyberpunk")
+                val updated = current.toMutableSet().apply { add(item.id) }
+                sharedPrefs.edit().putStringSet("purchased_skins", updated).apply()
+                viewModel.setBoardColorSkin(item.id)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = if (currentLang == Language.RU) "Применен скин: ${item.displayNameRu}" else "Equipped skin: ${item.displayName}"
+            }
+            "cube_skin" -> {
+                val current = sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+                val updated = current.toMutableSet().apply { add(item.id) }
+                sharedPrefs.edit().putStringSet("purchased_cube_skins", updated).apply()
+                viewModel.setBlockStyle(item.id)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = if (currentLang == Language.RU) "Применен стиль блоков: ${item.displayNameRu}" else "Equipped block style: ${item.displayName}"
+            }
+            "avatar_frame" -> {
+                val current = viewModel.purchasedAvatarFrames.value
+                val updated = current.toMutableSet().apply { add(item.id) }
+                viewModel.setPurchasedAvatarFrames(updated)
+                viewModel.setEquippedAvatarFrame(item.id)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = if (currentLang == Language.RU) "Применена рамка: ${item.displayNameRu}" else "Equipped frame: ${item.displayName}"
+            }
+            "sound_pack" -> {
+                val current = viewModel.purchasedSoundPacks.value
+                val updated = current.toMutableSet().apply { add(item.id) }
+                viewModel.setPurchasedSoundPacks(updated)
+                viewModel.setEquippedSoundPack(item.id)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = if (currentLang == Language.RU) "Применен звук. пакет: ${item.displayNameRu}" else "Equipped sound pack: ${item.displayName}"
+            }
+            "nick_gradient" -> {
+                sharedPrefs.edit().putBoolean("has_nickname_gradient", true).apply()
+                viewModel.setHasNicknameGradient(true)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = if (currentLang == Language.RU) "Активирован градиент никнейма!" else "Activated nickname gradient!"
+            }
+        }
+
+        viewModel.saveCurrentProfileToDb()
+    }
+
     fun applyDrop(item: LootItem) {
         when (item.type) {
             "credits" -> {
                 viewModel.addCredits(item.creditValue)
-                resultMessage = if (currentLang == Language.RU) "Получено ${item.creditValue} K!" else "Received ${item.creditValue} K!"
+                resultMessage = if (currentLang == Language.RU) "Получено ${item.creditValue} 🪙!" else "Received ${item.creditValue} 🪙!"
             }
             "skin" -> {
                 val current = sharedPrefs.getStringSet("purchased_skins", setOf("cyberpunk")) ?: setOf("cyberpunk")
@@ -252,7 +389,7 @@ fun CasesScreen(
                     // Duplicate — give credits instead
                     val refund = 75
                     viewModel.addCredits(refund)
-                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund K" else "Duplicate! Refund: $refund K"
+                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
                     val updated = current.toMutableSet().apply { add(item.id) }
                     sharedPrefs.edit().putStringSet("purchased_skins", updated).apply()
@@ -264,7 +401,7 @@ fun CasesScreen(
                 if (current.contains(item.id)) {
                     val refund = 75
                     viewModel.addCredits(refund)
-                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund K" else "Duplicate! Refund: $refund K"
+                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
                     val updated = current.toMutableSet().apply { add(item.id) }
                     sharedPrefs.edit().putStringSet("purchased_cube_skins", updated).apply()
@@ -276,7 +413,7 @@ fun CasesScreen(
                 if (current.contains(item.id)) {
                     val refund = 100
                     viewModel.addCredits(refund)
-                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund K" else "Duplicate! Refund: $refund K"
+                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
                     val updated = current.toMutableSet().apply { add(item.id) }
                     viewModel.setPurchasedAvatarFrames(updated)
@@ -288,7 +425,7 @@ fun CasesScreen(
                 if (current.contains(item.id)) {
                     val refund = 100
                     viewModel.addCredits(refund)
-                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund K" else "Duplicate! Refund: $refund K"
+                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
                     val updated = current.toMutableSet().apply { add(item.id) }
                     viewModel.setPurchasedSoundPacks(updated)
@@ -300,7 +437,7 @@ fun CasesScreen(
                 if (alreadyHas) {
                     val refund = 5000
                     viewModel.addCredits(refund)
-                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund K" else "Duplicate! Refund: $refund K"
+                    resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
                     sharedPrefs.edit().putBoolean("has_nickname_gradient", true).apply()
                     viewModel.setHasNicknameGradient(true)
@@ -380,6 +517,7 @@ fun CasesScreen(
             scrollOffset.snapTo(0f)
             scrollState.scrollTo(0)
             rouletteRunning = true
+            viewModel.triggerAudioFeedback("case_spin")
 
             // 4. Calculate target offset: center the winning item under the indicator
             val randomVariation = (-15..15).random().toFloat() // small random jitter in px
@@ -412,11 +550,32 @@ fun CasesScreen(
             // 7. Roulette finished — highlight briefly
             rouletteRunning = false
             rouletteFinished = true
-            viewModel.triggerAudioFeedback("success")
+            val raritySound = when (item.rarity) {
+                DropRarity.COMMON -> "drop_common"
+                DropRarity.UNCOMMON -> "drop_uncommon"
+                DropRarity.RARE -> "drop_rare"
+                DropRarity.EPIC -> "drop_epic"
+                DropRarity.LEGENDARY -> "drop_legendary"
+                DropRarity.RED -> "drop_red"
+                else -> "success"
+            }
+            viewModel.triggerAudioFeedback(raritySound)
             delay(400)
 
             // 8. Apply the drop and show result card
-            applyDrop(item)
+            if (item.type == "credits" || item.type == "bonus_xp") {
+                applyDrop(item)
+            } else {
+                val uuid = java.util.UUID.randomUUID().toString()
+                val currentSet = sharedPrefs.getStringSet("case_inventory", emptySet()) ?: emptySet()
+                val updated = currentSet.toMutableSet().apply {
+                    add(serializeInventoryItem(uuid, item))
+                }
+                sharedPrefs.edit().putStringSet("case_inventory", updated).apply()
+                inventorySet = updated
+                viewModel.saveCurrentProfileToDb()
+                resultMessage = if (currentLang == Language.RU) "Предмет добавлен в инвентарь!" else "Item added to inventory!"
+            }
             rouletteFinished = false
             isAnimating = false
             showResult = true
@@ -436,7 +595,6 @@ fun CasesScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     AdaptiveText(
                         text = if (currentLang == Language.RU) "КЕЙСЫ" else "LOOT CRATES",
@@ -471,7 +629,7 @@ fun CasesScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         AdaptiveText(
-                            text = "$credits K",
+                            text = "$credits 🪙",
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -486,43 +644,177 @@ fun CasesScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Section header
-                AdaptiveText(
-                    text = if (currentLang == Language.RU) "ВЫБЕРИ ЯЩИК" else "CHOOSE YOUR CRATE",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                lootCrates.forEach { crate ->
-                    CrateCard(
-                        crate = crate,
-                        currentLang = currentLang,
-                        credits = credits,
-                        isOpening = openingCrate == crate,
-                        onOpen = {
-                            if (openingCrate == null) {
-                                previewCrate = crate
-                            }
+            val widthDp = maxWidth
+            
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Tab switcher
+                TabRow(
+                    selectedTabIndex = activeSubTab,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Tab(
+                        selected = activeSubTab == 0,
+                        onClick = { activeSubTab = 0 },
+                        text = {
+                            AdaptiveText(
+                                text = if (currentLang == Language.RU) "ЯЩИКИ" else "CRATES",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    )
+                    Tab(
+                        selected = activeSubTab == 1,
+                        onClick = { activeSubTab = 1 },
+                        text = {
+                            AdaptiveText(
+                                text = if (currentLang == Language.RU) "ИНВЕНТАРЬ (${inventoryItems.size})" else "INVENTORY (${inventoryItems.size})",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
                         }
                     )
                 }
-                 Spacer(modifier = Modifier.height(16.dp))
-             }
+
+                Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+                    if (activeSubTab == 0) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            AdaptiveText(
+                                text = if (currentLang == Language.RU) "ВЫБЕРИ ЯЩИК" else "CHOOSE YOUR CRATE",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            val itemModifier = if (widthDp >= 900.dp) {
+                                Modifier.width((widthDp - 64.dp) / 3) // 3 columns
+                            } else if (widthDp >= 600.dp) {
+                                Modifier.width((widthDp - 48.dp) / 2) // 2 columns
+                            } else {
+                                Modifier.fillMaxWidth() // 1 column
+                            }
+
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                lootCrates.forEach { crate ->
+                                    CrateCard(
+                                        crate = crate,
+                                        currentLang = currentLang,
+                                        credits = credits,
+                                        isOpening = openingCrate == crate,
+                                        modifier = itemModifier,
+                                        onOpen = {
+                                            if (openingCrate == null) {
+                                                previewCrate = crate
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    } else {
+                        // Inventory view
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            AdaptiveText(
+                                text = if (currentLang == Language.RU) "МОЙ ИНВЕНТАРЬ" else "MY INVENTORY",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (inventoryItems.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(250.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AdaptiveText(
+                                        text = if (currentLang == Language.RU)
+                                            "Ваш инвентарь пуст.\nОткрывайте ящики, чтобы получить скины!"
+                                        else
+                                            "Your inventory is empty.\nOpen crates to drop unique skins!",
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    )
+                                }
+                            } else {
+                                val columnsCount = if (widthDp >= 1000.dp) 4 else if (widthDp >= 600.dp) 3 else 2
+                                val cardModifier = Modifier.width((widthDp - 32.dp - (12.dp * (columnsCount - 1))) / columnsCount)
+
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    inventoryItems.forEach { invItem ->
+                                        InventoryItemCard(
+                                            invItem = invItem,
+                                            currentLang = currentLang,
+                                            onUse = { useInventoryItem(invItem) },
+                                            onSell = { sellInventoryItem(invItem) },
+                                            modifier = cardModifier
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+                }
+            }
+
+            // Floating Toast notification
+            toastMessage?.let { msg ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 32.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    ) {
+                        AdaptiveText(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+            }
 
             // Crate contents preview dialog
             if (previewCrate != null) {
@@ -546,7 +838,7 @@ fun CasesScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .statusBarsPadding()
+                                .safeDrawingPadding()
                                 .padding(16.dp)
                         ) {
                             // Top Bar / Title
@@ -624,7 +916,7 @@ fun CasesScreen(
                                             fontWeight = FontWeight.Black
                                         )
                                         AdaptiveText(
-                                            text = if (currentLang == Language.RU) "Стоимость открытия: ${crate.cost} K" else "Cost to open: ${crate.cost} K",
+                                            text = if (currentLang == Language.RU) "Стоимость открытия: ${crate.cost} 🪙" else "Cost to open: ${crate.cost} 🪙",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = crate.accentColor,
                                             fontWeight = FontWeight.Bold
@@ -724,7 +1016,7 @@ fun CasesScreen(
                             // Open / Bottom button block
                             if (!canAfford) {
                                 AdaptiveText(
-                                    text = if (currentLang == Language.RU) "Недостаточно K!" else "Insufficient K!",
+                                    text = if (currentLang == Language.RU) "Недостаточно 🪙!" else "Insufficient K!",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.error,
                                     fontWeight = FontWeight.Bold,
@@ -761,7 +1053,7 @@ fun CasesScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 AdaptiveText(
-                                    text = if (currentLang == Language.RU) "ОТКРЫТЬ ЯЩИК ЗА ${crate.cost} K" else "OPEN CRATE FOR ${crate.cost} K",
+                                    text = if (currentLang == Language.RU) "ОТКРЫТЬ ЯЩИК ЗА ${crate.cost} 🪙" else "OPEN CRATE FOR ${crate.cost} 🪙",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black
                                 )
@@ -1074,12 +1366,13 @@ private fun CrateCard(
     currentLang: Language,
     credits: Int,
     isOpening: Boolean,
+    modifier: Modifier = Modifier,
     onOpen: () -> Unit
 ) {
     val canAfford = credits >= crate.cost
 
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth().clickable { onOpen() },
+        modifier = modifier.clickable { onOpen() },
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(
             width = 2.dp,
@@ -1282,6 +1575,158 @@ private fun DropChancesDialog(
                                 color = rarity.color
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InventoryItemCard(
+    invItem: InventoryItem,
+    currentLang: Language,
+    onUse: () -> Unit,
+    onSell: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val item = invItem.item
+    val rarityColor = item.rarity.color
+    val sellPrice = when (item.rarity) {
+        DropRarity.COMMON -> 20
+        DropRarity.UNCOMMON -> 50
+        DropRarity.RARE -> 120
+        DropRarity.EPIC -> 250
+        DropRarity.LEGENDARY -> 600
+        DropRarity.RED -> 3000
+    }
+
+    val typeLabel = when (item.type) {
+        "skin" -> if (currentLang == Language.RU) "Скин поля" else "Board Skin"
+        "cube_skin" -> if (currentLang == Language.RU) "Стиль блоков" else "Block Skin"
+        "avatar_frame" -> if (currentLang == Language.RU) "Рамка аватара" else "Avatar Frame"
+        "sound_pack" -> if (currentLang == Language.RU) "Звуковой пакет" else "Sound Pack"
+        "nick_gradient" -> if (currentLang == Language.RU) "Градиент ника" else "Nick Gradient"
+        else -> item.type
+    }
+
+    val categoryIcon = when (item.type) {
+        "skin" -> Icons.Default.Palette
+        "cube_skin" -> Icons.Default.Category
+        "avatar_frame" -> Icons.Default.Portrait
+        "sound_pack" -> Icons.Default.VolumeUp
+        else -> Icons.Default.Star
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.2.dp, rarityColor.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            rarityColor.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Header (Rarity tag + Category Icon)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = rarityColor.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = if (currentLang == Language.RU) item.rarity.labelRu.uppercase() else item.rarity.label.uppercase(),
+                            color = rarityColor,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    
+                    Icon(
+                        imageVector = categoryIcon,
+                        contentDescription = null,
+                        tint = rarityColor.copy(alpha = 0.7f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Item Name
+                Text(
+                    text = if (currentLang == Language.RU) item.displayNameRu else item.displayName,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = typeLabel,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Action Buttons Row (side-by-side to look incredibly neat!)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Equip button
+                    Button(
+                        onClick = onUse,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = rarityColor,
+                            contentColor = if (item.rarity == DropRarity.COMMON || item.rarity == DropRarity.UNCOMMON) Color.Black else Color.White
+                        ),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (currentLang == Language.RU) "НАДЕТЬ" else "EQUIP",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    // Sell button
+                    OutlinedButton(
+                        onClick = onSell,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (currentLang == Language.RU) "$sellPrice 🪙" else "$sellPrice 🪙",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        )
                     }
                 }
             }

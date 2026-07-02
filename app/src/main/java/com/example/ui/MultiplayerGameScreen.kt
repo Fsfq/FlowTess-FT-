@@ -146,7 +146,6 @@ fun MultiplayerGameScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     AdaptiveText(
                         text = if (currentLang == Language.RU) "МАТЧ СМЕРТИ" else "LIVE BATTLE ARENA",
@@ -401,7 +400,7 @@ fun MultiplayerGameScreen(
                         val rightSegment = @Composable {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 ControlButton(actionType = "right", onClick = { viewModel.gameEngine.moveRight() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                ControlButton(text = "DROP", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                                ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                             }
                         }
                         val middleSegment = @Composable {
@@ -445,7 +444,7 @@ fun MultiplayerGameScreen(
                         }
                         val triggerCol = @Composable {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                ControlButton(text = "DROP", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                                ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                                 ControlButton(actionType = "hold", onClick = { viewModel.gameEngine.hold() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                             }
                         }
@@ -498,7 +497,7 @@ fun MultiplayerGameScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            ControlButton(text = "DROP", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                             Spacer(modifier = Modifier.width(12.dp))
                             ControlButton(actionType = "hold", onClick = { viewModel.gameEngine.hold() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                         }

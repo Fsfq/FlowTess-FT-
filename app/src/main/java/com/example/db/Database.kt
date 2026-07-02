@@ -17,7 +17,10 @@ data class HighScore(
     val score: Int,
     val timestamp: Long = System.currentTimeMillis(),
     val hasGradient: Boolean = false
-)
+) {
+    @androidx.room.Ignore
+    var customTag: String = ""
+}
 
 @Entity(tableName = "user_accounts")
 data class UserAccount(

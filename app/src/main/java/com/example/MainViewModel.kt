@@ -28,7 +28,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = Room.databaseBuilder(
         application,
         AppDatabase::class.java, "tetris-db"
-    ).fallbackToDestructiveMigration().build()
+    ).fallbackToDestructiveMigration(false).build()
 
     private val scoreRepo = ScoreRepository(db.highScoreDao())
     val topScores = scoreRepo.topScores
@@ -39,6 +39,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val gameEngine = GameEngine()
     val blockBlastEngine = BlockBlastEngine()
     val lobbyManager = FirebaseLobbyManager(viewModelScope)
+
+    private var soundPool: android.media.SoundPool? = null
+    private val soundMap = mutableMapOf<String, Int>()
+    private var lobbyMusicPlayer: android.media.MediaPlayer? = null
+
+    // Relax/Sandbox Mode settings
+    private val _relaxImmortal = MutableStateFlow(true)
+    val relaxImmortal = _relaxImmortal.asStateFlow()
+
+    private val _relaxSpeed = MutableStateFlow("slow")
+    val relaxSpeed = _relaxSpeed.asStateFlow()
+
+    private val _relaxBlockSet = MutableStateFlow("ideal")
+    val relaxBlockSet = _relaxBlockSet.asStateFlow()
+
+    private val _relaxGhostEnabled = MutableStateFlow(true)
+    val relaxGhostEnabled = _relaxGhostEnabled.asStateFlow()
+
+    // Lobby music separate toggle
+    private val _lobbyMusicEnabled = MutableStateFlow(true)
+    val lobbyMusicEnabled = _lobbyMusicEnabled.asStateFlow()
+
+    // Custom Tag customization
+    private val _customTag = MutableStateFlow("")
+    val customTag = _customTag.asStateFlow()
+
+    private val _customTagUnlocked = MutableStateFlow(false)
+    val customTagUnlocked = _customTagUnlocked.asStateFlow()
+
+    // Sound and music volume levels
+    private val _soundVolume = MutableStateFlow(1.0f)
+    val soundVolume = _soundVolume.asStateFlow()
+
+    private val _lobbyMusicVolume = MutableStateFlow(0.8f)
+    val lobbyMusicVolume = _lobbyMusicVolume.asStateFlow()
 
     private var gameLoopJob: Job? = null
     private val _isPlaying = MutableStateFlow(false)
@@ -54,28 +89,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _equippedAvatarFrame = MutableStateFlow("standard")
     val equippedAvatarFrame = _equippedAvatarFrame.asStateFlow()
 
-    private val _purchasedAvatarFrames = MutableStateFlow<Set<String>>(setOf("standard"))
+    private val _purchasedAvatarFrames = MutableStateFlow(setOf("standard"))
     val purchasedAvatarFrames = _purchasedAvatarFrames.asStateFlow()
 
     private val _equippedTitle = MutableStateFlow("none")
     val equippedTitle = _equippedTitle.asStateFlow()
 
-    private val _purchasedTitles = MutableStateFlow<Set<String>>(setOf("none"))
+    private val _purchasedTitles = MutableStateFlow(setOf("none"))
     val purchasedTitles = _purchasedTitles.asStateFlow()
 
     private val _equippedSoundPack = MutableStateFlow("arcade")
     val equippedSoundPack = _equippedSoundPack.asStateFlow()
 
-    private val _purchasedSoundPacks = MutableStateFlow<Set<String>>(setOf("arcade"))
+    private val _purchasedSoundPacks = MutableStateFlow(setOf("arcade"))
     val purchasedSoundPacks = _purchasedSoundPacks.asStateFlow()
 
-    private val _purchasedThemes = MutableStateFlow<Set<String>>(setOf("indigo", "neon", "red"))
+    private val _purchasedThemes = MutableStateFlow(setOf("indigo", "neon", "red"))
     val purchasedThemes = _purchasedThemes.asStateFlow()
 
-    private val _purchasedFonts = MutableStateFlow<Set<String>>(setOf("default", "monospace"))
+    private val _purchasedFonts = MutableStateFlow(setOf("default", "monospace"))
     val purchasedFonts = _purchasedFonts.asStateFlow()
 
-    private val _purchasedControlButtonStyles = MutableStateFlow<Set<String>>(setOf("classic", "neon"))
+    private val _purchasedControlButtonStyles = MutableStateFlow(setOf("classic", "neon"))
     val purchasedControlButtonStyles = _purchasedControlButtonStyles.asStateFlow()
 
     private val _customAvatarEmoji = MutableStateFlow("")
@@ -144,6 +179,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _controlButtonScale = MutableStateFlow(1.0f)
     val controlButtonScale = _controlButtonScale.asStateFlow()
 
+    private val _controlButtonAlpha = MutableStateFlow(1.0f)
+    val controlButtonAlpha = _controlButtonAlpha.asStateFlow()
+
     private val _controlButtonStyle = MutableStateFlow("neon")
     val controlButtonStyle = _controlButtonStyle.asStateFlow()
 
@@ -180,6 +218,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _loginSuccessMessage = MutableStateFlow<String?>(null)
     val loginSuccessMessage = _loginSuccessMessage.asStateFlow()
 
+    private val _nicknameUpdateError = MutableStateFlow<String?>(null)
+    val nicknameUpdateError = _nicknameUpdateError.asStateFlow()
+
+    private val _nicknameUpdateSuccess = MutableStateFlow<String?>(null)
+    val nicknameUpdateSuccess = _nicknameUpdateSuccess.asStateFlow()
+
+    private val _emailUpdateError = MutableStateFlow<String?>(null)
+    val emailUpdateError = _emailUpdateError.asStateFlow()
+
+    private val _emailUpdateSuccess = MutableStateFlow<String?>(null)
+    val emailUpdateSuccess = _emailUpdateSuccess.asStateFlow()
+
     private val _isAuthLoading = MutableStateFlow(false)
     val isAuthLoading = _isAuthLoading.asStateFlow()
 
@@ -209,18 +259,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private val achievementDefs = listOf(
-        AchievementDef("classic_novice", "Lines Professional", "Оптимизация линий", "Clear 10 or more total lines in Classic Match mode", "Уберите 10 или более линий в классическом режиме", 10, "lines", 100) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
+        AchievementDef("classic_novice", "Lines Master", "Мастер линий", "Clear 10 or more total lines in Classic Match mode", "Уберите 10 или более линий в классическом режиме", 10, "lines", 100) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
         AchievementDef("score_tycoon", "Sizable Score", "Финансовый магнат", "Score 5,000 points or more in a single Tetris match", "Наберите 5000 или более очков в одном матче", 5000, "score", 150) { vm -> vm.prefs.getInt("stats_high_score", 0) },
         AchievementDef("extended_pioneer", "Pentamino Integrator", "Пионер Пентамино", "Launch a match in Extended Shapes mode to embrace 5-element blocks", "Начните хотя бы одну игру в расширенном режиме", 1, "crown", 75) { vm -> if (vm.prefs.getBoolean("ach_extended_pioneer_unlocked", false)) 1 else 0 },
-        AchievementDef("speed_runner", "Hyper-Speed Analysis", "Анализ гиперскорости", "Survive a match under extreme starting speed in Hyper Blast mode", "Начните хотя бы один матч на уровне 10 в гипер-режиме", 1, "speed", 120) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
-        AchievementDef("blast_tactician", "Block Blast Expert", "Эксперт Блок Бласта", "Earn 1,000 score points in Block Blast mode", "Наберите 1000 очков в режиме Блок Бласт", 1000, "blast", 200) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("combo_king", "Sequence Dominator", "Синхронизация комбинаций", "Achieve a combo chain multiplier of 3x or higher in multiplayer simulator", "Достигните комбо-множителя 3x или выше в мультиплеере", 3, "combo", 180) { vm -> if (vm.prefs.getBoolean("ach_combo_king_unlocked", false)) 1 else 0 },
+        AchievementDef("speed_runner", "Hyper-Speed", "Гиперскорость", "Survive a match under extreme starting speed in Hyper Blast mode", "Начните хотя бы один матч на уровне 10 в гипер-режиме", 1, "speed", 120) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
+        AchievementDef("blast_tactician", "ZETA Expert", "Эксперт ZETA", "Earn 1,000 score points in ZETA mode", "Наберите 1000 очков в режиме ZETA", 1000, "blast", 200) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("combo_king", "Combo 3x", "Комбо 3x", "Achieve a combo chain multiplier of 3x or higher in multiplayer simulator", "Достигните комбо-множителя 3x или выше в мультиплеере", 3, "combo", 180) { vm -> if (vm.prefs.getBoolean("ach_combo_king_unlocked", false)) 1 else 0 },
         AchievementDef("grandmaster", "Grandmaster Tactician", "Гроссмейстер", "Score 15,000 points or more in Classic Match", "Наберите 15000 или более очков в классическом матче", 15000, "crown", 500) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("blast_master", "Block Blast Veteran", "Ветеран Блок Бласта", "Earn 5,000 score points in Block Blast mode", "Наберите 5000 очков в режиме Блок Бласт", 5000, "blast", 300) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("blast_master", "ZETA Veteran", "Ветеран ZETA", "Earn 5,000 score points in ZETA mode", "Наберите 5000 очков в режиме ZETA", 5000, "blast", 300) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
         AchievementDef("rich_player", "Elite Investor", "Элитный инвестор", "Save 2,000 credits in your balance", "Накопите не менее 2000 кредитов на балансе", 2000, "crown", 250) { vm -> vm.credits.value },
-        AchievementDef("multiplayer_veteran", "Consensus Participant", "Участник консенсуса", "Initiate connection in PeerJS lobby 5 times", "Запустите подключение в лобби PeerJS не менее 5 раз", 5, "combo", 150) { vm -> vm.prefs.getInt("multiplayer_launches", 0) },
-        AchievementDef("color_skin_collector", "Matrix Visualizer", "Визуализатор матрицы", "Purchase your first custom board visual theme skin", "Приобретите свою первую уникальную тему оформления", 1, "crown", 200) { vm -> if (vm.prefs.getBoolean("ach_color_skin_collector_unlocked", false)) 1 else 0 },
-        AchievementDef("rank_conqueror", "System Priority Node", "Приоритетный узел системы", "Upgrade your security node rank tier using credits", "Повысьте категорию своего узла за кредиты", 1, "crown", 350) { vm -> if (vm.prefs.getBoolean("ach_rank_conqueror_unlocked", false)) 1 else 0 },
+        AchievementDef("multiplayer_veteran", "Lobby Veteran", "Ветеран Лобби", "Initiate connection in PeerJS lobby 5 times", "Запустите подключение в лобби PeerJS не менее 5 раз", 5, "combo", 150) { vm -> vm.prefs.getInt("multiplayer_launches", 0) },
+        AchievementDef("color_skin_collector", "Theme Collector", "Новая Тема", "Purchase your first custom board visual theme skin", "Приобретите свою первую уникальную тему оформления", 1, "crown", 200) { vm -> if (vm.prefs.getBoolean("ach_color_skin_collector_unlocked", false)) 1 else 0 },
+        AchievementDef("rank_conqueror", "New Rank", "Новый Ранг", "Upgrade your security node rank tier using credits", "Повысьте категорию своего узла за кредиты", 1, "crown", 350) { vm -> if (vm.prefs.getBoolean("ach_rank_conqueror_unlocked", false)) 1 else 0 },
         
         // 37 new ones
         AchievementDef("games_played_5", "Novice Player", "Начинающий игрок", "Play 5 games total in any mode", "Сыграйте 5 игр в любом режиме", 5, "lines", 100) { vm -> vm.prefs.getInt("stats_games_played", 0) },
@@ -232,42 +282,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         AchievementDef("score_single_8000", "Point Collector", "Сборщик очков", "Score 8,000 points or more in a single match", "Наберите 8000 или более очков в одном матче", 8000, "score", 180) { vm -> vm.prefs.getInt("stats_high_score", 0) },
         AchievementDef("score_single_20000", "Score Master", "Мастер очков", "Score 20,000 points or more in a single match", "Наберите 20000 или более очков в одном матче", 20000, "score", 300) { vm -> vm.prefs.getInt("stats_high_score", 0) },
         AchievementDef("score_single_50000", "Score Overlord", "Повелитель очков", "Score 50,000 points or more in a single match", "Наберите 50000 или более очков в одном матче", 50000, "score", 600) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("credits_accumulated_5000", "Wealthy Node", "Состоятельный узел", "Reach a balance of 5,000 credits", "Накопите баланс в 5000 кредитов", 5000, "crown", 300) { vm -> vm.credits.value },
-        AchievementDef("credits_accumulated_10000", "Cosmic Tycoon", "Космический магнат", "Reach a balance of 10,000 credits", "Накопите баланс в 10000 кредитов", 10000, "crown", 500) { vm -> vm.credits.value },
-        AchievementDef("credits_spent_1000", "Shop Spender", "Активный покупатель", "Spend 1,000 credits in the store", "Потратьте 1000 кредитов в магазине", 1000, "crown", 100) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
-        AchievementDef("credits_spent_5000", "Shopaholic Node", "Магазинный шопоголик", "Spend 5,000 credits in the store", "Потратьте 5000 кредитов в магазине", 5000, "crown", 250) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
-        AchievementDef("credits_spent_10000", "Matrix Patron", "Покровитель матрицы", "Spend 10,000 credits in the store", "Потратьте 10000 кредитов в магазине", 10000, "crown", 500) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("credits_accumulated_5000", "Credits Saver", "Сбережения", "Reach a balance of 5,000 credits", "Накопите баланс в 5000 кредитов", 5000, "crown", 300) { vm -> vm.credits.value },
+        AchievementDef("credits_accumulated_10000", "Credits Capitalist", "Крупный капитал", "Reach a balance of 10,000 credits", "Накопите баланс в 10000 кредитов", 10000, "crown", 500) { vm -> vm.credits.value },
+        AchievementDef("credits_spent_1000", "Shop Spender", "Покупатель", "Spend 1,000 credits in the store", "Потратьте 1000 кредитов в магазине", 1000, "crown", 100) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("credits_spent_5000", "Store Spender", "Активный покупатель", "Spend 5,000 credits in the store", "Потратьте 5000 кредитов в магазине", 5000, "crown", 250) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("credits_spent_10000", "VIP Customer", "Постоянный клиент", "Spend 10,000 credits in the store", "Потратьте 10000 кредитов в магазине", 10000, "crown", 500) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
         AchievementDef("tetrises_cleared_5", "Tetris Enthusiast", "Энтузиаст Тетрисов", "Perform 4-line clears (Tetrises) 5 times", "Выполните очистку 4-х линий (Тетрис) 5 раз", 5, "lines", 150) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
         AchievementDef("tetrises_cleared_25", "Tetris Champion", "Чемпион Тетрисов", "Perform 4-line clears (Tetrises) 25 times", "Выполните очистку 4-х линий (Тетрис) 25 раз", 25, "lines", 300) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
-        AchievementDef("tetrises_cleared_100", "Tetris God", "Бог Тетрисов", "Perform 4-line clears (Tetrises) 100 times", "Выполните очистку 4-х линий (Тетрис) 100 раз", 100, "lines", 600) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
-        AchievementDef("blast_score_3000", "Blast Elite", "Элита Блок Бласта", "Reach 3,000 score in Block Blast mode", "Наберите 3000 очков в режиме Блок Бласт", 3000, "blast", 220) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("blast_score_10000", "Blast Legend", "Легенда Блок Бласта", "Reach 10,000 score in Block Blast mode", "Наберите 10000 очков в режиме Блок Бласт", 10000, "blast", 400) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("combo_multiplier_4", "Combo Master", "Мастер Комбо", "Achieve a combo chain multiplier of 4x in multiplayer simulator", "Достигните комбо-множителя 4x в мультиплеере", 4, "combo", 220) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_4_unlocked", false)) 1 else 0 },
-        AchievementDef("combo_multiplier_5", "Combo Overlord", "Повелитель Комбо", "Achieve a combo chain multiplier of 5x in multiplayer simulator", "Достигните комбо-множителя 5x в мультиплеере", 5, "combo", 350) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_5_unlocked", false)) 1 else 0 },
+        AchievementDef("tetrises_cleared_100", "Tetris Master", "Мастер Тетрисов", "Perform 4-line clears (Tetrises) 100 times", "Выполните очистку 4-х линий (Тетрис) 100 раз", 100, "lines", 600) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
+        AchievementDef("blast_score_3000", "ZETA Professional", "Профессионал ZETA", "Reach 3,000 score in ZETA mode", "Наберите 3000 очков в режиме ZETA", 3000, "blast", 220) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("blast_score_10000", "ZETA Master", "Мастер ZETA", "Reach 10,000 score in ZETA mode", "Наберите 10000 очков в режиме ZETA", 10000, "blast", 400) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("combo_multiplier_4", "Combo 4x", "Комбо 4x", "Achieve a combo chain multiplier of 4x in multiplayer simulator", "Достигните комбо-множителя 4x в мультиплеере", 4, "combo", 220) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_4_unlocked", false)) 1 else 0 },
+        AchievementDef("combo_multiplier_5", "Combo 5x", "Комбо 5x", "Achieve a combo chain multiplier of 5x in multiplayer simulator", "Достигните комбо-множителя 5x в мультиплеере", 5, "combo", 350) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_5_unlocked", false)) 1 else 0 },
         AchievementDef("avatar_changes_5", "Fashion Stylist", "Модный стилист", "Change your avatar emoji or color 5 times", "Измените эмодзи или цвет аватара 5 раз", 5, "crown", 100) { vm -> vm.prefs.getInt("stats_avatar_changes", 0) },
-        AchievementDef("title_purchases_3", "Titled Peer", "Титулованный узел", "Purchase 3 different profile titles in store", "Приобретите 3 разных титула в магазине", 3, "crown", 150) { vm -> vm.purchasedTitles.value.size },
-        AchievementDef("frame_purchases_3", "Framed Node", "Узел в рамке", "Purchase 3 different avatar frames in store", "Приобретите 3 разных рамки в магазине", 3, "crown", 150) { vm -> vm.purchasedAvatarFrames.value.size },
-        AchievementDef("sound_pack_purchased", "Audio Enthusiast", "Аудио-энтузиаст", "Purchase any custom sound synthesizer pack in store", "Приобретите любой синтезатор звука в магазине", 1, "speed", 150) { vm -> vm.purchasedSoundPacks.value.filter { it != "arcade" && it != "default" }.size },
-        AchievementDef("xp_earned_500", "XP Collector", "Накопитель опыта", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", 100) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_2000", "XP Master", "Мастер опыта", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", 200) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_10000", "XP Legend", "Легенда опыта", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", 500) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("player_level_5", "Level 5 Node", "Узел 5 Уровня", "Reach Player Mastery Level 5", "Достигните 5-го уровня мастерства", 5, "speed", 100) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("player_level_15", "Level 15 Node", "Узел 15 Уровня", "Reach Player Mastery Level 15", "Достигните 15-го уровня мастерства", 15, "speed", 250) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("player_level_30", "Level 30 Node", "Узел 30 Уровня", "Reach Player Mastery Level 30", "Достигните 30-го уровня мастерства", 30, "speed", 500) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("mode_time_attack", "Time Speedrun", "Временной забег", "Launch a game in Time Attack mode", "Начните игру в режиме Тайм-Атак", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_reverse", "Chaos Controls", "Навигатор хаоса", "Launch a game in Chaos Controls mode", "Начните игру в режиме Хаос-Управление", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_mirror", "Mirror Explorer", "Зеркальный исследователь", "Launch a game in Mirror Dimension mode", "Начните игру в режиме Зеркальный Мир", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_pentary", "Pentary Pioneer", "Пионер Пента-Хаоса", "Launch a game in Pentary Chaos mode", "Начните игру в режиме Пента-Хаос", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pentary_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_pulse", "Pulse Survivor", "Выживший в вихре", "Launch a game in Vortex Pulse mode", "Начните игру в режиме Импульсный Вихрь", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pulse_unlocked", false)) 1 else 0 },
-        AchievementDef("speed_level_max", "Speed Demon", "Демон скорости", "Reach game level speed 15 in standard match modes", "Достигните 15-го игрового уровня скорости в матче", 15, "speed", 250) { vm -> vm.prefs.getInt("stats_max_speed_reached", 0) },
+        AchievementDef("title_purchases_3", "Title Collector", "Коллекционер титулов", "Purchase 3 different profile titles in store", "Приобретите 3 разных титула в магазине", 3, "crown", 150) { vm -> vm.purchasedTitles.value.size },
+        AchievementDef("frame_purchases_3", "Frame Collector", "Коллекционер рамок", "Purchase 3 different avatar frames in store", "Приобретите 3 разных рамки в магазине", 3, "crown", 150) { vm -> vm.purchasedAvatarFrames.value.size },
+        AchievementDef("sound_pack_purchased", "Audio Collector", "Коллекционер звуков", "Purchase any custom sound synthesizer pack in store", "Приобретите любой синтезатор звука в магазине", 1, "speed", 150) { vm -> vm.purchasedSoundPacks.value.filter { it != "arcade" && it != "default" }.size },
+        AchievementDef("xp_earned_500", "Experience 500", "Опыт 500", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", 100) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("xp_earned_2000", "Experience 2000", "Опыт 2000", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", 200) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("xp_earned_10000", "Experience 10000", "Опыт 10000", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", 500) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("player_level_5", "Level 5", "Уровень 5", "Reach Player Mastery Level 5", "Достигните 5-го уровня мастерства", 5, "speed", 100) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("player_level_15", "Level 15", "Уровень 15", "Reach Player Mastery Level 15", "Достигните 15-го уровня мастерства", 15, "speed", 250) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("player_level_30", "Level 30", "Уровень 30", "Reach Player Mastery Level 30", "Достигните 30-го уровня мастерства", 30, "speed", 500) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("mode_time_attack", "Time Attack Mode", "Режим Тайм-Атак", "Launch a game in Time Attack mode", "Начните игру в режиме Тайм-Атак", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_reverse", "Reverse Mode", "Режим Реверс", "Launch a game in Chaos Controls mode", "Начните игру в режиме Хаос-Управление", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_mirror", "Mirror Mode", "Зеркальный режим", "Launch a game in Mirror Dimension mode", "Начните игру в режиме Зеркальный Мир", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_pentary", "Pentary Chaos Mode", "Режим Пента-Хаос", "Launch a game in Pentary Chaos mode", "Начните игру в режиме Пента-Хаос", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pentary_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_pulse", "Vortex Mode", "Вихревой режим", "Launch a game in Vortex Pulse mode", "Начните игру в режиме Импульсный Вихрь", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pulse_unlocked", false)) 1 else 0 },
+        AchievementDef("speed_level_max", "Speed Master", "Мастер скорости", "Reach game level speed 15 in standard match modes", "Достигните 15-го игрового уровня скорости в матче", 15, "speed", 250) { vm -> vm.prefs.getInt("stats_max_speed_reached", 0) },
         
         // Final epic 50th achievement
-        AchievementDef("all_unlocked", "Consensus Overlord", "Абсолютный триумф консенсуса", "Obtain all 49 other achievements (Epic Completion Reward)", "Откройте все 49 других достижений (Эпическая финальная награда)", 1, "crown", 1000) { vm -> if (vm.prefs.getBoolean("ach_all_unlocked_unlocked", false)) 1 else 0 }
+        AchievementDef("all_unlocked", "Champion", "Абсолютный чемпион", "Obtain all 49 other achievements (Epic Completion Reward)", "Откройте все 49 других достижений (Эпическая финальная награда)", 1, "crown", 1000) { vm -> if (vm.prefs.getBoolean("ach_all_unlocked_unlocked", false)) 1 else 0 }
     )
 
     init {
         val savedLangCode = prefs.getString("lang_code", Language.EN.code) ?: Language.EN.code
-        _language.update { Language.values().firstOrNull { it.code == savedLangCode } ?: Language.EN }
+        _language.update { Language.entries.firstOrNull { it.code == savedLangCode } ?: Language.EN }
         _playerName.update { prefs.getString("player_name", "Player 1") ?: "Player 1" }
         _hasSavedGame.update { prefs.getBoolean("has_saved_game", false) }
         _themeColor.update { prefs.getString("theme_color", "indigo") ?: "indigo" }
@@ -287,6 +337,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _leftHandedControls.update { prefs.getBoolean("left_handed_controls", false) }
         _gameSpeedMultiplier.update { prefs.getFloat("game_speed_multiplier", 1.0f) }
         _controlButtonScale.update { prefs.getFloat("control_button_scale", 1.0f) }
+        _controlButtonAlpha.update { prefs.getFloat("control_button_alpha", 1.0f) }
         _controlButtonStyle.update { prefs.getString("control_button_style", "neon") ?: "neon" }
         _customFontKey.update { prefs.getString("custom_font_key", "default") ?: "default" }
         _gridLineDensity.update { prefs.getString("grid_line_density", "standard") ?: "standard" }
@@ -297,6 +348,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _statsHighScore.update { prefs.getInt("stats_high_score", 0) }
         _scanlinesFilter.update { prefs.getBoolean("scanlines_filter", false) }
         _boardColorSkin.update { prefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk" }
+
+        // Relax settings
+        _relaxImmortal.update { prefs.getBoolean("relax_immortal", true) }
+        _relaxSpeed.update { prefs.getString("relax_speed", "slow") ?: "slow" }
+        _relaxBlockSet.update { prefs.getString("relax_block_set", "ideal") ?: "ideal" }
+        _relaxGhostEnabled.update { prefs.getBoolean("relax_ghost_enabled", true) }
+        _lobbyMusicEnabled.update { prefs.getBoolean("lobby_music_enabled", true) }
+
+        // Custom Tag settings
+        _customTag.update { profilePrefs.getString("custom_tag", "") ?: "" }
+        _customTagUnlocked.update { profilePrefs.getBoolean("custom_tag_unlocked", false) }
+
+        // Volume settings
+        _soundVolume.update { prefs.getFloat("sound_volume", 1.0f) }
+        _lobbyMusicVolume.update { prefs.getFloat("lobby_music_volume", 0.8f) }
 
         // Load customization values
         _equippedAvatarFrame.update { profilePrefs.getString("equipped_avatar_frame", "standard") ?: "standard" }
@@ -346,6 +412,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val resolvedTier = (data?.get("online_tier") as? String) ?: "BRONZE"
                     val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
                     val resolvedBonusXp = (data?.get("bonus_xp") as? Long)?.toInt() ?: 0
+                    val resolvedTag = (data?.get("custom_tag") as? String) ?: ""
+                    val resolvedTagUnlocked = (data?.get("custom_tag_unlocked") as? Boolean) ?: false
+                    _customTag.update { resolvedTag }
+                    _customTagUnlocked.update { resolvedTagUnlocked }
                     switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -356,6 +426,161 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 saveCurrentProfileToDb()
             }
         }
+        initSoundPool()
+        viewModelScope.launch {
+            isPlaying.collect { playing ->
+                if (playing) {
+                    stopLobbyMusic()
+                } else {
+                    startLobbyMusic()
+                }
+            }
+        }
+    }
+
+    fun setSoundVolume(volume: Float) {
+        _soundVolume.value = volume
+        prefs.edit().putFloat("sound_volume", volume).apply()
+    }
+
+    fun setLobbyMusicVolume(volume: Float) {
+        _lobbyMusicVolume.value = volume
+        prefs.edit().putFloat("lobby_music_volume", volume).apply()
+        lobbyMusicPlayer?.let {
+            try {
+                it.setVolume(volume, volume)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun onAppResume() {
+        if (!_isPlaying.value) {
+            startLobbyMusic()
+        }
+    }
+
+    fun onAppPause() {
+        stopLobbyMusic()
+        pauseGame() // Pause match if app minimized
+    }
+
+    fun resetSettingsToDefault() {
+        // Reset local preferences
+        prefs.edit()
+            .putString("theme_color", "indigo")
+            .putString("block_style", "glass")
+            .putInt("next_count", 3)
+            .putBoolean("ghost_visible", true)
+            .putString("control_style", "buttons")
+            .putBoolean("sound_enabled", true)
+            .putBoolean("vibration_enabled", true)
+            .putBoolean("smooth_falling", true)
+            .putFloat("grid_opacity", 0.35f)
+            .putInt("custom_start_level", 1)
+            .putFloat("screen_shake_intensity", 1.0f)
+            .putBoolean("scanlines_filter", false)
+            .putBoolean("line_clear_challenge", false)
+            .putBoolean("auto_save_highscore", true)
+            .putBoolean("fast_drop_lock_speed", false)
+            .putBoolean("left_handed_controls", false)
+            .putFloat("game_speed_multiplier", 1.0f)
+            .putFloat("control_button_scale", 1.0f)
+            .putFloat("control_button_alpha", 1.0f)
+            .putString("control_button_style", "neon")
+            .putString("grid_line_density", "dashed")
+            .putString("custom_font_key", "default")
+            .putString("control_vertical_position", "bottom")
+            .putFloat("sound_volume", 1.0f)
+            .putFloat("lobby_music_volume", 0.8f)
+            .putBoolean("lobby_music_enabled", true)
+            .apply()
+
+        // Update active StateFlows
+        _themeColor.value = "indigo"
+        _blockStyle.value = "glass"
+        _nextCount.value = 3
+        _ghostVisible.value = true
+        _controlStyle.value = "buttons"
+        _soundEnabled.value = true
+        _vibrationEnabled.value = true
+        _smoothFallingEnabled.value = true
+        _gridOpacity.value = 0.35f
+        _customStartLevel.value = 1
+        _screenShakeIntensity.value = 1.0f
+        _scanlinesFilter.value = false
+        _lineClearChallenge.value = false
+        _autoSaveHighscore.value = true
+        _fastDropLockSpeed.value = false
+        _leftHandedControls.value = false
+        _gameSpeedMultiplier.value = 1.0f
+        _controlButtonScale.value = 1.0f
+        _controlButtonAlpha.value = 1.0f
+        _controlButtonStyle.value = "neon"
+        _gridLineDensity.value = "dashed"
+        _customFontKey.value = "default"
+        _controlVerticalPosition.value = "bottom"
+        _soundVolume.value = 1.0f
+        _lobbyMusicVolume.value = 0.8f
+        _lobbyMusicEnabled.value = true
+
+        // Sync changes to gameEngine
+        gameEngine.lineClearChallenge = false
+        gameEngine.fastDropLockSpeed = false
+
+        // Restart/refresh music if enabled
+        stopLobbyMusic()
+        startLobbyMusic()
+    }
+
+    fun setRelaxImmortal(enabled: Boolean) {
+        _relaxImmortal.value = enabled
+        prefs.edit().putBoolean("relax_immortal", enabled).apply()
+        // Sync to engine
+        gameEngine.relaxImmortal = enabled
+    }
+
+    fun setRelaxSpeed(speed: String) {
+        _relaxSpeed.value = speed
+        prefs.edit().putString("relax_speed", speed).apply()
+    }
+
+    fun setRelaxBlockSet(blockSet: String) {
+        _relaxBlockSet.value = blockSet
+        prefs.edit().putString("relax_block_set", blockSet).apply()
+        gameEngine.relaxBlockSet = blockSet
+    }
+
+    fun setRelaxGhostEnabled(enabled: Boolean) {
+        _relaxGhostEnabled.value = enabled
+        prefs.edit().putBoolean("relax_ghost_enabled", enabled).apply()
+    }
+
+    fun setLobbyMusicEnabled(enabled: Boolean) {
+        _lobbyMusicEnabled.value = enabled
+        prefs.edit().putBoolean("lobby_music_enabled", enabled).apply()
+        if (enabled) {
+            startLobbyMusic()
+        } else {
+            stopLobbyMusic()
+        }
+    }
+
+    fun setCustomTag(tag: String) {
+        _customTag.value = tag
+        profilePrefs.edit().putString("custom_tag", tag).apply()
+        saveCurrentProfileToDb()
+    }
+
+    fun setCustomTagUnlocked(unlocked: Boolean) {
+        _customTagUnlocked.value = unlocked
+        profilePrefs.edit().putBoolean("custom_tag_unlocked", unlocked).apply()
+        saveCurrentProfileToDb()
+    }
+
+    fun clearRelaxBoard() {
+        gameEngine.clearBoard()
     }
 
     fun setEquippedAvatarFrame(frameId: String) {
@@ -465,6 +690,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setSoundEnabled(enabled: Boolean) {
         _soundEnabled.value = enabled
         prefs.edit().putBoolean("sound_enabled", enabled).apply()
+        if (enabled) {
+            startLobbyMusic()
+        } else {
+            stopLobbyMusic()
+        }
     }
 
     fun setVibrationEnabled(enabled: Boolean) {
@@ -475,6 +705,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setOnlineTier(tier: String) {
         _onlineTier.value = tier
         prefs.edit().putString("online_tier", tier).apply()
+        profilePrefs.edit().putString("online_tier", tier).apply()
         saveCurrentProfileToDb()
     }
 
@@ -520,6 +751,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setControlButtonScale(scale: Float) {
         _controlButtonScale.value = scale
         prefs.edit().putFloat("control_button_scale", scale).apply()
+    }
+
+    fun setControlButtonAlpha(alpha: Float) {
+        _controlButtonAlpha.value = alpha
+        prefs.edit().putFloat("control_button_alpha", alpha).apply()
     }
 
     fun setControlButtonStyle(style: String) {
@@ -722,7 +958,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             _isAuthLoading.value = true
-            val email = if (trimmedName.contains("@")) trimmedName else "${trimmedName}@blocktetris.com"
+            val email = if (trimmedName.contains("@")) {
+                trimmedName
+            } else {
+                val hexName = trimmedName.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
+                "${hexName}@blocktetris.com"
+            }
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, trimmedPass)
                 .addOnSuccessListener { authResult ->
                     viewModelScope.launch {
@@ -730,10 +971,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         if (user != null) {
                             val data = com.example.db.FirebaseSync.pullUserData(getApplication())
                             val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
-                            val resolvedCredits = (data?.get("credits") as? Long)?.toInt() ?: 750
-                            val resolvedTier = (data?.get("online_tier") as? String) ?: "BRONZE"
+                            val resolvedCredits = (data?.get("credits") as? Long)?.toInt()
+                                ?: if (_playerName.value == "Player 1") _credits.value else 750
+                            val resolvedTier = (data?.get("online_tier") as? String)
+                                ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
                             val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
                             val resolvedBonusXp = (data?.get("bonus_xp") as? Long)?.toInt() ?: 0
+                            
+                            val resolvedHighScore = (data?.get("stats_high_score") as? Long)?.toInt() ?: 0
+                            if (resolvedHighScore > 0) {
+                                scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                            }
+                            
                             switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
                             _loginSuccessMessage.value = "Успешный вход!"
                         } else {
@@ -749,13 +998,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun registerAccount(usernameEntered: String, passwordEntered: String, initialTier: String = "BRONZE", initialCredits: Int = 750) {
+    fun clearUpdateMessages() {
+        _nicknameUpdateError.value = null
+        _nicknameUpdateSuccess.value = null
+        _emailUpdateError.value = null
+        _emailUpdateSuccess.value = null
+    }
+
+    fun registerAccount(usernameEntered: String, emailEntered: String, passwordEntered: String, initialTier: String? = null, initialCredits: Int? = null) {
         viewModelScope.launch {
             clearLoginMessages()
             val trimmedName = usernameEntered.trim()
+            val trimmedEmail = emailEntered.trim()
             val trimmedPass = passwordEntered.trim()
             if (trimmedName.isEmpty()) {
                 _loginError.value = "Никнейм пустой!"
+                return@launch
+            }
+            if (trimmedEmail.isEmpty() || !trimmedEmail.contains("@")) {
+                _loginError.value = "Почта обязательна и должна содержать @!"
                 return@launch
             }
             if (trimmedPass.isEmpty()) {
@@ -767,8 +1028,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             _isAuthLoading.value = true
-            val email = if (trimmedName.contains("@")) trimmedName else "${trimmedName}@blocktetris.com"
-            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, trimmedPass)
+            
+            // Preserve guest progress: if active user is "Player 1", keep their stats!
+            val finalCredits = initialCredits ?: if (_playerName.value == "Player 1") _credits.value else 750
+            val finalTier = initialTier ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+
+            FirebaseAuth.getInstance().createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
                 .addOnSuccessListener { authResult ->
                     viewModelScope.launch {
                         val user = authResult.user
@@ -781,11 +1046,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             val acc = com.example.db.UserAccount(
                                 username = trimmedName,
                                 password = trimmedPass,
-                                onlineTier = initialTier,
-                                credits = initialCredits
+                                onlineTier = finalTier,
+                                credits = finalCredits
                             )
                             accountRepo.insert(acc)
-                            switchAccount(trimmedName, initialTier, initialCredits)
+                            switchAccount(trimmedName, finalTier, finalCredits)
                             
                             // Initialize Firestore record
                             com.example.db.FirebaseSync.pushUserData(getApplication())
@@ -804,6 +1069,65 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateNickname(newNick: String) {
+        val trimmed = newNick.trim()
+        if (trimmed.isEmpty() || trimmed.length < 2 || trimmed.length > 20) {
+            _nicknameUpdateError.value = "Никнейм должен быть от 2 до 20 символов!"
+            return
+        }
+        viewModelScope.launch {
+            _nicknameUpdateError.value = null
+            _nicknameUpdateSuccess.value = null
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user != null) {
+                val profileUpdates = userProfileChangeRequest {
+                    displayName = trimmed
+                }
+                user.updateProfile(profileUpdates)
+                    .addOnSuccessListener {
+                        viewModelScope.launch {
+                            switchAccount(trimmed, _onlineTier.value, _credits.value, _hasNicknameGradient.value, _bonusXp.value)
+                            com.example.db.FirebaseSync.pushUserData(getApplication())
+                            _nicknameUpdateSuccess.value = "Никнейм успешно изменен!"
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        _nicknameUpdateError.value = e.localizedMessage ?: "Ошибка при изменении никнейма!"
+                    }
+            } else {
+                switchAccount(trimmed, _onlineTier.value, _credits.value, _hasNicknameGradient.value, _bonusXp.value)
+                _nicknameUpdateSuccess.value = "Никнейм успешно изменен!"
+            }
+        }
+    }
+
+    fun updateEmail(newEmail: String) {
+        val trimmed = newEmail.trim()
+        if (trimmed.isEmpty() || !trimmed.contains("@")) {
+            _emailUpdateError.value = "Неверный формат почты!"
+            return
+        }
+        viewModelScope.launch {
+            _emailUpdateError.value = null
+            _emailUpdateSuccess.value = null
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user != null) {
+                user.updateEmail(trimmed)
+                    .addOnSuccessListener {
+                        _emailUpdateSuccess.value = "Почта успешно обновлена!"
+                        viewModelScope.launch {
+                            com.example.db.FirebaseSync.pushUserData(getApplication())
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        _emailUpdateError.value = e.localizedMessage ?: "Ошибка при обновлении почты!"
+                    }
+            } else {
+                _emailUpdateError.value = "Войдите в аккаунт, чтобы изменить почту!"
+            }
+        }
+    }
+
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
             clearLoginMessages()
@@ -816,9 +1140,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         if (user != null) {
                             val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: "GoogleUser"
                             val data = com.example.db.FirebaseSync.pullUserData(getApplication())
-                            val resolvedCredits = (data?.get("credits") as? Long)?.toInt() ?: 750
-                            val resolvedTier = (data?.get("online_tier") as? String) ?: "BRONZE"
-                            switchAccount(resolvedUsername, resolvedTier, resolvedCredits)
+                            val resolvedCredits = (data?.get("credits") as? Long)?.toInt()
+                                ?: if (_playerName.value == "Player 1") _credits.value else 750
+                            val resolvedTier = (data?.get("online_tier") as? String)
+                                ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+                            val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
+                            val resolvedBonusXp = (data?.get("bonus_xp") as? Long)?.toInt() ?: 0
+                            
+                            val resolvedHighScore = (data?.get("stats_high_score") as? Long)?.toInt() ?: 0
+                            if (resolvedHighScore > 0) {
+                                scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                            }
+                            
+                            switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
                             
                             if (data == null) {
                                 com.example.db.FirebaseSync.pushUserData(getApplication())
@@ -845,9 +1179,108 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _bonusXp.update { bonusXpAmount }
         prefs.edit().putString("player_name", username).apply()
         prefs.edit().putString("online_tier", tier).apply()
+        profilePrefs.edit().putString("online_tier", tier).apply()
         prefs.edit().putInt("credits", creditsAmount).apply()
         profilePrefs.edit().putBoolean("has_nickname_gradient", hasGradient).apply()
         profilePrefs.edit().putInt("bonus_xp", bonusXpAmount).apply()
+        
+        saveCurrentProfileToDb()
+        reloadAllCustomizationsAndStats()
+    }
+
+    private fun resetPrefsToGuestDefaults(guestAcc: com.example.db.UserAccount?) {
+        val editorProfile = profilePrefs.edit()
+        val editorTetris = prefs.edit()
+        
+        editorTetris.putString("player_name", "Player 1")
+        editorTetris.putInt("credits", guestAcc?.credits ?: 750)
+        editorTetris.putString("online_tier", guestAcc?.onlineTier ?: "BRONZE")
+        
+        editorProfile.putString("online_tier", guestAcc?.onlineTier ?: "BRONZE")
+        editorProfile.putBoolean("has_nickname_gradient", guestAcc?.hasGradient ?: false)
+        editorProfile.putInt("bonus_xp", guestAcc?.bonusXp ?: 0)
+        
+        editorProfile.putString("equipped_avatar_frame", "standard")
+        editorProfile.putStringSet("purchased_avatar_frames", setOf("standard"))
+        editorProfile.putString("equipped_title", "none")
+        editorProfile.putStringSet("purchased_titles", setOf("none"))
+        editorProfile.putString("equipped_sound_pack", "arcade")
+        editorProfile.putStringSet("purchased_sound_packs", setOf("arcade"))
+        editorProfile.putStringSet("purchased_themes", setOf("indigo", "neon", "red"))
+        editorProfile.putStringSet("purchased_fonts", setOf("default", "monospace"))
+        editorProfile.putStringSet("purchased_control_button_styles", setOf("classic", "neon"))
+        editorProfile.putString("custom_avatar_emoji", "")
+        editorProfile.putString("custom_avatar_bg_color", "3A3C44")
+        
+        editorTetris.putInt("stats_games_played", 0)
+        editorTetris.putInt("stats_spent_credits", 0)
+        editorTetris.putInt("stats_cleared_lines", 0)
+        editorTetris.putInt("stats_high_score", 0)
+        editorTetris.putInt("stats_max_speed_reached", 0)
+        editorTetris.putInt("stats_tetrises_count", 0)
+        editorTetris.putInt("block_blast_high_score", 0)
+        
+        editorProfile.apply()
+        editorTetris.apply()
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                FirebaseAuth.getInstance().signOut()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            val guestAcc = accountRepo.getAccount("Player 1")
+            resetPrefsToGuestDefaults(guestAcc)
+            reloadAllCustomizationsAndStats()
+            clearLoginMessages()
+        }
+    }
+
+    fun reloadAllCustomizationsAndStats() {
+        _playerName.update { prefs.getString("player_name", "Player 1") ?: "Player 1" }
+        _onlineTier.update { profilePrefs.getString("online_tier", "BRONZE") ?: "BRONZE" }
+        _credits.update { prefs.getInt("credits", 750) }
+        _hasNicknameGradient.update { profilePrefs.getBoolean("has_nickname_gradient", false) }
+        _bonusXp.update { profilePrefs.getInt("bonus_xp", 0) }
+        
+        _equippedAvatarFrame.update { profilePrefs.getString("equipped_avatar_frame", "standard") ?: "standard" }
+        _purchasedAvatarFrames.update { profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard")) ?: setOf("standard") }
+        _equippedTitle.update { profilePrefs.getString("equipped_title", "none") ?: "none" }
+        _purchasedTitles.update { profilePrefs.getStringSet("purchased_titles", setOf("none")) ?: setOf("none") }
+        _equippedSoundPack.update { profilePrefs.getString("equipped_sound_pack", "arcade") ?: "arcade" }
+        _purchasedSoundPacks.update { profilePrefs.getStringSet("purchased_sound_packs", setOf("arcade")) ?: setOf("arcade") }
+        _purchasedThemes.update { profilePrefs.getStringSet("purchased_themes", setOf("indigo", "neon", "red")) ?: setOf("indigo", "neon", "red") }
+        _purchasedFonts.update { profilePrefs.getStringSet("purchased_fonts", setOf("default", "monospace")) ?: setOf("default", "monospace") }
+        _purchasedControlButtonStyles.update { profilePrefs.getStringSet("purchased_control_button_styles", setOf("classic", "neon")) ?: setOf("classic", "neon") }
+        _customAvatarEmoji.update { profilePrefs.getString("custom_avatar_emoji", "") ?: "" }
+        _customAvatarBgColor.update { profilePrefs.getString("custom_avatar_bg_color", "3A3C44") ?: "3A3C44" }
+        
+        _themeColor.update { prefs.getString("theme_color", "indigo") ?: "indigo" }
+        _blockStyle.update { prefs.getString("block_style", "neon") ?: "neon" }
+        _boardColorSkin.update { prefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk" }
+
+        // Relax settings
+        _relaxImmortal.update { prefs.getBoolean("relax_immortal", true) }
+        _relaxSpeed.update { prefs.getString("relax_speed", "slow") ?: "slow" }
+        _relaxBlockSet.update { prefs.getString("relax_block_set", "ideal") ?: "ideal" }
+        _relaxGhostEnabled.update { prefs.getBoolean("relax_ghost_enabled", true) }
+        _lobbyMusicEnabled.update { prefs.getBoolean("lobby_music_enabled", true) }
+
+        // Custom Tag settings
+        _customTag.update { profilePrefs.getString("custom_tag", "") ?: "" }
+        _customTagUnlocked.update { profilePrefs.getBoolean("custom_tag_unlocked", false) }
+
+        // Volume settings
+        _soundVolume.update { prefs.getFloat("sound_volume", 1.0f) }
+        _lobbyMusicVolume.update { prefs.getFloat("lobby_music_volume", 0.8f) }
+        _controlButtonStyle.update { prefs.getString("control_button_style", "neon") ?: "neon" }
+        
+        _statsClearedLines.update { prefs.getInt("stats_cleared_lines", 0) }
+        _statsHighScore.update { prefs.getInt("stats_high_score", 0) }
+        
+        evaluateAchievements()
     }
 
     fun addBonusXp(amount: Int) {
@@ -881,7 +1314,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val name = doc.getString("playerName") ?: ""
                     val score = doc.getLong("score")?.toInt() ?: 0
                     val ts = doc.getLong("timestamp") ?: 0L
-                    HighScore(playerName = name, score = score, timestamp = ts)
+                    val hasGrad = doc.getBoolean("hasGradient") ?: false
+                    val tag = doc.getString("customTag") ?: ""
+                    HighScore(playerName = name, score = score, timestamp = ts, hasGradient = hasGrad).apply {
+                        customTag = tag
+                    }
                 }
                 _globalScores.value = list
             }
@@ -1035,10 +1472,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "bonus_xp" to 50000,
             "purchased_avatar_frames" to listOf("standard", "neon_ae", "gold_ma", "chrono_gl", "omega_ti"),
             "purchased_sound_packs" to listOf("arcade", "synthwave", "cyber_metal", "ai_voice"),
-            "purchased_themes" to listOf("indigo", "neon", "red", "amber", "green", "violet", "orange", "blue", "cyberpunk"),
-            "purchased_fonts" to listOf("default", "monospace", "scifi", "handwritten", "retro"),
-            "purchased_control_button_styles" to listOf("classic", "neon", "minimal", "outline", "retro"),
-            "purchased_cube_skins" to listOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk"),
+            "purchased_themes" to listOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold"),
+            "purchased_fonts" to listOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin"),
+            "purchased_control_button_styles" to listOf("classic", "neon", "glass"),
+            "purchased_cube_skins" to listOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"),
             "purchased_skins" to listOf("cyberpunk", "retro_amber", "emerald_matrix", "vaporwave_pink", "midnight_gold", "carbon_neutral", "plasma_storm", "glacial_frost")
         )
         firestore.collection("users").document(uid).update(updates)
@@ -1185,21 +1622,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .putBoolean("has_nickname_gradient", true)
                     .putInt("bonus_xp", 50000)
                     .putStringSet("purchased_skins", setOf("cyberpunk", "retro_amber", "emerald_matrix", "vaporwave_pink", "midnight_gold", "carbon_neutral", "plasma_storm", "glacial_frost"))
-                    .putStringSet("purchased_cube_skins", setOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk"))
+                    .putStringSet("purchased_cube_skins", setOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"))
                     .putStringSet("purchased_avatar_frames", setOf("standard", "neon_ae", "gold_ma", "chrono_gl", "omega_ti"))
                     .putStringSet("purchased_sound_packs", setOf("arcade", "synthwave", "cyber_metal", "ai_voice"))
-                    .putStringSet("purchased_themes", setOf("indigo", "neon", "red", "amber", "green", "violet", "orange", "blue", "cyberpunk"))
-                    .putStringSet("purchased_fonts", setOf("default", "monospace", "scifi", "handwritten", "retro"))
-                    .putStringSet("purchased_control_button_styles", setOf("classic", "neon", "minimal", "outline", "retro"))
+                    .putStringSet("purchased_themes", setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold"))
+                    .putStringSet("purchased_fonts", setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin"))
+                    .putStringSet("purchased_control_button_styles", setOf("classic", "neon", "glass"))
                     .apply()
                 
                 _equippedAvatarFrame.value = "standard"
                 _purchasedAvatarFrames.value = setOf("standard", "neon_ae", "gold_ma", "chrono_gl", "omega_ti")
                 _equippedSoundPack.value = "arcade"
                 _purchasedSoundPacks.value = setOf("arcade", "synthwave", "cyber_metal", "ai_voice")
-                _purchasedThemes.value = setOf("indigo", "neon", "red", "amber", "green", "violet", "orange", "blue", "cyberpunk")
-                _purchasedFonts.value = setOf("default", "monospace", "scifi", "handwritten", "retro")
-                _purchasedControlButtonStyles.value = setOf("classic", "neon", "minimal", "outline", "retro")
+                _purchasedThemes.value = setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold")
+                _purchasedFonts.value = setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin")
+                _purchasedControlButtonStyles.value = setOf("classic", "neon", "glass")
                 
                 saveCurrentProfileToDb()
             } else {
@@ -1300,7 +1737,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startGame(mode: GameMode = GameMode.CLASSIC) {
-        gameEngine.startGame(mode, startingLevel = if (mode == GameMode.CLASSIC) _customStartLevel.value else 1)
+        gameEngine.startGame(mode, startingLevel = _customStartLevel.value)
         
         // Track games played and starting modes
         val totalGames = prefs.getInt("stats_games_played", 0) + 1
@@ -1332,7 +1769,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun placeBlockBlastFigure(idx: Int, r: Int, c: Int): Boolean {
         val ok = blockBlastEngine.placeFigure(idx, r, c) { linesCleared ->
-            addCredits(linesCleared * 15)
+            addCredits(linesCleared * 11)
         }
         if (ok) {
             val finalScore = blockBlastEngine.state.value.score
@@ -1341,9 +1778,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             // Tiered gameover coins for Block Blast match completion
             if (blockBlastEngine.state.value.isGameOver) {
-                val basePassCoins = 30
-                val perfCoins = finalScore / 100
-                val modeBonusCoins = 60
+                val basePassCoins = 22
+                val perfCoins = finalScore / 133
+                val modeBonusCoins = 45
                 addCredits(basePassCoins + perfCoins + modeBonusCoins)
             }
         }
@@ -1434,7 +1871,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             // Load upgraded game parameters
-            val savedModeStr = prefs.getString("saved_game_mode", com.example.game.GameMode.CLASSIC.name) ?: com.example.game.GameMode.CLASSIC.name
+            val savedModeStr = prefs.getString("saved_game_mode", GameMode.CLASSIC.name) ?: GameMode.CLASSIC.name
             val savedMode = try {
                 com.example.game.GameMode.valueOf(savedModeStr)
             } catch (e: Exception) {
@@ -1478,12 +1915,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 var lastTimeTick = System.currentTimeMillis()
                 while (_isPlaying.value) {
-                    val level = gameEngine.gameState.value.level
-                    val baseDelay = maxOf(50L, 800L - (level * 50L))
-                    val speedMult = _gameSpeedMultiplier.value
-                    val delayTime = (baseDelay / speedMult).toLong().coerceAtLeast(30L)
+                    val delayTime = if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.RELAX) {
+                        when (_relaxSpeed.value) {
+                            "static" -> 1000L
+                            "slow" -> 1500L
+                            "normal" -> 800L
+                            "fast" -> 300L
+                            else -> 800L
+                        }
+                    } else {
+                        val level = gameEngine.gameState.value.level
+                        val baseDelay = when {
+                            level <= 11 -> 850L - (level * 50L)
+                            level == 12 -> 260L
+                            level == 13 -> 220L
+                            level == 14 -> 180L
+                            level >= 15 -> 150L
+                            else -> 800L
+                        }
+                        val speedMult = _gameSpeedMultiplier.value
+                        (baseDelay / speedMult).toLong().coerceAtLeast(30L)
+                    }
                     delay(delayTime)
                     if (!_isPlaying.value) break
+                    
+                    if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.RELAX && _relaxSpeed.value == "static") {
+                        continue
+                    }
                     
                     val now = System.currentTimeMillis()
                     if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.TIME_ATTACK) {
@@ -1498,6 +1956,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         triggerAudioFeedback("gameover")
                         saveHighScore()
                         _isPlaying.update { false }
+                        prefs.edit().putBoolean("has_saved_game", false).apply()
+                        _hasSavedGame.update { false }
                         break
                     }
                     val prevScore = gameEngine.gameState.value.score
@@ -1512,10 +1972,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         triggerAudioFeedback("gameover")
                         saveHighScore()
                         _isPlaying.update { false }
+                        prefs.edit().putBoolean("has_saved_game", false).apply()
+                        _hasSavedGame.update { false }
                         break
                     }
                     if (stateAfter.lines > prevLines) {
-                        triggerAudioFeedback("clear")
+                        val cleared = stateAfter.lines - prevLines
+                        when (cleared) {
+                            1 -> triggerAudioFeedback("clear_1")
+                            2 -> triggerAudioFeedback("clear_2")
+                            3 -> triggerAudioFeedback("clear_3")
+                            4 -> triggerAudioFeedback("clear_4")
+                            else -> triggerAudioFeedback("clear")
+                        }
                     } else if (stateAfter.piecesPlaced > prevPieces) {
                         triggerAudioFeedback("land")
                     }
@@ -1535,9 +2004,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun saveHighScore() {
+        val mode = gameEngine.gameState.value.gameMode
+        if (mode == com.example.game.GameMode.RELAX) {
+            // Relax mode scores are not saved to databases or leaderboards!
+            return
+        }
         val score = gameEngine.gameState.value.score
         val lines = gameEngine.gameState.value.lines
-        val mode = gameEngine.gameState.value.gameMode
         
         // Track stats
         val totalClearedLines = prefs.getInt("stats_cleared_lines", 0) + lines
@@ -1558,19 +2031,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Tiered coin reward calculation for playing standard modes
         if (score > 100) {
-            val basePlayCoins = 30
-            val performanceCoins = score / 100
+            val basePlayCoins = 22
+            val performanceCoins = score / 133
             val modeBonus = when (mode) {
                 com.example.game.GameMode.CLASSIC, com.example.game.GameMode.ZEN_FLOW -> 0
                 com.example.game.GameMode.EXTENDED, com.example.game.GameMode.FAST_RUN, 
                 com.example.game.GameMode.TIME_ATTACK, com.example.game.GameMode.REVERSE_CONTROLS,
-                com.example.game.GameMode.MIRROR_DIMENSION -> 50
-                com.example.game.GameMode.PENTARY_CHAOS -> 80
-                com.example.game.GameMode.BLOCK_BLAST -> 60
-                com.example.game.GameMode.PULSE_EXTREME -> 120
+                com.example.game.GameMode.MIRROR_DIMENSION -> 37
+                com.example.game.GameMode.PENTARY_CHAOS -> 60
+                com.example.game.GameMode.BLOCK_BLAST -> 45
+                com.example.game.GameMode.PULSE_EXTREME -> 90
                 else -> 0
             }
-            val total = ((basePlayCoins + performanceCoins + modeBonus) * 1.5f).toInt()
+            val total = ((basePlayCoins + performanceCoins + modeBonus) * 1.125f).toInt()
             addCredits(total)
         }
 
@@ -1581,6 +2054,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                
+                // 1. All-time high score
                 firestore.collection("high_scores").document(currentUser.uid).get()
                     .addOnSuccessListener { doc ->
                         val existingScore = doc.getLong("score") ?: 0
@@ -1589,9 +2064,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "uid" to currentUser.uid,
                                 "playerName" to _playerName.value,
                                 "score" to score,
-                                "timestamp" to System.currentTimeMillis()
+                                "timestamp" to System.currentTimeMillis(),
+                                "hasGradient" to _hasNicknameGradient.value,
+                                "customTag" to _customTag.value
                             )
                             firestore.collection("high_scores").document(currentUser.uid).set(scoreMap)
+                        }
+                    }
+                
+                // 2. Mode-specific high score
+                val modeCode = mode.code
+                firestore.collection("high_scores_by_mode").document(modeCode)
+                    .collection("scores").document(currentUser.uid).get()
+                    .addOnSuccessListener { doc ->
+                        val existingScore = doc.getLong("score") ?: 0
+                        if (score > existingScore) {
+                            val scoreMap = mapOf(
+                                "uid" to currentUser.uid,
+                                "playerName" to _playerName.value,
+                                "score" to score,
+                                "timestamp" to System.currentTimeMillis(),
+                                "mode" to modeCode,
+                                "hasGradient" to _hasNicknameGradient.value,
+                                "customTag" to _customTag.value
+                            )
+                            firestore.collection("high_scores_by_mode").document(modeCode)
+                                .collection("scores").document(currentUser.uid).set(scoreMap)
                         }
                     }
             }
@@ -1603,6 +2101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun triggerAudioFeedback(type: String) {
         if (!_soundEnabled.value) return
+        if (playSoundEffect(type)) return
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
             try {
                 val sampleRate = 44100
@@ -1631,7 +2130,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             when (type) {
                                 "click" -> {
                                     val freq = 220.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "rotate" -> {
                                     val freq = 200.0 + (300.0 * Math.sin(Math.PI * progress))
@@ -1649,7 +2148,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         2 -> 392.00
                                         else -> 493.88
                                     }
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "gameover" -> {
                                     val freq = 196.00 * (1.0 - progress * 0.4)
@@ -1662,7 +2161,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                                 "equip" -> {
                                     val freq = 440.0 + 220.0 * progress
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "success" -> {
                                     val freq = 329.63 + 329.63 * progress
@@ -1769,7 +2268,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                                 "equip" -> {
                                     val freq = 1500.0 - 1000.0 * progress
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "success" -> {
                                     val step = (progress * 3).toInt()
@@ -1814,11 +2313,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "buy" -> {
                                     val step = (progress * 2).toInt()
                                     val freq = if (step == 0) 987.77 else 1318.51
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "equip" -> {
                                     val freq = 659.25 + 329.63 * progress
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
+                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
                                 }
                                 "success" -> {
                                     val noteIndex = (progress * 4).toInt().coerceIn(0, 3)
@@ -1905,5 +2404,122 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         lobbyManager.cleanUpAllListeners()
+        try {
+            lobbyMusicPlayer?.stop()
+            lobbyMusicPlayer?.release()
+            lobbyMusicPlayer = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            soundPool?.release()
+            soundPool = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun initSoundPool() {
+        val context = getApplication<Application>()
+        val attributes = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_GAME)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        soundPool = android.media.SoundPool.Builder()
+            .setMaxStreams(5)
+            .setAudioAttributes(attributes)
+            .build()
+
+        soundPool?.let { pool ->
+            val defaultBtnId = pool.load(context, R.raw.default_button, 1)
+            soundMap["click"] = defaultBtnId
+            soundMap["tap"] = defaultBtnId
+            soundMap["buy"] = pool.load(context, R.raw.buy_button, 1)
+            soundMap["equip"] = pool.load(context, R.raw.button_on_off, 1)
+            soundMap["error"] = pool.load(context, R.raw.error_no_money, 1)
+            soundMap["gameover"] = pool.load(context, R.raw.fail, 1)
+            soundMap["case_spin"] = pool.load(context, R.raw.case_spin, 1)
+            soundMap["selling"] = pool.load(context, R.raw.selling_item, 1)
+            soundMap["online_ready"] = pool.load(context, R.raw.online_readiness, 1)
+            soundMap["clear_1"] = pool.load(context, R.raw.one_line, 1)
+            soundMap["clear_2"] = pool.load(context, R.raw.two_line, 1)
+            soundMap["clear_3"] = pool.load(context, R.raw.three_line, 1)
+            soundMap["clear_4"] = pool.load(context, R.raw.four_line, 1)
+            soundMap["drop_common"] = pool.load(context, R.raw.drop_common_item, 1)
+            soundMap["drop_uncommon"] = pool.load(context, R.raw.drop_uncommon_item, 1)
+            soundMap["drop_rare"] = pool.load(context, R.raw.drop_rare_item, 1)
+            soundMap["drop_epic"] = pool.load(context, R.raw.drop_epic_item, 1)
+            soundMap["drop_legendary"] = pool.load(context, R.raw.drop_legendary_item, 1)
+            soundMap["drop_red"] = pool.load(context, R.raw.drop_red_item, 1)
+        }
+    }
+
+    private fun playSoundEffect(type: String): Boolean {
+        val soundId = soundMap[type] ?: return false
+        val vol = _soundVolume.value
+        soundPool?.play(soundId, vol, vol, 1, 0, 1.0f)
+        return true
+    }
+
+    private fun startLobbyMusic() {
+        if (!_soundEnabled.value || !_lobbyMusicEnabled.value || _isPlaying.value) {
+            stopLobbyMusic()
+            return
+        }
+        if (lobbyMusicPlayer == null) {
+            try {
+                lobbyMusicPlayer = android.media.MediaPlayer.create(getApplication(), R.raw.main_menu_ft).apply {
+                    isLooping = true
+                    val vol = _lobbyMusicVolume.value
+                    setVolume(vol, vol)
+                    start()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else if (lobbyMusicPlayer?.isPlaying == false) {
+            try {
+                lobbyMusicPlayer?.start()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun stopLobbyMusic() {
+        lobbyMusicPlayer?.let { player ->
+            try {
+                if (player.isPlaying) {
+                    player.pause()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun fetchGlobalLeaderboardByMode(modeCode: String) {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("high_scores_by_mode").document(modeCode)
+            .collection("scores")
+            .orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(50)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    val name = doc.getString("playerName") ?: ""
+                    val score = doc.getLong("score")?.toInt() ?: 0
+                    val ts = doc.getLong("timestamp") ?: 0L
+                    val hasGrad = doc.getBoolean("hasGradient") ?: false
+                    val tag = doc.getString("customTag") ?: ""
+                    HighScore(playerName = name, score = score, timestamp = ts, hasGradient = hasGrad).apply {
+                        customTag = tag
+                    }
+                }
+                _globalScores.value = list
+            }
+            .addOnFailureListener {
+                it.printStackTrace()
+            }
     }
 }

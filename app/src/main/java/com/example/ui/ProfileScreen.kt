@@ -47,6 +47,8 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Email
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
@@ -92,7 +94,12 @@ fun ProfileScreen(
     val activeThemeKey by viewModel.themeColor.collectAsStateWithLifecycle()
     val credits by viewModel.credits.collectAsStateWithLifecycle()
     val playerName by viewModel.playerName.collectAsStateWithLifecycle()
+    val hasNicknameGradient by viewModel.hasNicknameGradient.collectAsStateWithLifecycle()
     val onlineTier by viewModel.onlineTier.collectAsStateWithLifecycle()
+    val nicknameUpdateError by viewModel.nicknameUpdateError.collectAsStateWithLifecycle()
+    val nicknameUpdateSuccess by viewModel.nicknameUpdateSuccess.collectAsStateWithLifecycle()
+    val emailUpdateError by viewModel.emailUpdateError.collectAsStateWithLifecycle()
+    val emailUpdateSuccess by viewModel.emailUpdateSuccess.collectAsStateWithLifecycle()
     val boardSkin by viewModel.boardColorSkin.collectAsStateWithLifecycle()
     
     val loginError by viewModel.loginError.collectAsStateWithLifecycle()
@@ -129,6 +136,7 @@ fun ProfileScreen(
 
     var authModeIsRegister by remember { mutableStateOf(false) }
     var inputUsername by remember { mutableStateOf("") }
+    var inputEmail by remember { mutableStateOf("") }
     var inputPassword by remember { mutableStateOf("") }
 
     var infoMessage by remember { mutableStateOf<String?>(null) }
@@ -258,6 +266,8 @@ fun ProfileScreen(
     val purchasedThemes by viewModel.purchasedThemes.collectAsStateWithLifecycle()
     val purchasedFonts by viewModel.purchasedFonts.collectAsStateWithLifecycle()
     val purchasedControlButtonStyles by viewModel.purchasedControlButtonStyles.collectAsStateWithLifecycle()
+    val customTagUnlocked by viewModel.customTagUnlocked.collectAsStateWithLifecycle()
+    val customTag by viewModel.customTag.collectAsStateWithLifecycle()
 
     val customAvatarEmoji by viewModel.customAvatarEmoji.collectAsStateWithLifecycle()
     val customAvatarBgColor by viewModel.customAvatarBgColor.collectAsStateWithLifecycle()
@@ -678,7 +688,7 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "$credits K",
+                        text = "$credits 🪙",
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -906,7 +916,7 @@ fun ProfileScreen(
                                                 value = inputUsername,
                                                 onValueChange = { inputUsername = it },
                                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                                label = { Text(if (currentLang == Language.RU) "Никнейм или Email" else "Nickname or Email") },
+                                                label = { Text(if (authModeIsRegister) (if (currentLang == Language.RU) "Никнейм" else "Nickname") else (if (currentLang == Language.RU) "Никнейм или Email" else "Nickname or Email")) },
                                                 singleLine = true,
                                                 shape = RoundedCornerShape(16.dp),
                                                 colors = OutlinedTextFieldDefaults.colors(
@@ -917,6 +927,25 @@ fun ProfileScreen(
                                                 ),
                                                 modifier = Modifier.fillMaxWidth()
                                             )
+
+                                            if (authModeIsRegister) {
+                                                Spacer(modifier = Modifier.height(14.dp))
+                                                OutlinedTextField(
+                                                    value = inputEmail,
+                                                    onValueChange = { inputEmail = it },
+                                                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                                    label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
+                                                    singleLine = true,
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    colors = OutlinedTextFieldDefaults.colors(
+                                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                                        focusedContainerColor = Color.Transparent,
+                                                        unfocusedContainerColor = Color.Transparent
+                                                    ),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                            }
 
                                             Spacer(modifier = Modifier.height(14.dp))
 
@@ -1007,7 +1036,7 @@ fun ProfileScreen(
                                                 onClick = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     if (authModeIsRegister) {
-                                                        viewModel.registerAccount(inputUsername, inputPassword)
+                                                        viewModel.registerAccount(inputUsername, inputEmail, inputPassword)
                                                     } else {
                                                         viewModel.loginAccount(inputUsername, inputPassword)
                                                     }
@@ -1262,21 +1291,12 @@ fun ProfileScreen(
                                                             contentScale = ContentScale.Crop
                                                         )
                                                     } else {
-                                                        if (customAvatarEmoji.length <= 2 && customAvatarEmoji != "👤") {
-                                                            Text(
-                                                                text = customAvatarEmoji,
-                                                                fontSize = 40.sp,
-                                                                textAlign = TextAlign.Center
-                                                            )
-                                                        } else {
-                                                            Text(
-                                                                text = playerName.take(1).uppercase(),
-                                                                fontSize = 36.sp,
-                                                                fontWeight = FontWeight.Black,
-                                                                color = contentColorFor(parsedAvatarBgColor),
-                                                                textAlign = TextAlign.Center
-                                                            )
-                                                        }
+                                                        Icon(
+                                                            imageVector = Icons.Default.Person,
+                                                            contentDescription = "Placeholder Avatar",
+                                                            modifier = Modifier.size(56.dp),
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                                        )
                                                     }
 
 
@@ -1308,16 +1328,31 @@ fun ProfileScreen(
                                             Spacer(modifier = Modifier.height(6.dp))
                                         }
     
-                                        Text(
-                                            text = playerName.uppercase(),
-                                            style = MaterialTheme.typography.titleLarge.copy(
-                                                fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp
-                                            ),
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
+                                        if (hasNicknameGradient) {
+                                            Text(
+                                                text = playerName.uppercase(),
+                                                style = MaterialTheme.typography.titleLarge.copy(
+                                                    fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp,
+                                                    brush = Brush.linearGradient(
+                                                        colors = listOf(Color(0xFFE94560), Color(0xFFFF0055), Color(0xFFFF7B00))
+                                                    )
+                                                ),
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                        } else {
+                                            Text(
+                                                text = playerName.uppercase(),
+                                                style = MaterialTheme.typography.titleLarge.copy(
+                                                    fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp
+                                                ),
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                        }
     
                                         Spacer(modifier = Modifier.height(4.dp))
     
@@ -1416,68 +1451,7 @@ fun ProfileScreen(
                                     }
                                 }
     
-                                // Configuration Card
-                                ElevatedCard(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "СПЕЦИФИКАЦИЯ ИНТЕРФЕЙСА" else "INTERFACE SPECIFICATION",
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "Тема интерфейса:" else "Interface theme:",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = activeThemeKey.uppercase(),
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "Дизайн блоков:" else "Block style:",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = blockStyle.uppercase(),
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "Сетка матрицы:" else "Grid style:",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = boardSkin.uppercase(),
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                    }
-                                }
-    
+
                                 // Stats telemetries
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1594,6 +1568,8 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                 }
             }
         }
@@ -1628,8 +1604,13 @@ fun ProfileScreen(
 
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (!isLoggedIn) {
@@ -1695,7 +1676,13 @@ fun ProfileScreen(
                         currentLang = currentLang,
                         isLocked = isLocked,
                         onAction = {
-                            if (isNext) {
+                            if (isCurrent) {
+                                viewModel.setOnlineTier("BRONZE")
+                                triggerMessage(if (currentLang == Language.RU) "Ранг сброшен до базового" else "Rank reset to BRONZE.")
+                            } else if (isOwned) {
+                                viewModel.setOnlineTier(rank.id)
+                                triggerMessage(if (currentLang == Language.RU) "Ранг успешно выбран" else "Rank updated to ${rank.id}.")
+                            } else if (isNext) {
                                 purchaseRank(rank.id, rank.cost)
                             }
                         }
@@ -1724,7 +1711,14 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = skin.cost,
                         currentLang = currentLang,
-                        onAction = { purchaseSkin(skin.id, skin.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setBoardColorSkin("cyberpunk")
+                                triggerMessage(if (currentLang == Language.RU) "Оформление сброшено" else "Grid theme reset to cyberpunk.")
+                            } else {
+                                purchaseSkin(skin.id, skin.cost)
+                            }
+                        }
                     )
                 }
 
@@ -1750,7 +1744,14 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = cSkin.cost,
                         currentLang = currentLang,
-                        onAction = { purchaseCubeSkin(cSkin.id, cSkin.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setBlockStyle("glass")
+                                triggerMessage(if (currentLang == Language.RU) "Стиль блоков сброшен" else "Cube style reset to glass.")
+                            } else {
+                                purchaseCubeSkin(cSkin.id, cSkin.cost)
+                            }
+                        }
                     )
                 }
 
@@ -1801,7 +1802,14 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = frame.cost,
                         currentLang = currentLang,
-                        onAction = { selectAvatarFrame(frame.id, frame.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setEquippedAvatarFrame("standard")
+                                triggerMessage(if (currentLang == Language.RU) "Рамка аватара сброшена" else "Avatar frame reset to standard.")
+                            } else {
+                                selectAvatarFrame(frame.id, frame.cost)
+                            }
+                        }
                     )
                 }
 
@@ -1827,36 +1835,16 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = title.cost,
                         currentLang = currentLang,
-                        onAction = { selectTitle(title.id, title.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setEquippedTitle("none")
+                                triggerMessage(if (currentLang == Language.RU) "Титул сброшен" else "Title reset to none.")
+                            } else {
+                                selectTitle(title.id, title.cost)
+                            }
+                        }
                     )
                 }
-
-                // 7. SOUNDS
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ЗВУКОВЫЕ ПАКЕТЫ" else "SOUND SYNTHESIZERS",
-                        icon = Icons.Default.VolumeUp,
-                        purchasedCount = purchasedSoundPacks.size,
-                        totalCount = soundPacksList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(soundPacksList) { pack ->
-                    val isEquipped = equippedSoundPack == pack.id
-                    val isOwned = purchasedSoundPacks.contains(pack.id)
-                    StoreItemCard(
-                        icon = Icons.Default.VolumeUp,
-                        category = if (currentLang == Language.RU) "Звук" else "Sound Pack",
-                        title = pack.displayName,
-                        description = "${pack.description} (${pack.sizeStr})",
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = pack.cost,
-                        currentLang = currentLang,
-                        onAction = { selectSoundPack(pack.id, pack.cost) }
-                    )
-                }
-
                 // 8. COLOR THEMES
                 item {
                     StoreSectionHeader(
@@ -1879,33 +1867,14 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = theme.cost,
                         currentLang = currentLang,
-                        onAction = { selectTheme(theme.id, theme.cost) }
-                    )
-                }
-
-                // 9. CONSOLE FONTS
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "КОНСОЛЬНЫЙ ШРИФТ" else "INTERFACE FONTS",
-                        icon = Icons.Default.Edit,
-                        purchasedCount = purchasedFonts.size,
-                        totalCount = fontsList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(fontsList) { font ->
-                    val isEquipped = customFontKey == font.id
-                    val isOwned = purchasedFonts.contains(font.id)
-                    StoreItemCard(
-                        icon = Icons.Default.Edit,
-                        category = if (currentLang == Language.RU) "Шрифт" else "Font Typography",
-                        title = font.displayName,
-                        description = font.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = font.cost,
-                        currentLang = currentLang,
-                        onAction = { selectFont(font.id, font.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setThemeColor("indigo")
+                                triggerMessage(if (currentLang == Language.RU) "Тема сброшена" else "Color theme reset to indigo.")
+                            } else {
+                                selectTheme(theme.id, theme.cost)
+                            }
+                        }
                     )
                 }
 
@@ -1931,10 +1900,57 @@ fun ProfileScreen(
                         isOwned = isOwned,
                         cost = btnStyle.cost,
                         currentLang = currentLang,
-                        onAction = { selectControlButtonStyle(btnStyle.id, btnStyle.cost) }
+                        onAction = {
+                            if (isEquipped) {
+                                viewModel.setControlButtonStyle("classic")
+                                triggerMessage(if (currentLang == Language.RU) "Стиль кнопок сброшен" else "Button style reset to classic.")
+                            } else {
+                                selectControlButtonStyle(btnStyle.id, btnStyle.cost)
+                            }
+                        }
                     )
                 }
                 
+                // 11. CUSTOM LEADERBOARD TAG
+                item {
+                    val isOwned = customTagUnlocked
+                    StoreSectionHeader(
+                        title = if (currentLang == Language.RU) "КАСТОМНЫЙ ТЕГ" else "CUSTOM TAG",
+                        icon = Icons.Default.Shield,
+                        purchasedCount = if (isOwned) 1 else 0,
+                        totalCount = 1,
+                        currentLang = currentLang
+                    )
+                }
+                item {
+                    val isOwned = customTagUnlocked
+                    StoreItemCard(
+                        icon = Icons.Default.Shield,
+                        category = if (currentLang == Language.RU) "Тег" else "Custom Tag",
+                        title = if (currentLang == Language.RU) "Личный Тег" else "Leaderboard Tag",
+                        description = if (currentLang == Language.RU) "Позволяет установить свой тег в глобальной таблице рекордов" else "Unlocks custom tag customization in profile settings",
+                        isActive = isOwned,
+                        isOwned = isOwned,
+                        cost = 200000,
+                        currentLang = currentLang,
+                        onAction = {
+                            if (isOwned) {
+                                triggerMessage(if (currentLang == Language.RU) "Уже приобретено! Настройте в настройках профиля." else "Already purchased! Edit it in profile settings.")
+                            } else {
+                                if (credits >= 200000) {
+                                    viewModel.spendCredits(200000)
+                                    viewModel.setCustomTagUnlocked(true)
+                                    viewModel.triggerAudioFeedback("buy")
+                                    triggerMessage(if (currentLang == Language.RU) "Тег успешно куплен! Установите его в настройках." else "Custom tag purchased successfully! Set it in settings.")
+                                } else {
+                                    viewModel.triggerAudioFeedback("error")
+                                    triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+                                }
+                            }
+                        }
+                    )
+                }
+
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -1984,313 +2000,368 @@ fun ProfileScreen(
         }
     }
 
-    if (showAvatarDialog) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showAvatarDialog = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp)
+        if (showAvatarDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { 
+                showAvatarDialog = false 
+                viewModel.clearUpdateMessages()
+            },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
             ) {
                 Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = if (currentLang == Language.RU) "НАСТРОЙКА АВАТАРА" else "AVATAR CUSTOMIZATION",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    var tempEmoji by remember { mutableStateOf(customAvatarEmoji) }
-                    var tempBgHex by remember { mutableStateOf(customAvatarBgColor) }
-
-                    val defaultPreviewBgColor = MaterialTheme.colorScheme.surfaceVariant
-                    val previewBgColor = remember(tempBgHex, defaultPreviewBgColor) {
-                        try {
-                            Color(android.graphics.Color.parseColor("#$tempBgHex"))
-                        } catch (e: Exception) {
-                            defaultPreviewBgColor
-                        }
-                    }
-
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(112.dp)
-                    ) {
-                        // Glow background for neon, gold, chrono in preview
-                        if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl")) {
-                            Box(
-                                modifier = Modifier
-                                    .size(96.dp)
-                                    .graphicsLayer {
-                                        scaleX = pulseScale
-                                        scaleY = pulseScale
-                                        alpha = 0.45f
-                                    }
-                                    .clip(RoundedCornerShape(50))
-                                    .background(
-                                        brush = avatarFrameBorderBrush
-                                    )
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(previewBgColor)
-                                .border(
-                                    width = avatarFrameThickness,
-                                    brush = avatarFrameBorderBrush,
-                                    shape = RoundedCornerShape(50)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (tempEmoji.length <= 2 && tempEmoji != "👤") {
-                                Text(text = tempEmoji, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
-                            } else {
-                                Text(
-                                    text = playerName.take(1).uppercase(),
-                                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = contentColorFor(previewBgColor),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Character Preset
-                    Text(
-                        text = if (currentLang == Language.RU) "ВЫБЕРИТЕ СИМВОЛ" else "SELECT CHARACTER",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    val presetSymbols = listOf("P", "T", "A", "X", "Y", "Z", "M", "N", "U", "V")
+                    // Top Bar
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        presetSymbols.forEach { sym ->
-                            val isSelected = tempEmoji == sym
+                        IconButton(onClick = { 
+                            showAvatarDialog = false 
+                            viewModel.clearUpdateMessages()
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (currentLang == Language.RU) "НАСТРОЙКИ ПРОФИЛЯ" else "PROFILE SETTINGS",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // 1. Avatar Section
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        if (isSelected) MaterialTheme.colorScheme.primary 
-                                        else MaterialTheme.colorScheme.surfaceVariant
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(112.dp)
+                            ) {
+                                // Rotating Outer Border Ring for extra beauty
+                                if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl", "omega_ti")) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(98.dp)
+                                            .graphicsLayer {
+                                                rotationZ = rotationAngle
+                                            }
+                                            .border(
+                                                width = avatarFrameThickness + 0.5.dp,
+                                                brush = avatarFrameBorderBrush,
+                                                shape = RoundedCornerShape(50)
+                                            )
                                     )
-                                    .clickable { tempEmoji = sym },
-                                contentAlignment = Alignment.Center
+                                }
+
+                                val customAvatarBitmap = remember(playerName, avatarChangeCounter) {
+                                    val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
+                                    if (file.exists() && sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)) {
+                                        try {
+                                            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                                        } catch (e: Exception) {
+                                            null
+                                        }
+                                    } else {
+                                        null
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(90.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .border(
+                                            width = 1.dp,
+                                            color = Color.White.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(50)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (customAvatarBitmap != null) {
+                                        Image(
+                                            bitmap = customAvatarBitmap,
+                                            contentDescription = "Avatar",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Placeholder Avatar",
+                                            modifier = Modifier.size(52.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(0.9f),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { avatarPickerLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                ) {
+                                    Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Аватар" else "Set Avatar",
+                                        fontSize = 12.sp
+                                    )
+                                }
+
+                                Button(
+                                    onClick = { bgPickerLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                ) {
+                                    Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Фон карты" else "Set Card BG",
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            val hasCustomAvatar = remember(playerName, avatarChangeCounter) {
+                                sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)
+                            }
+                            val hasCustomBg = remember(playerName, bgChangeCounter) {
+                                sharedPrefs.getBoolean("has_custom_background_${playerName}", false)
+                            }
+
+                            if (hasCustomAvatar || hasCustomBg) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(0.9f),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    if (hasCustomAvatar) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
+                                                if (file.exists()) file.delete()
+                                                sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", false).apply()
+                                                avatarChangeCounter++
+                                                viewModel.triggerAudioFeedback("click")
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(if (currentLang == Language.RU) "Сбросить аватар" else "Clear Avatar", fontSize = 10.sp)
+                                        }
+                                    }
+                                    if (hasCustomBg) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                val file = File(context.filesDir, "custom_background_${playerName}.jpg")
+                                                if (file.exists()) file.delete()
+                                                sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", false).apply()
+                                                bgChangeCounter++
+                                                viewModel.triggerAudioFeedback("click")
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(if (currentLang == Language.RU) "Сбросить фон" else "Clear BG", fontSize = 10.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+
+                        // 2. Nickname Section
+                        Column(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "СМЕНИТЬ НИКНЕЙМ" else "CHANGE NICKNAME",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            var editNickNameInput by remember { mutableStateOf(playerName) }
+
+                            OutlinedTextField(
+                                value = editNickNameInput,
+                                onValueChange = { editNickNameInput = it },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                label = { Text(if (currentLang == Language.RU) "Новый никнейм" else "New Nickname") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            nicknameUpdateError?.let { err ->
+                                Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            }
+                            nicknameUpdateSuccess?.let { msg ->
+                                Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.updateNickname(editNickNameInput)
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text(if (currentLang == Language.RU) "Сохранить ник" else "Save Nickname")
+                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+
+                        // 3. Email Section
+                        Column(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val currentUser = FirebaseAuth.getInstance().currentUser
+                            val currentEmail = currentUser?.email ?: ""
+                            
+                            Text(
+                                text = if (currentEmail.isEmpty()) {
+                                    if (currentLang == Language.RU) "ПРИВЯЗАТЬ ПОЧТУ" else "BIND EMAIL"
+                                } else {
+                                    if (currentLang == Language.RU) "ИЗМЕНИТЬ ПОЧТУ" else "CHANGE EMAIL"
+                                },
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            var editEmailInput by remember { mutableStateOf(currentEmail) }
+
+                            OutlinedTextField(
+                                value = editEmailInput,
+                                onValueChange = { editEmailInput = it },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                                label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            emailUpdateError?.let { err ->
+                                Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            }
+                            emailUpdateSuccess?.let { msg ->
+                                Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.updateEmail(editEmailInput)
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.align(Alignment.End)
                             ) {
                                 Text(
-                                    text = sym,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    if (currentEmail.isEmpty()) {
+                                        if (currentLang == Language.RU) "Привязать" else "Bind Email"
+                                    } else {
+                                        if (currentLang == Language.RU) "Обновить" else "Update Email"
+                                    }
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = if (currentLang == Language.RU) "ИЛИ ВВЕДИТЕ СВОЙ СИМВОЛ" else "OR ENTER CUSTOM CHARACTER",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
-                        value = tempEmoji,
-                        onValueChange = { input ->
-                            if (input.length <= 2) {
-                                tempEmoji = input
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        // 5. Custom Leaderboard Tag Section
+                        Column(
+                            modifier = Modifier.fillMaxWidth(0.9f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ" else "LEADERBOARD CUSTOM TAG",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
 
-                    // Choose BG color
-                    Text(
-                        text = if (currentLang == Language.RU) "ВЫБЕРИТЕ ЦВЕТ ФОНА" else "SELECT BACKGROUND COLOR",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                            val customTagUnlocked by viewModel.customTagUnlocked.collectAsStateWithLifecycle()
+                            val customTagVal by viewModel.customTag.collectAsStateWithLifecycle()
+                            
+                            var editTagInput by remember(customTagVal) { mutableStateOf(customTagVal) }
 
-                    val presetColors = listOf(
-                        "3A3C44" to Brush.linearGradient(listOf(Color(0xFF5A5C64), Color(0xFF1E1F22))),
-                        "00FFCC" to Brush.linearGradient(listOf(Color(0xFF00FFCC), Color(0xFF008899))),
-                        "6366F1" to Brush.linearGradient(listOf(Color(0xFF818CF8), Color(0xFF3730A3))),
-                        "13141F" to Brush.linearGradient(listOf(Color(0xFF2E303F), Color(0xFF0A0B10))),
-                        "F43F5E" to Brush.linearGradient(listOf(Color(0xFFFB7185), Color(0xFF9F1239))),
-                        "10B981" to Brush.linearGradient(listOf(Color(0xFF34D399), Color(0xFF065F46))),
-                        "FFB300" to Brush.linearGradient(listOf(Color(0xFFFBBF24), Color(0xFF92400E))),
-                        "8B5CF6" to Brush.linearGradient(listOf(Color(0xFFA78BFA), Color(0xFF5B21B6))),
-                        "EC4899" to Brush.linearGradient(listOf(Color(0xFFF472B6), Color(0xFF9D174D)))
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        presetColors.forEach { colorPair ->
-                            val isSelected = tempBgHex == colorPair.first
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(colorPair.second)
-                                    .border(
-                                        width = if (isSelected) 3.dp else 1.dp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.White.copy(alpha = 0.15f),
-                                        shape = RoundedCornerShape(18.dp)
+                            if (!customTagUnlocked) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
+                                        .padding(12.dp)
+                                ) {
+                                    Text(
+                                        text = if (currentLang == Language.RU) 
+                                            "🔒 Функция заблокирована. Купите Кастомный тег в магазине за 200 000 🪙."
+                                        else 
+                                            "🔒 Feature locked. Purchase Custom Tag in the store for 200,000 🪙.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.Bold
                                     )
-                                    .clickable { tempBgHex = colorPair.first }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = if (currentLang == Language.RU) "СВОИ ИЗОБРАЖЕНИЯ" else "CUSTOM PHOTO & BACKGROUND",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { avatarPickerLauncher.launch("image/*") },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (currentLang == Language.RU) "Аватар" else "Set Avatar",
-                                fontSize = 12.sp
-                            )
-                        }
-
-                        Button(
-                            onClick = { bgPickerLauncher.launch("image/*") },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (currentLang == Language.RU) "Фон карты" else "Set Card BG",
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-
-                    // Reset buttons if they exist
-                    val hasCustomAvatar = remember(playerName, avatarChangeCounter) {
-                        sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)
-                    }
-                    val hasCustomBg = remember(playerName, bgChangeCounter) {
-                        sharedPrefs.getBoolean("has_custom_background_${playerName}", false)
-                    }
-
-                    if (hasCustomAvatar || hasCustomBg) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (hasCustomAvatar) {
-                                OutlinedButton(
-                                    onClick = {
-                                        val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
-                                        if (file.exists()) file.delete()
-                                        sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", false).apply()
-                                        avatarChangeCounter++
-                                        viewModel.triggerAudioFeedback("click")
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(if (currentLang == Language.RU) "Сбросить аватар" else "Clear Avatar", fontSize = 10.sp)
                                 }
-                            }
-                            if (hasCustomBg) {
-                                OutlinedButton(
+                            } else {
+                                OutlinedTextField(
+                                    value = editTagInput,
+                                    onValueChange = { if (it.length <= 6) editTagInput = it },
+                                    leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
+                                    label = { Text(if (currentLang == Language.RU) "Кастомный тег (макс. 6 симв.)" else "Custom Tag (max 6 chars)") },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                Button(
                                     onClick = {
-                                        val file = File(context.filesDir, "custom_background_${playerName}.jpg")
-                                        if (file.exists()) file.delete()
-                                        sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", false).apply()
-                                        bgChangeCounter++
-                                        viewModel.triggerAudioFeedback("click")
+                                        viewModel.setCustomTag(editTagInput)
+                                        viewModel.triggerAudioFeedback("success")
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.align(Alignment.End)
                                 ) {
-                                    Text(if (currentLang == Language.RU) "Сбросить фон" else "Clear BG", fontSize = 10.sp)
+                                    Text(if (currentLang == Language.RU) "Сохранить тег" else "Save Tag")
                                 }
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showAvatarDialog = false },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL")
-                        }
-
-                        Button(
-                            onClick = {
-                                if (tempEmoji.isNotBlank()) {
-                                    viewModel.setCustomAvatarEmoji(tempEmoji)
-                                }
-                                viewModel.setCustomAvatarBgColor(tempBgHex)
-                                showAvatarDialog = false
-                                viewModel.triggerAudioFeedback("success")
-                                triggerMessage(if (currentLang == Language.RU) "Аватар изменен" else "Avatar updated.")
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(if (currentLang == Language.RU) "ПРИМЕНИТЬ" else "APPLY")
-                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }
                 }
             }
@@ -2489,44 +2560,45 @@ private fun StoreItemCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                val buttonEnabled = when {
-                    isActive -> false
-                    isOwned -> !category.equals("Rank", ignoreCase = true) && !category.equals("Ранг", ignoreCase = true)
-                    isLocked -> false
-                    else -> true
-                }
-                Button(
-                    onClick = onAction,
-                    enabled = buttonEnabled,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isActive) MaterialTheme.colorScheme.surfaceVariant
-                                         else if (isOwned) MaterialTheme.colorScheme.secondaryContainer
-                                         else if (isLocked) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                         else MaterialTheme.colorScheme.primary,
-                        contentColor = if (isActive) MaterialTheme.colorScheme.onSurfaceVariant
-                                       else if (isOwned) MaterialTheme.colorScheme.onSecondaryContainer
-                                       else if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                       else MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = MaterialTheme.shapes.small,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = if (isActive) {
-                            if (currentLang == Language.RU) "АКТИВЕН" else "ACTIVE"
-                        } else if (isOwned) {
-                            if (category.equals("Rank", ignoreCase = true) || category.equals("Ранг", ignoreCase = true)) {
+                val isRank = category.equals("Rank", ignoreCase = true) || category.equals("Ранг", ignoreCase = true)
+                if (!(isRank && isOwned)) {
+                    val buttonEnabled = when {
+                        isRank -> !isOwned
+                        else -> !isLocked
+                    }
+                    Button(
+                        onClick = onAction,
+                        enabled = buttonEnabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isRank && isOwned) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                             else if (isActive) MaterialTheme.colorScheme.primary
+                                             else if (isOwned) MaterialTheme.colorScheme.secondaryContainer
+                                             else if (isLocked) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                             else MaterialTheme.colorScheme.primary,
+                            contentColor = if (isRank && isOwned) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                           else if (isActive) MaterialTheme.colorScheme.onPrimary
+                                           else if (isOwned) MaterialTheme.colorScheme.onSecondaryContainer
+                                           else if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                           else MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = if (isRank && isOwned) {
                                 if (currentLang == Language.RU) "РАЗБЛОКИРОВАН" else "UNLOCKED"
+                            } else if (isActive) {
+                                if (currentLang == Language.RU) "ВКЛ" else "ON"
+                            } else if (isOwned) {
+                                if (currentLang == Language.RU) "ВЫКЛ" else "OFF"
+                            } else if (isLocked) {
+                                if (currentLang == Language.RU) "БЛОК" else "LOCKED"
                             } else {
-                                if (currentLang == Language.RU) "НАДЕТЬ" else "EQUIP"
-                            }
-                        } else if (isLocked) {
-                            if (currentLang == Language.RU) "БЛОК" else "LOCKED"
-                        } else {
-                            if (currentLang == Language.RU) "$cost K" else "$cost K"
-                        },
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                    )
+                                if (currentLang == Language.RU) "$cost 🪙" else "$cost 🪙"
+                            },
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
             }
         }
@@ -2546,8 +2618,13 @@ private fun AchievementsTabContent(
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 16.dp,
+            end = 16.dp,
+            bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -2667,7 +2744,7 @@ private fun AchievementsTabContent(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "+${ach.pointsReward} K",
+                                    text = "+${ach.pointsReward} 🪙",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )

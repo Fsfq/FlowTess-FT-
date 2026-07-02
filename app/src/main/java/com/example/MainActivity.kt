@@ -12,17 +12,37 @@ import com.example.ui.TetrisApp
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
+  private lateinit var mainViewModel: MainViewModel
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+      window.isNavigationBarContrastEnforced = false
+    }
+    val factory = ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    mainViewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
+
     setContent {
-      val factory = ViewModelProvider.AndroidViewModelFactory.getInstance(application)
-      val mainViewModel: MainViewModel = viewModel(factory = factory)
       val themeName by mainViewModel.themeColor.collectAsStateWithLifecycle()
       val fontKey by mainViewModel.customFontKey.collectAsStateWithLifecycle()
       MyApplicationTheme(themeName = themeName, fontKey = fontKey) {
         TetrisApp(mainViewModel)
       }
+    }
+  }
+
+  override fun onStart() {
+    super.onStart()
+    if (::mainViewModel.isInitialized) {
+      mainViewModel.onAppResume()
+    }
+  }
+
+  override fun onStop() {
+    super.onStop()
+    if (::mainViewModel.isInitialized) {
+      mainViewModel.onAppPause()
     }
   }
 }

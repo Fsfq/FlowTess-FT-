@@ -22,16 +22,7 @@ fun MyApplicationTheme(
   fontKey: String = "default",
   content: @Composable () -> Unit,
 ) {
-  val fontFamily = when (fontKey) {
-    "monospace" -> FontFamily.Monospace
-    "serif" -> FontFamily.Serif
-    "sans-serif" -> FontFamily.SansSerif
-    "cursive" -> FontFamily.Cursive
-    "condensed" -> FontFamily(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL))
-    "black" -> FontFamily(android.graphics.Typeface.create("sans-serif-black", android.graphics.Typeface.NORMAL))
-    "thin" -> FontFamily(android.graphics.Typeface.create("sans-serif-thin", android.graphics.Typeface.NORMAL))
-    else -> FontFamily.Default
-  }
+  val fontFamily = FontFamily.Default
 
   val selectedColorScheme = when (themeName) {
     "red" -> darkColorScheme(

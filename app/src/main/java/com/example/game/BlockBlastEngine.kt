@@ -74,7 +74,7 @@ class BlockBlastEngine {
     }
 
     private fun generateTrulyRandomFigure(): BlockBlastFigure {
-        val size = (1..5).random() // polyomino size (1 to 5 blocks)
+        val size = if (Random.nextDouble() < 0.25) 6 else (1..5).random()
         val blocks = mutableListOf(BlockBlastPosition(0, 0))
         
         val directions = listOf(
