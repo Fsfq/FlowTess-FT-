@@ -117,11 +117,10 @@ fun BlockBlastScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AdaptiveText(
-                            text = if (currentLang == Language.RU) "BLOCK BLAST" else "NEON BLOCK BLAST MAX",
+                            text = if (currentLang == Language.RU) "ZETA АРЕНА" else "NEON ZETA MAX",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 2.sp,
@@ -207,24 +206,39 @@ fun BlockBlastScreen(
                             )
                             
                             // Interactive active Combo tag wrapper
-                            AnimatedVisibility(
-                                visible = state.combo > 0,
-                                enter = scaleIn() + fadeIn(),
-                                exit = scaleOut() + fadeOut()
-                              ) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(top = 4.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFFF165D))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                            Box(
+                                modifier = Modifier.height(30.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = state.combo > 0,
+                                    enter = scaleIn() + fadeIn(),
+                                    exit = scaleOut() + fadeOut()
                                 ) {
-                                    AdaptiveText(
-                                        text = "BLAST COMBO x${state.combo}",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                                    colors = listOf(Color(0xFFFF165D), Color(0xFFFF9A00))
+                                                )
+                                            )
+                                            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("🔥", fontSize = 10.sp)
+                                            AdaptiveText(
+                                                text = "ZETA COMBO x${state.combo}",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -628,66 +642,51 @@ fun BlockBlastScreen(
  
                 // Game Over Screen Modal panel 
                 if (state.isGameOver) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                    val rewardedCC = (state.score / 12).coerceAtLeast(15)
+                    AlertDialog(
+                        onDismissRequest = {},
+                        title = {
                             Text(
                                 text = if (currentLang == Language.RU) "ИГРА ОКОНЧЕНА" else "GAME OVER",
-                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                color = MaterialTheme.colorScheme.error,
                                 letterSpacing = 1.5.sp
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            val rewardedCC = (state.score / 12).coerceAtLeast(15)
+                        },
+                        text = {
                             Text(
                                 text = if (currentLang == Language.RU) {
-                                    "Ваш финальный счёт: ${state.score}. Награда: +$rewardedCC CC"
+                                    "Ваш финальный счёт: ${state.score}\nНаграда: +$rewardedCC 🪙"
                                 } else {
-                                    "Your final score: ${state.score}. Reward earned: +$rewardedCC CC"
+                                    "Your final score: ${state.score}\nReward earned: +$rewardedCC 🪙"
                                 },
-                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 12.dp)
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
+                        },
+                        confirmButton = {
                             Button(
-                                onClick = { 
+                                onClick = {
                                     selectedFigureIdx = null
-                                    viewModel.startBlockBlast() 
+                                    viewModel.startBlockBlast()
                                     viewModel.triggerAudioFeedback("start")
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
+                                    containerColor = MaterialTheme.colorScheme.primary
                                 ),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.height(44.dp)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text(
                                     text = if (currentLang == Language.RU) "ИГРАТЬ СНОВА" else "PLAY AGAIN",
-                                    fontWeight = FontWeight.Black,
-                                    style = MaterialTheme.typography.labelLarge
+                                    fontWeight = FontWeight.Black
                                 )
                             }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = onBack) {
+                                Text(text = if (currentLang == Language.RU) "В МЕНЮ" else "TO MENU")
+                            }
                         }
-                    }
+                    )
                 }
             }
         }

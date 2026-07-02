@@ -21,6 +21,12 @@ service cloud.firestore {
       allow write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
     }
 
+    // High Scores Collection by Mode
+    match /high_scores_by_mode/{modeId}/scores/{userId} {
+      allow read: if true;
+      allow write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+    }
+
     // Player Presence
     match /presence/{userId} {
       allow read: if true;

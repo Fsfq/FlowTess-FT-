@@ -50,12 +50,13 @@ enum class GameMode(val code: String, val displayNameEn: String, val displayName
     EXTENDED("extended", "Extended Shapes", "Расширенный"),
     FAST_RUN("fast_run", "Hyper Blast (Lvl 10)", "Гипер-Режим (Ур 10)"),
     REVERSE_CONTROLS("reverse", "Chaos Controls", "Хаос-Управление"),
-    BLOCK_BLAST("block_blast", "Block Blast Arena", "Блок Бласт Арена"),
+    BLOCK_BLAST("block_blast", "ZETA Arena", "ZETA Арена"),
     ZEN_FLOW("zen", "Zen Cosmic Flow", "Дзен Космо-Поток"),
     TIME_ATTACK("time_attack", "Time Attack Protocol", "Протокол Тайм-Атак"),
     PULSE_EXTREME("pulse_extreme", "Vortex Pulse Mode", "Импульсный Вихрь"),
     MIRROR_DIMENSION("mirror", "Mirror Dimension", "Зеркальный Мир"),
-    PENTARY_CHAOS("penta", "Pentary Chaos", "Пента-Хаос")
+    PENTARY_CHAOS("penta", "Pentary Chaos", "Пента-Хаос"),
+    RELAX("relax", "Relax Sandbox", "Релакс-Песочница")
 }
 
 data class GameState(
@@ -84,6 +85,10 @@ class GameEngine {
     var fastDropLockSpeed: Boolean = false
     
     private var bag = mutableListOf<Tetromino>()
+    
+    // Relax sandbox properties
+    var relaxImmortal: Boolean = true
+    var relaxBlockSet: String = "ideal" // only_i, ideal, standard, all
     
     init {
         startGame(GameMode.CLASSIC)
@@ -148,6 +153,25 @@ class GameEngine {
     }
 
     private fun nextPiece(extendedMode: Boolean): Tetromino {
+        if (_gameState.value.gameMode == GameMode.RELAX) {
+            val relaxShapes = when (relaxBlockSet) {
+                "only_i" -> listOf(STANDARD_SHAPES[0])
+                "ideal" -> listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[5])
+                "standard" -> STANDARD_SHAPES
+                "all" -> STANDARD_SHAPES + EXTENDED_SHAPES
+                else -> listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[5])
+            }
+            if (bag.isEmpty()) {
+                bag.addAll(relaxShapes)
+                bag.shuffle()
+            }
+            if (bag.isNotEmpty() && !relaxShapes.contains(bag.firstOrNull())) {
+                bag.clear()
+                bag.addAll(relaxShapes)
+                bag.shuffle()
+            }
+            return if (bag.isNotEmpty()) bag.removeAt(0) else STANDARD_SHAPES[0]
+        }
         if (bag.isEmpty()) {
             bag.addAll(STANDARD_SHAPES)
             if (extendedMode) bag.addAll(EXTENDED_SHAPES)
@@ -310,7 +334,8 @@ class GameEngine {
         }
 
         val newLines = state.lines + cleared
-        val newLevel = 1 + newLines / 10
+        val startingLevel = maxOf(1, state.level - state.lines / 10)
+        val newLevel = startingLevel + newLines / 10
         val basePoints = when (cleared) {
             1 -> if (lineClearChallenge) 0 else 100
             2 -> 300
@@ -323,9 +348,10 @@ class GameEngine {
 
         var isOver = false
         val nextP = state.nextPieces.firstOrNull() ?: nextPiece(state.isExtendedMode)
-        if (!isValidMove(Position(4, 0), nextP, newGrid)) {
-            if (state.gameMode == GameMode.ZEN_FLOW) {
-                // Zen flow never dies! We clear bottom rows when screen fills up
+        val blocksAtTop = newGrid[0].any { it != 0 } || newGrid[1].any { it != 0 } || newGrid[2].any { it != 0 }
+        if (!isValidMove(Position(4, 0), nextP, newGrid) || blocksAtTop) {
+            if (state.gameMode == GameMode.ZEN_FLOW || (state.gameMode == GameMode.RELAX && relaxImmortal)) {
+                // Zen flow and Relax Immortal never die! We clear board when it fills up
                 newGrid.clear()
                 for (i in 0 until 22) {
                     newGrid.add(0, IntArray(10))
@@ -357,6 +383,11 @@ class GameEngine {
                 tetrisesCleared = it.tetrisesCleared + (if (isTetris) 1 else 0)
             )
         }
+    }
+
+    fun clearBoard() {
+        val currentGrid = List(22) { IntArray(10) }
+        _gameState.update { it.copy(grid = currentGrid) }
     }
 
     fun decrementTime(sec: Int) {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.TextStyle
@@ -90,10 +91,109 @@ fun TetrisApp(viewModel: MainViewModel) {
 
     val showBottomBar = currentRoute in listOf("menu", "profile", "settings", "profile_achievements", "cases")
 
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
+    val navHostContent = @Composable {
+        NavHost(
+            navController = navController,
+            startDestination = "menu",
+            enterTransition = { fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)) },
+            exitTransition = { fadeOut(animationSpec = tween(180)) + scaleOut(targetScale = 0.92f, animationSpec = tween(180)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)) },
+            popExitTransition = { fadeOut(animationSpec = tween(180)) + scaleOut(targetScale = 0.92f, animationSpec = tween(180)) }
+        ) {
+            composable("menu") {
+                MainMenuScreen(
+                    viewModel = viewModel,
+                    onResumeGame = {
+                        if (viewModel.loadSavedGame()) {
+                            navController.navigate("game")
+                        }
+                    },
+                    onLeaderboard = { navController.navigate("leaderboard") },
+                    onProfile = { navController.navigate("profile") },
+                    onModeSelection = { navController.navigate("mode_selection") },
+                    onPlayMode = { mode ->
+                        if (mode == com.example.game.GameMode.BLOCK_BLAST) {
+                            viewModel.startBlockBlast()
+                            navController.navigate("block_blast")
+                        } else {
+                            viewModel.startGame(mode)
+                            navController.navigate("game")
+                        }
+                    },
+                    onMultiplayer = {
+                        navController.navigate("lobby")
+                    }
+                )
+            }
+            composable("game") {
+                GameScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("leaderboard") {
+                LeaderboardScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("settings") {
+                SettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onCustomizeControls = { navController.navigate("custom_controls") }
+                )
+            }
+            composable("custom_controls") {
+                CustomControlsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("block_blast") {
+                BlockBlastScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("cases") {
+                CasesScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            }
+            composable("mode_selection") {
+                ModeSelectionScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onPlayMode = { mode ->
+                        if (mode == com.example.game.GameMode.BLOCK_BLAST) {
+                            viewModel.startBlockBlast()
+                            navController.navigate("block_blast")
+                        } else {
+                            viewModel.startGame(mode)
+                            navController.navigate("game")
+                        }
+                    }
+                )
+            }
+            composable("profile_achievements") {
+                ProfileScreen(viewModel = viewModel, initialTab = 2, onBack = { navController.popBackStack() })
+            }
+            composable("profile") {
+                ProfileScreen(viewModel = viewModel, initialTab = 0, onBack = { navController.popBackStack() })
+            }
+            composable("lobby") {
+                LobbyScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToGame = { navController.navigate("multiplayer_game") }
+                )
+            }
+            composable("multiplayer_game") {
+                MultiplayerGameScreen(
+                    viewModel = viewModel,
+                    onBackToLobby = {
+                        navController.navigate("lobby") {
+                            popUpTo("lobby") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isWideScreen = maxWidth >= 600.dp
+
+        if (isWideScreen && showBottomBar) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                NavigationRail(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ) {
                     val items = listOf(
@@ -102,9 +202,12 @@ fun TetrisApp(viewModel: MainViewModel) {
                         Triple("cases", if (currentLang == Language.RU) "Кейсы" else "Cases", Icons.Default.CardGiftcard),
                         Triple("settings", if (currentLang == Language.RU) "Настройки" else "Settings", Icons.Default.Settings)
                     )
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    
                     items.forEach { (route, label, icon) ->
                         val isSelected = currentRoute == route || (route == "profile" && currentRoute == "profile_achievements")
-                        NavigationBarItem(
+                        NavigationRailItem(
                             icon = { Icon(imageVector = icon, contentDescription = label) },
                             label = { Text(text = label, fontWeight = FontWeight.Bold) },
                             selected = isSelected,
@@ -121,99 +224,56 @@ fun TetrisApp(viewModel: MainViewModel) {
                             }
                         )
                     }
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    navHostContent()
                 }
             }
-        }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            NavHost(
-                navController = navController,
-                startDestination = "menu",
-                enterTransition = { fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)) },
-                exitTransition = { fadeOut(animationSpec = tween(180)) + scaleOut(targetScale = 0.92f, animationSpec = tween(180)) },
-                popEnterTransition = { fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)) },
-                popExitTransition = { fadeOut(animationSpec = tween(180)) + scaleOut(targetScale = 0.92f, animationSpec = tween(180)) }
-            ) {
-                composable("menu") {
-                    MainMenuScreen(
-                        viewModel = viewModel,
-                        onResumeGame = {
-                            if (viewModel.loadSavedGame()) {
-                                navController.navigate("game")
-                            }
-                        },
-                        onLeaderboard = { navController.navigate("leaderboard") },
-                        onProfile = { navController.navigate("profile") },
-                        onModeSelection = { navController.navigate("mode_selection") },
-                        onPlayMode = { mode ->
-                            if (mode == com.example.game.GameMode.BLOCK_BLAST) {
-                                viewModel.startBlockBlast()
-                                navController.navigate("block_blast")
-                            } else {
-                                viewModel.startGame(mode)
-                                navController.navigate("game")
-                            }
-                        },
-                        onMultiplayer = {
-                            navController.navigate("lobby")
-                        }
-                    )
-                }
-                composable("game") {
-                    GameScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
-                }
-                composable("leaderboard") {
-                    LeaderboardScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
-                }
-                composable("settings") {
-                    SettingsScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
-                composable("block_blast") {
-                    BlockBlastScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
-                }
-                composable("cases") {
-                    CasesScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
-                }
-                composable("mode_selection") {
-                    ModeSelectionScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() },
-                        onPlayMode = { mode ->
-                            if (mode == com.example.game.GameMode.BLOCK_BLAST) {
-                                viewModel.startBlockBlast()
-                                navController.navigate("block_blast")
-                            } else {
-                                viewModel.startGame(mode)
-                                navController.navigate("game")
+        } else {
+            Scaffold(
+                bottomBar = {
+                    if (showBottomBar) {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            val items = listOf(
+                                Triple("menu", if (currentLang == Language.RU) "Меню" else "Menu", Icons.Default.Home),
+                                Triple("profile", if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
+                                Triple("cases", if (currentLang == Language.RU) "Кейсы" else "Cases", Icons.Default.CardGiftcard),
+                                Triple("settings", if (currentLang == Language.RU) "Настройки" else "Settings", Icons.Default.Settings)
+                            )
+                            items.forEach { (route, label, icon) ->
+                                val isSelected = currentRoute == route || (route == "profile" && currentRoute == "profile_achievements")
+                                NavigationBarItem(
+                                    icon = { Icon(imageVector = icon, contentDescription = label) },
+                                    label = { Text(text = label, fontWeight = FontWeight.Bold) },
+                                    selected = isSelected,
+                                    onClick = {
+                                        if (currentRoute != route) {
+                                            navController.navigate(route) {
+                                                popUpTo("menu") {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    }
+                                )
                             }
                         }
-                    )
+                    }
                 }
-                composable("profile_achievements") {
-                    ProfileScreen(viewModel = viewModel, initialTab = 2, onBack = { navController.popBackStack() })
-                }
-                composable("profile") {
-                    ProfileScreen(viewModel = viewModel, initialTab = 0, onBack = { navController.popBackStack() })
-                }
-                composable("lobby") {
-                    LobbyScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() },
-                        onNavigateToGame = { navController.navigate("multiplayer_game") }
-                    )
-                }
-                composable("multiplayer_game") {
-                    MultiplayerGameScreen(
-                        viewModel = viewModel,
-                        onBackToLobby = {
-                            navController.navigate("lobby") {
-                                popUpTo("lobby") { inclusive = true }
-                            }
-                        }
-                    )
+            ) { paddingValues ->
+                Box(modifier = Modifier.padding(paddingValues).consumeWindowInsets(paddingValues)) {
+                    navHostContent()
                 }
             }
         }
@@ -238,6 +298,7 @@ fun MainMenuScreen(
     val allAccounts by viewModel.allAccounts.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var showAdminPanelDialog by remember { mutableStateOf(false) }
+    var showAuthGuardDialog by remember { mutableStateOf(false) }
 
 
     val themeColor = MaterialTheme.colorScheme.primary
@@ -246,10 +307,12 @@ fun MainMenuScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val isWideScreen = maxWidth >= 600.dp
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
                     Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.background,
@@ -259,6 +322,47 @@ fun MainMenuScreen(
                     )
                 )
         ) {
+            if (showAuthGuardDialog) {
+                AlertDialog(
+                    onDismissRequest = { showAuthGuardDialog = false },
+                    icon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    title = {
+                        Text(
+                            text = if (currentLang == Language.RU) "Требуется авторизация" else "Authentication Required",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = if (currentLang == Language.RU) 
+                                "Для игры в сетевом режиме необходимо зарегистрироваться или войти в свой аккаунт. Хотите перейти в профиль?" 
+                                else "To play online multiplayer, you need to sign in or create an account. Would you like to go to your profile?"
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showAuthGuardDialog = false
+                                viewModel.triggerAudioFeedback("click")
+                                onProfile()
+                            }
+                        ) {
+                            Text(if (currentLang == Language.RU) "ВХОД / РЕГИСТРАЦИЯ" else "LOGIN / REGISTER")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { 
+                                showAuthGuardDialog = false 
+                                viewModel.triggerAudioFeedback("click")
+                            }
+                        ) {
+                            Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL")
+                        }
+                    }
+                )
+            }
+
             if (showAdminPanelDialog) {
                 var editUsername by remember { mutableStateOf("") }
                 var editCredits by remember { mutableStateOf("") }
@@ -276,7 +380,10 @@ fun MainMenuScreen(
                 
                 Dialog(
                     onDismissRequest = { showAdminPanelDialog = false },
-                    properties = DialogProperties(usePlatformDefaultWidth = false)
+                    properties = DialogProperties(
+                        usePlatformDefaultWidth = false,
+                        decorFitsSystemWindows = false
+                    )
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -308,6 +415,8 @@ fun MainMenuScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(paddingValues)
+                                    .consumeWindowInsets(paddingValues)
+                                    .imePadding()
                             ) {
                                 TabRow(
                                     selectedTabIndex = selectedAdminTab,
@@ -546,50 +655,154 @@ fun MainMenuScreen(
 
                                     // ──────── ACCOUNT STATE EDITOR ────────
                                     Card(
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(24.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(16.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            modifier = Modifier.padding(20.dp),
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "РЕДАКТОР ПРОФИЛЯ" else "ACCOUNT STATE EDITOR",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "РЕДАКТОР ПРОФИЛЯ" else "ACCOUNT STATE EDITOR",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
                                             
                                             OutlinedTextField(
                                                 value = editUsername,
                                                 onValueChange = { editUsername = it },
                                                 label = { Text(if (currentLang == Language.RU) "Имя пользователя" else "Target Username") },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(12.dp)
                                             )
                                             
-                                            OutlinedTextField(
-                                                value = editCredits,
-                                                onValueChange = { editCredits = it },
-                                                label = { Text(if (currentLang == Language.RU) "Количество кредитов" else "Credits amount") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true
-                                            )
+                                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                OutlinedTextField(
+                                                    value = editCredits,
+                                                    onValueChange = { editCredits = it },
+                                                    label = { Text(if (currentLang == Language.RU) "Количество кредитов" else "Credits amount") },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    singleLine = true,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    val btnShape = RoundedCornerShape(8.dp)
+                                                    val padVals = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            val curr = editCredits.toIntOrNull() ?: 0
+                                                            editCredits = (curr + 1000).coerceAtMost(99999).toString()
+                                                            viewModel.triggerAudioFeedback("click")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("+1K 🪙", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            val curr = editCredits.toIntOrNull() ?: 0
+                                                            editCredits = (curr + 5000).coerceAtMost(99999).toString()
+                                                            viewModel.triggerAudioFeedback("click")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("+5K 🪙", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            editCredits = "99999"
+                                                            viewModel.triggerAudioFeedback("success")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("MAX", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                }
+                                            }
                                             
                                             OutlinedTextField(
                                                 value = editRank,
                                                 onValueChange = { editRank = it },
                                                 label = { Text(if (currentLang == Language.RU) "Ранг (например: COSMIC LEGEND)" else "Rank (e.g. COSMIC LEGEND)") },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(12.dp)
                                             )
 
-                                            OutlinedTextField(
-                                                value = editBonusXp,
-                                                onValueChange = { editBonusXp = it },
-                                                label = { Text(if (currentLang == Language.RU) "Бонус опыт (XP)" else "Bonus Experience (XP)") },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                singleLine = true
-                                            )
+                                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                OutlinedTextField(
+                                                    value = editBonusXp,
+                                                    onValueChange = { editBonusXp = it },
+                                                    label = { Text(if (currentLang == Language.RU) "Бонус опыт (XP)" else "Bonus Experience (XP)") },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    singleLine = true,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    val btnShape = RoundedCornerShape(8.dp)
+                                                    val padVals = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            val curr = editBonusXp.toIntOrNull() ?: 0
+                                                            editBonusXp = (curr + 500).coerceAtMost(50000).toString()
+                                                            viewModel.triggerAudioFeedback("click")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("+500 XP", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            val curr = editBonusXp.toIntOrNull() ?: 0
+                                                            editBonusXp = (curr + 2000).coerceAtMost(50000).toString()
+                                                            viewModel.triggerAudioFeedback("click")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("+2K XP", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                    FilledTonalButton(
+                                                        onClick = {
+                                                            editBonusXp = "50000"
+                                                            viewModel.triggerAudioFeedback("success")
+                                                        },
+                                                        shape = btnShape,
+                                                        contentPadding = padVals,
+                                                        modifier = Modifier.weight(1f).height(32.dp)
+                                                    ) {
+                                                        Text("MAX", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                }
+                                            }
 
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
@@ -610,7 +823,7 @@ fun MainMenuScreen(
                                             // Action Buttons Grid
                                             Column(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                verticalArrangement = Arrangement.spacedBy(10.dp)
                                             ) {
                                                 Button(
                                                     onClick = {
@@ -634,7 +847,8 @@ fun MainMenuScreen(
                                                             viewModel.triggerAudioFeedback("error")
                                                         }
                                                     },
-                                                    modifier = Modifier.fillMaxWidth()
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(14.dp)
                                                 ) {
                                                     Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
@@ -663,7 +877,8 @@ fun MainMenuScreen(
                                                             }
                                                         },
                                                         modifier = Modifier.weight(1f),
-                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                                                        shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Icon(imageVector = Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(18.dp))
                                                         Spacer(modifier = Modifier.width(4.dp))
@@ -688,7 +903,8 @@ fun MainMenuScreen(
                                                             }
                                                         },
                                                         modifier = Modifier.weight(1f),
-                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                                        shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                                                         Spacer(modifier = Modifier.width(4.dp))
@@ -704,10 +920,11 @@ fun MainMenuScreen(
                                         Card(
                                             modifier = Modifier.fillMaxWidth(),
                                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)),
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                            shape = RoundedCornerShape(24.dp)
                                         ) {
                                             Column(
-                                                modifier = Modifier.padding(16.dp),
+                                                modifier = Modifier.padding(20.dp),
                                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
                                                 Text(
@@ -723,7 +940,8 @@ fun MainMenuScreen(
                                                         viewModel.triggerAudioFeedback("success")
                                                     },
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                                                    shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
@@ -736,7 +954,8 @@ fun MainMenuScreen(
                                                         viewModel.triggerAudioFeedback("gameover")
                                                     },
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                                    shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
@@ -749,7 +968,8 @@ fun MainMenuScreen(
                                                         viewModel.triggerAudioFeedback("gameover")
                                                     },
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                                    shape = RoundedCornerShape(12.dp)
                                                 ) {
                                                     Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
@@ -765,98 +985,225 @@ fun MainMenuScreen(
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "FSFQ TETRIS",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 6.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
-                )
-
-                val onlinePlayersCount by viewModel.lobbyManager.onlinePlayersCount.collectAsStateWithLifecycle()
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(bottom = 12.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
-                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(50))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Box(
+                if (isWideScreen) {
+                    Row(
                         modifier = Modifier
-                            .size(6.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.Green)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "${if (currentLang == Language.RU) "Онлайн" else "Online"}: $onlinePlayersCount",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.45f)
+                                .fillMaxHeight(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "FSFQ TETRIS",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 6.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                textAlign = TextAlign.Center
+                            )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                            val onlinePlayersCount by viewModel.lobbyManager.onlinePlayersCount.collectAsStateWithLifecycle()
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .padding(bottom = 24.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(50))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color.Green)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "${if (currentLang == Language.RU) "Онлайн" else "Online"}: $onlinePlayersCount",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
 
-                if (hasSaved) {
-                    Button(
-                        onClick = onResumeGame,
+                        Column(
+                            modifier = Modifier
+                                .weight(0.55f)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            if (hasSaved) {
+                                Button(
+                                    onClick = onResumeGame,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp)
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                ) {
+                                    Text(
+                                        text = Translations.get("resume", currentLang).uppercase(),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
+
+                            MenuButton(
+                                text = if (currentLang == Language.RU) "РЕЖИМЫ ИГРЫ" else "CHOOSE Game Mode",
+                                iconType = "upgrades",
+                                themeColor = MaterialTheme.colorScheme.primary,
+                                onClick = { onModeSelection() }
+                            )
+
+                            MenuButton(
+                                text = Translations.get("play", currentLang).uppercase() + " (${if (currentLang == Language.RU) "ПО УМОЛЧАНИЮ" else "CLASSIC"})",
+                                iconType = "play",
+                                themeColor = MaterialTheme.colorScheme.primary,
+                                onClick = { onPlayMode(com.example.game.GameMode.CLASSIC) }
+                            )
+
+                            MenuButton(
+                                text = Translations.get("leaderboard", currentLang),
+                                iconType = "leaderboard",
+                                themeColor = MaterialTheme.colorScheme.primary,
+                                onClick = onLeaderboard
+                            )
+
+                            MenuButton(
+                                text = if (currentLang == Language.RU) "ОНЛАЙН СРАЖЕНИЕ" else "ONLINE MULTIPLAYER",
+                                iconType = "multiplayer",
+                                themeColor = MaterialTheme.colorScheme.primary,
+                                onClick = {
+                                    if (playerName == "Player 1") {
+                                        viewModel.triggerAudioFeedback("error")
+                                        showAuthGuardDialog = true
+                                    } else {
+                                        viewModel.triggerAudioFeedback("click")
+                                        onMultiplayer()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = Translations.get("resume", currentLang).uppercase(),
-                            style = MaterialTheme.typography.labelLarge,
+                            text = "FSFQ TETRIS",
+                            style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
+                            letterSpacing = 6.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
                         )
+
+                        val onlinePlayersCount by viewModel.lobbyManager.onlinePlayersCount.collectAsStateWithLifecycle()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(bottom = 12.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(50))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.Green)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${if (currentLang == Language.RU) "Онлайн" else "Online"}: $onlinePlayersCount",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        if (hasSaved) {
+                            Button(
+                                onClick = onResumeGame,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Text(
+                                    text = Translations.get("resume", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
+
+                        MenuButton(
+                            text = if (currentLang == Language.RU) "РЕЖИМЫ ИГРЫ" else "CHOOSE Game Mode",
+                            iconType = "upgrades",
+                            themeColor = MaterialTheme.colorScheme.primary,
+                            onClick = { onModeSelection() }
+                        )
+
+                        MenuButton(
+                            text = Translations.get("play", currentLang).uppercase() + " (${if (currentLang == Language.RU) "ПО УМОЛЧАНИЮ" else "CLASSIC"})",
+                            iconType = "play",
+                            themeColor = MaterialTheme.colorScheme.primary,
+                            onClick = { onPlayMode(com.example.game.GameMode.CLASSIC) }
+                        )
+
+                        MenuButton(text = Translations.get("leaderboard", currentLang), iconType = "leaderboard", themeColor = MaterialTheme.colorScheme.primary, onClick = onLeaderboard)
+
+                        MenuButton(
+                            text = if (currentLang == Language.RU) "ОНЛАЙН СРАЖЕНИЕ" else "ONLINE MULTIPLAYER",
+                            iconType = "multiplayer",
+                            themeColor = MaterialTheme.colorScheme.primary,
+                            onClick = {
+                                if (playerName == "Player 1") {
+                                    viewModel.triggerAudioFeedback("error")
+                                    showAuthGuardDialog = true
+                                } else {
+                                    viewModel.triggerAudioFeedback("click")
+                                    onMultiplayer()
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(40.dp))
                     }
                 }
-
-                MenuButton(
-                    text = if (currentLang == Language.RU) "РЕЖИМЫ ИГРЫ" else "CHOOSE Game Mode",
-                    iconType = "upgrades",
-                    themeColor = MaterialTheme.colorScheme.primary,
-                    onClick = { onModeSelection() }
-                )
-
-                MenuButton(
-                    text = Translations.get("play", currentLang).uppercase() + " (${if (currentLang == Language.RU) "ПО УМОЛЧАНИЮ" else "CLASSIC"})",
-                    iconType = "play",
-                    themeColor = MaterialTheme.colorScheme.primary,
-                    onClick = { onPlayMode(com.example.game.GameMode.CLASSIC) }
-                )
-
-                MenuButton(text = Translations.get("leaderboard", currentLang), iconType = "leaderboard", themeColor = MaterialTheme.colorScheme.primary, onClick = onLeaderboard)
-
-                MenuButton(
-                    text = if (currentLang == Language.RU) "ОНЛАЙН СРАЖЕНИЕ" else "ONLINE MULTIPLAYER",
-                    iconType = "multiplayer",
-                    themeColor = MaterialTheme.colorScheme.primary,
-                    onClick = onMultiplayer
-                )
-
-                Spacer(modifier = Modifier.height(40.dp))
-            }
 
             // High-tech floating settings spoof trigger for overlord privileges
             if (playerName == "FsFq") {
@@ -887,6 +1234,7 @@ fun MainMenuScreen(
                     }
                 )
             }
+            }
         }
     }
 
@@ -915,7 +1263,7 @@ fun MenuButton(
                     text = text,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             leadingContent = {
@@ -1122,10 +1470,15 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val globalScores by viewModel.globalScores.collectAsStateWithLifecycle(initialValue = emptyList())
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(0) }
+    var selectedModeCategory by remember { mutableStateOf("overall") }
 
-    LaunchedEffect(selectedTab) {
+    LaunchedEffect(selectedTab, selectedModeCategory) {
         if (selectedTab == 1) {
-            viewModel.fetchGlobalLeaderboard()
+            if (selectedModeCategory == "overall") {
+                viewModel.fetchGlobalLeaderboard()
+            } else {
+                viewModel.fetchGlobalLeaderboardByMode(selectedModeCategory)
+            }
         }
     }
 
@@ -1172,6 +1525,54 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     onClick = { selectedTab = 1 },
                     text = { Text(if (currentLang == Language.RU) "ГЛОБАЛЬНЫЙ" else "GLOBAL ARENA") }
                 )
+            }
+
+            if (selectedTab == 1) {
+                val categories = remember {
+                    listOf(
+                        "overall" to (if (currentLang == Language.RU) "Все режимы" else "Overall"),
+                        "classic" to (if (currentLang == Language.RU) "Классический" else "Classic"),
+                        "extended" to (if (currentLang == Language.RU) "Расширенный" else "Extended"),
+                        "fast_run" to (if (currentLang == Language.RU) "Гипер-Режим" else "Hyper Blast"),
+                        "reverse" to (if (currentLang == Language.RU) "Хаос" else "Chaos"),
+                        "block_blast" to "ZETA",
+                        "zen" to (if (currentLang == Language.RU) "Дзен" else "Zen"),
+                        "time_attack" to (if (currentLang == Language.RU) "Тайм-Атак" else "Time Attack"),
+                        "pulse_extreme" to (if (currentLang == Language.RU) "Вихрь" else "Vortex Pulse"),
+                        "mirror" to (if (currentLang == Language.RU) "Зеркальный" else "Mirror"),
+                        "penta" to (if (currentLang == Language.RU) "Пента-Хаос" else "Pentatris")
+                    )
+                }
+
+                LazyRow(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { cat ->
+                        val isSelected = selectedModeCategory == cat.first
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                                .clickable {
+                                    selectedModeCategory = cat.first
+                                    viewModel.triggerAudioFeedback("click")
+                                }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = cat.second,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
 
             Column(
@@ -1261,20 +1662,69 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     )
                                 },
                                 supportingContent = {
-                                    if (score.playerName == "FsFq") {
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(top = 4.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = "ADMIN",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    ) {
+                                        if (score.customTag.isNotEmpty()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = score.customTag,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                                )
+                                            }
+                                        }
+                                        if (score.playerName == "FsFq") {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Админ",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            }
+                                        }
+                                        if (index == 0) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(Color(0xFFE94560))
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = "задрот",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                        if (score.score > 25000) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(Color(0xFFFFB300))
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = "25🪙+",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.Black
+                                                )
+                                            }
                                         }
                                     }
                                 },
@@ -1290,7 +1740,7 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> Unit = {}) {
+fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeControls: () -> Unit = {}, onAdmin: () -> Unit = {}) {
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
     
     val themeColor by viewModel.themeColor.collectAsStateWithLifecycle()
@@ -1303,6 +1753,10 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
     val smoothFallingEnabled by viewModel.smoothFallingEnabled.collectAsStateWithLifecycle()
     val gridOpacity by viewModel.gridOpacity.collectAsStateWithLifecycle()
     val customStartLevel by viewModel.customStartLevel.collectAsStateWithLifecycle()
+    
+    val lobbyMusicEnabled by viewModel.lobbyMusicEnabled.collectAsStateWithLifecycle()
+    val soundVolume by viewModel.soundVolume.collectAsStateWithLifecycle()
+    val lobbyMusicVolume by viewModel.lobbyMusicVolume.collectAsStateWithLifecycle()
 
     val screenShakeIntensity by viewModel.screenShakeIntensity.collectAsStateWithLifecycle()
     val scanlinesFilter by viewModel.scanlinesFilter.collectAsStateWithLifecycle()
@@ -1327,7 +1781,6 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     AdaptiveText(
                         text = Translations.get("settings", currentLang).uppercase(),
@@ -1345,85 +1798,9 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
     ) { padding ->
         val themeColorVal = MaterialTheme.colorScheme.primary
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            ScrollableTabRow(
-                selectedTabIndex = activeCategory,
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.primary,
-                edgePadding = 0.dp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                val categoryTitles = when (currentLang) {
-                    Language.RU -> listOf("ОСНОВНЫЕ", "ВИЗУАЛ", "ГЕЙМПЛЕЙ", "ЗВУК И ВИБРАЦИЯ", "ИНТЕРФЕЙС")
-                    Language.DE -> listOf("ALLGEMEIN", "VISUELL", "GAMEPLAY", "AUDIO & VIBRATION", "INTERFACE")
-                    else -> listOf("GENERAL", "VISUALS", "TACTICAL", "AUDIO & VIBRATION", "INTERFACE")
-                }
-                categoryTitles.forEachIndexed { index, title ->
-                    Tab(
-                        selected = activeCategory == index,
-                        onClick = { activeCategory = index },
-                        text = {
-                            AdaptiveText(
-                                text = title,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                when (activeCategory) {
+        val settingsContent = @Composable { category: Int ->
+            when (category) {
                     0 -> {
-                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                AdaptiveText(
-                                    text = Translations.get("change_language", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Language.values().forEach { lang ->
-                                        val selected = currentLang == lang
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(
-                                                    if (selected) themeColorVal 
-                                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                                )
-                                                .clickable { viewModel.setLanguage(lang) }
-                                        ) {
-                                            AdaptiveText(
-                                                text = lang.code,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
 
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -1509,6 +1886,8 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                             }
                         }
 
+
+
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -1541,30 +1920,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                                     )
                                 )
                             }
-                        }
-
-                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = Translations.get("auto_save_highscore", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                supportingContent = {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "Автосохранение результатов в базу данных" else "Auto-save results to database"
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = autoSaveHighscore,
-                                        onCheckedChange = { viewModel.setAutoSaveHighscore(it) }
-                                    )
-                                }
-                            )
-                        }
-                    }
+                        }                    }
 
                     1 -> {
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
@@ -1646,6 +2002,8 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                             }
                         }
 
+
+
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -1713,6 +2071,8 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                                 }
                             }
                         }
+
+
 
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -1819,6 +2179,8 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                             }
                         }
 
+
+
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
@@ -1891,6 +2253,8 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                                 }
                             }
                         }
+
+
 
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -2091,6 +2455,93 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                             )
                         }
 
+                        if (soundEnabled) {
+                            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            AdaptiveText(
+                                                text = if (currentLang == Language.RU) "Громкость звуковых эффектов" else "Sound Effects Volume",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            AdaptiveText(
+                                                text = "${(soundVolume * 100).toInt()}%",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = themeColorVal,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    Slider(
+                                        value = soundVolume,
+                                        onValueChange = { viewModel.setSoundVolume(it) },
+                                        valueRange = 0f..1f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = themeColorVal,
+                                            activeTrackColor = themeColorVal
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                            ListItem(
+                                headlineContent = {
+                                    AdaptiveText(
+                                        text = if (currentLang == Language.RU) "Фоновая музыка в лобби" else "Lobby Background Music",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = lobbyMusicEnabled,
+                                        onCheckedChange = { viewModel.setLobbyMusicEnabled(it) }
+                                    )
+                                }
+                            )
+                        }
+
+                        if (lobbyMusicEnabled) {
+                            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            AdaptiveText(
+                                                text = if (currentLang == Language.RU) "Громкость музыки" else "Lobby Music Volume",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            AdaptiveText(
+                                                text = "${(lobbyMusicVolume * 100).toInt()}%",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = themeColorVal,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    Slider(
+                                        value = lobbyMusicVolume,
+                                        onValueChange = { viewModel.setLobbyMusicVolume(it) },
+                                        valueRange = 0f..1f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = themeColorVal,
+                                            activeTrackColor = themeColorVal
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             ListItem(
                                 headlineContent = {
@@ -2111,58 +2562,29 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                     }
 
                     4 -> {
-                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "Выбор системного шрифта" else "Interface Font Typography",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                val fonts = listOf(
-                                    "default" to (if (currentLang == Language.RU) "Системный по умолчанию" else "System Default font"),
-                                    "monospace" to (if (currentLang == Language.RU) "Моноширинный код" else "Terminal Monospace font"),
-                                    "serif" to (if (currentLang == Language.RU) "Классический с засечками" else "Classic Serif typography"),
-                                    "sans-serif" to (if (currentLang == Language.RU) "Современный гротеск" else "Modern Sans-Serif clean"),
-                                    "cursive" to (if (currentLang == Language.RU) "Курсив рукописный" else "Artistic Cursive script"),
-                                    "condensed" to (if (currentLang == Language.RU) "Узкий сжатый" else "Condensed Space saver"),
-                                    "black" to (if (currentLang == Language.RU) "Жирный акцентный" else "Concentric Black Heavyweight"),
-                                    "thin" to (if (currentLang == Language.RU) "Тонкий минималистичный" else "Ultra Thin modern")
-                                )
-                                val context = androidx.compose.ui.platform.LocalContext.current
-                                fonts.forEach { (key, title) ->
-                                    val isOwned = key == "default" || key == "monospace" || purchasedFonts.contains(key)
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable {
-                                                if (isOwned) {
-                                                    viewModel.setCustomFontKey(key)
-                                                } else {
-                                                    viewModel.triggerAudioFeedback("error")
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (currentLang == Language.RU) "Купите этот шрифт в магазине!" else "Purchase this font in the store!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                            .padding(vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = customFontKey == key,
-                                            onClick = { viewModel.setCustomFontKey(key) },
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-                                    }
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onCustomizeControls
+                        ) {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Кастомизация управления" else "Customize Controls Layout",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Настроить размер, прозрачность, тип и позицию кнопок" else "Configure scale, opacity, style and position of controls"
+                                    )
+                                },
+                                trailingContent = {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit")
                                 }
-                            }
+                            )
                         }
+
+
 
                         OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -2198,6 +2620,211 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onAdmin: () -> 
                                 }
                             }
                         }
+                    }
+
+                    5 -> {
+                        // Language Selection
+                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                AdaptiveText(
+                                    text = Translations.get("change_language", currentLang),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Language.values().forEach { lang ->
+                                        val selected = currentLang == lang
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    if (selected) themeColorVal 
+                                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                )
+                                                .clickable { viewModel.setLanguage(lang) }
+                                        ) {
+                                            AdaptiveText(
+                                                text = lang.code,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (selected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Auto-Save Highscore
+                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = Translations.get("auto_save_highscore", currentLang),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                supportingContent = {
+                                     Text(
+                                         text = if (currentLang == Language.RU) "Автосохранение результатов в базу данных" else "Auto-save results to database"
+                                     )
+                                },
+                                trailingContent = {
+                                     Switch(
+                                         checked = autoSaveHighscore,
+                                         onCheckedChange = { viewModel.setAutoSaveHighscore(it) }
+                                     )
+                                }
+                            )
+                        }
+
+                        // Single Reset Settings Card
+                        OutlinedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                AdaptiveText(
+                                    text = if (currentLang == Language.RU) "СБРОСИТЬ ВСЕ НАСТРОЙКИ" else "RESET ALL SETTINGS",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                AdaptiveText(
+                                    text = if (currentLang == Language.RU) "Восстановит все параметры приложения по умолчанию" else "Restores all game configurations to factory defaults",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = {
+                                        viewModel.triggerAudioFeedback("success")
+                                        viewModel.resetSettingsToDefault()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = if (currentLang == Language.RU) "СБРОСИТЬ" else "RESET DEFAULTS",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            val isWideScreen = maxWidth >= 600.dp
+            val categoryTitles = when (currentLang) {
+                Language.RU -> listOf("ОСНОВНЫЕ", "ВИЗУАЛ", "ГЕЙМПЛЕЙ", "ЗВУК И ВИБРАЦИЯ", "ИНТЕРФЕЙС", "СИСТЕМА")
+                Language.DE -> listOf("ALLGEMEIN", "VISUELL", "GAMEPLAY", "AUDIO & VIBRATION", "INTERFACE", "SYSTEM")
+                else -> listOf("GENERAL", "VISUALS", "TACTICAL", "AUDIO & VIBRATION", "INTERFACE", "SYSTEM")
+            }
+
+            if (isWideScreen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .width(220.dp)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categoryTitles.forEachIndexed { index, title ->
+                            val selected = activeCategory == index
+                            NavigationDrawerItem(
+                                label = {
+                                    AdaptiveText(
+                                        text = title,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                selected = selected,
+                                onClick = { activeCategory = index },
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    unselectedContainerColor = Color.Transparent,
+                                    selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    }
+
+                    VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        settingsContent(activeCategory)
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    ScrollableTabRow(
+                        selectedTabIndex = activeCategory,
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        edgePadding = 0.dp,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        categoryTitles.forEachIndexed { index, title ->
+                            Tab(
+                                selected = activeCategory == index,
+                                onClick = { activeCategory = index },
+                                text = {
+                                    AdaptiveText(
+                                        text = title,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        settingsContent(activeCategory)
                     }
                 }
             }
@@ -2471,7 +3098,7 @@ fun unusedMultiplayerScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .systemBarsPadding()
+                .safeDrawingPadding()
         ) {
             // TOP HEADBAR WITH BACK TOGGLE
             Row(
@@ -3263,8 +3890,8 @@ fun ModeSelectionScreen(
         ),
         ModeInfo(
             com.example.game.GameMode.BLOCK_BLAST, "block_blast",
-            if (currentLang == Language.RU) "Блок Бласт" else "Block Blast",
-            if (currentLang == Language.RU) "Головоломка с размещением фигур на свободном поле." else "Puzzle mode requiring strategic block placement.",
+            "ZETA",
+            if (currentLang == Language.RU) "Головоломка ZETA: свободное размещение фигур на поле." else "ZETA puzzle mode: place procedural polyominos on the board.",
             600, Icons.Default.Computer
         ),
         ModeInfo(
@@ -3284,6 +3911,12 @@ fun ModeSelectionScreen(
             if (currentLang == Language.RU) "Пента-Хаос" else "Pentary Chaos",
             if (currentLang == Language.RU) "Режим повышенной сложности: все падающие фигуры состоят из пяти блоков." else "High difficulty mode: all falling pieces consist of five blocks.",
             1200, Icons.Default.AutoAwesome
+        ),
+        ModeInfo(
+            com.example.game.GameMode.RELAX, "relax",
+            if (currentLang == Language.RU) "Релакс-Песочница" else "Relax Sandbox",
+            if (currentLang == Language.RU) "Настраиваемый режим с выбором блоков, бессмертием и скоростью. Не идет в рекорды." else "Customizable sandbox: select blocks, toggle immortality and speed. No high scores.",
+            0, Icons.Default.Spa
         )
     )
 
@@ -3325,7 +3958,7 @@ fun ModeSelectionScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         AdaptiveText(
-                            text = "$credits K",
+                            text = "$credits 🪙",
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -3374,15 +4007,11 @@ fun ModeSelectionScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = if (isPlayable) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        }
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     ),
                     shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.elevatedCardElevation(
-                        defaultElevation = if (isPlayable) 4.dp else 1.dp
+                        defaultElevation = 2.dp
                     )
                 ) {
                     Row(
@@ -3484,7 +4113,7 @@ fun ModeSelectionScreen(
                                         modifier = Modifier.size(14.dp)
                                     )
                                     AdaptiveText(
-                                        text = "${modeInfo.cost} K",
+                                        text = "${modeInfo.cost} 🪙",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFFFFB300)
@@ -3511,5 +4140,263 @@ fun ModeSelectionScreen(
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
+    val currentLang by viewModel.language.collectAsStateWithLifecycle()
+    val themeColorKey by viewModel.themeColor.collectAsStateWithLifecycle()
+    val themeColorVal = remember(themeColorKey) {
+        when (themeColorKey) {
+            "indigo" -> Color(0xFFD0BCFF)
+            "red" -> Color(0xFFFF5555)
+            "neon" -> Color(0xFF00FFCC)
+            "amber" -> Color(0xFFF59E0B)
+            "rose" -> Color(0xFFF43F5E)
+            "sky" -> Color(0xFF0EA5E9)
+            "cyber_pink" -> Color(0xFFFF007F)
+            "toxic_green" -> Color(0xFF39FF14)
+            else -> Color(0xFFD0BCFF)
+        }
+    }
+
+    val gameState by viewModel.gameEngine.gameState.collectAsStateWithLifecycle()
+    val controlButtonScale by viewModel.controlButtonScale.collectAsStateWithLifecycle()
+    val controlButtonAlpha by viewModel.controlButtonAlpha.collectAsStateWithLifecycle()
+    val controlStyle by viewModel.controlStyle.collectAsStateWithLifecycle()
+    val leftHandedControls by viewModel.leftHandedControls.collectAsStateWithLifecycle()
+    val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
+
+    // Start CLASSIC mode sandbox game when entering CustomControlsScreen
+    LaunchedEffect(Unit) {
+        viewModel.startGame(com.example.game.GameMode.CLASSIC)
+    }
+
+    // Auto clear grid when it fills up to allow infinite control testing without gameover interruption
+    LaunchedEffect(gameState) {
+        if (gameState.isGameOver) {
+            viewModel.startGame(com.example.game.GameMode.CLASSIC)
+        } else {
+            val hasBlocksInUpperGrid = (0..16).any { r ->
+                gameState.grid[r].any { it != 0 }
+            }
+            if (hasBlocksInUpperGrid) {
+                viewModel.clearRelaxBoard()
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = if (currentLang == Language.RU) "КАСТОМИЗАЦИЯ УПРАВЛЕНИЯ" else "CUSTOMIZE CONTROLS",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Config Panel
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Size slider
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "Размер кнопок" else "Button Size",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "${(controlButtonScale * 100).toInt()}%",
+                                fontWeight = FontWeight.Bold,
+                                color = themeColorVal,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        Slider(
+                            value = controlButtonScale,
+                            onValueChange = { viewModel.setControlButtonScale(it) },
+                            valueRange = 0.5f..1.5f,
+                            colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                        )
+                    }
+
+                    // Transparency slider
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "Прозрачность кнопок" else "Button Transparency",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "${(controlButtonAlpha * 100).toInt()}%",
+                                fontWeight = FontWeight.Bold,
+                                color = themeColorVal,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        Slider(
+                            value = controlButtonAlpha,
+                            onValueChange = { viewModel.setControlButtonAlpha(it) },
+                            valueRange = 0.1f..1.0f,
+                            colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                        )
+                    }
+
+                    // Quick layout options
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.setLeftHandedControls(!leftHandedControls)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (leftHandedControls) themeColorVal else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "ЛЕВША" else "LEFT HAND",
+                                fontWeight = FontWeight.Bold,
+                                color = if (leftHandedControls) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                val nextStyle = when (controlStyle) {
+                                    "buttons" -> "arcade"
+                                    "arcade" -> "split"
+                                    "split" -> "swipe"
+                                    else -> "buttons"
+                                }
+                                viewModel.setControlStyle(nextStyle)
+                            },
+                            modifier = Modifier.weight(1.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = themeColorVal, contentColor = Color.Black)
+                        ) {
+                            Text(
+                                text = controlStyle.uppercase(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                val nextPos = when (controlVerticalPosition) {
+                                    "bottom" -> "middle"
+                                    "middle" -> "top"
+                                    else -> "bottom"
+                                }
+                                viewModel.setControlVerticalPosition(nextPos)
+                            },
+                            modifier = Modifier.weight(1.2f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Text(
+                                text = controlVerticalPosition.uppercase(),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Sandbox board game view & controls layout
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(0.5f)
+                            .border(1.5.dp, themeColorVal.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp))
+                    ) {
+                        GameBoardView(
+                            gameState = gameState,
+                            blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
+                            ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
+                            smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
+                            gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
+                            boardColorSkin = viewModel.themeColor.collectAsStateWithLifecycle().value
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        GameControlsSection(
+                            viewModel = viewModel,
+                            gameState = gameState,
+                            controlStyle = controlStyle,
+                            leftHandedControls = leftHandedControls,
+                            controlVerticalPosition = controlVerticalPosition,
+                            controlButtonScale = controlButtonScale,
+                            controlButtonStyle = viewModel.controlButtonStyle.collectAsStateWithLifecycle().value,
+                            onLeftPress = { viewModel.gameEngine.moveLeft() },
+                            onRightPress = { viewModel.gameEngine.moveRight() },
+                            onDownPress = { viewModel.gameEngine.softDrop() },
+                            onRotatePress = { viewModel.gameEngine.rotate() },
+                            onHardDropPress = { viewModel.gameEngine.hardDrop() },
+                            onHoldPress = { viewModel.gameEngine.hold() }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

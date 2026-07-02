@@ -127,7 +127,6 @@ fun LobbyHubView(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AdaptiveText(
@@ -174,7 +173,9 @@ fun LobbyHubView(
         Column(
             modifier = Modifier
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .fillMaxSize()
+                .imePadding()
                 .padding(horizontal = 14.dp)
         ) {
             // Rooms List section
@@ -699,7 +700,6 @@ fun LobbyRoomView(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                windowInsets = WindowInsets(top = 8.dp),
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AdaptiveText(
@@ -732,7 +732,9 @@ fun LobbyRoomView(
         Column(
             modifier = Modifier
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .fillMaxSize()
+                .imePadding()
                 .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

@@ -65,6 +65,7 @@ object FirebaseSync {
             "online_tier" to profilePrefs.getString("online_tier", "BRONZE"),
             "credits" to tetrisPrefs.getInt("credits", 750),
             "purchased_cube_skins" to profilePrefs.getStringSet("purchased_cube_skins", setOf("neon"))?.toList(),
+            "case_inventory" to profilePrefs.getStringSet("case_inventory", emptySet())?.toList(),
             "purchased_modes" to profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast"))?.toList(),
             "board_color_skin" to tetrisPrefs.getString("board_color_skin", "cyberpunk"),
             "block_style" to tetrisPrefs.getString("block_style", "glass"),
@@ -72,7 +73,18 @@ object FirebaseSync {
             "custom_background_base64" to bgBase64,
             "has_nickname_gradient" to profilePrefs.getBoolean("has_nickname_gradient", false),
             "bonus_xp" to profilePrefs.getInt("bonus_xp", 0),
+            "custom_tag" to profilePrefs.getString("custom_tag", ""),
+            "custom_tag_unlocked" to profilePrefs.getBoolean("custom_tag_unlocked", false),
             
+            // Settings Sync
+            "setting_lang_code" to tetrisPrefs.getString("lang_code", "en"),
+            "setting_theme_color" to tetrisPrefs.getString("theme_color", "indigo"),
+            "setting_next_count" to tetrisPrefs.getInt("next_count", 3),
+            "setting_ghost_visible" to tetrisPrefs.getBoolean("ghost_visible", true),
+            "setting_control_style" to tetrisPrefs.getString("control_style", "split"),
+            "setting_sound_enabled" to tetrisPrefs.getBoolean("sound_enabled", true),
+            "setting_vibration_enabled" to tetrisPrefs.getBoolean("vibration_enabled", true),
+
             // Statistics
             "stats_games_played" to tetrisPrefs.getInt("stats_games_played", 0),
             "stats_spent_credits" to tetrisPrefs.getInt("stats_spent_credits", 0),
@@ -156,15 +168,30 @@ object FirebaseSync {
 
                 (data["custom_avatar_emoji"] as? String)?.let { editorProfile.putString("custom_avatar_emoji", it) }
                 (data["custom_avatar_bg_color"] as? String)?.let { editorProfile.putString("custom_avatar_bg_color", it) }
-                (data["online_tier"] as? String)?.let { editorProfile.putString("online_tier", it) }
+                (data["online_tier"] as? String)?.let { 
+                    editorProfile.putString("online_tier", it)
+                    editorTetris.putString("online_tier", it)
+                }
                 (data["credits"] as? Long)?.let { editorTetris.putInt("credits", it.toInt()) }
                 (data["purchased_cube_skins"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_cube_skins", it.toSet()) }
+                (data["case_inventory"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("case_inventory", it.toSet()) }
                 (data["purchased_modes"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_modes", it.toSet()) }
                 (data["board_color_skin"] as? String)?.let { editorTetris.putString("board_color_skin", it) }
                 (data["block_style"] as? String)?.let { editorTetris.putString("block_style", it) }
                 (data["has_nickname_gradient"] as? Boolean)?.let { editorProfile.putBoolean("has_nickname_gradient", it) }
                 (data["bonus_xp"] as? Long)?.let { editorProfile.putInt("bonus_xp", it.toInt()) }
+                (data["custom_tag"] as? String)?.let { editorProfile.putString("custom_tag", it) }
+                (data["custom_tag_unlocked"] as? Boolean)?.let { editorProfile.putBoolean("custom_tag_unlocked", it) }
                 
+                // Settings Sync
+                (data["setting_lang_code"] as? String)?.let { editorTetris.putString("lang_code", it) }
+                (data["setting_theme_color"] as? String)?.let { editorTetris.putString("theme_color", it) }
+                (data["setting_next_count"] as? Long)?.let { editorTetris.putInt("next_count", it.toInt()) }
+                (data["setting_ghost_visible"] as? Boolean)?.let { editorTetris.putBoolean("ghost_visible", it) }
+                (data["setting_control_style"] as? String)?.let { editorTetris.putString("control_style", it) }
+                (data["setting_sound_enabled"] as? Boolean)?.let { editorTetris.putBoolean("sound_enabled", it) }
+                (data["setting_vibration_enabled"] as? Boolean)?.let { editorTetris.putBoolean("vibration_enabled", it) }
+
                 // Statistics
                 (data["stats_games_played"] as? Long)?.let { editorTetris.putInt("stats_games_played", it.toInt()) }
                 (data["stats_spent_credits"] as? Long)?.let { editorTetris.putInt("stats_spent_credits", it.toInt()) }
