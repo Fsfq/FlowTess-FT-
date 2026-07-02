@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
+// Палитра цветов фигур — 0=прозрачный, остальные для тетромин / piece color palette
 val Colors = listOf(
     Color.Transparent,
     Color(0xFF00FFFF),
@@ -77,6 +78,7 @@ data class GameState(
     val tetrisesCleared: Int = 0
 )
 
+// Мотор игры — вся логика тетриса / core game engine, handles all tetris mechanics
 class GameEngine {
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -84,9 +86,10 @@ class GameEngine {
     var lineClearChallenge: Boolean = false
     var fastDropLockSpeed: Boolean = false
     
+    // 7-bag рандомайзер / 7-bag randomizer for piece distribution
     private var bag = mutableListOf<Tetromino>()
     
-    // Relax sandbox properties
+    // Настройки Relax-режима / Relax sandbox settings
     var relaxImmortal: Boolean = true
     var relaxBlockSet: String = "ideal" // only_i, ideal, standard, all
     
@@ -94,6 +97,7 @@ class GameEngine {
         startGame(GameMode.CLASSIC)
     }
 
+    // Запуск/рестарт — сбрасываем сетку 22x10, генерим фигуры / start new game, reset grid
     fun startGame(mode: GameMode, startingLevel: Int = 1) {
         bag.clear()
         val isExt = mode == GameMode.EXTENDED || mode == GameMode.PENTARY_CHAOS
@@ -152,6 +156,7 @@ class GameEngine {
         }
     }
 
+    // Выбираем следующую фигуру из bag — Relax имеет свои наборы / next piece from bag system
     private fun nextPiece(extendedMode: Boolean): Tetromino {
         if (_gameState.value.gameMode == GameMode.RELAX) {
             val relaxShapes = when (relaxBlockSet) {
@@ -180,6 +185,7 @@ class GameEngine {
         return bag.removeAt(0)
     }
 
+    // Мусорные линии снизу для мультиплеера / garbage lines from opponent
     fun addGarbageLines(count: Int) {
         val state = _gameState.value
         val grid = state.grid.map { it.clone() }.toMutableList()
@@ -188,12 +194,13 @@ class GameEngine {
                 grid.removeAt(0)
             }
             val garbageRow = IntArray(10) { (1..7).random() }
-            garbageRow[(0..9).random()] = 0 // insert a hole
+            garbageRow[(0..9).random()] = 0 // дырка в мусоре / hole in garbage
             grid.add(garbageRow)
         }
         _gameState.update { it.copy(grid = grid) }
     }
 
+    // Тик — опускаем фигуру на 1 ряд, если стенка — лочим / gravity tick, move piece down 1
     fun tick() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
@@ -201,6 +208,7 @@ class GameEngine {
         val nextPos = state.currentPos.copy(y = state.currentPos.y + 1)
         if (isValidMove(nextPos, state.currentPiece, state.grid)) {
             _gameState.update { it.copy(currentPos = nextPos) }
+            // Быстрая фиксация — сразу лочим если ниже некуда / fast lock: lock if no room below
             if (fastDropLockSpeed && !isValidMove(nextPos.copy(y = nextPos.y + 1), state.currentPiece, state.grid)) {
                 lockPiece()
             }
@@ -209,6 +217,7 @@ class GameEngine {
         }
     }
 
+    // Движение влево (инверсия для REVERSE/MIRROR) / move left (reversed in chaos modes)
     fun moveLeft() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
@@ -219,6 +228,7 @@ class GameEngine {
         }
     }
 
+    // Движение вправо / move right
     fun moveRight() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
@@ -233,6 +243,7 @@ class GameEngine {
         tick()
     }
 
+    // Хард-дроп — моментальное падение до дна / instant drop to bottom
     fun hardDrop() {
         var state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
@@ -245,6 +256,7 @@ class GameEngine {
         lockPiece()
     }
 
+    // Поворот + wall kick — пробуем сдвиг если не влезает / rotation with wall kick attempts
     fun rotate() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
@@ -265,6 +277,7 @@ class GameEngine {
         }
     }
 
+    // Hold-механика — обмен текущей фигуры с запасной / swap current piece with hold slot
     fun hold() {
         val state = _gameState.value
         if (state.isGameOver || state.hasHeldThisTurn || state.currentPiece == null) return
@@ -294,6 +307,8 @@ class GameEngine {
         }
     }
 
+    // Проверка валидности позиции — не вылезаем за границы и не залезаем в занятые клетки
+    // collision check: bounds + occupied cells
     private fun isValidMove(pos: Position, piece: Tetromino, grid: List<IntArray>): Boolean {
         for (p in piece.shape) {
             val nx = pos.x + p.x
@@ -305,6 +320,8 @@ class GameEngine {
         return true
     }
 
+    // Фиксация фигуры в сетку + очистка линий + подсчёт очков + проверка game over
+    // lock piece, clear lines, score, check death
     private fun lockPiece() {
         val state = _gameState.value
         val piece = state.currentPiece ?: return
@@ -318,13 +335,14 @@ class GameEngine {
             }
         }
 
+        // Удаляем заполненные ряды, добавляем пустые сверху / remove full rows, add empty on top
         val newGrid = grid.filter { row -> row.any { it == 0 } }.toMutableList()
         val cleared = maxOf(0, 22 - newGrid.size)
         for (i in 0 until cleared) {
             newGrid.add(0, IntArray(10))
         }
 
-        // Vortex Pulse Mode bottom garbage row insertion
+        // Vortex Pulse — мусорная строка каждые 4 фигуры / garbage row every 4 pieces
         val newPiecesPlaced = state.piecesPlaced + 1
         if (state.gameMode == GameMode.PULSE_EXTREME && newPiecesPlaced % 4 == 0) {
             newGrid.removeAt(0)
@@ -333,6 +351,8 @@ class GameEngine {
             newGrid.add(garbageRow)
         }
 
+        // Подсчёт очков — 1 линия=100, 2=300, 3=500, tetris=800, умножаем на уровень
+        // scoring: 1=100, 2=300, 3=500, tetris=800, multiplied by level
         val newLines = state.lines + cleared
         val startingLevel = maxOf(1, state.level - state.lines / 10)
         val newLevel = startingLevel + newLines / 10
@@ -346,12 +366,14 @@ class GameEngine {
         val addedScore = basePoints * state.level
         val addedTime = if (state.gameMode == GameMode.TIME_ATTACK) cleared * 10 else 0
 
+        // Проверка смерти — блоки в top-3 рядах = game over (кроме Zen/Relax)
+        // death check: blocks in top 3 rows = game over (except Zen/Relax)
         var isOver = false
         val nextP = state.nextPieces.firstOrNull() ?: nextPiece(state.isExtendedMode)
         val blocksAtTop = newGrid[0].any { it != 0 } || newGrid[1].any { it != 0 } || newGrid[2].any { it != 0 }
         if (!isValidMove(Position(4, 0), nextP, newGrid) || blocksAtTop) {
             if (state.gameMode == GameMode.ZEN_FLOW || (state.gameMode == GameMode.RELAX && relaxImmortal)) {
-                // Zen flow and Relax Immortal never die! We clear board when it fills up
+                // Zen/Relax бессмертие — очищаем поле при заполнении / immortal: clear board on fill
                 newGrid.clear()
                 for (i in 0 until 22) {
                     newGrid.add(0, IntArray(10))
@@ -390,6 +412,7 @@ class GameEngine {
         _gameState.update { it.copy(grid = currentGrid) }
     }
 
+    // Таймер для Time Attack — уменьшаем время / Time Attack countdown
     fun decrementTime(sec: Int) {
         _gameState.update {
             val newTime = maxOf(0, it.timeRemainingSeconds - sec)

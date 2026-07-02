@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+// Синхронизация данных с Firestore — пушим/пуллим профиль, инвентарь, настройки, статистику
+// Cloud sync: push/pull profile, inventory, settings, stats to/from Firestore
 object FirebaseSync {
 
     private val auth: FirebaseAuth
@@ -14,6 +16,8 @@ object FirebaseSync {
     private val firestore: FirebaseFirestore
         get() = FirebaseFirestore.getInstance()
 
+    // Конвертация файлов в base64 для хранения аватаров/фонов в Firestore
+    // avatar/background file <-> base64 for Firestore storage
     private fun fileToBase64(file: java.io.File): String? {
         if (!file.exists()) return null
         return try {
@@ -34,6 +38,8 @@ object FirebaseSync {
         }
     }
 
+    // Пушим ВСЕ данные юзера в Firestore — профиль, инвентарь, настройки, стата
+    // push everything to cloud: profile, inventory, settings, stats
     suspend fun pushUserData(context: Context): Boolean = suspendCoroutine { continuation ->
         val user = auth.currentUser
         if (user == null) {
@@ -76,7 +82,7 @@ object FirebaseSync {
             "custom_tag" to profilePrefs.getString("custom_tag", ""),
             "custom_tag_unlocked" to profilePrefs.getBoolean("custom_tag_unlocked", false),
             
-            // Settings Sync
+            // Настройки UI/игры — синхронизируем между устройствами / UI/game settings sync
             "setting_lang_code" to tetrisPrefs.getString("lang_code", "en"),
             "setting_theme_color" to tetrisPrefs.getString("theme_color", "indigo"),
             "setting_next_count" to tetrisPrefs.getInt("next_count", 3),
@@ -85,7 +91,7 @@ object FirebaseSync {
             "setting_sound_enabled" to tetrisPrefs.getBoolean("sound_enabled", true),
             "setting_vibration_enabled" to tetrisPrefs.getBoolean("vibration_enabled", true),
 
-            // Statistics
+            // Игровая статистика — очки, линии, потраченные монеты / game stats sync
             "stats_games_played" to tetrisPrefs.getInt("stats_games_played", 0),
             "stats_spent_credits" to tetrisPrefs.getInt("stats_spent_credits", 0),
             "stats_cleared_lines" to tetrisPrefs.getInt("stats_cleared_lines", 0),
@@ -106,6 +112,8 @@ object FirebaseSync {
             }
     }
 
+    // Тянем данные из Firestore и пишем в SharedPrefs — обратный процесс
+    // pull from cloud, write to SharedPrefs — reverse of push
     suspend fun pullUserData(context: Context): Map<String, Any>? = suspendCoroutine { continuation ->
         val user = auth.currentUser
         if (user == null) {
@@ -183,7 +191,7 @@ object FirebaseSync {
                 (data["custom_tag"] as? String)?.let { editorProfile.putString("custom_tag", it) }
                 (data["custom_tag_unlocked"] as? Boolean)?.let { editorProfile.putBoolean("custom_tag_unlocked", it) }
                 
-                // Settings Sync
+                // Настройки с облака / pull settings from cloud
                 (data["setting_lang_code"] as? String)?.let { editorTetris.putString("lang_code", it) }
                 (data["setting_theme_color"] as? String)?.let { editorTetris.putString("theme_color", it) }
                 (data["setting_next_count"] as? Long)?.let { editorTetris.putInt("next_count", it.toInt()) }
@@ -192,7 +200,7 @@ object FirebaseSync {
                 (data["setting_sound_enabled"] as? Boolean)?.let { editorTetris.putBoolean("sound_enabled", it) }
                 (data["setting_vibration_enabled"] as? Boolean)?.let { editorTetris.putBoolean("vibration_enabled", it) }
 
-                // Statistics
+                // Статистика с облака / pull stats from cloud
                 (data["stats_games_played"] as? Long)?.let { editorTetris.putInt("stats_games_played", it.toInt()) }
                 (data["stats_spent_credits"] as? Long)?.let { editorTetris.putInt("stats_spent_credits", it.toInt()) }
                 (data["stats_cleared_lines"] as? Long)?.let { editorTetris.putInt("stats_cleared_lines", it.toInt()) }
