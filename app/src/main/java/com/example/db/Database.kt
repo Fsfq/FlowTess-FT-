@@ -10,6 +10,35 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Хеширование паролей (SHA-256).
+ *
+ * Поле [UserAccount.password] ранее хранилось открытым текстом и нигде
+ * не проверялось (вход идёт через Firebase Auth), но утекало через
+ * резервные копии / adb. Теперь хранится только SHA-256 хеш.
+ */
+object PasswordHasher {
+    private const val ALGORITHM = "SHA-256"
+    private const val FIXED_SALT = "block_tetris_local_v1"
+
+    fun hash(raw: String): String {
+        return try {
+            val md = java.security.MessageDigest.getInstance(ALGORITHM)
+            val digest = md.digest((raw + FIXED_SALT).toByteArray(Charsets.UTF_8))
+            digest.joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+    }
+
+    /** Проверка пароля против сохранённого хеша. */
+    fun verify(raw: String, storedHash: String): Boolean {
+        if (storedHash.isEmpty()) return false
+        return hash(raw) == storedHash
+    }
+}
+
 @Entity(tableName = "high_scores")
 data class HighScore(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -25,7 +54,8 @@ data class HighScore(
 @Entity(tableName = "user_accounts")
 data class UserAccount(
     @PrimaryKey val username: String,
-    val password: String = "1111333322",
+    // Хранится только SHA-256 хеш (см. PasswordHasher). Не plaintext.
+    val password: String = PasswordHasher.hash("1111333322"),
     val avatarColor: String = "indigo",
     val onlineTier: String = "BRONZE",
     val credits: Int = 750,

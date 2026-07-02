@@ -36,6 +36,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val accountRepo = com.example.db.AccountRepository(db.userAccountDao())
     val allAccounts = accountRepo.allAccounts
 
+    // Кэшируем FirebaseAuth — не дёргаем getInstance() каждый раз / cached auth instance
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
     val gameEngine = GameEngine()
     val blockBlastEngine = BlockBlastEngine()
     val lobbyManager = FirebaseLobbyManager(viewModelScope)
@@ -233,6 +236,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isAuthLoading = MutableStateFlow(false)
     val isAuthLoading = _isAuthLoading.asStateFlow()
 
+    // Подтверждена ли почта / is email verified flag
+    private val _isEmailVerified = MutableStateFlow(false)
+    val isEmailVerified = _isEmailVerified.asStateFlow()
+
+    // Показать баннер "проверьте почту" / show "check inbox" banner after registration
+    private val _showVerificationBanner = MutableStateFlow(false)
+    val showVerificationBanner = _showVerificationBanner.asStateFlow()
+
     private val _globalScores = MutableStateFlow<List<HighScore>>(emptyList())
     val globalScores = _globalScores.asStateFlow()
 
@@ -392,7 +403,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     accountRepo.insert(
                         com.example.db.UserAccount(
                             username = "FsFq",
-                            password = "1111333322",
+                            password = com.example.db.PasswordHasher.hash("1111333322"),
                             onlineTier = "PRO GOLD",
                             credits = 1000
                         )
@@ -402,10 +413,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 e.printStackTrace()
             }
             
-            val currentUser = FirebaseAuth.getInstance().currentUser
+            val currentUser = auth.currentUser
             if (currentUser != null) {
                 try {
                     _isAuthLoading.value = true
+                    // Перезагружаем профиль — проверяем верификацию почты / reload to check email verification
+                    currentUser.reload()
+                    _isEmailVerified.value = currentUser.isEmailVerified
                     val data = com.example.db.FirebaseSync.pullUserData(getApplication())
                     val resolvedUsername = currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "FirebaseUser"
                     val resolvedCredits = (data?.get("credits") as? Long)?.toInt() ?: 750
@@ -948,6 +962,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _loginSuccessMessage.value = null
     }
 
+    // Вход — проверяем верификацию почты перед допуском / login with email verification gate
     fun loginAccount(usernameEntered: String, passwordEntered: String) {
         viewModelScope.launch {
             clearLoginMessages()
@@ -964,11 +979,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val hexName = trimmedName.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
                 "${hexName}@blocktetris.com"
             }
-            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, trimmedPass)
+            auth.signInWithEmailAndPassword(email, trimmedPass)
                 .addOnSuccessListener { authResult ->
                     viewModelScope.launch {
                         val user = authResult.user
                         if (user != null) {
+                            // Перезагружаем данные пользователя чтобы получить актуальный isEmailVerified
+                            try { user.reload() } catch (_: Exception) {}
+                            
+                            // Блокируем вход если почта не подтверждена / block if email not verified
+                            if (!user.isEmailVerified) {
+                                _isEmailVerified.value = false
+                                _showVerificationBanner.value = true
+                                _loginError.value = "Подтвердите почту! Проверьте входящие."
+                                auth.signOut()
+                                _isAuthLoading.value = false
+                                return@launch
+                            }
+                            
+                            _isEmailVerified.value = true
+                            _showVerificationBanner.value = false
                             val data = com.example.db.FirebaseSync.pullUserData(getApplication())
                             val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
                             val resolvedCredits = (data?.get("credits") as? Long)?.toInt()
@@ -1033,7 +1063,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val finalCredits = initialCredits ?: if (_playerName.value == "Player 1") _credits.value else 750
             val finalTier = initialTier ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
 
-            FirebaseAuth.getInstance().createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
+            // Регистрация + отправка письма верификации / register + send verification email
+            auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
                 .addOnSuccessListener { authResult ->
                     viewModelScope.launch {
                         val user = authResult.user
@@ -1042,6 +1073,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 displayName = trimmedName
                             }
                             user.updateProfile(profileUpdates)
+                            
+                            // Отправляем письмо подтверждения / send verification email
+                            try {
+                                user.sendEmailVerification()
+                            } catch (_: Exception) {}
                             
                             val acc = com.example.db.UserAccount(
                                 username = trimmedName,
@@ -1052,10 +1088,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             accountRepo.insert(acc)
                             switchAccount(trimmedName, finalTier, finalCredits)
                             
-                            // Initialize Firestore record
+                            // Инициализируем Firestore запись / init Firestore record
                             com.example.db.FirebaseSync.pushUserData(getApplication())
                             
-                            _loginSuccessMessage.value = "Аккаунт успешно создан!"
+                            _isEmailVerified.value = false
+                            _showVerificationBanner.value = true
+                            _loginSuccessMessage.value = "Письмо подтверждения отправлено! Проверьте почту."
                         } else {
                             _loginError.value = "Ошибка создания аккаунта!"
                         }
@@ -1078,7 +1116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _nicknameUpdateError.value = null
             _nicknameUpdateSuccess.value = null
-            val user = FirebaseAuth.getInstance().currentUser
+            val user = auth.currentUser
             if (user != null) {
                 val profileUpdates = userProfileChangeRequest {
                     displayName = trimmed
@@ -1110,7 +1148,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _emailUpdateError.value = null
             _emailUpdateSuccess.value = null
-            val user = FirebaseAuth.getInstance().currentUser
+            val user = auth.currentUser
             if (user != null) {
                 user.updateEmail(trimmed)
                     .addOnSuccessListener {
@@ -1133,7 +1171,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             clearLoginMessages()
             _isAuthLoading.value = true
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-            FirebaseAuth.getInstance().signInWithCredential(credential)
+            // Google вход — почта уже верифицирована Google'ом / Google = already verified
+            auth.signInWithCredential(credential)
                 .addOnSuccessListener { authResult ->
                     viewModelScope.launch {
                         val user = authResult.user
@@ -1227,14 +1266,54 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun logout() {
         viewModelScope.launch {
             try {
-                FirebaseAuth.getInstance().signOut()
+                auth.signOut()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            _isEmailVerified.value = false
+            _showVerificationBanner.value = false
             val guestAcc = accountRepo.getAccount("Player 1")
             resetPrefsToGuestDefaults(guestAcc)
             reloadAllCustomizationsAndStats()
             clearLoginMessages()
+        }
+    }
+
+    // Переотправить письмо верификации / resend verification email
+    fun resendVerificationEmail() {
+        viewModelScope.launch {
+            val user = auth.currentUser
+            if (user != null && !user.isEmailVerified) {
+                try {
+                    user.sendEmailVerification()
+                    _loginSuccessMessage.value = "Письмо отправлено повторно!"
+                } catch (e: Exception) {
+                    _loginError.value = e.localizedMessage ?: "Ошибка отправки письма!"
+                }
+            } else {
+                _loginError.value = "Нет аккаунта для верификации"
+            }
+        }
+    }
+
+    // Проверить статус верификации / check if email was verified (user clicks "I verified")
+    fun checkEmailVerification() {
+        viewModelScope.launch {
+            val user = auth.currentUser
+            if (user != null) {
+                try {
+                    user.reload()
+                    if (user.isEmailVerified) {
+                        _isEmailVerified.value = true
+                        _showVerificationBanner.value = false
+                        _loginSuccessMessage.value = "Почта подтверждена!"
+                    } else {
+                        _loginError.value = "Почта ещё не подтверждена"
+                    }
+                } catch (e: Exception) {
+                    _loginError.value = e.localizedMessage ?: "Ошибка проверки"
+                }
+            }
         }
     }
 
@@ -1451,7 +1530,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").document(uid).update(updates)
             .addOnSuccessListener {
                 fetchFirebaseUsersForAdmin()
-                val currentUser = FirebaseAuth.getInstance().currentUser
+                val currentUser = auth.currentUser
                 if (currentUser != null && currentUser.uid == uid) {
                     viewModelScope.launch {
                         com.example.db.FirebaseSync.pullUserData(getApplication())
@@ -1481,7 +1560,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").document(uid).update(updates)
             .addOnSuccessListener {
                 fetchFirebaseUsersForAdmin()
-                val currentUser = FirebaseAuth.getInstance().currentUser
+                val currentUser = auth.currentUser
                 if (currentUser != null && currentUser.uid == uid) {
                     viewModelScope.launch {
                         com.example.db.FirebaseSync.pullUserData(getApplication())
@@ -1533,7 +1612,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").document(uid).set(updates)
             .addOnSuccessListener {
                 fetchFirebaseUsersForAdmin()
-                val currentUser = FirebaseAuth.getInstance().currentUser
+                val currentUser = auth.currentUser
                 if (currentUser != null && currentUser.uid == uid) {
                     viewModelScope.launch {
                         com.example.db.FirebaseSync.pullUserData(getApplication())
@@ -2051,7 +2130,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 scoreRepo.insert(HighScore(playerName = _playerName.value, score = score))
             }
-            val currentUser = FirebaseAuth.getInstance().currentUser
+            val currentUser = auth.currentUser
             if (currentUser != null) {
                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 

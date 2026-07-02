@@ -143,6 +143,8 @@ fun ProfileScreen(
     var infoIsError by remember { mutableStateOf(false) }
 
     val isAuthLoading by viewModel.isAuthLoading.collectAsStateWithLifecycle()
+    val isEmailVerified by viewModel.isEmailVerified.collectAsStateWithLifecycle()
+    val showVerificationBanner by viewModel.showVerificationBanner.collectAsStateWithLifecycle()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val gso = remember {
@@ -1028,6 +1030,75 @@ fun ProfileScreen(
                                                         fontWeight = FontWeight.Bold,
                                                         modifier = Modifier.weight(1f)
                                                     )
+                                                }
+                                                Spacer(modifier = Modifier.height(14.dp))
+                                            }
+
+                                            // Баннер верификации почты / email verification banner
+                                            if (showVerificationBanner) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Color(0xFFFFF3E0))
+                                                        .padding(14.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.Email,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFFE65100),
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = if (currentLang == Language.RU)
+                                                                "Проверьте почту и подтвердите аккаунт!"
+                                                            else
+                                                                "Check your email and verify your account!",
+                                                            color = Color(0xFFBF360C),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(10.dp))
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        OutlinedButton(
+                                                            onClick = { viewModel.resendVerificationEmail() },
+                                                            modifier = Modifier.weight(1f),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            border = BorderStroke(1.dp, Color(0xFFE65100)),
+                                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                                contentColor = Color(0xFFE65100)
+                                                            )
+                                                        ) {
+                                                            Text(
+                                                                text = if (currentLang == Language.RU) "Отправить" else "Resend",
+                                                                fontSize = 12.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                        Button(
+                                                            onClick = { viewModel.checkEmailVerification() },
+                                                            modifier = Modifier.weight(1f),
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            colors = ButtonDefaults.buttonColors(
+                                                                containerColor = Color(0xFFE65100)
+                                                            )
+                                                        ) {
+                                                            Text(
+                                                                text = if (currentLang == Language.RU) "Я подтвердил" else "I verified",
+                                                                fontSize = 12.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                                 Spacer(modifier = Modifier.height(14.dp))
                                             }
