@@ -1,5 +1,7 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Category
@@ -47,6 +50,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
 import kotlinx.coroutines.delay
@@ -87,31 +92,31 @@ data class LootCrate(
 // ── All possible loot items (NO TITLES!) ──
 val allLootItems = listOf(
     // Grid Skins
-    LootItem("retro_amber", "skin", "AMBER GOLD", "Янтарное Золото", DropRarity.COMMON),
-    LootItem("emerald_matrix", "skin", "MATRIX GREEN", "Матрица Зелёная", DropRarity.COMMON),
-    LootItem("vaporwave_pink", "skin", "VAPORWAVE PINK", "Вейпвейв Розовый", DropRarity.UNCOMMON),
-    LootItem("midnight_gold", "skin", "MIDNIGHT GOLD", "Полуночное Золото", DropRarity.RARE),
-    LootItem("carbon_neutral", "skin", "TITAN SLATE", "Титановый Сланец", DropRarity.RARE),
-    LootItem("plasma_storm", "skin", "PLASMA BLAST", "Плазменная Буря", DropRarity.EPIC),
-    LootItem("glacial_frost", "skin", "GLACIAL ZERO", "Ледниковый Ноль", DropRarity.LEGENDARY),
+    LootItem("retro_amber", "skin", "Amber", "Янтарь", DropRarity.COMMON),
+    LootItem("emerald_matrix", "skin", "Matrix", "Матрица", DropRarity.COMMON),
+    LootItem("vaporwave_pink", "skin", "Neon Pink", "Розовый Неон", DropRarity.UNCOMMON),
+    LootItem("midnight_gold", "skin", "Gold", "Золото", DropRarity.RARE),
+    LootItem("carbon_neutral", "skin", "Titan", "Титан", DropRarity.RARE),
+    LootItem("plasma_storm", "skin", "Plasma", "Плазма", DropRarity.EPIC),
+    LootItem("glacial_frost", "skin", "Ice", "Лёд", DropRarity.LEGENDARY),
 
     // Cube Skins
-    LootItem("glass", "cube_skin", "GLASSMORPHISM", "Глассморфизм", DropRarity.COMMON),
-    LootItem("retro", "cube_skin", "CONCENTRIC RETRO", "Ретро-Концентрик", DropRarity.COMMON),
-    LootItem("flat", "cube_skin", "MINIMAL FLAT", "Простой Плоский", DropRarity.UNCOMMON),
-    LootItem("material", "cube_skin", "MATERIAL 3", "Материал 3", DropRarity.UNCOMMON),
-    LootItem("glowing_jewel", "cube_skin", "GLOWING GEMSTONE", "Драгоценный Камень", DropRarity.RARE),
-    LootItem("steampunk", "cube_skin", "STEAM BRASS", "Стимпанк Латунь", DropRarity.EPIC),
-    LootItem("red_gradient", "cube_skin", "CRIMSON GRADIENT", "Кровавый Градиент", DropRarity.RED),
-    LootItem("green_gradient", "cube_skin", "EMERALD GRADIENT", "Изумрудный Градиент", DropRarity.RED),
-    LootItem("blue_gradient", "cube_skin", "SAPPHIRE GRADIENT", "Сапфировый Градиент", DropRarity.RED),
-    LootItem("purple_gradient", "cube_skin", "AMETHYST GRADIENT", "Аметистовый Градиент", DropRarity.RED),
+    LootItem("glass", "cube_skin", "Glass", "Стекло", DropRarity.COMMON),
+    LootItem("retro", "cube_skin", "Retro", "Ретро", DropRarity.COMMON),
+    LootItem("flat", "cube_skin", "Flat", "Плоский", DropRarity.UNCOMMON),
+    LootItem("material", "cube_skin", "Material", "Материал", DropRarity.UNCOMMON),
+    LootItem("glowing_jewel", "cube_skin", "Crystal", "Кристалл", DropRarity.RARE),
+    LootItem("steampunk", "cube_skin", "Steampunk", "Стимпанк", DropRarity.EPIC),
+    LootItem("red_gradient", "cube_skin", "Red Gradient", "Красный Градиент", DropRarity.RED),
+    LootItem("green_gradient", "cube_skin", "Green Gradient", "Зелёный Градиент", DropRarity.RED),
+    LootItem("blue_gradient", "cube_skin", "Blue Gradient", "Синий Градиент", DropRarity.RED),
+    LootItem("purple_gradient", "cube_skin", "Purple Gradient", "Фиолетовый Градиент", DropRarity.RED),
 
     // Avatar Frames
-    LootItem("neon_ae", "avatar_frame", "Neon Aegis", "Неоновая Эгида", DropRarity.UNCOMMON),
-    LootItem("gold_ma", "avatar_frame", "Golden Matrix", "Золотая Матрица", DropRarity.RARE),
-    LootItem("chrono_gl", "avatar_frame", "Chrono Glitch", "Глитч Спектр", DropRarity.EPIC),
-    LootItem("omega_ti", "avatar_frame", "Titanium Singularity", "Металл. Титан", DropRarity.LEGENDARY),
+    LootItem("neon_ae", "avatar_frame", "Neon", "Неон", DropRarity.UNCOMMON),
+    LootItem("gold_ma", "avatar_frame", "Gold", "Золото", DropRarity.RARE),
+    LootItem("chrono_gl", "avatar_frame", "Gradient Frame", "Градиент", DropRarity.RED),
+    LootItem("omega_ti", "avatar_frame", "Titan Frame", "Титан", DropRarity.RARE),
 
 
     // Credit Drops
@@ -128,7 +133,7 @@ val allLootItems = listOf(
 // ── 5 Crate Tiers ──
 val lootCrates = listOf(
     LootCrate(
-        id = "wooden", name = "Wooden Crate", nameRu = "Деревянный Ящик",
+        id = "wooden", name = "Wooden Crate", nameRu = "Деревянный Кейс",
         cost = 125, accentColor = Color(0xFF8D6E63), secondaryColor = Color(0xFFA1887F),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
@@ -140,7 +145,7 @@ val lootCrates = listOf(
         )
     ),
     LootCrate(
-        id = "iron", name = "Iron Crate", nameRu = "Железный Ящик",
+        id = "iron", name = "Iron Crate", nameRu = "Железный Кейс",
         cost = 375, accentColor = Color(0xFF78909C), secondaryColor = Color(0xFF90A4AE),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
@@ -152,7 +157,7 @@ val lootCrates = listOf(
         )
     ),
     LootCrate(
-        id = "golden", name = "Golden Crate", nameRu = "Золотой Ящик",
+        id = "golden", name = "Golden Crate", nameRu = "Золотой Кейс",
         cost = 750, accentColor = Color(0xFFFFB300), secondaryColor = Color(0xFFFFD54F),
         icon = Icons.Default.CardGiftcard,
         dropChances = mapOf(
@@ -164,7 +169,7 @@ val lootCrates = listOf(
         )
     ),
     LootCrate(
-        id = "platinum", name = "Platinum Crate", nameRu = "Платиновый Ящик",
+        id = "platinum", name = "Platinum Crate", nameRu = "Платиновый Кейс",
         cost = 1250, accentColor = Color(0xFF7E57C2), secondaryColor = Color(0xFFB39DDB),
         icon = Icons.Default.AutoAwesome,
         dropChances = mapOf(
@@ -176,9 +181,9 @@ val lootCrates = listOf(
         )
     ),
     LootCrate(
-        id = "legendary", name = "Legendary Crate", nameRu = "Легендарный Ящик",
+        id = "legendary", name = "Legendary Crate", nameRu = "Легендарный Кейс",
         cost = 2500, accentColor = Color(0xFFFF6F00), secondaryColor = Color(0xFFFFAB40),
-        icon = Icons.Default.Diamond,
+        icon = Icons.Default.EmojiEvents,
         dropChances = mapOf(
             DropRarity.COMMON to 2f,
             DropRarity.UNCOMMON to 8f,
@@ -188,7 +193,32 @@ val lootCrates = listOf(
         )
     ),
     LootCrate(
-        id = "red_crate", name = "Mystic Red Crate", nameRu = "Красный Ящик",
+        id = "diamond", name = "Diamond Crate", nameRu = "Алмазный Кейс",
+        cost = 4500, accentColor = Color(0xFF00E5FF), secondaryColor = Color(0xFF80D8FF),
+        icon = Icons.Default.Diamond,
+        dropChances = mapOf(
+            DropRarity.COMMON to 0f,
+            DropRarity.UNCOMMON to 10f,
+            DropRarity.RARE to 35f,
+            DropRarity.EPIC to 35f,
+            DropRarity.LEGENDARY to 20f
+        )
+    ),
+    LootCrate(
+        id = "red_crate_lite", name = "Lite Red Crate", nameRu = "Красный Лайт",
+        cost = 7500, accentColor = Color(0xFFE57373), secondaryColor = Color(0xFFFFCDD2),
+        icon = Icons.Default.Whatshot,
+        dropChances = mapOf(
+            DropRarity.COMMON to 31.5f,
+            DropRarity.UNCOMMON to 32f,
+            DropRarity.RARE to 27f,
+            DropRarity.EPIC to 7f,
+            DropRarity.LEGENDARY to 2f,
+            DropRarity.RED to 0.5f
+        )
+    ),
+    LootCrate(
+        id = "red_crate", name = "Red Crate", nameRu = "Красный Кейс",
         cost = 25000, accentColor = Color(0xFFD32F2F), secondaryColor = Color(0xFFFF5252),
         icon = Icons.Default.Whatshot,
         dropChances = mapOf(
@@ -198,19 +228,6 @@ val lootCrates = listOf(
             DropRarity.EPIC to 30f,
             DropRarity.LEGENDARY to 40f,
             DropRarity.RED to 20f
-        )
-    ),
-    LootCrate(
-        id = "red_crate_lite", name = "Lite Red Crate", nameRu = "Лайт Красный Ящик",
-        cost = 12500, accentColor = Color(0xFFE57373), secondaryColor = Color(0xFFFFCDD2),
-        icon = Icons.Default.Whatshot,
-        dropChances = mapOf(
-            DropRarity.COMMON to 30f,
-            DropRarity.UNCOMMON to 30f,
-            DropRarity.RARE to 26f,
-            DropRarity.EPIC to 8f,
-            DropRarity.LEGENDARY to 4f,
-            DropRarity.RED to 2f
         )
     )
 )
@@ -243,12 +260,19 @@ fun deserializeInventoryItem(raw: String): InventoryItem? {
     val uuid = parts[0]
     val id = parts[1]
     val type = parts[2]
-    val displayName = parts[3]
-    val displayNameRu = parts[4]
+    var displayName = parts[3]
+    var displayNameRu = parts[4]
     val rarityName = parts[5]
     val creditValue = parts.getOrNull(6)?.toIntOrNull() ?: 0
 
-    val rarity = try {
+    // Re-resolve from allLootItems so renamed/rebalanced items update immediately in inventory
+    val masterItem = allLootItems.find { it.id == id }
+    if (masterItem != null) {
+        displayName = masterItem.displayName
+        displayNameRu = masterItem.displayNameRu
+    }
+
+    val rarity = masterItem?.rarity ?: try {
         DropRarity.valueOf(rarityName)
     } catch (e: Exception) {
         DropRarity.COMMON
@@ -261,7 +285,7 @@ fun deserializeInventoryItem(raw: String): InventoryItem? {
             displayName = displayName,
             displayNameRu = displayNameRu,
             rarity = rarity,
-            creditValue = creditValue
+            creditValue = if (masterItem != null && masterItem.creditValue > 0) masterItem.creditValue else creditValue
         )
     )
 }
@@ -278,6 +302,8 @@ fun CasesScreen(
 ) {
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
     val credits by viewModel.credits.collectAsStateWithLifecycle()
+    val themeColor = MaterialTheme.colorScheme.primary
+    val haptic = LocalHapticFeedback.current
 
     var openingCrate by remember { mutableStateOf<LootCrate?>(null) }
     var droppedItem by remember { mutableStateOf<LootItem?>(null) }
@@ -313,12 +339,12 @@ fun CasesScreen(
     fun sellInventoryItem(invItem: InventoryItem) {
         val item = invItem.item
         val sellPrice = when (item.rarity) {
-            DropRarity.COMMON -> 20
-            DropRarity.UNCOMMON -> 50
-            DropRarity.RARE -> 120
-            DropRarity.EPIC -> 250
-            DropRarity.LEGENDARY -> 600
-            DropRarity.RED -> 3000
+            DropRarity.COMMON -> 35
+            DropRarity.UNCOMMON -> 100
+            DropRarity.RARE -> 250
+            DropRarity.EPIC -> 600
+            DropRarity.LEGENDARY -> 1500
+            DropRarity.RED -> 5000
         }
         viewModel.addCredits(sellPrice)
         viewModel.triggerAudioFeedback("selling")
@@ -378,6 +404,14 @@ fun CasesScreen(
     }
 
     fun applyDrop(item: LootItem) {
+        val refundByRarity = when (item.rarity) {
+            DropRarity.COMMON -> 50
+            DropRarity.UNCOMMON -> 150
+            DropRarity.RARE -> 400
+            DropRarity.EPIC -> 900
+            DropRarity.LEGENDARY -> 2000
+            DropRarity.RED -> 7500
+        }
         when (item.type) {
             "credits" -> {
                 viewModel.addCredits(item.creditValue)
@@ -387,7 +421,7 @@ fun CasesScreen(
                 val current = sharedPrefs.getStringSet("purchased_skins", setOf("cyberpunk")) ?: setOf("cyberpunk")
                 if (current.contains(item.id)) {
                     // Duplicate — give credits instead
-                    val refund = 75
+                    val refund = refundByRarity
                     viewModel.addCredits(refund)
                     resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
@@ -399,7 +433,7 @@ fun CasesScreen(
             "cube_skin" -> {
                 val current = sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
                 if (current.contains(item.id)) {
-                    val refund = 75
+                    val refund = refundByRarity
                     viewModel.addCredits(refund)
                     resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
@@ -411,7 +445,7 @@ fun CasesScreen(
             "avatar_frame" -> {
                 val current = viewModel.purchasedAvatarFrames.value
                 if (current.contains(item.id)) {
-                    val refund = 100
+                    val refund = refundByRarity
                     viewModel.addCredits(refund)
                     resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
@@ -423,7 +457,7 @@ fun CasesScreen(
             "sound_pack" -> {
                 val current = viewModel.purchasedSoundPacks.value
                 if (current.contains(item.id)) {
-                    val refund = 100
+                    val refund = refundByRarity
                     viewModel.addCredits(refund)
                     resultMessage = if (currentLang == Language.RU) "Дубликат! Компенсация: $refund 🪙" else "Duplicate! Refund: $refund 🪙"
                 } else {
@@ -597,48 +631,43 @@ fun CasesScreen(
             CenterAlignedTopAppBar(
                 title = {
                     AdaptiveText(
-                        text = if (currentLang == Language.RU) "КЕЙСЫ" else "LOOT CRATES",
+                        text = if (currentLang == Language.RU) "КЕЙСЫ" else "CASES",
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
                         )
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
                 actions = {
-                    Row(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        modifier = Modifier.padding(end = 16.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        tonalElevation = 2.dp
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Credits",
-                            tint = Color(0xFFFFB300),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        AdaptiveText(
-                            text = "$credits 🪙",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Credits",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(18.dp)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            AdaptiveText(
+                                text = "$credits",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
@@ -652,37 +681,102 @@ fun CasesScreen(
             val widthDp = maxWidth
             
             Column(modifier = Modifier.fillMaxSize()) {
-                // Tab switcher
-                TabRow(
-                    selectedTabIndex = activeSubTab,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
+                // Modern Unified Sliding Pill Tab Selector
+                val caseTabs = listOf(
+                    Triple(0, if (currentLang == Language.RU) "Кейсы" else "Cases", Icons.Default.CardGiftcard),
+                    Triple(1, if (currentLang == Language.RU) "Инвентарь (${inventoryItems.size})" else "Inventory (${inventoryItems.size})", Icons.Default.Inventory2)
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Tab(
-                        selected = activeSubTab == 0,
-                        onClick = { activeSubTab = 0 },
-                        text = {
-                            AdaptiveText(
-                                text = if (currentLang == Language.RU) "ЯЩИКИ" else "CRATES",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                            )
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp)
+                    ) {
+                        val tabWidth = maxWidth / caseTabs.size
+                        val indicatorOffset by animateDpAsState(
+                            targetValue = tabWidth * activeSubTab,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = 450f),
+                            label = "caseTabIndicator"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .width(tabWidth)
+                                .height(44.dp)
+                                .offset(x = indicatorOffset)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(themeColor)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            caseTabs.forEach { (index, title, icon) ->
+                                val isSelected = activeSubTab == index
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            activeSubTab = index
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = title,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.labelLarge.copy(
+                                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    )
-                    Tab(
-                        selected = activeSubTab == 1,
-                        onClick = { activeSubTab = 1 },
-                        text = {
-                            AdaptiveText(
-                                text = if (currentLang == Language.RU) "ИНВЕНТАРЬ (${inventoryItems.size})" else "INVENTORY (${inventoryItems.size})",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
-                    )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-                    if (activeSubTab == 0) {
+                // Smooth Directional Tab Transition
+                AnimatedContent(
+                    targetState = activeSubTab,
+                    transitionSpec = {
+                        val direction = if (targetState > initialState) 1 else -1
+                        (slideInHorizontally(
+                            initialOffsetX = { fullWidth -> (fullWidth * 0.35f * direction).toInt() },
+                            animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
+                        ) + fadeIn(tween(220))).togetherWith(
+                            slideOutHorizontally(
+                                targetOffsetX = { fullWidth -> (fullWidth * 0.35f * -direction).toInt() },
+                                animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
+                            ) + fadeOut(tween(180))
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    label = "CasesTabContent"
+                ) { currentTab ->
+                    if (currentTab == 0) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -816,139 +910,209 @@ fun CasesScreen(
                 }
             }
 
-            // Crate contents preview dialog
-            if (previewCrate != null) {
-                val crate = previewCrate!!
-                val canAfford = credits >= crate.cost
-                val possibleItems = allLootItems.filter { item ->
-                    crate.dropChances.getOrDefault(item.rarity, 0f) > 0f
-                }.sortedBy { it.rarity.ordinal }
+            // Compact MD3 Crate contents preview full-screen overlay
+            AnimatedVisibility(
+                visible = previewCrate != null,
+                enter = fadeIn(tween(200)) + slideInVertically(initialOffsetY = { it / 4 }, animationSpec = tween(250)),
+                exit = fadeOut(tween(150)) + slideOutVertically(targetOffsetY = { it / 4 }, animationSpec = tween(200))
+            ) {
+                previewCrate?.let { crate ->
+                    BackHandler { previewCrate = null }
+                    val canAfford = credits >= crate.cost
+                    val possibleItems = allLootItems.filter { item ->
+                        crate.dropChances.getOrDefault(item.rarity, 0f) > 0f
+                    }.sortedBy { it.rarity.ordinal }
 
-                androidx.compose.ui.window.Dialog(
-                    onDismissRequest = { previewCrate = null },
-                    properties = androidx.compose.ui.window.DialogProperties(
-                        usePlatformDefaultWidth = false,
-                        decorFitsSystemWindows = false
-                    )
-                ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background.copy(alpha = 0.98f)
+                        color = MaterialTheme.colorScheme.background
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .safeDrawingPadding()
-                                .padding(16.dp)
-                        ) {
-                            // Top Bar / Title
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = { previewCrate = null }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Close",
-                                        tint = MaterialTheme.colorScheme.onBackground
-                                    )
-                                }
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "СОДЕРЖИМОЕ ЯЩИКА" else "CRATE CONTENTS",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Box(modifier = Modifier.size(48.dp))
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Crate Header Card
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                ),
-                                border = BorderStroke(
-                                    width = 1.dp,
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(crate.accentColor, crate.secondaryColor)
-                                    )
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(64.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(
-                                                Brush.linearGradient(
-                                                    colors = listOf(
-                                                        crate.accentColor.copy(alpha = 0.2f),
-                                                        crate.secondaryColor.copy(alpha = 0.1f)
-                                                    )
-                                                )
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = crate.icon,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(36.dp),
-                                            tint = crate.accentColor
-                                        )
-                                    }
-                                    Column {
+                        Scaffold(
+                            containerColor = MaterialTheme.colorScheme.background,
+                            topBar = {
+                                CenterAlignedTopAppBar(
+                                    modifier = Modifier.statusBarsPadding(),
+                                    title = {
                                         AdaptiveText(
                                             text = if (currentLang == Language.RU) crate.nameRu else crate.name,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Black
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.ExtraBold,
+                                                letterSpacing = 0.5.sp
+                                            )
                                         )
-                                        AdaptiveText(
-                                            text = if (currentLang == Language.RU) "Стоимость открытия: ${crate.cost} 🪙" else "Cost to open: ${crate.cost} 🪙",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = crate.accentColor,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                    },
+                                    navigationIcon = {
+                                        IconButton(onClick = { previewCrate = null }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Close"
+                                            )
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.background
+                                    )
+                                )
+                            },
+                            bottomBar = {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shadowElevation = 8.dp
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .navigationBarsPadding()
+                                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (!canAfford) {
+                                            AdaptiveText(
+                                                text = if (currentLang == Language.RU) "Недостаточно 🪙 для открытия!" else "Insufficient credits to open!",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                if (openingCrate == null && canAfford) {
+                                                    previewCrate = null
+                                                    viewModel.spendCredits(crate.cost)
+                                                    viewModel.triggerAudioFeedback("buy")
+                                                    openingCrate = crate
+                                                }
+                                            },
+                                            enabled = canAfford && (openingCrate == null),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(54.dp),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = crate.accentColor,
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CardGiftcard,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            AdaptiveText(
+                                                text = if (currentLang == Language.RU) "ОТКРЫТЬ ЗА ${crate.cost} 🪙" else "OPEN FOR ${crate.cost} 🪙",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                        }
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            AdaptiveText(
-                                text = if (currentLang == Language.RU) "ВОЗМОЖНЫЕ НАГРАДЫ" else "POSSIBLE DROPS",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Grid of items
-                            Box(
+                        ) { paddingValues ->
+                            Column(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
+                                    .padding(paddingValues)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                val scrollState = rememberScrollState()
+                                // Crate Hero Header Card
+                                ElevatedCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(22.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier.size(54.dp),
+                                                shape = RoundedCornerShape(18.dp),
+                                                color = crate.accentColor.copy(alpha = 0.15f)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = crate.icon,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(30.dp),
+                                                        tint = crate.accentColor
+                                                    )
+                                                }
+                                            }
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                AdaptiveText(
+                                                    text = if (currentLang == Language.RU) crate.nameRu else crate.name,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.ExtraBold
+                                                )
+                                                AdaptiveText(
+                                                    text = if (currentLang == Language.RU) "Стоимость: ${crate.cost} 🪙" else "Cost: ${crate.cost} 🪙",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = crate.accentColor,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+
+                                        // Drop Chances Chips Row without text names below
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            crate.dropChances.forEach { (rarity, chance) ->
+                                                if (chance > 0f) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        color = rarity.color.copy(alpha = 0.15f),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            AdaptiveText(
+                                                                text = "${chance.toInt()}%",
+                                                                style = MaterialTheme.typography.labelMedium,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = rarity.color
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                AdaptiveText(
+                                    text = if (currentLang == Language.RU) "ВОЗМОЖНЫЕ НАГРАДЫ (${possibleItems.size})" else "POSSIBLE DROPS (${possibleItems.size})",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                // Compact Grid of items
                                 Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .verticalScroll(scrollState),
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     possibleItems.chunked(2).forEach { rowItems ->
@@ -957,49 +1121,53 @@ fun CasesScreen(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             rowItems.forEach { item ->
-                                                Row(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(RoundedCornerShape(12.dp))
-                                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                                                        .border(
-                                                            width = 1.dp,
-                                                            color = item.rarity.color.copy(alpha = 0.3f),
-                                                            shape = RoundedCornerShape(12.dp)
-                                                        )
-                                                        .padding(10.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ElevatedCard(
+                                                    modifier = Modifier.weight(1f),
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    colors = CardDefaults.elevatedCardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                                    )
                                                 ) {
-                                                    Box(
+                                                    Row(
                                                         modifier = Modifier
-                                                            .width(3.dp)
-                                                            .height(30.dp)
-                                                            .clip(RoundedCornerShape(1.5.dp))
-                                                            .background(item.rarity.color)
-                                                    )
-                                                    Icon(
-                                                        imageVector = iconForItemType(item.type),
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp),
-                                                        tint = item.rarity.color
-                                                    )
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        AdaptiveText(
-                                                            text = if (currentLang == Language.RU) item.displayNameRu else item.displayName,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = MaterialTheme.colorScheme.onSurface,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                        AdaptiveText(
-                                                            text = if (currentLang == Language.RU) item.rarity.labelRu else item.rarity.label,
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                                            color = item.rarity.color,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
+                                                            .fillMaxWidth()
+                                                            .padding(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                    ) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            color = item.rarity.color.copy(alpha = 0.15f),
+                                                            modifier = Modifier.size(34.dp)
+                                                        ) {
+                                                            Box(contentAlignment = Alignment.Center) {
+                                                                Icon(
+                                                                    imageVector = iconForItemType(item.type),
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(18.dp),
+                                                                    tint = item.rarity.color
+                                                                )
+                                                            }
+                                                        }
+
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            AdaptiveText(
+                                                                text = if (currentLang == Language.RU) item.displayNameRu else item.displayName,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            AdaptiveText(
+                                                                text = if (currentLang == Language.RU) item.rarity.labelRu else item.rarity.label,
+                                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                                color = item.rarity.color,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1010,61 +1178,9 @@ fun CasesScreen(
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Open / Bottom button block
-                            if (!canAfford) {
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "Недостаточно 🪙!" else "Insufficient K!",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 8.dp)
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    if (openingCrate == null && canAfford) {
-                                        previewCrate = null
-                                        viewModel.spendCredits(crate.cost)
-                                        viewModel.triggerAudioFeedback("buy")
-                                        openingCrate = crate
-                                    }
-                                },
-                                enabled = canAfford && (openingCrate == null),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = crate.accentColor,
-                                    contentColor = Color.Black
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CardGiftcard,
-                                    contentDescription = null,
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "ОТКРЫТЬ ЯЩИК ЗА ${crate.cost} 🪙" else "OPEN CRATE FOR ${crate.cost} 🪙",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Spacer(modifier = Modifier.navigationBarsPadding())
                         }
                     }
                 }
-            }
 
             // ═══════════════════════════════════════════════════
             // CS:GO-STYLE ROULETTE OVERLAY
@@ -1359,6 +1475,7 @@ fun CasesScreen(
         }
     }
 }
+}
 
 @Composable
 private fun CrateCard(
@@ -1371,129 +1488,151 @@ private fun CrateCard(
 ) {
     val canAfford = credits >= crate.cost
 
-    OutlinedCard(
-        modifier = modifier.clickable { onOpen() },
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(
-            width = 2.dp,
-            brush = Brush.linearGradient(
-                colors = listOf(crate.accentColor, crate.secondaryColor)
-            )
+    ElevatedCard(
+        onClick = onOpen,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(18.dp)
         ) {
-            // Crate icon with gradient background
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                crate.accentColor.copy(alpha = 0.2f),
-                                crate.secondaryColor.copy(alpha = 0.1f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = crate.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = crate.accentColor
-                )
-            }
-
-            // Info
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                // Crate icon avatar with gradient background
+                Surface(
+                    modifier = Modifier.size(60.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = crate.accentColor.copy(alpha = 0.15f),
+                    tonalElevation = 1.dp
                 ) {
-                    AdaptiveText(
-                        text = if (currentLang == Language.RU) crate.nameRu else crate.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    var showInfoDialog by remember { mutableStateOf(false) }
-                    
-                    IconButton(
-                        onClick = { showInfoDialog = true },
-                        modifier = Modifier.size(24.dp)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Drop chances",
-                            tint = crate.accentColor,
-                            modifier = Modifier.size(16.dp)
+                            imageVector = crate.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = crate.accentColor
                         )
                     }
+                }
+
+                // Info
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        AdaptiveText(
+                            text = if (currentLang == Language.RU) crate.nameRu else crate.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        
+                        var showInfoDialog by remember { mutableStateOf(false) }
+                        
+                        IconButton(
+                            onClick = { showInfoDialog = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Drop chances",
+                                tint = crate.accentColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        
+                        if (showInfoDialog) {
+                            DropChancesDialog(crate = crate, currentLang = currentLang, onDismiss = { showInfoDialog = false })
+                        }
+                    }
                     
-                    if (showInfoDialog) {
-                        DropChancesDialog(crate = crate, currentLang = currentLang, onDismiss = { showInfoDialog = false })
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        crate.dropChances.forEach { (rarity, chance) ->
+                            if (chance > 0f) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = rarity.color.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "${chance.toInt()}%",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = rarity.color,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // Price and open button
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Price and action bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Price badge
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (canAfford) crate.accentColor.copy(alpha = 0.15f)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (canAfford) crate.accentColor.copy(alpha = 0.15f)
                             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = if (canAfford) crate.accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
-                    AdaptiveText(
-                        text = "${crate.cost}",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (canAfford) crate.accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (canAfford) crate.accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                        AdaptiveText(
+                            text = "${crate.cost} 🪙",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = if (canAfford) crate.accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
                 }
 
                 // Inspect button
-                FilledTonalButton(
+                Button(
                     onClick = onOpen,
                     enabled = !isOpening,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = crate.accentColor.copy(alpha = 0.2f),
-                        contentColor = crate.accentColor
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = crate.accentColor,
+                        contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
                 ) {
                     AdaptiveText(
-                        text = if (isOpening) "..." else if (currentLang == Language.RU) "ОСМОТР" else "INSPECT",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp
+                        text = if (isOpening) "..." else if (currentLang == Language.RU) "ОТКРЫТЬ" else "OPEN",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
             }
@@ -1618,14 +1757,13 @@ fun InventoryItemCard(
         else -> Icons.Default.Star
     }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .border(1.2.dp, rarityColor.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Box(
             modifier = Modifier
@@ -1633,7 +1771,7 @@ fun InventoryItemCard(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            rarityColor.copy(alpha = 0.08f),
+                            rarityColor.copy(alpha = 0.12f),
                             Color.Transparent
                         )
                     )
@@ -1642,8 +1780,8 @@ fun InventoryItemCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Header (Rarity tag + Category Icon)
                 Row(
@@ -1652,23 +1790,30 @@ fun InventoryItemCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        color = rarityColor.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(6.dp)
+                        color = rarityColor.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = if (currentLang == Language.RU) item.rarity.labelRu.uppercase() else item.rarity.label.uppercase(),
                             color = rarityColor,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Black),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                     
-                    Icon(
-                        imageVector = categoryIcon,
-                        contentDescription = null,
-                        tint = rarityColor.copy(alpha = 0.7f),
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Surface(
+                        color = rarityColor.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Icon(
+                            imageVector = categoryIcon,
+                            contentDescription = null,
+                            tint = rarityColor,
+                            modifier = Modifier
+                                .padding(5.dp)
+                                .size(14.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -1676,7 +1821,7 @@ fun InventoryItemCard(
                 // Item Name
                 Text(
                     text = if (currentLang == Language.RU) item.displayNameRu else item.displayName,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -1684,15 +1829,15 @@ fun InventoryItemCard(
 
                 Text(
                     text = typeLabel,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Action Buttons Row (side-by-side to look incredibly neat!)
+                // Action Buttons Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1701,31 +1846,34 @@ fun InventoryItemCard(
                     Button(
                         onClick = onUse,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = rarityColor,
-                            contentColor = if (item.rarity == DropRarity.COMMON || item.rarity == DropRarity.UNCOMMON) Color.Black else Color.White
+                            contentColor = Color.White
                         ),
                         contentPadding = PaddingValues(vertical = 6.dp)
                     ) {
                         Text(
                             text = if (currentLang == Language.RU) "НАДЕТЬ" else "EQUIP",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
 
                     // Sell button
-                    OutlinedButton(
+                    FilledTonalButton(
                         onClick = onSell,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFFFFB300).copy(alpha = 0.18f),
+                            contentColor = Color(0xFFFF8F00)
+                        ),
                         contentPadding = PaddingValues(vertical = 6.dp)
                     ) {
                         Text(
-                            text = if (currentLang == Language.RU) "$sellPrice 🪙" else "$sellPrice 🪙",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            text = if (currentLang == Language.RU) "ПРОДАТЬ $sellPrice 🪙" else "SELL $sellPrice 🪙",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                            maxLines = 1
                         )
                     }
                 }

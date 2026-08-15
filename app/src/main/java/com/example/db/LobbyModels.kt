@@ -11,8 +11,14 @@ data class LobbyRoom(
     val status: String = "waiting", // "waiting", "playing", "finished"
     val players: List<RoomPlayer> = emptyList(),
     val createdAt: Long = 0L,
-    val hostGrid: List<Int> = List(120) { 0 }, // 12x10 flat board
-    val opponentGrid: List<Int> = List(120) { 0 }, // 12x10 flat board
+    val gameMode: String = "CLASSIC", // "CLASSIC", "SCORE_RACE", "SPRINT", "BLITZ", "HYPER"
+    val garbageIntensity: Float = 1.0f,
+    val roundTarget: Int = 1,
+    val hostWins: Int = 0,
+    val opponentWins: Int = 0,
+    val currentRound: Int = 1,
+    val hostGrid: List<Int> = List(200) { 0 },
+    val opponentGrid: List<Int> = List(200) { 0 },
     val hostScore: Int = 0,
     val opponentScore: Int = 0,
     val hostCombo: Int = 0,
@@ -21,10 +27,11 @@ data class LobbyRoom(
     val opponentGameOver: Boolean = false,
     val hostGarbageToSend: Int = 0,
     val opponentGarbageToSend: Int = 0,
-    val winnerId: String = ""
+    val winnerId: String = "",
+    val betAmount: Int = 0
 ) {
-    // Map conversion functions helper for Firestore compatibility
     fun toMap(): Map<String, Any> {
+        val playersMap = players.associate { it.uid to it.toMap() }
         return mapOf(
             "roomId" to roomId,
             "name" to name,
@@ -34,8 +41,14 @@ data class LobbyRoom(
             "password" to password,
             "isLocked" to isLocked,
             "status" to status,
-            "players" to players.map { it.toMap() },
+            "players" to playersMap,
             "createdAt" to createdAt,
+            "gameMode" to gameMode,
+            "garbageIntensity" to garbageIntensity.toDouble(),
+            "roundTarget" to roundTarget,
+            "hostWins" to hostWins,
+            "opponentWins" to opponentWins,
+            "currentRound" to currentRound,
             "hostGrid" to hostGrid,
             "opponentGrid" to opponentGrid,
             "hostScore" to hostScore,
@@ -46,14 +59,23 @@ data class LobbyRoom(
             "opponentGameOver" to opponentGameOver,
             "hostGarbageToSend" to hostGarbageToSend,
             "opponentGarbageToSend" to opponentGarbageToSend,
-            "winnerId" to winnerId
+            "winnerId" to winnerId,
+            "betAmount" to betAmount
         )
     }
 
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun fromMap(map: Map<String, Any>): LobbyRoom {
-            val playersList = (map["players"] as? List<Map<String, Any>>)?.map { RoomPlayer.fromMap(it) } ?: emptyList()
+            val playersList = when (val p = map["players"]) {
+                is Map<*, *> -> p.values.mapNotNull { item ->
+                    (item as? Map<*, *>)?.let { RoomPlayer.fromMap(it.mapKeys { e -> e.key.toString() } as Map<String, Any>) }
+                }
+                is List<*> -> p.mapNotNull { item ->
+                    (item as? Map<*, *>)?.let { RoomPlayer.fromMap(it.mapKeys { e -> e.key.toString() } as Map<String, Any>) }
+                }
+                else -> emptyList()
+            }
             return LobbyRoom(
                 roomId = map["roomId"] as? String ?: "",
                 name = map["name"] as? String ?: "",
@@ -65,8 +87,14 @@ data class LobbyRoom(
                 status = map["status"] as? String ?: "waiting",
                 players = playersList,
                 createdAt = (map["createdAt"] as? Long) ?: (map["createdAt"] as? Number)?.toLong() ?: 0L,
-                hostGrid = (map["hostGrid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: List(120) { 0 },
-                opponentGrid = (map["opponentGrid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: List(120) { 0 },
+                gameMode = map["gameMode"] as? String ?: "CLASSIC",
+                garbageIntensity = ((map["garbageIntensity"] as? Number)?.toFloat()) ?: 1.0f,
+                roundTarget = (map["roundTarget"] as? Number)?.toInt() ?: 1,
+                hostWins = (map["hostWins"] as? Number)?.toInt() ?: 0,
+                opponentWins = (map["opponentWins"] as? Number)?.toInt() ?: 0,
+                currentRound = (map["currentRound"] as? Number)?.toInt() ?: 1,
+                hostGrid = (map["hostGrid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: List(200) { 0 },
+                opponentGrid = (map["opponentGrid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: List(200) { 0 },
                 hostScore = (map["hostScore"] as? Number)?.toInt() ?: 0,
                 opponentScore = (map["opponentScore"] as? Number)?.toInt() ?: 0,
                 hostCombo = (map["hostCombo"] as? Number)?.toInt() ?: 0,
@@ -75,7 +103,8 @@ data class LobbyRoom(
                 opponentGameOver = map["opponentGameOver"] as? Boolean ?: false,
                 hostGarbageToSend = (map["hostGarbageToSend"] as? Number)?.toInt() ?: 0,
                 opponentGarbageToSend = (map["opponentGarbageToSend"] as? Number)?.toInt() ?: 0,
-                winnerId = map["winnerId"] as? String ?: ""
+                winnerId = map["winnerId"] as? String ?: "",
+                betAmount = (map["betAmount"] as? Number)?.toInt() ?: 0
             )
         }
     }
@@ -86,7 +115,13 @@ data class RoomPlayer(
     val name: String = "",
     val tier: String = "BRONZE",
     val isReady: Boolean = false,
-    val hasGradient: Boolean = false
+    val hasGradient: Boolean = false,
+    val avatarEmoji: String = "",
+    val avatarBgColor: String = "",
+    val avatarFrame: String = "standard",
+    val winStreak: Int = 0,
+    val rating: Int = 1000,
+    val customTag: String = ""
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -94,7 +129,13 @@ data class RoomPlayer(
             "name" to name,
             "tier" to tier,
             "isReady" to isReady,
-            "hasGradient" to hasGradient
+            "hasGradient" to hasGradient,
+            "avatarEmoji" to avatarEmoji,
+            "avatarBgColor" to avatarBgColor,
+            "avatarFrame" to avatarFrame,
+            "winStreak" to winStreak,
+            "rating" to rating,
+            "customTag" to customTag
         )
     }
 
@@ -105,7 +146,13 @@ data class RoomPlayer(
                 name = map["name"] as? String ?: "",
                 tier = map["tier"] as? String ?: "BRONZE",
                 isReady = map["isReady"] as? Boolean ?: false,
-                hasGradient = map["hasGradient"] as? Boolean ?: false
+                hasGradient = (map["hasGradient"] as? Boolean) ?: (map["hasNicknameGradient"] as? Boolean) ?: false,
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: "standard",
+                winStreak = (map["winStreak"] as? Number)?.toInt() ?: 0,
+                rating = (map["rating"] as? Number)?.toInt() ?: 1000,
+                customTag = map["customTag"] as? String ?: ""
             )
         }
     }
@@ -117,7 +164,14 @@ data class ChatMessage(
     val senderName: String = "",
     val text: String = "",
     val timestamp: Long = 0L,
-    val hasGradient: Boolean = false
+    val hasGradient: Boolean = false,
+    val senderTier: String = "BRONZE",
+    val senderAvatarEmoji: String = "",
+    val senderAvatarBgColor: String = "",
+    val senderAvatarFrame: String = "standard",
+    val replyToSender: String = "",
+    val replyToText: String = "",
+    val reactions: Map<String, List<String>> = emptyMap() // emoji -> list of UIDs
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -126,20 +180,265 @@ data class ChatMessage(
             "senderName" to senderName,
             "text" to text,
             "timestamp" to timestamp,
-            "hasGradient" to hasGradient
+            "hasGradient" to hasGradient,
+            "senderTier" to senderTier,
+            "senderAvatarEmoji" to senderAvatarEmoji,
+            "senderAvatarBgColor" to senderAvatarBgColor,
+            "senderAvatarFrame" to senderAvatarFrame,
+            "replyToSender" to replyToSender,
+            "replyToText" to replyToText,
+            "reactions" to reactions
         )
     }
 
     companion object {
+        @Suppress("UNCHECKED_CAST")
         fun fromMap(map: Map<String, Any>): ChatMessage {
+            val rawReactions = map["reactions"] as? Map<*, *>
+            val parsedReactions = rawReactions?.mapNotNull { (k, v) ->
+                val emojiKey = k?.toString() ?: return@mapNotNull null
+                val uids = when (v) {
+                    is List<*> -> v.mapNotNull { it?.toString() }
+                    is Map<*, *> -> v.values.mapNotNull { it?.toString() }
+                    else -> emptyList()
+                }
+                emojiKey to uids
+            }?.toMap() ?: emptyMap()
+
             return ChatMessage(
                 id = map["id"] as? String ?: "",
                 senderId = map["senderId"] as? String ?: "",
                 senderName = map["senderName"] as? String ?: "",
                 text = map["text"] as? String ?: "",
                 timestamp = (map["timestamp"] as? Long) ?: (map["timestamp"] as? Number)?.toLong() ?: 0L,
-                hasGradient = map["hasGradient"] as? Boolean ?: false
+                hasGradient = map["hasGradient"] as? Boolean ?: false,
+                senderTier = map["senderTier"] as? String ?: "BRONZE",
+                senderAvatarEmoji = map["senderAvatarEmoji"] as? String ?: "",
+                senderAvatarBgColor = map["senderAvatarBgColor"] as? String ?: "",
+                senderAvatarFrame = map["senderAvatarFrame"] as? String ?: "standard",
+                replyToSender = map["replyToSender"] as? String ?: "",
+                replyToText = map["replyToText"] as? String ?: "",
+                reactions = parsedReactions
             )
         }
+    }
+}
+
+data class FriendUser(
+    val uid: String = "",
+    val username: String = "",
+    val onlineTier: String = "BRONZE",
+    val avatarEmoji: String = "",
+    val avatarBgColor: String = "",
+    val avatarFrame: String = "standard",
+    val hasGradient: Boolean = false,
+    val isOnline: Boolean = false,
+    val status: String = "accepted", // "accepted", "pending_incoming", "pending_outgoing"
+    val lastSeen: Long = 0L,
+    val customTag: String = ""
+) {
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "uid" to uid,
+            "username" to username,
+            "onlineTier" to onlineTier,
+            "avatarEmoji" to avatarEmoji,
+            "avatarBgColor" to avatarBgColor,
+            "avatarFrame" to avatarFrame,
+            "hasGradient" to hasGradient,
+            "isOnline" to isOnline,
+            "status" to status,
+            "lastSeen" to lastSeen,
+            "customTag" to customTag
+        )
+    }
+
+    companion object {
+        fun fromMap(map: Map<String, Any>): FriendUser {
+            return FriendUser(
+                uid = map["uid"] as? String ?: "",
+                username = map["username"] as? String ?: "",
+                onlineTier = map["onlineTier"] as? String ?: "BRONZE",
+                avatarEmoji = map["avatarEmoji"] as? String ?: "",
+                avatarBgColor = map["avatarBgColor"] as? String ?: "",
+                avatarFrame = map["avatarFrame"] as? String ?: "standard",
+                hasGradient = map["hasGradient"] as? Boolean ?: false,
+                isOnline = map["isOnline"] as? Boolean ?: false,
+                status = map["status"] as? String ?: "accepted",
+                lastSeen = (map["lastSeen"] as? Long) ?: (map["lastSeen"] as? Number)?.toLong() ?: 0L,
+                customTag = map["customTag"] as? String ?: ""
+            )
+        }
+    }
+}
+
+data class PublicUserProfile(
+    val uid: String = "",
+    val username: String = "",
+    val onlineTier: String = "BRONZE",
+    val avatarEmoji: String = "",
+    val avatarBgColor: String = "",
+    val avatarFrame: String = "standard",
+    val hasGradient: Boolean = false,
+    val highScore: Int = 0,
+    val userLevel: Int = 1,
+    val title: String = "",
+    val isOnline: Boolean = false,
+    val createdAt: Long = 0L,
+    val credits: Int = 0
+) {
+    companion object {
+        fun fromMap(uid: String, map: Map<String, Any>): PublicUserProfile {
+            return PublicUserProfile(
+                uid = uid,
+                username = (map["username"] as? String)
+                    ?: (map["playerName"] as? String)
+                    ?: (map["name"] as? String)
+                    ?: "Игрок",
+                onlineTier = (map["onlineTier"] as? String)
+                    ?: (map["rank"] as? String)
+                    ?: (map["tier"] as? String)
+                    ?: "BRONZE",
+                avatarEmoji = (map["custom_avatar_emoji"] as? String)
+                    ?: (map["avatarEmoji"] as? String)
+                    ?: (map["customAvatarEmoji"] as? String)
+                    ?: "",
+                avatarBgColor = (map["custom_avatar_bg_color"] as? String)
+                    ?: (map["avatarBgColor"] as? String)
+                    ?: (map["customAvatarBgColor"] as? String)
+                    ?: "",
+                avatarFrame = (map["equipped_avatar_frame"] as? String)
+                    ?: (map["avatarFrame"] as? String)
+                    ?: (map["equippedAvatarFrame"] as? String)
+                    ?: "standard",
+                hasGradient = (map["has_nickname_gradient"] as? Boolean)
+                    ?: (map["hasGradient"] as? Boolean)
+                    ?: (map["hasNicknameGradient"] as? Boolean)
+                    ?: false,
+                highScore = (map["highScore"] as? Number)?.toInt()
+                    ?: (map["score"] as? Number)?.toInt()
+                    ?: 0,
+                userLevel = (map["user_level"] as? Number)?.toInt()
+                    ?: (map["userLevel"] as? Number)?.toInt()
+                    ?: 1,
+                title = (map["equipped_title"] as? String)
+                    ?: (map["title"] as? String)
+                    ?: (map["equippedTitle"] as? String)
+                    ?: "",
+                isOnline = (map["isOnline"] as? Boolean) ?: false,
+                createdAt = (map["creationTime"] as? Number)?.toLong()
+                    ?: (map["createdAt"] as? Number)?.toLong()
+                    ?: (map["timestamp"] as? Number)?.toLong()
+                    ?: 0L,
+                credits = (map["credits"] as? Number)?.toInt() ?: 0
+            )
+        }
+    }
+}
+
+
+data class LiveBattleState(
+    val grid: List<Int> = List(120) { 0 },
+    val score: Int = 0,
+    val lines: Int = 0,
+    val combo: Int = 0,
+    val isGameOver: Boolean = false,
+    val garbageToSend: Int = 0,
+    val lastUpdate: Long = 0L
+) {
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "grid" to grid,
+            "score" to score,
+            "lines" to lines,
+            "combo" to combo,
+            "isGameOver" to isGameOver,
+            "garbageToSend" to garbageToSend,
+            "lastUpdate" to lastUpdate
+        )
+    }
+
+    companion object {
+        @Suppress("UNCHECKED_CAST")
+        fun fromMap(map: Map<String, Any>?): LiveBattleState {
+            if (map == null) return LiveBattleState()
+            return LiveBattleState(
+                grid = (map["grid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: List(120) { 0 },
+                score = (map["score"] as? Number)?.toInt() ?: 0,
+                lines = (map["lines"] as? Number)?.toInt() ?: 0,
+                combo = (map["combo"] as? Number)?.toInt() ?: 0,
+                isGameOver = map["isGameOver"] as? Boolean ?: false,
+                garbageToSend = (map["garbageToSend"] as? Number)?.toInt() ?: 0,
+                lastUpdate = (map["lastUpdate"] as? Number)?.toLong() ?: 0L
+            )
+        }
+    }
+}
+
+data class BattleEmote(
+    val id: String = "",
+    val senderId: String = "",
+    val emoji: String = "",
+    val timestamp: Long = 0L
+) {
+    fun toMap(): Map<String, Any> = mapOf(
+        "id" to id,
+        "senderId" to senderId,
+        "emoji" to emoji,
+        "timestamp" to timestamp
+    )
+
+    companion object {
+        fun fromMap(map: Map<String, Any>?): BattleEmote {
+            if (map == null) return BattleEmote()
+            return BattleEmote(
+                id = map["id"] as? String ?: "",
+                senderId = map["senderId"] as? String ?: "",
+                emoji = map["emoji"] as? String ?: "",
+                timestamp = (map["timestamp"] as? Number)?.toLong() ?: 0L
+            )
+        }
+    }
+}
+
+
+data class RoomInvite(
+    val id: String = "",
+    val roomId: String = "",
+    val roomName: String = "",
+    val hostName: String = "",
+    val hostAvatarEmoji: String = "",
+    val hostAvatarBgColor: String = "",
+    val hostAvatarFrame: String = "standard",
+    val hostTier: String = "BRONZE",
+    val betAmount: Int = 0,
+    val timestamp: Long = 0L
+) {
+    fun toMap(): Map<String, Any> = mapOf(
+        "id" to id,
+        "roomId" to roomId,
+        "roomName" to roomName,
+        "hostName" to hostName,
+        "hostAvatarEmoji" to hostAvatarEmoji,
+        "hostAvatarBgColor" to hostAvatarBgColor,
+        "hostAvatarFrame" to hostAvatarFrame,
+        "hostTier" to hostTier,
+        "betAmount" to betAmount,
+        "timestamp" to timestamp
+    )
+
+    companion object {
+        fun fromMap(map: Map<String, Any>): RoomInvite = RoomInvite(
+            id = map["id"] as? String ?: "",
+            roomId = map["roomId"] as? String ?: "",
+            roomName = map["roomName"] as? String ?: "",
+            hostName = map["hostName"] as? String ?: "",
+            hostAvatarEmoji = map["hostAvatarEmoji"] as? String ?: "",
+            hostAvatarBgColor = map["hostAvatarBgColor"] as? String ?: "",
+            hostAvatarFrame = map["hostAvatarFrame"] as? String ?: "standard",
+            hostTier = map["hostTier"] as? String ?: "BRONZE",
+            betAmount = (map["betAmount"] as? Number)?.toInt() ?: 0,
+            timestamp = (map["timestamp"] as? Number)?.toLong() ?: 0L
+        )
     }
 }

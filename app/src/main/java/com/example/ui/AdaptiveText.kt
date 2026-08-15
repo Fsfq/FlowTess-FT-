@@ -34,54 +34,63 @@ fun AdaptiveText(
     softWrap: Boolean = true,
     maxLines: Int = 1,
     style: TextStyle = LocalTextStyle.current,
-    autoScale: Boolean = true
+    autoScale: Boolean = false
 ) {
-    val initialFontSize = remember(fontSize, style.fontSize) {
-        if (fontSize.isUnspecified) {
-            if (style.fontSize.isUnspecified) 16.sp else style.fontSize
-        } else {
-            fontSize
-        }
-    }
-
-    var scaledFontSize by remember(text, initialFontSize) {
-        mutableStateOf(initialFontSize)
-    }
-    var readyToDraw by remember(text, initialFontSize) {
-        mutableStateOf(false)
-    }
-
-    Text(
-        text = text,
-        modifier = modifier.drawWithContent {
-            if (readyToDraw) {
-                drawContent()
-            }
-        },
-        color = color,
-        fontSize = scaledFontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
-        overflow = overflow,
-        softWrap = softWrap,
-        maxLines = maxLines,
-        style = style,
-        onTextLayout = { textLayoutResult ->
-            if (autoScale && textLayoutResult.hasVisualOverflow && maxLines > 0) {
-                val currentSizeVal = scaledFontSize.value
-                if (currentSizeVal > 8f) {
-                    scaledFontSize = (currentSizeVal - 1f).sp
-                } else {
-                    readyToDraw = true
-                }
+    if (!autoScale) {
+        Text(
+            text = text,
+            modifier = modifier,
+            color = color,
+            fontSize = fontSize,
+            fontStyle = fontStyle,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            letterSpacing = letterSpacing,
+            textDecoration = textDecoration,
+            textAlign = textAlign,
+            lineHeight = lineHeight,
+            overflow = overflow,
+            softWrap = softWrap,
+            maxLines = maxLines,
+            style = style
+        )
+    } else {
+        val initialFontSize = remember(fontSize, style.fontSize) {
+            if (fontSize.isUnspecified) {
+                if (style.fontSize.isUnspecified) 16.sp else style.fontSize
             } else {
-                readyToDraw = true
+                fontSize
             }
         }
-    )
+
+        var scaledFontSize by remember(text, initialFontSize) {
+            mutableStateOf(initialFontSize)
+        }
+
+        Text(
+            text = text,
+            modifier = modifier,
+            color = color,
+            fontSize = scaledFontSize,
+            fontStyle = fontStyle,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            letterSpacing = letterSpacing,
+            textDecoration = textDecoration,
+            textAlign = textAlign,
+            lineHeight = lineHeight,
+            overflow = overflow,
+            softWrap = softWrap,
+            maxLines = maxLines,
+            style = style,
+            onTextLayout = { textLayoutResult ->
+                if (textLayoutResult.hasVisualOverflow && maxLines > 0) {
+                    val currentVal = scaledFontSize.value
+                    if (currentVal > 9f) {
+                        scaledFontSize = (currentVal * 0.85f).coerceAtLeast(9f).sp
+                    }
+                }
+            }
+        )
+    }
 }

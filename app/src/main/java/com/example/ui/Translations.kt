@@ -90,7 +90,7 @@ object Translations {
         "app_name" to "Тетрис",
         "play" to "Классический режим",
         "upgrades" to "Расширенный режим",
-        "multiplayer" to "Сетевой режим",
+        "multiplayer" to "Мультиплеер",
         "left_handed_controls" to "Зеркальная раскладка для левшей",
         "game_speed_multiplier" to "Коэффициент скорости игры:",
         "control_button_scale" to "Масштаб клавиш управления:",

@@ -23,12 +23,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import com.example.db.FirebaseLobbyManager
+import com.example.db.FriendUser
+import com.example.db.PublicUserProfile
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = Room.databaseBuilder(
         application,
         AppDatabase::class.java, "tetris-db"
-    ).fallbackToDestructiveMigration(false).build()
+    ).fallbackToDestructiveMigration(true).build()
 
     private val scoreRepo = ScoreRepository(db.highScoreDao())
     val topScores = scoreRepo.topScores
@@ -107,7 +109,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _purchasedSoundPacks = MutableStateFlow(setOf("arcade"))
     val purchasedSoundPacks = _purchasedSoundPacks.asStateFlow()
 
-    private val _purchasedThemes = MutableStateFlow(setOf("indigo", "neon", "red"))
+    private val _purchasedThemes = MutableStateFlow(ALL_THEMES)
     val purchasedThemes = _purchasedThemes.asStateFlow()
 
     private val _purchasedFonts = MutableStateFlow(setOf("default", "monospace"))
@@ -140,6 +142,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _ghostVisible = MutableStateFlow(true)
     val ghostVisible = _ghostVisible.asStateFlow()
 
+    private val _ghostOutlineOnly = MutableStateFlow(true)
+    val ghostOutlineOnly = _ghostOutlineOnly.asStateFlow()
+
     private val _controlStyle = MutableStateFlow("split")
     val controlStyle = _controlStyle.asStateFlow()
 
@@ -151,6 +156,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _onlineTier = MutableStateFlow("BRONZE")
     val onlineTier = _onlineTier.asStateFlow()
+
+    private val _onlineRating = MutableStateFlow(1000)
+    val onlineRating = _onlineRating.asStateFlow()
+
+    private val _winStreak = MutableStateFlow(0)
+    val winStreak = _winStreak.asStateFlow()
 
     private val _credits = MutableStateFlow(750)
     val credits = _credits.asStateFlow()
@@ -203,6 +214,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _scanlinesFilter = MutableStateFlow(false)
     val scanlinesFilter = _scanlinesFilter.asStateFlow()
 
+    private val _graphicsQuality = MutableStateFlow("medium")
+    val graphicsQuality = _graphicsQuality.asStateFlow()
+
+    private val _showNewSection = MutableStateFlow(true)
+    val showNewSection = _showNewSection.asStateFlow()
+
     private val _boardColorSkin = MutableStateFlow("cyberpunk")
     val boardColorSkin = _boardColorSkin.asStateFlow()
 
@@ -250,11 +267,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _firebaseUsers = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val firebaseUsers = _firebaseUsers.asStateFlow()
 
+    private val _isAdminSessionAuthenticated = MutableStateFlow(false)
+    val isAdminSessionAuthenticated = _isAdminSessionAuthenticated.asStateFlow()
+
+    fun setAdminSessionAuthenticated(value: Boolean) {
+        _isAdminSessionAuthenticated.value = value
+    }
+
     private val _hasNicknameGradient = MutableStateFlow(false)
     val hasNicknameGradient = _hasNicknameGradient.asStateFlow()
 
     private val _bonusXp = MutableStateFlow(0)
     val bonusXp = _bonusXp.asStateFlow()
+
+    private val _prestigeLevel = MutableStateFlow(0)
+    val prestigeLevel = _prestigeLevel.asStateFlow()
+
+    val incomeMultiplier: Float
+        get() = when {
+            _prestigeLevel.value >= 2 -> 8.0f
+            _prestigeLevel.value == 1 -> 2.0f
+            else -> 1.0f
+        }
+
+    // Cloud DB sync indicator
+    private val _isSyncingDb = MutableStateFlow(false)
+    val isSyncingDb = _isSyncingDb.asStateFlow()
+
+    // Public Profile state
+    private val _selectedPublicProfile = MutableStateFlow<PublicUserProfile?>(null)
+    val selectedPublicProfile = _selectedPublicProfile.asStateFlow()
+
+    private val _isLoadingPublicProfile = MutableStateFlow(false)
+    val isLoadingPublicProfile = _isLoadingPublicProfile.asStateFlow()
+
+    // Friends system state
+    private val _friendsList = MutableStateFlow<List<FriendUser>>(emptyList())
+    val friendsList = _friendsList.asStateFlow()
+
+    private val _friendRequests = MutableStateFlow<List<FriendUser>>(emptyList())
+    val friendRequests = _friendRequests.asStateFlow()
+
+    private val _showFriendsDialog = MutableStateFlow(false)
+    val showFriendsDialog = _showFriendsDialog.asStateFlow()
+
+    private val _showSignOutConfirmDialog = MutableStateFlow(false)
+    val showSignOutConfirmDialog = _showSignOutConfirmDialog.asStateFlow()
 
 
     private class AchievementDef(
@@ -270,71 +328,80 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private val achievementDefs = listOf(
-        AchievementDef("classic_novice", "Lines Master", "Мастер линий", "Clear 10 or more total lines in Classic Match mode", "Уберите 10 или более линий в классическом режиме", 10, "lines", 100) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
-        AchievementDef("score_tycoon", "Sizable Score", "Финансовый магнат", "Score 5,000 points or more in a single Tetris match", "Наберите 5000 или более очков в одном матче", 5000, "score", 150) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("extended_pioneer", "Pentamino Integrator", "Пионер Пентамино", "Launch a match in Extended Shapes mode to embrace 5-element blocks", "Начните хотя бы одну игру в расширенном режиме", 1, "crown", 75) { vm -> if (vm.prefs.getBoolean("ach_extended_pioneer_unlocked", false)) 1 else 0 },
-        AchievementDef("speed_runner", "Hyper-Speed", "Гиперскорость", "Survive a match under extreme starting speed in Hyper Blast mode", "Начните хотя бы один матч на уровне 10 в гипер-режиме", 1, "speed", 120) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
-        AchievementDef("blast_tactician", "ZETA Expert", "Эксперт ZETA", "Earn 1,000 score points in ZETA mode", "Наберите 1000 очков в режиме ZETA", 1000, "blast", 200) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("combo_king", "Combo 3x", "Комбо 3x", "Achieve a combo chain multiplier of 3x or higher in multiplayer simulator", "Достигните комбо-множителя 3x или выше в мультиплеере", 3, "combo", 180) { vm -> if (vm.prefs.getBoolean("ach_combo_king_unlocked", false)) 1 else 0 },
-        AchievementDef("grandmaster", "Grandmaster Tactician", "Гроссмейстер", "Score 15,000 points or more in Classic Match", "Наберите 15000 или более очков в классическом матче", 15000, "crown", 500) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("blast_master", "ZETA Veteran", "Ветеран ZETA", "Earn 5,000 score points in ZETA mode", "Наберите 5000 очков в режиме ZETA", 5000, "blast", 300) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("rich_player", "Elite Investor", "Элитный инвестор", "Save 2,000 credits in your balance", "Накопите не менее 2000 кредитов на балансе", 2000, "crown", 250) { vm -> vm.credits.value },
-        AchievementDef("multiplayer_veteran", "Lobby Veteran", "Ветеран Лобби", "Initiate connection in PeerJS lobby 5 times", "Запустите подключение в лобби PeerJS не менее 5 раз", 5, "combo", 150) { vm -> vm.prefs.getInt("multiplayer_launches", 0) },
-        AchievementDef("color_skin_collector", "Theme Collector", "Новая Тема", "Purchase your first custom board visual theme skin", "Приобретите свою первую уникальную тему оформления", 1, "crown", 200) { vm -> if (vm.prefs.getBoolean("ach_color_skin_collector_unlocked", false)) 1 else 0 },
-        AchievementDef("rank_conqueror", "New Rank", "Новый Ранг", "Upgrade your security node rank tier using credits", "Повысьте категорию своего узла за кредиты", 1, "crown", 350) { vm -> if (vm.prefs.getBoolean("ach_rank_conqueror_unlocked", false)) 1 else 0 },
+        AchievementDef("classic_novice", "Lines Master", "Мастер линий", "Clear 10 or more total lines in Classic Match mode", "Уберите 10 или более линий в классическом режиме", 10, "lines", 500) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
+        AchievementDef("score_tycoon", "Sizable Score", "Финансовый магнат", "Score 5,000 points or more in a single Tetris match", "Наберите 5000 или более очков в одном матче", 5000, "score", 750) { vm -> vm.prefs.getInt("stats_high_score", 0) },
+        AchievementDef("extended_pioneer", "Pentamino Integrator", "Пионер Пентамино", "Launch a match in Extended Shapes mode to embrace 5-element blocks", "Начните хотя бы одну игру в расширенном режиме", 1, "crown", 400) { vm -> if (vm.prefs.getBoolean("ach_extended_pioneer_unlocked", false)) 1 else 0 },
+        AchievementDef("speed_runner", "Hyper-Speed", "Гиперскорость", "Survive a match under extreme starting speed in Hyper Blast mode", "Начните хотя бы один матч на уровне 10 в гипер-режиме", 1, "speed", 600) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
+        AchievementDef("blast_tactician", "ZETA Expert", "Эксперт ZETA", "Earn 1,000 score points in ZETA mode", "Наберите 1000 очков в режиме ZETA", 1000, "blast", 800) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("combo_king", "Combo 3x", "Комбо 3x", "Achieve a combo chain multiplier of 3x or higher in multiplayer simulator", "Достигните комбо-множителя 3x или выше в мультиплеере", 3, "combo", 750) { vm -> if (vm.prefs.getBoolean("ach_combo_king_unlocked", false)) 1 else 0 },
+        AchievementDef("grandmaster", "Grandmaster Tactician", "Гроссмейстер", "Score 15,000 points or more in Classic Match", "Наберите 15000 или более очков в классическом матче", 15000, "crown", 2500) { vm -> vm.prefs.getInt("stats_high_score", 0) },
+        AchievementDef("blast_master", "ZETA Veteran", "Ветеран ZETA", "Earn 5,000 score points in ZETA mode", "Наберите 5000 очков в режиме ZETA", 5000, "blast", 1500) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("rich_player", "Elite Investor", "Элитный инвестор", "Save 2,000 credits in your balance", "Накопите не менее 2000 кредитов на балансе", 2000, "crown", 1000) { vm -> vm.credits.value },
+        AchievementDef("multiplayer_veteran", "Lobby Veteran", "Ветеран Лобби", "Initiate connection in PeerJS lobby 5 times", "Запустите подключение в лобби PeerJS не менее 5 раз", 5, "combo", 750) { vm -> vm.prefs.getInt("multiplayer_launches", 0) },
+        AchievementDef("color_skin_collector", "Theme Collector", "Новая Тема", "Purchase your first custom board visual theme skin", "Приобретите свою первую уникальную тему оформления", 1, "crown", 1000) { vm -> if (vm.prefs.getBoolean("ach_color_skin_collector_unlocked", false)) 1 else 0 },
+        AchievementDef("rank_conqueror", "New Rank", "Новый Ранг", "Upgrade your security node rank tier using credits", "Повысьте категорию своего узла за кредиты", 1, "crown", 1500) { vm -> if (vm.prefs.getBoolean("ach_rank_conqueror_unlocked", false)) 1 else 0 },
         
-        // 37 new ones
-        AchievementDef("games_played_5", "Novice Player", "Начинающий игрок", "Play 5 games total in any mode", "Сыграйте 5 игр в любом режиме", 5, "lines", 100) { vm -> vm.prefs.getInt("stats_games_played", 0) },
-        AchievementDef("games_played_25", "Experienced Player", "Опытный игрок", "Play 25 games total in any mode", "Сыграйте 25 игр в любом режиме", 25, "lines", 150) { vm -> vm.prefs.getInt("stats_games_played", 0) },
-        AchievementDef("games_played_100", "Tetris Legend", "Легенда Тетриса", "Play 100 games total in any mode", "Сыграйте 100 игр в любом режиме", 100, "lines", 300) { vm -> vm.prefs.getInt("stats_games_played", 0) },
-        AchievementDef("lines_50", "Line Sweeper", "Очиститель линий", "Clear 50 total lines across all matches", "Уберите 50 линий суммарно во всех играх", 50, "lines", 120) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
-        AchievementDef("lines_200", "Line Shredder", "Уничтожитель линий", "Clear 200 total lines across all matches", "Уберите 200 линий суммарно во всех играх", 200, "lines", 200) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
-        AchievementDef("lines_1000", "Vortex Sweeper", "Вихревой очиститель", "Clear 1000 total lines across all matches", "Уберите 1000 линий суммарно во всех играх", 1000, "lines", 500) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
-        AchievementDef("score_single_8000", "Point Collector", "Сборщик очков", "Score 8,000 points or more in a single match", "Наберите 8000 или более очков в одном матче", 8000, "score", 180) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("score_single_20000", "Score Master", "Мастер очков", "Score 20,000 points or more in a single match", "Наберите 20000 или более очков в одном матче", 20000, "score", 300) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("score_single_50000", "Score Overlord", "Повелитель очков", "Score 50,000 points or more in a single match", "Наберите 50000 или более очков в одном матче", 50000, "score", 600) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("credits_accumulated_5000", "Credits Saver", "Сбережения", "Reach a balance of 5,000 credits", "Накопите баланс в 5000 кредитов", 5000, "crown", 300) { vm -> vm.credits.value },
-        AchievementDef("credits_accumulated_10000", "Credits Capitalist", "Крупный капитал", "Reach a balance of 10,000 credits", "Накопите баланс в 10000 кредитов", 10000, "crown", 500) { vm -> vm.credits.value },
-        AchievementDef("credits_spent_1000", "Shop Spender", "Покупатель", "Spend 1,000 credits in the store", "Потратьте 1000 кредитов в магазине", 1000, "crown", 100) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
-        AchievementDef("credits_spent_5000", "Store Spender", "Активный покупатель", "Spend 5,000 credits in the store", "Потратьте 5000 кредитов в магазине", 5000, "crown", 250) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
-        AchievementDef("credits_spent_10000", "VIP Customer", "Постоянный клиент", "Spend 10,000 credits in the store", "Потратьте 10000 кредитов в магазине", 10000, "crown", 500) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
-        AchievementDef("tetrises_cleared_5", "Tetris Enthusiast", "Энтузиаст Тетрисов", "Perform 4-line clears (Tetrises) 5 times", "Выполните очистку 4-х линий (Тетрис) 5 раз", 5, "lines", 150) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
-        AchievementDef("tetrises_cleared_25", "Tetris Champion", "Чемпион Тетрисов", "Perform 4-line clears (Tetrises) 25 times", "Выполните очистку 4-х линий (Тетрис) 25 раз", 25, "lines", 300) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
-        AchievementDef("tetrises_cleared_100", "Tetris Master", "Мастер Тетрисов", "Perform 4-line clears (Tetrises) 100 times", "Выполните очистку 4-х линий (Тетрис) 100 раз", 100, "lines", 600) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
-        AchievementDef("blast_score_3000", "ZETA Professional", "Профессионал ZETA", "Reach 3,000 score in ZETA mode", "Наберите 3000 очков в режиме ZETA", 3000, "blast", 220) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("blast_score_10000", "ZETA Master", "Мастер ZETA", "Reach 10,000 score in ZETA mode", "Наберите 10000 очков в режиме ZETA", 10000, "blast", 400) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("combo_multiplier_4", "Combo 4x", "Комбо 4x", "Achieve a combo chain multiplier of 4x in multiplayer simulator", "Достигните комбо-множителя 4x в мультиплеере", 4, "combo", 220) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_4_unlocked", false)) 1 else 0 },
-        AchievementDef("combo_multiplier_5", "Combo 5x", "Комбо 5x", "Achieve a combo chain multiplier of 5x in multiplayer simulator", "Достигните комбо-множителя 5x в мультиплеере", 5, "combo", 350) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_5_unlocked", false)) 1 else 0 },
-        AchievementDef("avatar_changes_5", "Fashion Stylist", "Модный стилист", "Change your avatar emoji or color 5 times", "Измените эмодзи или цвет аватара 5 раз", 5, "crown", 100) { vm -> vm.prefs.getInt("stats_avatar_changes", 0) },
-        AchievementDef("title_purchases_3", "Title Collector", "Коллекционер титулов", "Purchase 3 different profile titles in store", "Приобретите 3 разных титула в магазине", 3, "crown", 150) { vm -> vm.purchasedTitles.value.size },
-        AchievementDef("frame_purchases_3", "Frame Collector", "Коллекционер рамок", "Purchase 3 different avatar frames in store", "Приобретите 3 разных рамки в магазине", 3, "crown", 150) { vm -> vm.purchasedAvatarFrames.value.size },
-        AchievementDef("sound_pack_purchased", "Audio Collector", "Коллекционер звуков", "Purchase any custom sound synthesizer pack in store", "Приобретите любой синтезатор звука в магазине", 1, "speed", 150) { vm -> vm.purchasedSoundPacks.value.filter { it != "arcade" && it != "default" }.size },
-        AchievementDef("xp_earned_500", "Experience 500", "Опыт 500", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", 100) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_2000", "Experience 2000", "Опыт 2000", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", 200) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_10000", "Experience 10000", "Опыт 10000", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", 500) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("player_level_5", "Level 5", "Уровень 5", "Reach Player Mastery Level 5", "Достигните 5-го уровня мастерства", 5, "speed", 100) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("player_level_15", "Level 15", "Уровень 15", "Reach Player Mastery Level 15", "Достигните 15-го уровня мастерства", 15, "speed", 250) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("player_level_30", "Level 30", "Уровень 30", "Reach Player Mastery Level 30", "Достигните 30-го уровня мастерства", 30, "speed", 500) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
-        AchievementDef("mode_time_attack", "Time Attack Mode", "Режим Тайм-Атак", "Launch a game in Time Attack mode", "Начните игру в режиме Тайм-Атак", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_reverse", "Reverse Mode", "Режим Реверс", "Launch a game in Chaos Controls mode", "Начните игру в режиме Хаос-Управление", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_mirror", "Mirror Mode", "Зеркальный режим", "Launch a game in Mirror Dimension mode", "Начните игру в режиме Зеркальный Мир", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_pentary", "Pentary Chaos Mode", "Режим Пента-Хаос", "Launch a game in Pentary Chaos mode", "Начните игру в режиме Пента-Хаос", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pentary_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_pulse", "Vortex Mode", "Вихревой режим", "Launch a game in Vortex Pulse mode", "Начните игру в режиме Импульсный Вихрь", 1, "speed", 100) { vm -> if (vm.prefs.getBoolean("ach_mode_pulse_unlocked", false)) 1 else 0 },
-        AchievementDef("speed_level_max", "Speed Master", "Мастер скорости", "Reach game level speed 15 in standard match modes", "Достигните 15-го игрового уровня скорости в матче", 15, "speed", 250) { vm -> vm.prefs.getInt("stats_max_speed_reached", 0) },
+        // 37 additional progression achievements with boosted rewards
+        AchievementDef("games_played_5", "Novice Player", "Начинающий игрок", "Play 5 games total in any mode", "Сыграйте 5 игр в любом режиме", 5, "lines", 400) { vm -> vm.prefs.getInt("stats_games_played", 0) },
+        AchievementDef("games_played_25", "Experienced Player", "Опытный игрок", "Play 25 games total in any mode", "Сыграйте 25 игр в любом режиме", 25, "lines", 800) { vm -> vm.prefs.getInt("stats_games_played", 0) },
+        AchievementDef("games_played_100", "Tetris Legend", "Легенда Тетриса", "Play 100 games total in any mode", "Сыграйте 100 игр в любом режиме", 100, "lines", 2000) { vm -> vm.prefs.getInt("stats_games_played", 0) },
+        AchievementDef("lines_50", "Line Sweeper", "Очиститель линий", "Clear 50 total lines across all matches", "Уберите 50 линий суммарно во всех играх", 50, "lines", 500) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
+        AchievementDef("lines_200", "Line Shredder", "Уничтожитель линий", "Clear 200 total lines across all matches", "Уберите 200 линий суммарно во всех играх", 200, "lines", 1000) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
+        AchievementDef("lines_1000", "Vortex Sweeper", "Вихревой очиститель", "Clear 1000 total lines across all matches", "Уберите 1000 линий суммарно во всех играх", 1000, "lines", 3000) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
+        AchievementDef("score_single_8000", "Point Collector", "Сборщик очков", "Score 8,000 points or more in a single match", "Наберите 8000 или более очков в одном матче", 8000, "score", 800) { vm -> vm.prefs.getInt("stats_high_score", 0) },
+        AchievementDef("score_single_20000", "Score Master", "Мастер очков", "Score 20,000 points or more in a single match", "Наберите 20000 или более очков в одном матче", 20000, "score", 1500) { vm -> vm.prefs.getInt("stats_high_score", 0) },
+        AchievementDef("score_single_50000", "Score Overlord", "Повелитель очков", "Score 50,000 points or more in a single match", "Наберите 50000 или более очков в одном матче", 50000, "score", 3500) { vm -> vm.prefs.getInt("stats_high_score", 0) },
+        AchievementDef("credits_accumulated_5000", "Credits Saver", "Сбережения", "Reach a balance of 5,000 credits", "Накопите баланс в 5000 кредитов", 5000, "crown", 1200) { vm -> vm.credits.value },
+        AchievementDef("credits_accumulated_10000", "Credits Capitalist", "Крупный капитал", "Reach a balance of 10,000 credits", "Накопите баланс в 10000 кредитов", 10000, "crown", 2500) { vm -> vm.credits.value },
+        AchievementDef("credits_spent_1000", "Shop Spender", "Покупатель", "Spend 1,000 credits in the store", "Потратьте 1000 кредитов в магазине", 1000, "crown", 500) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("credits_spent_5000", "Store Spender", "Активный покупатель", "Spend 5,000 credits in the store", "Потратьте 5000 кредитов в магазине", 5000, "crown", 1200) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("credits_spent_10000", "VIP Customer", "Постоянный клиент", "Spend 10,000 credits in the store", "Потратьте 10000 кредитов в магазине", 10000, "crown", 2500) { vm -> vm.prefs.getInt("stats_spent_credits", 0) },
+        AchievementDef("tetrises_cleared_5", "Tetris Enthusiast", "Энтузиаст Тетрисов", "Perform 4-line clears (Tetrises) 5 times", "Выполните очистку 4-х линий (Тетрис) 5 раз", 5, "lines", 750) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
+        AchievementDef("tetrises_cleared_25", "Tetris Champion", "Чемпион Тетрисов", "Perform 4-line clears (Tetrises) 25 times", "Выполните очистку 4-х линий (Тетрис) 25 раз", 25, "lines", 1500) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
+        AchievementDef("tetrises_cleared_100", "Tetris Master", "Мастер Тетрисов", "Perform 4-line clears (Tetrises) 100 times", "Выполните очистку 4-х линий (Тетрис) 100 раз", 100, "lines", 3500) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
+        AchievementDef("blast_score_3000", "ZETA Professional", "Профессионал ZETA", "Reach 3,000 score in ZETA mode", "Наберите 3000 очков в режиме ZETA", 3000, "blast", 1000) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("blast_score_10000", "ZETA Master", "Мастер ZETA", "Reach 10,000 score in ZETA mode", "Наберите 10000 очков в режиме ZETA", 10000, "blast", 2000) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("combo_multiplier_4", "Combo 4x", "Комбо 4x", "Achieve a combo chain multiplier of 4x in multiplayer simulator", "Достигните комбо-множителя 4x в мультиплеере", 4, "combo", 1000) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_4_unlocked", false)) 1 else 0 },
+        AchievementDef("combo_multiplier_5", "Combo 5x", "Комбо 5x", "Achieve a combo chain multiplier of 5x in multiplayer simulator", "Достигните комбо-множителя 5x в мультиплеере", 5, "combo", 1800) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_5_unlocked", false)) 1 else 0 },
+        AchievementDef("avatar_changes_5", "Fashion Stylist", "Модный стилист", "Change your avatar emoji or color 5 times", "Измените эмодзи или цвет аватара 5 раз", 5, "crown", 500) { vm -> vm.prefs.getInt("stats_avatar_changes", 0) },
+        AchievementDef("title_purchases_3", "Title Collector", "Коллекционер титулов", "Purchase 3 different profile titles in store", "Приобретите 3 разных титула в магазине", 3, "crown", 800) { vm -> vm.purchasedTitles.value.size },
+        AchievementDef("frame_purchases_3", "Frame Collector", "Коллекционер рамок", "Purchase 3 different avatar frames in store", "Приобретите 3 разных рамки в магазине", 3, "crown", 800) { vm -> vm.purchasedAvatarFrames.value.size },
+        AchievementDef("cosmetics_collector", "Cosmetics Fan", "Икона стиля", "Purchase or unlock 3 custom fonts or button styles", "Приобретите 3 шрифта или стиля кнопок", 3, "crown", 1000) { vm -> vm.purchasedFonts.value.size + vm.purchasedControlButtonStyles.value.size },
+        AchievementDef("xp_earned_500", "Experience 500", "Опыт 500", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", 500) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("xp_earned_2000", "Experience 2000", "Опыт 2000", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", 1000) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("xp_earned_10000", "Experience 10000", "Опыт 10000", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", 2500) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("player_level_5", "Level 5", "Уровень 5", "Reach Player Level 5", "Достигните 5-го уровня", 5, "speed", 500) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("player_level_15", "Level 15", "Уровень 15", "Reach Player Level 15", "Достигните 15-го уровня", 15, "speed", 1200) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("player_level_30", "Level 30", "Уровень 30", "Reach Player Level 30", "Достигните 30-го уровня", 30, "speed", 3000) { vm -> ((vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value) / 500 + 1 },
+        AchievementDef("mode_time_attack", "Time Attack Mode", "Режим Тайм-Атак", "Launch a game in Time Attack mode", "Начните игру в режиме Тайм-Атак", 1, "speed", 500) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_reverse", "Reverse Mode", "Режим Реверс", "Launch a game in Chaos Controls mode", "Начните игру в режиме Хаос-Управление", 1, "speed", 500) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_mirror", "Mirror Mode", "Зеркальный режим", "Launch a game in Mirror Dimension mode", "Начните игру в режиме Зеркальный Мир", 1, "speed", 500) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_pentary", "Pentary Chaos Mode", "Режим Пента-Хаос", "Launch a game in Pentary Chaos mode", "Начните игру в режиме Пента-Хаос", 1, "speed", 500) { vm -> if (vm.prefs.getBoolean("ach_mode_pentary_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_pulse", "Vortex Mode", "Вихревой режим", "Launch a game in Vortex Pulse mode", "Начните игру в режиме Импульсный Вихрь", 1, "speed", 500) { vm -> if (vm.prefs.getBoolean("ach_mode_pulse_unlocked", false)) 1 else 0 },
+        AchievementDef("speed_level_max", "Speed Master", "Мастер скорости", "Reach game level speed 15 in standard match modes", "Достигните 15-го игрового уровня скорости в матче", 15, "speed", 1500) { vm -> vm.prefs.getInt("stats_max_speed_reached", 0) },
         
         // Final epic 50th achievement
-        AchievementDef("all_unlocked", "Champion", "Абсолютный чемпион", "Obtain all 49 other achievements (Epic Completion Reward)", "Откройте все 49 других достижений (Эпическая финальная награда)", 1, "crown", 1000) { vm -> if (vm.prefs.getBoolean("ach_all_unlocked_unlocked", false)) 1 else 0 }
+        AchievementDef("millionaire", "Millionaire", "Миллионер", "Save 1,000,000 credits to unlock Prestige II (Voluntary reset for x8 Multiplier + Custom Tag)", "Накопите 1,000,000 кредитов (Открывает Престиж II: добровольный сброс за x8 доход и Личный Тег)", 1000000, "crown", 50000) { vm -> vm.credits.value },
+        AchievementDef("all_unlocked", "Champion", "Чемпион", "Obtain all 49 other achievements (Epic Completion Reward)", "Откройте все 49 других достижений (Эпическая финальная награда)", 1, "crown", 10000) { vm -> if (vm.prefs.getBoolean("ach_all_unlocked_unlocked", false)) 1 else 0 }
     )
 
     init {
-        val savedLangCode = prefs.getString("lang_code", Language.EN.code) ?: Language.EN.code
-        _language.update { Language.entries.firstOrNull { it.code == savedLangCode } ?: Language.EN }
+        val savedLangCode = prefs.getString("lang_code", null)
+        val resolvedLang = if (savedLangCode == null) {
+            val sysLang = getSystemDefaultLanguage()
+            prefs.edit().putString("lang_code", sysLang.code).apply()
+            sysLang
+        } else {
+            Language.entries.firstOrNull { it.code == savedLangCode } ?: Language.EN
+        }
+        _language.update { resolvedLang }
         _playerName.update { prefs.getString("player_name", "Player 1") ?: "Player 1" }
         _hasSavedGame.update { prefs.getBoolean("has_saved_game", false) }
         _themeColor.update { prefs.getString("theme_color", "indigo") ?: "indigo" }
         _blockStyle.update { prefs.getString("block_style", "neon") ?: "neon" }
         _nextCount.update { prefs.getInt("next_count", 3) }
         _ghostVisible.update { prefs.getBoolean("ghost_visible", true) }
+        _ghostOutlineOnly.update { prefs.getBoolean("ghost_outline_only", true) }
         _controlStyle.update { prefs.getString("control_style", "split") ?: "split" }
         _soundEnabled.update { prefs.getBoolean("sound_enabled", true) }
         _vibrationEnabled.update { prefs.getBoolean("vibration_enabled", true) }
@@ -358,7 +425,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _statsClearedLines.update { prefs.getInt("stats_cleared_lines", 0) }
         _statsHighScore.update { prefs.getInt("stats_high_score", 0) }
         _scanlinesFilter.update { prefs.getBoolean("scanlines_filter", false) }
+        _graphicsQuality.update { prefs.getString("graphics_quality", "medium") ?: "medium" }
         _boardColorSkin.update { prefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk" }
+        _showNewSection.update { prefs.getBoolean("show_new_section", true) }
 
         // Relax settings
         _relaxImmortal.update { prefs.getBoolean("relax_immortal", true) }
@@ -382,7 +451,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _purchasedTitles.update { profilePrefs.getStringSet("purchased_titles", setOf("none")) ?: setOf("none") }
         _equippedSoundPack.update { profilePrefs.getString("equipped_sound_pack", "arcade") ?: "arcade" }
         _purchasedSoundPacks.update { profilePrefs.getStringSet("purchased_sound_packs", setOf("arcade")) ?: setOf("arcade") }
-        _purchasedThemes.update { profilePrefs.getStringSet("purchased_themes", setOf("indigo", "neon", "red")) ?: setOf("indigo", "neon", "red") }
+        _purchasedThemes.update { ALL_THEMES }
         _purchasedFonts.update { profilePrefs.getStringSet("purchased_fonts", setOf("default", "monospace")) ?: setOf("default", "monospace") }
         _purchasedControlButtonStyles.update { profilePrefs.getStringSet("purchased_control_button_styles", setOf("classic", "neon")) ?: setOf("classic", "neon") }
         _customAvatarEmoji.update { profilePrefs.getString("custom_avatar_emoji", "") ?: "" }
@@ -390,6 +459,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _onlineTier.update { profilePrefs.getString("online_tier", "BRONZE") ?: "BRONZE" }
         _hasNicknameGradient.update { profilePrefs.getBoolean("has_nickname_gradient", false) }
         _bonusXp.update { profilePrefs.getInt("bonus_xp", 0) }
+        _prestigeLevel.update { profilePrefs.getInt("prestige_level", 0) }
 
         loadAchievements()
         
@@ -397,22 +467,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         gameEngine.fastDropLockSpeed = _fastDropLockSpeed.value
         
         viewModelScope.launch {
-            try {
-                val adminExist = accountRepo.getAccount("FsFq")
-                if (adminExist == null) {
-                    accountRepo.insert(
-                        com.example.db.UserAccount(
-                            username = "FsFq",
-                            password = com.example.db.PasswordHasher.hash("1111333322"),
-                            onlineTier = "PRO GOLD",
-                            credits = 1000
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            
             val currentUser = auth.currentUser
             if (currentUser != null) {
                 try {
@@ -497,6 +551,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .putBoolean("scanlines_filter", false)
             .putBoolean("line_clear_challenge", false)
             .putBoolean("auto_save_highscore", true)
+            .putBoolean("show_new_section", true)
             .putBoolean("fast_drop_lock_speed", false)
             .putBoolean("left_handed_controls", false)
             .putFloat("game_speed_multiplier", 1.0f)
@@ -516,6 +571,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _blockStyle.value = "glass"
         _nextCount.value = 3
         _ghostVisible.value = true
+        _ghostOutlineOnly.value = true
         _controlStyle.value = "buttons"
         _soundEnabled.value = true
         _vibrationEnabled.value = true
@@ -526,6 +582,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _scanlinesFilter.value = false
         _lineClearChallenge.value = false
         _autoSaveHighscore.value = true
+        _showNewSection.value = true
         _fastDropLockSpeed.value = false
         _leftHandedControls.value = false
         _gameSpeedMultiplier.value = 1.0f
@@ -695,6 +752,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putBoolean("ghost_visible", visible).apply()
     }
 
+    fun setGhostOutlineOnly(outlineOnly: Boolean) {
+        _ghostOutlineOnly.value = outlineOnly
+        prefs.edit().putBoolean("ghost_outline_only", outlineOnly).apply()
+    }
+
 
     fun setControlStyle(style: String) {
         _controlStyle.value = style
@@ -744,6 +806,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setAutoSaveHighscore(enabled: Boolean) {
         _autoSaveHighscore.value = enabled
         prefs.edit().putBoolean("auto_save_highscore", enabled).apply()
+    }
+
+    fun setShowNewSection(enabled: Boolean) {
+        _showNewSection.value = enabled
+        prefs.edit().putBoolean("show_new_section", enabled).apply()
     }
 
     fun setFastDropLockSpeed(enabled: Boolean) {
@@ -797,6 +864,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putBoolean("scanlines_filter", enabled).apply()
     }
 
+    fun setGraphicsQuality(quality: String) {
+        _graphicsQuality.value = quality
+        prefs.edit().putString("graphics_quality", quality).apply()
+        if (quality == "low") {
+            _scanlinesFilter.value = false
+            prefs.edit().putBoolean("scanlines_filter", false).apply()
+            _screenShakeIntensity.value = 0f
+            prefs.edit().putFloat("screen_shake_intensity", 0f).apply()
+        }
+    }
+
     fun setCustomFontKey(key: String) {
         _customFontKey.value = key
         prefs.edit().putString("custom_font_key", key).apply()
@@ -844,7 +922,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.edit().putBoolean("ach_all_unlocked_unlocked", true).apply()
             allUnlocked = true
             viewModelScope.launch {
-                addCredits(1000)
+                addCredits(10000)
             }
         }
 
@@ -906,10 +984,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addCredits(amount: Int) {
-        _credits.update { it + amount }
+        val multiplied = (amount * incomeMultiplier).toInt().coerceAtLeast(amount)
+        _credits.update { it + multiplied }
         prefs.edit().putInt("credits", _credits.value).apply()
         saveCurrentProfileToDb()
         evaluateAchievements()
+    }
+
+    fun activatePrestige2() {
+        _credits.value = 0
+        prefs.edit().putInt("credits", 0).apply()
+        setCustomTagUnlocked(true)
+        profilePrefs.edit().putInt("prestige_level", 2).apply()
+        prefs.edit().putInt("prestige_level", 2).apply()
+        _prestigeLevel.value = 2
+        saveCurrentProfileToDb()
+        viewModelScope.launch {
+            com.example.db.FirebaseSync.pushUserData(getApplication())
+        }
     }
 
     fun spendCredits(amount: Int): Boolean {
@@ -938,21 +1030,79 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveCurrentProfileToDb() {
         viewModelScope.launch {
+            _isSyncingDb.value = true
             val pName = _playerName.value.trim()
+            val currentUser = auth.currentUser
             if (pName.isNotEmpty()) {
                 val existing = accountRepo.getAccount(pName)
                 val pass = existing?.password ?: "1234"
                 val acc = com.example.db.UserAccount(
                     username = pName,
                     password = pass,
+                    avatarColor = _customAvatarBgColor.value,
+                    avatarEmoji = _customAvatarEmoji.value,
+                    avatarFrame = _equippedAvatarFrame.value,
                     onlineTier = _onlineTier.value,
+                    title = _equippedTitle.value,
+                    customTag = _customTag.value,
                     credits = _credits.value,
                     hasGradient = _hasNicknameGradient.value,
-                    bonusXp = _bonusXp.value
+                    bonusXp = _bonusXp.value,
+                    uid = currentUser?.uid ?: ""
                 )
                 accountRepo.insert(acc)
                 // Sync data with Cloud Firestore
                 com.example.db.FirebaseSync.pushUserData(getApplication())
+
+                // Also update user profile in high_scores document if present
+                if (currentUser != null) {
+                    val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    val updates = mapOf(
+                        "playerName" to pName,
+                        "hasGradient" to _hasNicknameGradient.value,
+                        "customTag" to _customTag.value,
+                        "avatarEmoji" to _customAvatarEmoji.value,
+                        "avatarBgColor" to _customAvatarBgColor.value,
+                        "avatarFrame" to _equippedAvatarFrame.value,
+                        "onlineTier" to _onlineTier.value,
+                        "title" to _equippedTitle.value
+                    )
+                    firestore.collection("high_scores").document(currentUser.uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
+                }
+            }
+            delay(500)
+            _isSyncingDb.value = false
+        }
+    }
+
+    fun manualCloudSync(onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            _isSyncingDb.value = true
+            val user = auth.currentUser
+            if (user == null) {
+                _isSyncingDb.value = false
+                onResult(false, if (_language.value == Language.RU) "Войдите в аккаунт для облачной синхронизации" else "Log in to use cloud sync")
+                return@launch
+            }
+            try {
+                user.reload()
+                _isEmailVerified.value = user.isEmailVerified
+                val pullResult = com.example.db.FirebaseSync.pullUserData(getApplication())
+                reloadAllCustomizationsAndStats()
+                loadAchievements()
+                val pushResult = com.example.db.FirebaseSync.pushUserData(getApplication())
+                saveCurrentProfileToDb()
+                fetchGlobalLeaderboard()
+                loadFriends()
+                _isSyncingDb.value = false
+                if (pushResult || pullResult != null) {
+                    onResult(true, if (_language.value == Language.RU) "Синхронизация с облаком успешно завершена!" else "Cloud synchronization completed successfully!")
+                } else {
+                    onResult(false, if (_language.value == Language.RU) "Ошибка синхронизации с облаком" else "Cloud synchronization failed")
+                }
+            } catch (e: Exception) {
+                _isSyncingDb.value = false
+                onResult(false, e.localizedMessage ?: "Sync Error")
             }
         }
     }
@@ -973,6 +1123,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             _isAuthLoading.value = true
+
+            // Local DB login check
+            val localAcc = accountRepo.getAccount(trimmedName)
+            val inputHashed = com.example.db.PasswordHasher.hash(trimmedPass)
+            
+            if (localAcc != null && localAcc.password == inputHashed) {
+                _isEmailVerified.value = true
+                _showVerificationBanner.value = false
+                switchAccount(localAcc.username, localAcc.onlineTier, localAcc.credits, localAcc.hasGradient, localAcc.bonusXp)
+                _loginSuccessMessage.value = "Успешный вход!"
+                _isAuthLoading.value = false
+                return@launch
+            }
+
             val email = if (trimmedName.contains("@")) {
                 trimmedName
             } else {
@@ -1390,12 +1554,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .get()
             .addOnSuccessListener { snapshot ->
                 val list = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("playerName") ?: ""
+                    val name = (doc.getString("playerName") ?: doc.getString("username") ?: doc.getString("name") ?: "Игрок").ifEmpty { "Игрок" }
                     val score = doc.getLong("score")?.toInt() ?: 0
                     val ts = doc.getLong("timestamp") ?: 0L
                     val hasGrad = doc.getBoolean("hasGradient") ?: false
                     val tag = doc.getString("customTag") ?: ""
-                    HighScore(playerName = name, score = score, timestamp = ts, hasGradient = hasGrad).apply {
+                    val emoji = doc.getString("avatarEmoji") ?: ""
+                    val bg = doc.getString("avatarBgColor") ?: ""
+                    val frame = doc.getString("avatarFrame") ?: "standard"
+                    val tier = doc.getString("onlineTier") ?: "BRONZE"
+                    val title = doc.getString("title") ?: ""
+                    val uid = doc.getString("uid") ?: doc.id
+                    HighScore(
+                        playerName = name,
+                        score = score,
+                        timestamp = ts,
+                        hasGradient = hasGrad,
+                        avatarEmoji = emoji,
+                        avatarBgColorHex = bg,
+                        avatarFrame = frame,
+                        onlineTier = tier,
+                        title = title,
+                        uid = uid
+                    ).apply {
                         customTag = tag
                     }
                 }
@@ -1516,6 +1697,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").document(uid).update(updates)
             .addOnSuccessListener {
                 fetchFirebaseUsersForAdmin()
+            }
+    }
+
+    fun adminUpdateUserStats(
+        uid: String,
+        credits: Int,
+        highScore: Int,
+        linesCleared: Int,
+        gamesPlayed: Int,
+        bonusXp: Int,
+        onlineTier: String,
+        hasGradient: Boolean,
+        customTagUnlocked: Boolean,
+        customTag: String
+    ) {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val updates = mapOf(
+            "credits" to credits,
+            "stats_high_score" to highScore,
+            "stats_cleared_lines" to linesCleared,
+            "stats_games_played" to gamesPlayed,
+            "bonus_xp" to bonusXp,
+            "online_tier" to onlineTier,
+            "has_nickname_gradient" to hasGradient,
+            "custom_tag_unlocked" to customTagUnlocked,
+            "custom_tag" to customTag
+        )
+        firestore.collection("users").document(uid).update(updates)
+            .addOnSuccessListener {
+                fetchFirebaseUsersForAdmin()
+                val currentUser = auth.currentUser
+                if (currentUser != null && currentUser.uid == uid) {
+                    viewModelScope.launch {
+                        com.example.db.FirebaseSync.pullUserData(getApplication())
+                        _credits.update { prefs.getInt("credits", 0) }
+                        _onlineTier.update { profilePrefs.getString("online_tier", "BRONZE") ?: "BRONZE" }
+                        _hasNicknameGradient.update { profilePrefs.getBoolean("has_nickname_gradient", false) }
+                        _bonusXp.update { profilePrefs.getInt("bonus_xp", 0) }
+                        _customTagUnlocked.update { profilePrefs.getBoolean("custom_tag_unlocked", false) }
+                        _customTag.update { profilePrefs.getString("custom_tag", "") ?: "" }
+                    }
+                }
             }
     }
 
@@ -1815,6 +2038,77 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun adminBanUser(uid: String, isBanned: Boolean) {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users").document(uid).update("is_banned", isBanned)
+            .addOnSuccessListener {
+                fetchFirebaseUsersForAdmin()
+            }
+    }
+
+    fun adminSendGlobalBroadcast(title: String, message: String) {
+        if (message.isBlank()) return
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val broadcastData = mapOf(
+            "title" to title.trim(),
+            "message" to message.trim(),
+            "sender" to "ADMIN",
+            "timestamp" to System.currentTimeMillis()
+        )
+        firestore.collection("global_broadcasts").add(broadcastData)
+        // Also broadcast to lobby chat as system alert
+        val systemChatMessage = mapOf(
+            "senderId" to "system_broadcast",
+            "senderName" to "🛡️ [СИСТЕМА / SYSTEM]",
+            "text" to if (title.isNotBlank()) "📢 $title: $message" else "📢 $message",
+            "timestamp" to System.currentTimeMillis(),
+            "hasGradient" to true,
+            "senderTier" to "ADMIN",
+            "senderAvatarEmoji" to "👑",
+            "senderAvatarBgColor" to "FFD700",
+            "senderAvatarFrame" to "gold_ma"
+        )
+        firestore.collection("lobby_chat").add(systemChatMessage)
+    }
+
+    fun adminGiveAllCosmetics(username: String) {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val matchingUser = _firebaseUsers.value.find { (it["player_name"] as? String) == username }
+        val allFrames = setOf("standard", "neon_ae", "gold_ma", "chrono_gl", "omega_ti")
+        val allTitles = setOf("none", "node", "lord", "cosmic_overlord", "ai_consensus")
+        val allThemes = ALL_THEMES
+        val allFonts = setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin")
+        val allButtons = setOf("classic", "neon", "glass")
+
+        if (matchingUser != null) {
+            val uid = matchingUser["uid"] as? String ?: ""
+            if (uid.isNotEmpty()) {
+                val updates = mapOf<String, Any>(
+                    "purchased_avatar_frames" to allFrames.toList(),
+                    "purchased_titles" to allTitles.toList(),
+                    "purchased_themes" to allThemes.toList(),
+                    "purchased_fonts" to allFonts.toList(),
+                    "purchased_control_button_styles" to allButtons.toList(),
+                    "has_nickname_gradient" to true,
+                    "custom_tag_unlocked" to true
+                )
+                firestore.collection("users").document(uid).update(updates)
+                    .addOnSuccessListener {
+                        fetchFirebaseUsersForAdmin()
+                    }
+            }
+        }
+        if (username == _playerName.value) {
+            setPurchasedAvatarFrames(allFrames)
+            setPurchasedTitles(allTitles)
+            setPurchasedThemes(allThemes)
+            setPurchasedFonts(allFonts)
+            setPurchasedControlButtonStyles(allButtons)
+            setHasNicknameGradient(true)
+            setCustomTagUnlocked(true)
+        }
+    }
+
     fun startGame(mode: GameMode = GameMode.CLASSIC) {
         gameEngine.startGame(mode, startingLevel = _customStartLevel.value)
         
@@ -1848,7 +2142,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun placeBlockBlastFigure(idx: Int, r: Int, c: Int): Boolean {
         val ok = blockBlastEngine.placeFigure(idx, r, c) { linesCleared ->
-            addCredits(linesCleared * 11)
+            addCredits(linesCleared * 25)
         }
         if (ok) {
             val finalScore = blockBlastEngine.state.value.score
@@ -1857,9 +2151,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             // Tiered gameover coins for Block Blast match completion
             if (blockBlastEngine.state.value.isGameOver) {
-                val basePassCoins = 22
-                val perfCoins = finalScore / 133
-                val modeBonusCoins = 45
+                val basePassCoins = 45
+                val perfCoins = finalScore / 75
+                val modeBonusCoins = 80
                 addCredits(basePassCoins + perfCoins + modeBonusCoins)
             }
         }
@@ -2074,12 +2368,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun awardMultiplayerCredits(playerScore: Int, opponentScore: Int, won: Boolean) {
-        val basePlayCoins = 50
-        val performanceCoins = playerScore / 5
-        val winBonus = if (won) 150 else 0
-        val total = ((basePlayCoins + performanceCoins + winBonus) * 1.5f).toInt()
-        addCredits(total)
+    fun awardMultiplayerCredits(playerScore: Int, opponentScore: Int, won: Boolean, isDraw: Boolean = false, betAmount: Int = 0) {
+        val basePlayCoins = 80
+        val performanceCoins = (playerScore / 3).coerceAtMost(500)
+        
+        if (won) {
+            val currentStreak = _winStreak.value + 1
+            _winStreak.value = currentStreak
+            val newRating = _onlineRating.value + 25
+            _onlineRating.value = newRating
+            prefs.edit().putInt("win_streak", currentStreak).putInt("online_rating", newRating).apply()
+
+            val winBonus = 350
+            val streakCoins = (currentStreak * 30).coerceAtMost(300)
+            val betPrize = if (betAmount > 0) betAmount * 2 else 0
+            val total = ((basePlayCoins + performanceCoins + winBonus) * 1.5f).toInt() + streakCoins + betPrize
+            addCredits(total)
+        } else if (isDraw) {
+            if (betAmount > 0) addCredits(betAmount) // Refund bet
+            val total = ((basePlayCoins + performanceCoins + 100) * 1.5f).toInt()
+            addCredits(total)
+        } else {
+            _winStreak.value = 0
+            val newRating = maxOf(100, _onlineRating.value - 15)
+            _onlineRating.value = newRating
+            prefs.edit().putInt("win_streak", 0).putInt("online_rating", newRating).apply()
+
+            val total = ((basePlayCoins + performanceCoins + 50) * 1.2f).toInt()
+            addCredits(total)
+        }
+
+        // Sync rating & winStreak to Firestore if logged in
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(user.uid)
+                .update(mapOf("online_rating" to _onlineRating.value, "win_streak" to _winStreak.value))
+        }
     }
 
     private fun saveHighScore() {
@@ -2109,28 +2434,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putInt("stats_tetrises_count", totalTetrises).apply()
 
         // Tiered coin reward calculation for playing standard modes
-        if (score > 100) {
-            val basePlayCoins = 22
-            val performanceCoins = score / 133
+        if (score > 50) {
+            val basePlayCoins = 50
+            val performanceCoins = score / 75
+            val linesBonus = lines * 8
+            val tetrisBonus = tetrisesInGame * 50
             val modeBonus = when (mode) {
-                com.example.game.GameMode.CLASSIC, com.example.game.GameMode.ZEN_FLOW -> 0
+                com.example.game.GameMode.CLASSIC, com.example.game.GameMode.ZEN_FLOW -> 25
                 com.example.game.GameMode.EXTENDED, com.example.game.GameMode.FAST_RUN, 
                 com.example.game.GameMode.TIME_ATTACK, com.example.game.GameMode.REVERSE_CONTROLS,
-                com.example.game.GameMode.MIRROR_DIMENSION -> 37
-                com.example.game.GameMode.PENTARY_CHAOS -> 60
-                com.example.game.GameMode.BLOCK_BLAST -> 45
-                com.example.game.GameMode.PULSE_EXTREME -> 90
-                else -> 0
+                com.example.game.GameMode.MIRROR_DIMENSION -> 75
+                com.example.game.GameMode.PENTARY_CHAOS -> 140
+                com.example.game.GameMode.BLOCK_BLAST -> 90
+                com.example.game.GameMode.PULSE_EXTREME -> 180
+                else -> 25
             }
-            val total = ((basePlayCoins + performanceCoins + modeBonus) * 1.125f).toInt()
+            val total = ((basePlayCoins + performanceCoins + linesBonus + tetrisBonus + modeBonus) * 1.25f).toInt()
             addCredits(total)
         }
 
         if (score > 0) {
-            viewModelScope.launch {
-                scoreRepo.insert(HighScore(playerName = _playerName.value, score = score))
-            }
             val currentUser = auth.currentUser
+            viewModelScope.launch {
+                scoreRepo.insert(
+                    HighScore(
+                        playerName = _playerName.value,
+                        score = score,
+                        timestamp = System.currentTimeMillis(),
+                        hasGradient = _hasNicknameGradient.value,
+                        avatarEmoji = _customAvatarEmoji.value,
+                        avatarBgColorHex = _customAvatarBgColor.value,
+                        avatarFrame = _equippedAvatarFrame.value,
+                        onlineTier = _onlineTier.value,
+                        title = _equippedTitle.value,
+                        uid = currentUser?.uid ?: ""
+                    ).apply {
+                        customTag = _customTag.value
+                    }
+                )
+            }
             if (currentUser != null) {
                 val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 
@@ -2145,7 +2487,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "score" to score,
                                 "timestamp" to System.currentTimeMillis(),
                                 "hasGradient" to _hasNicknameGradient.value,
-                                "customTag" to _customTag.value
+                                "customTag" to _customTag.value,
+                                "avatarEmoji" to _customAvatarEmoji.value,
+                                "avatarBgColor" to _customAvatarBgColor.value,
+                                "avatarFrame" to _equippedAvatarFrame.value,
+                                "onlineTier" to _onlineTier.value,
+                                "title" to _equippedTitle.value
                             )
                             firestore.collection("high_scores").document(currentUser.uid).set(scoreMap)
                         }
@@ -2165,7 +2512,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "timestamp" to System.currentTimeMillis(),
                                 "mode" to modeCode,
                                 "hasGradient" to _hasNicknameGradient.value,
-                                "customTag" to _customTag.value
+                                "customTag" to _customTag.value,
+                                "avatarEmoji" to _customAvatarEmoji.value,
+                                "avatarBgColor" to _customAvatarBgColor.value,
+                                "avatarFrame" to _equippedAvatarFrame.value,
+                                "onlineTier" to _onlineTier.value,
+                                "title" to _equippedTitle.value
                             )
                             firestore.collection("high_scores_by_mode").document(modeCode)
                                 .collection("scores").document(currentUser.uid).set(scoreMap)
@@ -2586,12 +2938,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .get()
             .addOnSuccessListener { snapshot ->
                 val list = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("playerName") ?: ""
+                    val name = (doc.getString("playerName") ?: doc.getString("username") ?: doc.getString("name") ?: "Игрок").ifEmpty { "Игрок" }
                     val score = doc.getLong("score")?.toInt() ?: 0
                     val ts = doc.getLong("timestamp") ?: 0L
                     val hasGrad = doc.getBoolean("hasGradient") ?: false
                     val tag = doc.getString("customTag") ?: ""
-                    HighScore(playerName = name, score = score, timestamp = ts, hasGradient = hasGrad).apply {
+                    val emoji = doc.getString("avatarEmoji") ?: ""
+                    val bg = doc.getString("avatarBgColor") ?: ""
+                    val frame = doc.getString("avatarFrame") ?: "standard"
+                    val tier = doc.getString("onlineTier") ?: "BRONZE"
+                    val title = doc.getString("title") ?: ""
+                    val uid = doc.getString("uid") ?: doc.id
+                    HighScore(
+                        playerName = name,
+                        score = score,
+                        timestamp = ts,
+                        hasGradient = hasGrad,
+                        avatarEmoji = emoji,
+                        avatarBgColorHex = bg,
+                        avatarFrame = frame,
+                        onlineTier = tier,
+                        title = title,
+                        uid = uid
+                    ).apply {
                         customTag = tag
                     }
                 }
@@ -2600,5 +2969,267 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .addOnFailureListener {
                 it.printStackTrace()
             }
+    }
+
+    // --- Friends & Public Profile & Email Verification Helpers ---
+    fun setShowFriendsDialog(show: Boolean) {
+        _showFriendsDialog.value = show
+        if (show) {
+            loadFriends()
+        }
+    }
+
+    fun setShowSignOutConfirmDialog(show: Boolean) {
+        _showSignOutConfirmDialog.value = show
+    }
+
+    fun openUserProfile(uid: String, fallbackUsername: String = "") {
+        _isLoadingPublicProfile.value = true
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users").document(uid).get()
+            .addOnSuccessListener { userDoc ->
+                val userData = if (userDoc != null && userDoc.exists()) userDoc.data ?: emptyMap() else emptyMap()
+                firestore.collection("high_scores").document(uid).get()
+                    .addOnSuccessListener { scoreDoc ->
+                        val scoreData = if (scoreDoc != null && scoreDoc.exists()) scoreDoc.data ?: emptyMap() else emptyMap()
+                        val merged = userData + scoreData
+                        val name = (merged["playerName"] as? String)
+                            ?: (merged["username"] as? String)
+                            ?: fallbackUsername.ifEmpty { "Игрок" }
+                        _selectedPublicProfile.value = PublicUserProfile.fromMap(uid, merged + mapOf("username" to name))
+                        _isLoadingPublicProfile.value = false
+                    }
+                    .addOnFailureListener {
+                        val name = (userData["playerName"] as? String)
+                            ?: (userData["username"] as? String)
+                            ?: fallbackUsername.ifEmpty { "Игрок" }
+                        _selectedPublicProfile.value = PublicUserProfile.fromMap(uid, userData + mapOf("username" to name))
+                        _isLoadingPublicProfile.value = false
+                    }
+            }
+            .addOnFailureListener {
+                firestore.collection("high_scores").document(uid).get()
+                    .addOnSuccessListener { scoreDoc ->
+                        val scoreData = if (scoreDoc != null && scoreDoc.exists()) scoreDoc.data ?: emptyMap() else emptyMap()
+                        val name = (scoreData["playerName"] as? String)
+                            ?: (scoreData["username"] as? String)
+                            ?: fallbackUsername.ifEmpty { "Игрок" }
+                        _selectedPublicProfile.value = PublicUserProfile.fromMap(uid, scoreData + mapOf("username" to name))
+                        _isLoadingPublicProfile.value = false
+                    }
+                    .addOnFailureListener {
+                        _selectedPublicProfile.value = PublicUserProfile(
+                            uid = uid,
+                            username = fallbackUsername.ifEmpty { "Игрок" },
+                            onlineTier = "BRONZE"
+                        )
+                        _isLoadingPublicProfile.value = false
+                    }
+            }
+    }
+
+    fun closeUserProfile() {
+        _selectedPublicProfile.value = null
+    }
+
+    fun loadFriends() {
+        val myUid = auth.currentUser?.uid ?: return
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users").document(myUid).collection("friends")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                val list = snapshot?.documents?.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    FriendUser.fromMap(data + mapOf("uid" to doc.id))
+                } ?: emptyList()
+                _friendsList.value = list.filter { it.status == "accepted" }
+                _friendRequests.value = list.filter { it.status == "pending_incoming" }
+            }
+    }
+
+    fun sendFriendRequest(targetUsername: String, onResult: (Boolean, String) -> Unit) {
+        val myUser = auth.currentUser ?: run {
+            onResult(false, "Войдите в аккаунт для добавления друзей")
+            return
+        }
+        val trimmed = targetUsername.trim()
+        if (trimmed.isEmpty()) {
+            onResult(false, "Введите никнейм игрока")
+            return
+        }
+        if (trimmed.equals(_playerName.value, ignoreCase = true)) {
+            onResult(false, "Нельзя добавить самого себя")
+            return
+        }
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users").whereEqualTo("player_name", trimmed).limit(1).get()
+            .addOnSuccessListener { snap ->
+                if (snap.isEmpty) {
+                    onResult(false, "Игрок '$trimmed' не найден")
+                    return@addOnSuccessListener
+                }
+                val targetDoc = snap.documents[0]
+                val targetUid = targetDoc.id
+                val targetName = targetDoc.getString("player_name") ?: trimmed
+                val targetTier = targetDoc.getString("online_tier") ?: "BRONZE"
+                val targetEmoji = targetDoc.getString("custom_avatar_emoji") ?: ""
+                val targetBg = targetDoc.getString("custom_avatar_bg_color") ?: ""
+                val targetFrame = targetDoc.getString("equipped_avatar_frame") ?: "standard"
+                val targetGradient = targetDoc.getBoolean("has_nickname_gradient") ?: false
+
+                val outgoing = FriendUser(
+                    uid = targetUid,
+                    username = targetName,
+                    onlineTier = targetTier,
+                    avatarEmoji = targetEmoji,
+                    avatarBgColor = targetBg,
+                    avatarFrame = targetFrame,
+                    hasGradient = targetGradient,
+                    status = "pending_outgoing",
+                    lastSeen = System.currentTimeMillis()
+                )
+                firestore.collection("users").document(myUser.uid).collection("friends").document(targetUid).set(outgoing.toMap())
+
+                val incoming = FriendUser(
+                    uid = myUser.uid,
+                    username = _playerName.value,
+                    onlineTier = _onlineTier.value,
+                    avatarEmoji = _customAvatarEmoji.value,
+                    avatarBgColor = _customAvatarBgColor.value,
+                    avatarFrame = _equippedAvatarFrame.value,
+                    hasGradient = _hasNicknameGradient.value,
+                    status = "pending_incoming",
+                    lastSeen = System.currentTimeMillis()
+                )
+                firestore.collection("users").document(targetUid).collection("friends").document(myUser.uid).set(incoming.toMap())
+                    .addOnSuccessListener {
+                        onResult(true, "Запрос дружбы отправлен игроку $targetName!")
+                    }
+                    .addOnFailureListener { e ->
+                        onResult(false, e.localizedMessage ?: "Ошибка отправки запроса")
+                    }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.localizedMessage ?: "Ошибка поиска игрока")
+            }
+    }
+
+    fun acceptFriendRequest(friend: FriendUser, onResult: (Boolean) -> Unit) {
+        val myUser = auth.currentUser ?: return
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val batch = firestore.batch()
+        val myRef = firestore.collection("users").document(myUser.uid).collection("friends").document(friend.uid)
+        batch.update(myRef, "status", "accepted", "isOnline", true)
+        val friendRef = firestore.collection("users").document(friend.uid).collection("friends").document(myUser.uid)
+        batch.update(friendRef, "status", "accepted", "isOnline", true)
+        batch.commit()
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener { onResult(false) }
+    }
+
+    fun declineFriendRequest(friend: FriendUser, onResult: (Boolean) -> Unit) {
+        val myUser = auth.currentUser ?: return
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val batch = firestore.batch()
+        val myRef = firestore.collection("users").document(myUser.uid).collection("friends").document(friend.uid)
+        batch.delete(myRef)
+        val friendRef = firestore.collection("users").document(friend.uid).collection("friends").document(myUser.uid)
+        batch.delete(friendRef)
+        batch.commit()
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener { onResult(false) }
+    }
+
+    fun removeFriend(friend: FriendUser, onResult: (Boolean) -> Unit) {
+        declineFriendRequest(friend, onResult)
+    }
+
+    fun searchPlayers(query: String, onResult: (List<FriendUser>) -> Unit) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) {
+            onResult(emptyList())
+            return
+        }
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users")
+            .whereGreaterThanOrEqualTo("player_name", trimmed)
+            .whereLessThanOrEqualTo("player_name", trimmed + "\uf8ff")
+            .limit(15)
+            .get()
+            .addOnSuccessListener { snap ->
+                val list = snap.documents.mapNotNull { doc ->
+                    val name = doc.getString("player_name") ?: return@mapNotNull null
+                    val tier = doc.getString("online_tier") ?: "BRONZE"
+                    val emoji = doc.getString("custom_avatar_emoji") ?: ""
+                    val bg = doc.getString("custom_avatar_bg_color") ?: ""
+                    val frame = doc.getString("equipped_avatar_frame") ?: "standard"
+                    val grad = doc.getBoolean("has_nickname_gradient") ?: false
+                    val isOnline = doc.getBoolean("is_online") ?: false
+                    FriendUser(
+                        uid = doc.id,
+                        username = name,
+                        onlineTier = tier,
+                        avatarEmoji = emoji,
+                        avatarBgColor = bg,
+                        avatarFrame = frame,
+                        hasGradient = grad,
+                        isOnline = isOnline,
+                        status = "none"
+                    )
+                }
+                onResult(list)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun resendVerificationEmail(onResult: (Boolean, String) -> Unit) {
+        val user = auth.currentUser
+        if (user != null) {
+            user.sendEmailVerification()
+                .addOnSuccessListener {
+                    onResult(true, "Письмо с подтверждением успешно отправлено!")
+                }
+                .addOnFailureListener { e ->
+                    onResult(false, e.localizedMessage ?: "Ошибка отправки письма")
+                }
+        } else {
+            onResult(false, "Пользователь не авторизован")
+        }
+    }
+
+    fun checkEmailVerificationStatus(onResult: (Boolean) -> Unit) {
+        val user = auth.currentUser
+        if (user != null) {
+            user.reload().addOnCompleteListener {
+                val isVerified = user.isEmailVerified
+                _isEmailVerified.value = isVerified
+                if (isVerified) {
+                    _showVerificationBanner.value = false
+                }
+                onResult(isVerified)
+            }
+        } else {
+            onResult(false)
+        }
+    }
+
+    companion object {
+        val ALL_THEMES = setOf(
+            "monet", "indigo", "black", "neon", "red", "emerald", "amber",
+            "rose", "sky", "orange", "cyber_pink", "toxic_green", "gold"
+        )
+
+        fun getSystemDefaultLanguage(): Language {
+            val sysLang = java.util.Locale.getDefault().language.lowercase()
+            return when {
+                sysLang.startsWith("ru") || sysLang.startsWith("be") || sysLang.startsWith("ky") -> Language.RU
+                sysLang.startsWith("uk") -> Language.UA
+                sysLang.startsWith("kk") -> Language.KK
+                sysLang.startsWith("de") -> Language.DE
+                else -> Language.EN
+            }
+        }
     }
 }

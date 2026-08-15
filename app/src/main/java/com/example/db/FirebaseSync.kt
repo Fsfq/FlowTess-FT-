@@ -3,21 +3,33 @@ package com.example.db
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.SetOptions
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-// Синхронизация данных с Firestore — пушим/пуллим профиль, инвентарь, настройки, статистику
+// Синхронизация данных с Firestore — профиль, инвентарь, настройки, статистика, рекорды
 // Cloud sync: push/pull profile, inventory, settings, stats to/from Firestore
 object FirebaseSync {
 
     private val auth: FirebaseAuth
         get() = FirebaseAuth.getInstance()
 
-    private val firestore: FirebaseFirestore
-        get() = FirebaseFirestore.getInstance()
+    val firestore: FirebaseFirestore by lazy {
+        val db = FirebaseFirestore.getInstance()
+        try {
+            val settings = FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
+                .build()
+            db.firestoreSettings = settings
+        } catch (e: Exception) {
+            // Already initialized or settings locked
+        }
+        db
+    }
 
     // Конвертация файлов в base64 для хранения аватаров/фонов в Firestore
-    // avatar/background file <-> base64 for Firestore storage
     private fun fileToBase64(file: java.io.File): String? {
         if (!file.exists()) return null
         return try {
@@ -38,8 +50,7 @@ object FirebaseSync {
         }
     }
 
-    // Пушим ВСЕ данные юзера в Firestore — профиль, инвентарь, настройки, стата
-    // push everything to cloud: profile, inventory, settings, stats
+    // Пушим ВСЕ данные юзера в Firestore
     suspend fun pushUserData(context: Context): Boolean = suspendCoroutine { continuation ->
         val user = auth.currentUser
         if (user == null) {
@@ -55,43 +66,71 @@ object FirebaseSync {
         val avatarBase64 = fileToBase64(avatarFile)
         val bgBase64 = fileToBase64(bgFile)
 
-        val data = mapOf(
+        // Extract unlocked achievements
+        val allPrefs = tetrisPrefs.all
+        val unlockedAchievements = allPrefs.filter { it.key.startsWith("ach_") && it.key.endsWith("_unlocked") && it.value == true }
+            .map { it.key.removePrefix("ach_").removeSuffix("_unlocked") }
+
+        val data = mutableMapOf<String, Any>(
+            "uid" to user.uid,
             "player_name" to playerName,
-            "equipped_avatar_frame" to profilePrefs.getString("equipped_avatar_frame", "standard"),
-            "purchased_avatar_frames" to profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard"))?.toList(),
-            "equipped_title" to profilePrefs.getString("equipped_title", "none"),
-            "purchased_titles" to profilePrefs.getStringSet("purchased_titles", setOf("none"))?.toList(),
-            "equipped_sound_pack" to profilePrefs.getString("equipped_sound_pack", "arcade"),
-            "purchased_sound_packs" to profilePrefs.getStringSet("purchased_sound_packs", setOf("arcade"))?.toList(),
-            "purchased_themes" to profilePrefs.getStringSet("purchased_themes", setOf("indigo", "neon", "red"))?.toList(),
-            "purchased_fonts" to profilePrefs.getStringSet("purchased_fonts", setOf("default", "monospace"))?.toList(),
-            "purchased_control_button_styles" to profilePrefs.getStringSet("purchased_control_button_styles", setOf("classic", "neon"))?.toList(),
-            "custom_avatar_emoji" to profilePrefs.getString("custom_avatar_emoji", ""),
-            "custom_avatar_bg_color" to profilePrefs.getString("custom_avatar_bg_color", "3A3C44"),
-            "online_tier" to profilePrefs.getString("online_tier", "BRONZE"),
+            "equipped_avatar_frame" to (profilePrefs.getString("equipped_avatar_frame", "standard") ?: "standard"),
+            "purchased_avatar_frames" to (profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard"))?.toList() ?: listOf("standard")),
+            "equipped_title" to (profilePrefs.getString("equipped_title", "none") ?: "none"),
+            "purchased_titles" to (profilePrefs.getStringSet("purchased_titles", setOf("none"))?.toList() ?: listOf("none")),
+            "equipped_sound_pack" to (profilePrefs.getString("equipped_sound_pack", "arcade") ?: "arcade"),
+            "purchased_sound_packs" to (profilePrefs.getStringSet("purchased_sound_packs", setOf("arcade"))?.toList() ?: listOf("arcade")),
+            "purchased_themes" to (profilePrefs.getStringSet("purchased_themes", setOf("indigo", "neon", "red"))?.toList() ?: listOf("indigo", "neon", "red")),
+            "purchased_fonts" to (profilePrefs.getStringSet("purchased_fonts", setOf("default", "monospace"))?.toList() ?: listOf("default", "monospace")),
+            "purchased_control_button_styles" to (profilePrefs.getStringSet("purchased_control_button_styles", setOf("classic", "neon"))?.toList() ?: listOf("classic", "neon")),
+            "custom_avatar_emoji" to (profilePrefs.getString("custom_avatar_emoji", "") ?: ""),
+            "custom_avatar_bg_color" to (profilePrefs.getString("custom_avatar_bg_color", "3A3C44") ?: "3A3C44"),
+            "online_tier" to (profilePrefs.getString("online_tier", "BRONZE") ?: "BRONZE"),
             "credits" to tetrisPrefs.getInt("credits", 750),
-            "purchased_cube_skins" to profilePrefs.getStringSet("purchased_cube_skins", setOf("neon"))?.toList(),
-            "case_inventory" to profilePrefs.getStringSet("case_inventory", emptySet())?.toList(),
-            "purchased_modes" to profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast"))?.toList(),
-            "board_color_skin" to tetrisPrefs.getString("board_color_skin", "cyberpunk"),
-            "block_style" to tetrisPrefs.getString("block_style", "glass"),
-            "custom_avatar_base64" to avatarBase64,
-            "custom_background_base64" to bgBase64,
+            "purchased_cube_skins" to (profilePrefs.getStringSet("purchased_cube_skins", setOf("neon"))?.toList() ?: listOf("neon")),
+            "case_inventory" to (profilePrefs.getStringSet("case_inventory", emptySet())?.toList() ?: emptyList()),
+            "purchased_modes" to (profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast"))?.toList() ?: listOf("classic", "extended")),
+            "board_color_skin" to (tetrisPrefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk"),
+            "block_style" to (tetrisPrefs.getString("block_style", "glass") ?: "glass"),
             "has_nickname_gradient" to profilePrefs.getBoolean("has_nickname_gradient", false),
             "bonus_xp" to profilePrefs.getInt("bonus_xp", 0),
-            "custom_tag" to profilePrefs.getString("custom_tag", ""),
+            "prestige_level" to profilePrefs.getInt("prestige_level", 0),
+            "custom_tag" to (profilePrefs.getString("custom_tag", "") ?: ""),
             "custom_tag_unlocked" to profilePrefs.getBoolean("custom_tag_unlocked", false),
+            "unlocked_achievements" to unlockedAchievements,
+            "last_synced_timestamp" to System.currentTimeMillis(),
+            "is_online" to true,
             
-            // Настройки UI/игры — синхронизируем между устройствами / UI/game settings sync
-            "setting_lang_code" to tetrisPrefs.getString("lang_code", "en"),
-            "setting_theme_color" to tetrisPrefs.getString("theme_color", "indigo"),
+            // Настройки UI/игры
+            "setting_lang_code" to (tetrisPrefs.getString("lang_code", "en") ?: "en"),
+            "setting_theme_color" to (tetrisPrefs.getString("theme_color", "indigo") ?: "indigo"),
             "setting_next_count" to tetrisPrefs.getInt("next_count", 3),
             "setting_ghost_visible" to tetrisPrefs.getBoolean("ghost_visible", true),
-            "setting_control_style" to tetrisPrefs.getString("control_style", "split"),
+            "setting_control_style" to (tetrisPrefs.getString("control_style", "split") ?: "split"),
             "setting_sound_enabled" to tetrisPrefs.getBoolean("sound_enabled", true),
             "setting_vibration_enabled" to tetrisPrefs.getBoolean("vibration_enabled", true),
+            "setting_smooth_falling_enabled" to tetrisPrefs.getBoolean("smooth_falling_enabled", true),
+            "setting_grid_opacity" to tetrisPrefs.getFloat("grid_opacity", 0.6f),
+            "setting_custom_start_level" to tetrisPrefs.getInt("custom_start_level", 1),
+            "setting_game_speed_multiplier" to tetrisPrefs.getFloat("game_speed_multiplier", 1.0f),
+            "setting_control_button_scale" to tetrisPrefs.getFloat("control_button_scale", 1.0f),
+            "setting_control_button_alpha" to tetrisPrefs.getFloat("control_button_alpha", 1.0f),
+            "setting_control_button_style" to (tetrisPrefs.getString("control_button_style", "neon") ?: "neon"),
+            "setting_custom_font_key" to (tetrisPrefs.getString("custom_font_key", "default") ?: "default"),
+            "setting_grid_line_density" to (tetrisPrefs.getString("grid_line_density", "standard") ?: "standard"),
+            "setting_control_vertical_position" to (tetrisPrefs.getString("control_vertical_position", "bottom") ?: "bottom"),
+            "setting_screen_shake_intensity" to tetrisPrefs.getFloat("screen_shake_intensity", 1.0f),
+            "setting_scanlines_filter" to tetrisPrefs.getBoolean("scanlines_filter", false),
+            "setting_graphics_quality" to (tetrisPrefs.getString("graphics_quality", "medium") ?: "medium"),
+            "setting_sound_volume" to tetrisPrefs.getFloat("sound_volume", 1.0f),
+            "setting_lobby_music_volume" to tetrisPrefs.getFloat("lobby_music_volume", 0.8f),
+            "setting_lobby_music_enabled" to tetrisPrefs.getBoolean("lobby_music_enabled", true),
+            "setting_relax_immortal" to tetrisPrefs.getBoolean("relax_immortal", true),
+            "setting_relax_speed" to (tetrisPrefs.getString("relax_speed", "slow") ?: "slow"),
+            "setting_relax_block_set" to (tetrisPrefs.getString("relax_block_set", "ideal") ?: "ideal"),
+            "setting_relax_ghost_enabled" to tetrisPrefs.getBoolean("relax_ghost_enabled", true),
 
-            // Игровая статистика — очки, линии, потраченные монеты / game stats sync
+            // Игровая статистика
             "stats_games_played" to tetrisPrefs.getInt("stats_games_played", 0),
             "stats_spent_credits" to tetrisPrefs.getInt("stats_spent_credits", 0),
             "stats_cleared_lines" to tetrisPrefs.getInt("stats_cleared_lines", 0),
@@ -103,7 +142,14 @@ object FirebaseSync {
             "multiplayer_launches" to tetrisPrefs.getInt("multiplayer_launches", 0)
         )
 
-        firestore.collection("users").document(user.uid).set(data)
+        if (avatarBase64 != null) {
+            data["custom_avatar_base64"] = avatarBase64
+        }
+        if (bgBase64 != null) {
+            data["custom_background_base64"] = bgBase64
+        }
+
+        firestore.collection("users").document(user.uid).set(data, SetOptions.merge())
             .addOnSuccessListener {
                 continuation.resume(true)
             }
@@ -112,8 +158,7 @@ object FirebaseSync {
             }
     }
 
-    // Тянем данные из Firestore и пишем в SharedPrefs — обратный процесс
-    // pull from cloud, write to SharedPrefs — reverse of push
+    // Тянем данные из Firestore и пишем в SharedPrefs
     suspend fun pullUserData(context: Context): Map<String, Any>? = suspendCoroutine { continuation ->
         val user = auth.currentUser
         if (user == null) {
@@ -139,14 +184,32 @@ object FirebaseSync {
                 val editorTetris = tetrisPrefs.edit()
 
                 (data["equipped_avatar_frame"] as? String)?.let { editorProfile.putString("equipped_avatar_frame", it) }
-                (data["purchased_avatar_frames"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_avatar_frames", it.toSet()) }
+                val localFrames = profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard")) ?: setOf("standard")
+                val cloudFrames = (data["purchased_avatar_frames"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_avatar_frames", localFrames + cloudFrames)
+
                 (data["equipped_title"] as? String)?.let { editorProfile.putString("equipped_title", it) }
-                (data["purchased_titles"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_titles", it.toSet()) }
+                val localTitles = profilePrefs.getStringSet("purchased_titles", setOf("none")) ?: setOf("none")
+                val cloudTitles = (data["purchased_titles"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_titles", localTitles + cloudTitles)
+
                 (data["equipped_sound_pack"] as? String)?.let { editorProfile.putString("equipped_sound_pack", it) }
-                (data["purchased_sound_packs"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_sound_packs", it.toSet()) }
-                (data["purchased_themes"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_themes", it.toSet()) }
-                (data["purchased_fonts"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_fonts", it.toSet()) }
-                (data["purchased_control_button_styles"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_control_button_styles", it.toSet()) }
+                val localSounds = profilePrefs.getStringSet("purchased_sound_packs", setOf("arcade")) ?: setOf("arcade")
+                val cloudSounds = (data["purchased_sound_packs"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_sound_packs", localSounds + cloudSounds)
+
+                val localThemes = profilePrefs.getStringSet("purchased_themes", setOf("indigo", "neon", "red")) ?: setOf("indigo", "neon", "red")
+                val cloudThemes = (data["purchased_themes"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_themes", localThemes + cloudThemes)
+
+                val localFonts = profilePrefs.getStringSet("purchased_fonts", setOf("default", "monospace")) ?: setOf("default", "monospace")
+                val cloudFonts = (data["purchased_fonts"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_fonts", localFonts + cloudFonts)
+
+                val localBtnStyles = profilePrefs.getStringSet("purchased_control_button_styles", setOf("classic", "neon")) ?: setOf("classic", "neon")
+                val cloudBtnStyles = (data["purchased_control_button_styles"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_control_button_styles", localBtnStyles + cloudBtnStyles)
+
                 val resolvedName = (data["player_name"] as? String) ?: tetrisPrefs.getString("player_name", "Player 1") ?: "Player 1"
                 (data["player_name"] as? String)?.let { editorTetris.putString("player_name", it) }
 
@@ -180,18 +243,47 @@ object FirebaseSync {
                     editorProfile.putString("online_tier", it)
                     editorTetris.putString("online_tier", it)
                 }
-                (data["credits"] as? Long)?.let { editorTetris.putInt("credits", it.toInt()) }
-                (data["purchased_cube_skins"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_cube_skins", it.toSet()) }
-                (data["case_inventory"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("case_inventory", it.toSet()) }
-                (data["purchased_modes"] as? List<*>)?.mapNotNull { it as? String }?.let { editorProfile.putStringSet("purchased_modes", it.toSet()) }
+
+                val localCredits = tetrisPrefs.getInt("credits", 750)
+                val cloudCredits = (data["credits"] as? Long)?.toInt() ?: localCredits
+                editorTetris.putInt("credits", maxOf(localCredits, cloudCredits))
+
+                val localCubeSkins = profilePrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+                val cloudCubeSkins = (data["purchased_cube_skins"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_cube_skins", localCubeSkins + cloudCubeSkins)
+
+                val localInventory = profilePrefs.getStringSet("case_inventory", emptySet()) ?: emptySet()
+                val cloudInventory = (data["case_inventory"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("case_inventory", localInventory + cloudInventory)
+
+                val localModes = profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast")) ?: setOf("classic", "extended")
+                val cloudModes = (data["purchased_modes"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_modes", localModes + cloudModes)
+
                 (data["board_color_skin"] as? String)?.let { editorTetris.putString("board_color_skin", it) }
                 (data["block_style"] as? String)?.let { editorTetris.putString("block_style", it) }
-                (data["has_nickname_gradient"] as? Boolean)?.let { editorProfile.putBoolean("has_nickname_gradient", it) }
-                (data["bonus_xp"] as? Long)?.let { editorProfile.putInt("bonus_xp", it.toInt()) }
+                val hasGradCloud = data["has_nickname_gradient"] as? Boolean ?: false
+                val hasGradLocal = profilePrefs.getBoolean("has_nickname_gradient", false)
+                editorProfile.putBoolean("has_nickname_gradient", hasGradCloud || hasGradLocal)
+
+                val localXp = profilePrefs.getInt("bonus_xp", 0)
+                val cloudXp = (data["bonus_xp"] as? Long)?.toInt() ?: localXp
+                editorProfile.putInt("bonus_xp", maxOf(localXp, cloudXp))
+                val localPrestige = profilePrefs.getInt("prestige_level", 0)
+                val cloudPrestige = (data["prestige_level"] as? Long)?.toInt() ?: localPrestige
+                editorProfile.putInt("prestige_level", maxOf(localPrestige, cloudPrestige))
+
                 (data["custom_tag"] as? String)?.let { editorProfile.putString("custom_tag", it) }
-                (data["custom_tag_unlocked"] as? Boolean)?.let { editorProfile.putBoolean("custom_tag_unlocked", it) }
+                val tagUnlockedCloud = data["custom_tag_unlocked"] as? Boolean ?: false
+                val tagUnlockedLocal = profilePrefs.getBoolean("custom_tag_unlocked", false)
+                editorProfile.putBoolean("custom_tag_unlocked", tagUnlockedCloud || tagUnlockedLocal)
                 
-                // Настройки с облака / pull settings from cloud
+                // Достижения
+                (data["unlocked_achievements"] as? List<*>)?.mapNotNull { it as? String }?.forEach { achId ->
+                    editorTetris.putBoolean("ach_${achId}_unlocked", true)
+                }
+
+                // Настройки с облака
                 (data["setting_lang_code"] as? String)?.let { editorTetris.putString("lang_code", it) }
                 (data["setting_theme_color"] as? String)?.let { editorTetris.putString("theme_color", it) }
                 (data["setting_next_count"] as? Long)?.let { editorTetris.putInt("next_count", it.toInt()) }
@@ -199,17 +291,63 @@ object FirebaseSync {
                 (data["setting_control_style"] as? String)?.let { editorTetris.putString("control_style", it) }
                 (data["setting_sound_enabled"] as? Boolean)?.let { editorTetris.putBoolean("sound_enabled", it) }
                 (data["setting_vibration_enabled"] as? Boolean)?.let { editorTetris.putBoolean("vibration_enabled", it) }
+                (data["setting_smooth_falling_enabled"] as? Boolean)?.let { editorTetris.putBoolean("smooth_falling_enabled", it) }
+                (data["setting_grid_opacity"] as? Double)?.let { editorTetris.putFloat("grid_opacity", it.toFloat()) }
+                (data["setting_custom_start_level"] as? Long)?.let { editorTetris.putInt("custom_start_level", it.toInt()) }
+                (data["setting_game_speed_multiplier"] as? Double)?.let { editorTetris.putFloat("game_speed_multiplier", it.toFloat()) }
+                (data["setting_control_button_scale"] as? Double)?.let { editorTetris.putFloat("control_button_scale", it.toFloat()) }
+                (data["setting_control_button_alpha"] as? Double)?.let { editorTetris.putFloat("control_button_alpha", it.toFloat()) }
+                (data["setting_control_button_style"] as? String)?.let { editorTetris.putString("control_button_style", it) }
+                (data["setting_custom_font_key"] as? String)?.let { editorTetris.putString("custom_font_key", it) }
+                (data["setting_grid_line_density"] as? String)?.let { editorTetris.putString("grid_line_density", it) }
+                (data["setting_control_vertical_position"] as? String)?.let { editorTetris.putString("control_vertical_position", it) }
+                (data["setting_screen_shake_intensity"] as? Double)?.let { editorTetris.putFloat("screen_shake_intensity", it.toFloat()) }
+                (data["setting_scanlines_filter"] as? Boolean)?.let { editorTetris.putBoolean("scanlines_filter", it) }
+                (data["setting_graphics_quality"] as? String)?.let { editorTetris.putString("graphics_quality", it) }
+                (data["setting_sound_volume"] as? Double)?.let { editorTetris.putFloat("sound_volume", it.toFloat()) }
+                (data["setting_lobby_music_volume"] as? Double)?.let { editorTetris.putFloat("lobby_music_volume", it.toFloat()) }
+                (data["setting_lobby_music_enabled"] as? Boolean)?.let { editorTetris.putBoolean("lobby_music_enabled", it) }
+                (data["setting_relax_immortal"] as? Boolean)?.let { editorTetris.putBoolean("relax_immortal", it) }
+                (data["setting_relax_speed"] as? String)?.let { editorTetris.putString("relax_speed", it) }
+                (data["setting_relax_block_set"] as? String)?.let { editorTetris.putString("relax_block_set", it) }
+                (data["setting_relax_ghost_enabled"] as? Boolean)?.let { editorTetris.putBoolean("relax_ghost_enabled", it) }
 
-                // Статистика с облака / pull stats from cloud
-                (data["stats_games_played"] as? Long)?.let { editorTetris.putInt("stats_games_played", it.toInt()) }
-                (data["stats_spent_credits"] as? Long)?.let { editorTetris.putInt("stats_spent_credits", it.toInt()) }
-                (data["stats_cleared_lines"] as? Long)?.let { editorTetris.putInt("stats_cleared_lines", it.toInt()) }
-                (data["stats_high_score"] as? Long)?.let { editorTetris.putInt("stats_high_score", it.toInt()) }
-                (data["stats_max_speed_reached"] as? Long)?.let { editorTetris.putInt("stats_max_speed_reached", it.toInt()) }
-                (data["stats_tetrises_count"] as? Long)?.let { editorTetris.putInt("stats_tetrises_count", it.toInt()) }
-                (data["block_blast_high_score"] as? Long)?.let { editorTetris.putInt("block_blast_high_score", it.toInt()) }
-                (data["stats_avatar_changes"] as? Long)?.let { editorTetris.putInt("stats_avatar_changes", it.toInt()) }
-                (data["multiplayer_launches"] as? Long)?.let { editorTetris.putInt("multiplayer_launches", it.toInt()) }
+                // Статистика с облака (smart max merge)
+                val localGames = tetrisPrefs.getInt("stats_games_played", 0)
+                val cloudGames = (data["stats_games_played"] as? Long)?.toInt() ?: localGames
+                editorTetris.putInt("stats_games_played", maxOf(localGames, cloudGames))
+
+                val localSpent = tetrisPrefs.getInt("stats_spent_credits", 0)
+                val cloudSpent = (data["stats_spent_credits"] as? Long)?.toInt() ?: localSpent
+                editorTetris.putInt("stats_spent_credits", maxOf(localSpent, cloudSpent))
+
+                val localLines = tetrisPrefs.getInt("stats_cleared_lines", 0)
+                val cloudLines = (data["stats_cleared_lines"] as? Long)?.toInt() ?: localLines
+                editorTetris.putInt("stats_cleared_lines", maxOf(localLines, cloudLines))
+
+                val localHigh = tetrisPrefs.getInt("stats_high_score", 0)
+                val cloudHigh = (data["stats_high_score"] as? Long)?.toInt() ?: localHigh
+                editorTetris.putInt("stats_high_score", maxOf(localHigh, cloudHigh))
+
+                val localSpeed = tetrisPrefs.getInt("stats_max_speed_reached", 0)
+                val cloudSpeed = (data["stats_max_speed_reached"] as? Long)?.toInt() ?: localSpeed
+                editorTetris.putInt("stats_max_speed_reached", maxOf(localSpeed, cloudSpeed))
+
+                val localTetrises = tetrisPrefs.getInt("stats_tetrises_count", 0)
+                val cloudTetrises = (data["stats_tetrises_count"] as? Long)?.toInt() ?: localTetrises
+                editorTetris.putInt("stats_tetrises_count", maxOf(localTetrises, cloudTetrises))
+
+                val localBlockBlast = tetrisPrefs.getInt("block_blast_high_score", 0)
+                val cloudBlockBlast = (data["block_blast_high_score"] as? Long)?.toInt() ?: localBlockBlast
+                editorTetris.putInt("block_blast_high_score", maxOf(localBlockBlast, cloudBlockBlast))
+
+                val localAvatarChanges = tetrisPrefs.getInt("stats_avatar_changes", 0)
+                val cloudAvatarChanges = (data["stats_avatar_changes"] as? Long)?.toInt() ?: localAvatarChanges
+                editorTetris.putInt("stats_avatar_changes", maxOf(localAvatarChanges, cloudAvatarChanges))
+
+                val localMp = tetrisPrefs.getInt("multiplayer_launches", 0)
+                val cloudMp = (data["multiplayer_launches"] as? Long)?.toInt() ?: localMp
+                editorTetris.putInt("multiplayer_launches", maxOf(localMp, cloudMp))
 
                 editorProfile.apply()
                 editorTetris.apply()

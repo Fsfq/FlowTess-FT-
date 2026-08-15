@@ -1,5 +1,7 @@
 package com.example.ui
 
+import androidx.compose.material.icons.filled.AutoAwesome
+
 import androidx.compose.animation.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,10 +16,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -58,6 +62,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Check
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.VolumeUp
@@ -122,18 +129,6 @@ fun ProfileScreen(
     
     val themeColor = MaterialTheme.colorScheme.primary
 
-    LaunchedEffect(loginError) {
-        if (loginError != null) {
-            viewModel.triggerAudioFeedback("error")
-        }
-    }
-
-    LaunchedEffect(loginSuccessMessage) {
-        if (loginSuccessMessage != null) {
-            viewModel.triggerAudioFeedback("success")
-        }
-    }
-
     var authModeIsRegister by remember { mutableStateOf(false) }
     var inputUsername by remember { mutableStateOf("") }
     var inputEmail by remember { mutableStateOf("") }
@@ -141,10 +136,12 @@ fun ProfileScreen(
 
     var infoMessage by remember { mutableStateOf<String?>(null) }
     var infoIsError by remember { mutableStateOf(false) }
+    var showSignOutConfirmDialog by remember { mutableStateOf(false) }
 
     val isAuthLoading by viewModel.isAuthLoading.collectAsStateWithLifecycle()
     val isEmailVerified by viewModel.isEmailVerified.collectAsStateWithLifecycle()
     val showVerificationBanner by viewModel.showVerificationBanner.collectAsStateWithLifecycle()
+    val showNewSection by viewModel.showNewSection.collectAsStateWithLifecycle()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val gso = remember {
@@ -213,20 +210,6 @@ fun ProfileScreen(
         CubeSkinStoreData("material", 500, if (currentLang == Language.RU) "ANDROID MATERIAL 3" else "ANDROID MATERIAL 3", if (currentLang == Language.RU) "Скругленные блоки Material со сложным градиентом" else "Organic rounded Material Design custom 3D tiles", ""),
         CubeSkinStoreData("glowing_jewel", 700, if (currentLang == Language.RU) "ДРАГОЦЕННЫЙ САПФИР" else "GLOWING GEMSTONE", if (currentLang == Language.RU) "Ограненные сапфировые плиты с внутренним свечением" else "Chiseled luxury jewel design with internal raytracing", ""),
         CubeSkinStoreData("steampunk", 900, if (currentLang == Language.RU) "СТИМПАНК И МЕДЬ" else "STEAM_BRASS", if (currentLang == Language.RU) "Тяжелые латунные блоки с шестеренками и заклепками" else "Heavy brass gears and rivets industrial aesthetic", "")
-    )
-
-    val themesList = listOf(
-        ThemeStoreData("indigo", 0, if (currentLang == Language.RU) "ИНДИГО" else "INDIGO ACCENT", if (currentLang == Language.RU) "Классический космический индиго" else "Classic space indigo color theme", Color(0xFF6366F1)),
-        ThemeStoreData("neon", 0, if (currentLang == Language.RU) "КИБЕР НЕОН" else "CYAN NEON", if (currentLang == Language.RU) "Высококонтрастный бирюзовый неон" else "High-contrast cyan neon accent theme", Color(0xFF00FFCC)),
-        ThemeStoreData("red", 0, if (currentLang == Language.RU) "АЛЫЙ ИМПУЛЬС" else "RED PULSE", if (currentLang == Language.RU) "Агрессивный красный дизайн" else "Aggressive warning red design theme", Color(0xFFFF5555)),
-        ThemeStoreData("emerald", 300, if (currentLang == Language.RU) "ИЗУМРУД" else "EMERALD GLOW", if (currentLang == Language.RU) "Спокойный зеленый оттенок" else "Calm high-tech green accent glow", Color(0xFF10B981)),
-        ThemeStoreData("amber", 300, if (currentLang == Language.RU) "ЯНТАРЬ" else "AMBER TRANS", if (currentLang == Language.RU) "Янтарный оранжевый монохром" else "Amber orange digital dashboard feel", Color(0xFFF59E0B)),
-        ThemeStoreData("rose", 500, if (currentLang == Language.RU) "РОЗОВЫЙ ЗАКАТ" else "ROSE SUNSET", if (currentLang == Language.RU) "Приятный малиново-розовый неон" else "Synthwave raspberry pink neon design", Color(0xFFF43F5E)),
-        ThemeStoreData("sky", 500, if (currentLang == Language.RU) "НЕБЕСНАЯ СИНЕВА" else "SKY BREEZE", if (currentLang == Language.RU) "Светлый небесно-голубой цвет" else "Bright sky blue visual elements", Color(0xFF0EA5E9)),
-        ThemeStoreData("orange", 600, if (currentLang == Language.RU) "АПЕЛЬСИН" else "ORANGE OVERDRIVE", if (currentLang == Language.RU) "Энергичный сочный оранжевый" else "Energetic juice orange outline layout", Color(0xFFFF5722)),
-        ThemeStoreData("cyber_pink", 800, if (currentLang == Language.RU) "КИБЕР РОЗОВЫЙ" else "CYBER PINK", if (currentLang == Language.RU) "Элитный ядовитый розовый" else "Premium cyber pink neon highlight", Color(0xFFFF007F)),
-        ThemeStoreData("toxic_green" , 700, if (currentLang == Language.RU) "ТОКСИЧНЫЙ ЗЕЛЕНЫЙ" else "TOXIC GREEN", if (currentLang == Language.RU) "Яркий радиоактивный зеленый" else "Hyper bright radioactive green look", Color(0xFF39FF14)),
-        ThemeStoreData("gold", 1000, if (currentLang == Language.RU) "ЧИСТОЕ ЗОЛОТО" else "PURE GOLD MINE", if (currentLang == Language.RU) "Элитное премиум-золото" else "Ultra prestige golden matrix overlay theme", Color(0xFFFFD700))
     )
 
     val fontsList = listOf(
@@ -298,6 +281,41 @@ fun ProfileScreen(
     var avatarChangeCounter by remember { mutableStateOf(0) }
     var bgChangeCounter by remember { mutableStateOf(0) }
 
+    var customAvatarBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var bgBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(playerName, avatarChangeCounter) {
+        val bmp = withContext(Dispatchers.IO) {
+            val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
+            if (file.exists() && sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)) {
+                try {
+                    BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+        customAvatarBitmap = bmp
+    }
+
+    LaunchedEffect(playerName, bgChangeCounter) {
+        val bmp = withContext(Dispatchers.IO) {
+            val file = File(context.filesDir, "custom_background_${playerName}.jpg")
+            if (file.exists() && sharedPrefs.getBoolean("has_custom_background_${playerName}", false)) {
+                try {
+                    BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+        bgBitmap = bmp
+    }
+
     fun saveCustomImage(ctx: Context, uri: Uri, type: String) {
         try {
             val inputStream = ctx.contentResolver.openInputStream(uri) ?: return
@@ -352,7 +370,7 @@ fun ProfileScreen(
         when (equippedAvatarFrame) {
             "neon_ae" -> Brush.sweepGradient(listOf(Color(0xFF00FFCC), Color(0xFF0099FF), Color(0xFF00FFCC)))
             "gold_ma" -> Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)))
-            "chrono_gl" -> Brush.sweepGradient(listOf(Color(0xFFFF00FF), Color(0xFF00FFFF), Color(0xFFFF00FF)))
+            "chrono_gl" -> Brush.sweepGradient(listOf(Color(0xFFFF0055), Color(0xFFFF5252), Color(0xFFFF7A00), Color(0xFFFF0055)))
             "omega_ti" -> Brush.linearGradient(listOf(Color(0xFF90A4AE), Color(0xFF37474F)))
             else -> Brush.sweepGradient(
                 listOf(
@@ -540,52 +558,6 @@ fun ProfileScreen(
         }
     }
 
-    fun selectSoundPack(packId: String, cost: Int) {
-        if (purchasedSoundPacks.contains(packId)) {
-            viewModel.setEquippedSoundPack(packId)
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Звуковой пак успешно выбран" else "Sound pack equipped.")
-            return
-        }
-        if (credits >= cost) {
-            val updated = purchasedSoundPacks.toMutableSet().apply { add(packId) }
-            viewModel.setPurchasedSoundPacks(updated)
-            viewModel.setEquippedSoundPack(packId)
-            viewModel.spendCredits(cost)
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Звуковой пак куплен и активирован" else "Sound pack purchased and equipped.")
-        } else {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
-        }
-    }
-
-    fun selectTheme(themeId: String, cost: Int) {
-        if (purchasedThemes.contains(themeId)) {
-            viewModel.setThemeColor(themeId)
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Тема успешно выбрана" else "Color theme equipped.")
-            return
-        }
-        if (credits >= cost) {
-            val updated = purchasedThemes.toMutableSet().apply { add(themeId) }
-            viewModel.setPurchasedThemes(updated)
-            viewModel.setThemeColor(themeId)
-            viewModel.spendCredits(cost)
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Тема куплена и активирована" else "Color theme purchased and equipped.")
-        } else {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
-        }
-    }
-
     fun selectFont(fontId: String, cost: Int) {
         if (purchasedFonts.contains(fontId)) {
             viewModel.setCustomFontKey(fontId)
@@ -634,73 +606,57 @@ fun ProfileScreen(
 
 
     val isLoggedIn = playerName != "Player 1"
-    val pagerState = rememberPagerState(initialPage = if (initialTab == 99) 0 else initialTab) { 3 }
+    val pageCount = 3
+    val pagerState = rememberPagerState(initialPage = if (initialTab == 99) 0 else initialTab.coerceAtMost(pageCount - 1)) { pageCount }
 
     Scaffold(
         topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(top = 8.dp)
-                    .padding(horizontal = 4.dp, vertical = 6.dp)
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface
+            CenterAlignedTopAppBar(
+                title = {
+                    AdaptiveText(
+                        text = when (pagerState.currentPage) {
+                            0 -> if (isLoggedIn) (if (currentLang == Language.RU) "ПРОФИЛЬ" else "PROFILE") else (if (currentLang == Language.RU) "АВТОРИЗАЦИЯ" else "AUTHORIZATION")
+                            1 -> if (currentLang == Language.RU) "МАГАЗИН" else "STORE"
+                            else -> if (currentLang == Language.RU) "ДОСТИЖЕНИЯ" else "ACHIEVEMENTS"
+                        },
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
                     )
-                }
-
-                Text(
-                    text = when (pagerState.currentPage) {
-                        0 -> if (isLoggedIn) (if (currentLang == Language.RU) "ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ" else "USER PROFILE") else (if (currentLang == Language.RU) "АВТОРИЗАЦИЯ" else "AUTHORIZATION")
-                        1 -> if (currentLang == Language.RU) "МАГАЗИН" else "STORE"
-                        else -> if (currentLang == Language.RU) "ДОСТИЖЕНИЯ" else "ACHIEVEMENTS"
-                    },
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                        fontSize = 15.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.align(Alignment.Center)
+                },
+                actions = {
+                    Surface(
+                        modifier = Modifier.padding(end = 16.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        tonalElevation = 2.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Credits",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            AdaptiveText(
+                                text = "$credits",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 12.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Credits",
-                        tint = Color(0xFFFFB300),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$credits 🪙",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        ),
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                }
-            }
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -710,210 +666,257 @@ fun ProfileScreen(
                 .padding(padding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                TabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.PrimaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                        )
-                    }
+                val tabsList = listOf(
+                    Triple(0, if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
+                    Triple(1, if (currentLang == Language.RU) "Магазин" else "Store", Icons.Default.ShoppingBag),
+                    Triple(2, if (currentLang == Language.RU) "Достижения" else "Achievements", Icons.Default.EmojiEvents)
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Tab(
-                        selected = pagerState.currentPage == 0,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(0)
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp)
+                    ) {
+                        val tabWidth = maxWidth / tabsList.size
+                        val indicatorOffset by animateDpAsState(
+                            targetValue = tabWidth * pagerState.currentPage,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = 450f),
+                            label = "tabIndicator"
+                        )
+
+                        // Smooth animated sliding pill
+                        Box(
+                            modifier = Modifier
+                                .width(tabWidth)
+                                .height(44.dp)
+                                .offset(x = indicatorOffset)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(themeColor)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            tabsList.forEach { (index, title, icon) ->
+                                val isSelected = pagerState.currentPage == index
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(index)
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = title,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(17.dp)
+                                        )
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
                             }
-                        },
-                        text = {
-                            Text(
-                                text = if (currentLang == Language.RU) "ПРОФИЛЬ" else "PROFILE",
-                                style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
-                                maxLines = 1,
-                                softWrap = false,
-                                fontWeight = if (pagerState.currentPage == 0) FontWeight.Bold else FontWeight.Normal
-                            )
                         }
-                    )
-                    Tab(
-                        selected = pagerState.currentPage == 1,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(1)
-                            }
-                        },
-                        text = {
-                            Text(
-                                text = if (currentLang == Language.RU) "МАГАЗИН" else "STORE",
-                                style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
-                                maxLines = 1,
-                                softWrap = false,
-                                fontWeight = if (pagerState.currentPage == 1) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                    Tab(
-                        selected = pagerState.currentPage == 2,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(2)
-                            }
-                        },
-                        text = {
-                            Text(
-                                text = if (currentLang == Language.RU) "ДОСТИЖЕНИЯ" else "ACHIEVEMENTS",
-                                style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
-                                maxLines = 1,
-                                softWrap = false,
-                                fontWeight = if (pagerState.currentPage == 2) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
+                    }
                 }
-
-
 
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     userScrollEnabled = true
                 ) { page ->
-                    when (page) {
-                        0 -> {
-                        if (!isLoggedIn) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).let { if (it < 0) -it else it }
+                                alpha = (1f - pageOffset * 0.45f).coerceIn(0f, 1f)
+                                val s = (1f - pageOffset * 0.04f).coerceIn(0.92f, 1f)
+                                scaleX = s
+                                scaleY = s
+                            }
+                    ) {
+                        when (page) {
+                            0 -> {
+                            if (!isLoggedIn) {
                             // REGISTRATION & AUTHORIZATION VIEW
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(20.dp),
+                                    .padding(horizontal = 20.dp, vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(4.dp),
+                                ElevatedCard(
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(28.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                     ),
-                                    border = BorderStroke(
-                                        width = 1.5.dp,
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f),
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                                            )
-                                        )
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
                                 ) {
                                     Box(modifier = Modifier.fillMaxWidth()) {
                                         Column(
                                             modifier = Modifier
-                                                .padding(24.dp)
-                                                .verticalScroll(rememberScrollState()),
+                                                .padding(horizontal = 24.dp, vertical = 28.dp)
+                                                .verticalScroll(rememberScrollState())
+                                                .animateContentSize(
+                                                    animationSpec = spring(
+                                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                                        stiffness = Spring.StiffnessLow
+                                                    )
+                                                ),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Text(
-                                                text = if (authModeIsRegister) {
-                                                    if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "REGISTRATION"
-                                                } else {
-                                                    if (currentLang == Language.RU) "ВХОД В АККАУНТ" else "ACCOUNT LOGIN"
+                                            // Title with crossfade
+                                            androidx.compose.animation.AnimatedContent(
+                                                targetState = authModeIsRegister,
+                                                transitionSpec = {
+                                                    fadeIn(animationSpec = tween(300)) togetherWith
+                                                            fadeOut(animationSpec = tween(200))
                                                 },
-                                                style = MaterialTheme.typography.headlineSmall.copy(
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    letterSpacing = 1.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                textAlign = TextAlign.Center
-                                            )
-                                            
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            
-                                            Text(
-                                                text = if (authModeIsRegister) {
-                                                    if (currentLang == Language.RU) "Создайте новый профиль для сохранения статистики" else "Create a new profile to save your stats"
-                                                } else {
-                                                    if (currentLang == Language.RU) "Войдите в сеть для синхронизации прогресса" else "Sign in to synchronize your progress"
-                                                },
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.padding(horizontal = 12.dp)
-                                            )
-                                            
-                                            Spacer(modifier = Modifier.height(20.dp))
-
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(32.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                                    .padding(4.dp)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(RoundedCornerShape(28.dp))
-                                                        .background(
-                                                            if (!authModeIsRegister) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                                            else Color.Transparent
-                                                        )
-                                                        .border(
-                                                            width = if (!authModeIsRegister) 1.dp else 0.dp,
-                                                            color = if (!authModeIsRegister) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
-                                                            shape = RoundedCornerShape(28.dp)
-                                                        )
-                                                        .clickable { 
-                                                            authModeIsRegister = false
-                                                            viewModel.clearLoginMessages()
-                                                        }
-                                                        .padding(vertical = 10.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
+                                                label = "titleAnim"
+                                            ) { isRegister ->
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                     Text(
-                                                        text = if (currentLang == Language.RU) "ВХОД" else "SIGN IN",
-                                                        style = MaterialTheme.typography.labelLarge,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (!authModeIsRegister) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                        text = if (isRegister) {
+                                                            if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "REGISTRATION"
+                                                        } else {
+                                                            if (currentLang == Language.RU) "ВХОД В АККАУНТ" else "ACCOUNT LOGIN"
+                                                        },
+                                                        style = MaterialTheme.typography.titleLarge,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        letterSpacing = 0.5.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        textAlign = TextAlign.Center
                                                     )
-                                                }
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(RoundedCornerShape(28.dp))
-                                                        .background(
-                                                            if (authModeIsRegister) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                                            else Color.Transparent
-                                                        )
-                                                        .border(
-                                                            width = if (authModeIsRegister) 1.dp else 0.dp,
-                                                            color = if (authModeIsRegister) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
-                                                            shape = RoundedCornerShape(28.dp)
-                                                        )
-                                                        .clickable { 
-                                                            authModeIsRegister = true
-                                                            viewModel.clearLoginMessages()
-                                                        }
-                                                        .padding(vertical = 10.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
+                                                    Spacer(modifier = Modifier.height(6.dp))
                                                     Text(
-                                                        text = if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "SIGN UP",
-                                                        style = MaterialTheme.typography.labelLarge,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (authModeIsRegister) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                        text = if (isRegister) {
+                                                            if (currentLang == Language.RU) "Создайте профиль для сохранения статистики" else "Create a profile to save your stats"
+                                                        } else {
+                                                            if (currentLang == Language.RU) "Войдите для синхронизации прогресса" else "Sign in to sync your progress"
+                                                        },
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier.padding(horizontal = 8.dp)
                                                     )
                                                 }
                                             }
 
-                                            Spacer(modifier = Modifier.height(20.dp))
+                                            Spacer(modifier = Modifier.height(22.dp))
 
+                                            // Animated Segmented Control
+                                            val primaryColor = MaterialTheme.colorScheme.primary
+                                            val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+                                            val onSurfVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(48.dp)
+                                                    .clip(RoundedCornerShape(24.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                            ) {
+                                                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                                                    val halfWidth = maxWidth / 2
+                                                    val animOffset by animateDpAsState(
+                                                        targetValue = if (!authModeIsRegister) 0.dp else halfWidth,
+                                                        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+                                                        label = "segSlide"
+                                                    )
+
+                                                    // Sliding fill indicator
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .offset(x = animOffset + 3.dp)
+                                                            .width(halfWidth - 6.dp)
+                                                            .fillMaxHeight()
+                                                            .padding(vertical = 3.dp)
+                                                            .clip(RoundedCornerShape(21.dp))
+                                                            .background(primaryColor)
+                                                    )
+
+                                                    Row(modifier = Modifier.fillMaxSize()) {
+                                                        // Sign In tab
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .weight(1f)
+                                                                .fillMaxHeight()
+                                                                .clip(RoundedCornerShape(24.dp))
+                                                                .clickable {
+                                                                    authModeIsRegister = false
+                                                                    viewModel.clearLoginMessages()
+                                                                },
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            val textColor by animateColorAsState(
+                                                                targetValue = if (!authModeIsRegister) onPrimaryColor else onSurfVariantColor,
+                                                                animationSpec = tween(250),
+                                                                label = "signInColor"
+                                                            )
+                                                            Text(
+                                                                text = if (currentLang == Language.RU) "ВХОД" else "SIGN IN",
+                                                                style = MaterialTheme.typography.labelLarge,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = textColor
+                                                            )
+                                                        }
+
+                                                        // Sign Up tab
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .weight(1f)
+                                                                .fillMaxHeight()
+                                                                .clip(RoundedCornerShape(24.dp))
+                                                                .clickable {
+                                                                    authModeIsRegister = true
+                                                                    viewModel.clearLoginMessages()
+                                                                },
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            val textColor by animateColorAsState(
+                                                                targetValue = if (authModeIsRegister) onPrimaryColor else onSurfVariantColor,
+                                                                animationSpec = tween(250),
+                                                                label = "signUpColor"
+                                                            )
+                                                            Text(
+                                                                text = if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "SIGN UP",
+                                                                style = MaterialTheme.typography.labelLarge,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = textColor
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(22.dp))
+
+                                            // Input fields
                                             OutlinedTextField(
                                                 value = inputUsername,
                                                 onValueChange = { inputUsername = it },
@@ -923,30 +926,36 @@ fun ProfileScreen(
                                                 shape = RoundedCornerShape(16.dp),
                                                 colors = OutlinedTextFieldDefaults.colors(
                                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                                    focusedContainerColor = Color.Transparent,
-                                                    unfocusedContainerColor = Color.Transparent
+                                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                                                 ),
                                                 modifier = Modifier.fillMaxWidth()
                                             )
 
-                                            if (authModeIsRegister) {
-                                                Spacer(modifier = Modifier.height(14.dp))
-                                                OutlinedTextField(
-                                                    value = inputEmail,
-                                                    onValueChange = { inputEmail = it },
-                                                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                                    label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
-                                                    singleLine = true,
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    colors = OutlinedTextFieldDefaults.colors(
-                                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                                        focusedContainerColor = Color.Transparent,
-                                                        unfocusedContainerColor = Color.Transparent
-                                                    ),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                )
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = authModeIsRegister,
+                                                enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                                                exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                                            ) {
+                                                Column {
+                                                    Spacer(modifier = Modifier.height(14.dp))
+                                                    OutlinedTextField(
+                                                        value = inputEmail,
+                                                        onValueChange = { inputEmail = it },
+                                                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                                        label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
+                                                        singleLine = true,
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        colors = OutlinedTextFieldDefaults.colors(
+                                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                                        ),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    )
+                                                }
                                             }
 
                                             Spacer(modifier = Modifier.height(14.dp))
@@ -961,15 +970,16 @@ fun ProfileScreen(
                                                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                                                 colors = OutlinedTextFieldDefaults.colors(
                                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                                    focusedContainerColor = Color.Transparent,
-                                                    unfocusedContainerColor = Color.Transparent
+                                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                                                 ),
                                                 modifier = Modifier.fillMaxWidth()
                                             )
 
-                                            Spacer(modifier = Modifier.height(14.dp))
+                                            Spacer(modifier = Modifier.height(16.dp))
 
+                                            // Error message
                                             loginError?.let { err ->
                                                 val localizedErr = if (currentLang == Language.RU) {
                                                     when {
@@ -982,28 +992,31 @@ fun ProfileScreen(
                                                         else -> err
                                                     }
                                                 } else err
-                                                
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(12.dp))
-                                                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
-                                                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
+
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    color = MaterialTheme.colorScheme.errorContainer
                                                 ) {
-                                                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text(
-                                                        text = localizedErr,
-                                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = localizedErr,
+                                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                    }
                                                 }
                                                 Spacer(modifier = Modifier.height(14.dp))
                                             }
 
+                                            // Success message
                                             loginSuccessMessage?.let { success ->
                                                 val localizedSucc = if (currentLang == Language.RU) {
                                                     when {
@@ -1012,52 +1025,44 @@ fun ProfileScreen(
                                                         else -> success
                                                     }
                                                 } else success
-                                                
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(12.dp))
-                                                        .background(Color(0xFFE8F5E9))
-                                                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
+
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    color = Color(0xFFE8F5E9)
                                                 ) {
-                                                    Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text(
-                                                        text = localizedSucc,
-                                                        color = Color(0xFF1B5E20),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = localizedSucc,
+                                                            color = Color(0xFF1B5E20),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                    }
                                                 }
                                                 Spacer(modifier = Modifier.height(14.dp))
                                             }
 
-                                            // Баннер верификации почты / email verification banner
+                                            // Email verification banner
                                             if (showVerificationBanner) {
                                                 Column(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .clip(RoundedCornerShape(14.dp))
                                                         .background(Color(0xFFFFF3E0))
                                                         .padding(14.dp)
                                                 ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Icon(
-                                                            Icons.Default.Email,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFFE65100),
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(20.dp))
                                                         Spacer(modifier = Modifier.width(8.dp))
                                                         Text(
-                                                            text = if (currentLang == Language.RU)
-                                                                "Проверьте почту и подтвердите аккаунт!"
-                                                            else
-                                                                "Check your email and verify your account!",
+                                                            text = if (currentLang == Language.RU) "Проверьте почту и подтвердите аккаунт!" else "Check your email and verify your account!",
                                                             color = Color(0xFFBF360C),
                                                             style = MaterialTheme.typography.bodySmall,
                                                             fontWeight = FontWeight.Bold,
@@ -1072,11 +1077,9 @@ fun ProfileScreen(
                                                         OutlinedButton(
                                                             onClick = { viewModel.resendVerificationEmail() },
                                                             modifier = Modifier.weight(1f),
-                                                            shape = RoundedCornerShape(10.dp),
+                                                            shape = RoundedCornerShape(12.dp),
                                                             border = BorderStroke(1.dp, Color(0xFFE65100)),
-                                                            colors = ButtonDefaults.outlinedButtonColors(
-                                                                contentColor = Color(0xFFE65100)
-                                                            )
+                                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100))
                                                         ) {
                                                             Text(
                                                                 text = if (currentLang == Language.RU) "Отправить" else "Resend",
@@ -1087,10 +1090,8 @@ fun ProfileScreen(
                                                         Button(
                                                             onClick = { viewModel.checkEmailVerification() },
                                                             modifier = Modifier.weight(1f),
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            colors = ButtonDefaults.buttonColors(
-                                                                containerColor = Color(0xFFE65100)
-                                                            )
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
                                                         ) {
                                                             Text(
                                                                 text = if (currentLang == Language.RU) "Я подтвердил" else "I verified",
@@ -1103,6 +1104,7 @@ fun ProfileScreen(
                                                 Spacer(modifier = Modifier.height(14.dp))
                                             }
 
+                                            // Submit Button
                                             Button(
                                                 onClick = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1114,10 +1116,11 @@ fun ProfileScreen(
                                                 },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .height(50.dp),
+                                                    .height(52.dp),
                                                 shape = RoundedCornerShape(16.dp),
                                                 colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.primary
+                                                    containerColor = MaterialTheme.colorScheme.primary,
+                                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                                 )
                                             ) {
                                                 Text(
@@ -1126,36 +1129,34 @@ fun ProfileScreen(
                                                     } else {
                                                         if (currentLang == Language.RU) "ВОЙТИ В СИСТЕМУ" else "SIGN IN"
                                                     },
-                                                    fontWeight = FontWeight.Bold,
-                                                    letterSpacing = 1.sp,
-                                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp)
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    letterSpacing = 0.5.sp,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    maxLines = 1
                                                 )
                                             }
 
-                                            Spacer(modifier = Modifier.height(18.dp))
+                                            Spacer(modifier = Modifier.height(20.dp))
 
+                                            // Divider
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                HorizontalDivider(
-                                                    modifier = Modifier.weight(1f),
-                                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-                                                )
+                                                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                                                 Text(
                                                     text = if (currentLang == Language.RU) "ИЛИ" else "OR",
-                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                                    modifier = Modifier.padding(horizontal = 14.dp)
                                                 )
-                                                HorizontalDivider(
-                                                    modifier = Modifier.weight(1f),
-                                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-                                                )
+                                                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                                             }
 
-                                            Spacer(modifier = Modifier.height(18.dp))
+                                            Spacer(modifier = Modifier.height(20.dp))
 
+                                            // Google Sign-In Button
                                             OutlinedButton(
                                                 onClick = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1165,33 +1166,37 @@ fun ProfileScreen(
                                                 },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .height(50.dp),
-                                                shape = RoundedCornerShape(16.dp),
-                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                                                    .height(52.dp),
+                                                shape = RoundedCornerShape(26.dp),
+                                                border = BorderStroke(1.dp, Color(0xFF747775)),
                                                 colors = ButtonDefaults.outlinedButtonColors(
-                                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                                    containerColor = Color.White,
+                                                    contentColor = Color(0xFF1F1F1F)
                                                 )
                                             ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.Center
-                                                ) {
-                                                    GoogleIcon(modifier = Modifier.size(18.dp))
-                                                    Spacer(modifier = Modifier.width(10.dp))
-                                                    Text(
-                                                        text = if (currentLang == Language.RU) "Войти через Google" else "Continue with Google",
-                                                        fontWeight = FontWeight.Bold,
-                                                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp)
-                                                    )
-                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = "Google",
+                                                    modifier = Modifier.size(22.dp),
+                                                    tint = Color(0xFF4285F4)
+                                                )
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "Войти через Google" else "Sign in with Google",
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color(0xFF1F1F1F),
+                                                    maxLines = 1
+                                                )
                                             }
                                         }
 
+                                        // Loading overlay
                                         if (isAuthLoading) {
                                             Box(
                                                 modifier = Modifier
                                                     .matchParentSize()
-                                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
+                                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
                                                     .clickable(enabled = false) {},
                                                 contentAlignment = Alignment.Center
                                             ) {
@@ -1227,23 +1232,10 @@ fun ProfileScreen(
                                     shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Box(modifier = Modifier.fillMaxWidth()) {
-                                        // Custom Background Image if present
-                                        val bgBitmap = remember(playerName, bgChangeCounter) {
-                                            val file = File(context.filesDir, "custom_background_${playerName}.jpg")
-                                            if (file.exists() && sharedPrefs.getBoolean("has_custom_background_${playerName}", false)) {
-                                                try {
-                                                    BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                                                } catch (e: Exception) {
-                                                    null
-                                                }
-                                            } else {
-                                                null
-                                            }
-                                        }
-
-                                        if (bgBitmap != null) {
+                                        val bgBmp = bgBitmap
+                                        if (bgBmp != null) {
                                             Image(
-                                                bitmap = bgBitmap,
+                                                bitmap = bgBmp,
                                                 contentDescription = null,
                                                 modifier = Modifier.matchParentSize(),
                                                 contentScale = ContentScale.Crop,
@@ -1278,101 +1270,24 @@ fun ProfileScreen(
                                                 }
                                             }
 
-                                            // Avatar representation using custom photo or name initials (Material 3 style)
-                                            Box(
-                                                contentAlignment = Alignment.Center,
-                                                modifier = Modifier.size(112.dp)
-                                            ) {
-                                                // Glow background for neon, gold, chrono
-                                                if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl")) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(96.dp)
-                                                            .graphicsLayer {
-                                                                scaleX = pulseScale
-                                                                scaleY = pulseScale
-                                                                alpha = 0.45f
-                                                            }
-                                                            .clip(RoundedCornerShape(50))
-                                                            .background(
-                                                                brush = avatarFrameBorderBrush
-                                                            )
-                                                    )
+                                            // Avatar representation with strictly circular PlayerAvatarView
+                                            PlayerAvatarView(
+                                                playerName = playerName,
+                                                avatarEmoji = customAvatarEmoji,
+                                                avatarBgColorHex = customAvatarBgColor,
+                                                avatarFrame = equippedAvatarFrame,
+                                                customBitmap = customAvatarBitmap,
+                                                size = 100.dp,
+                                                themeColor = themeColor,
+                                                secondaryColor = secondaryColor,
+                                                showOnlineDot = true,
+                                                isOnline = true,
+                                                onClick = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    viewModel.triggerAudioFeedback("click")
+                                                    showAvatarDialog = true
                                                 }
-
-                                                // Rotating Outer Border Ring for extra beauty
-                                                if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl", "omega_ti")) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(98.dp)
-                                                            .graphicsLayer {
-                                                                rotationZ = rotationAngle
-                                                            }
-                                                            .border(
-                                                                width = avatarFrameThickness + 0.5.dp,
-                                                                brush = avatarFrameBorderBrush,
-                                                                shape = RoundedCornerShape(50)
-                                                            )
-                                                    )
-                                                }
-
-                                                // Static Inner Avatar Container
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(90.dp)
-                                                        .clip(RoundedCornerShape(50))
-                                                        .background(
-                                                            Brush.linearGradient(
-                                                                colors = listOf(
-                                                                    parsedAvatarBgColor,
-                                                                    parsedAvatarBgColor.copy(alpha = 0.65f)
-                                                                )
-                                                            )
-                                                        )
-                                                        .border(
-                                                            width = 1.dp,
-                                                            color = Color.White.copy(alpha = 0.15f),
-                                                            shape = RoundedCornerShape(50)
-                                                        )
-                                                        .clickable {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            viewModel.triggerAudioFeedback("click")
-                                                            showAvatarDialog = true
-                                                        },
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    val customAvatarBitmap = remember(playerName, avatarChangeCounter) {
-                                                        val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
-                                                        if (file.exists() && sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)) {
-                                                            try {
-                                                                BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                                                            } catch (e: Exception) {
-                                                                null
-                                                            }
-                                                        } else {
-                                                            null
-                                                        }
-                                                    }
-
-                                                    if (customAvatarBitmap != null) {
-                                                        Image(
-                                                            bitmap = customAvatarBitmap,
-                                                            contentDescription = "Avatar",
-                                                            modifier = Modifier.fillMaxSize(),
-                                                            contentScale = ContentScale.Crop
-                                                        )
-                                                    } else {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Person,
-                                                            contentDescription = "Placeholder Avatar",
-                                                            modifier = Modifier.size(56.dp),
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                                        )
-                                                    }
-
-
-                                                }
-                                            }
+                                            )
     
                                         Spacer(modifier = Modifier.height(12.dp))
     
@@ -1400,13 +1315,13 @@ fun ProfileScreen(
                                         }
     
                                         if (hasNicknameGradient) {
+                                            val myAvatarColor = parseHexColor(customAvatarBgColor, themeColor)
+                                            val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = myAvatarColor)
                                             Text(
                                                 text = playerName.uppercase(),
                                                 style = MaterialTheme.typography.titleLarge.copy(
                                                     fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp,
-                                                    brush = Brush.linearGradient(
-                                                        colors = listOf(Color(0xFFE94560), Color(0xFFFF0055), Color(0xFFFF7B00))
-                                                    )
+                                                    brush = nicknameBrush
                                                 ),
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 1,
@@ -1424,7 +1339,7 @@ fun ProfileScreen(
                                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                             )
                                         }
-    
+
                                         Spacer(modifier = Modifier.height(4.dp))
     
                                         Row(
@@ -1459,16 +1374,42 @@ fun ProfileScreen(
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-    
+
                                         Spacer(modifier = Modifier.height(8.dp))
     
-                                        Text(
-                                            text = Translations.getLocalizedRank(onlineTier, currentLang),
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.primary,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                        ) {
+                                            Text(
+                                                text = Translations.getLocalizedRank(onlineTier, currentLang),
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        FilledTonalButton(
+                                            onClick = {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                viewModel.triggerAudioFeedback("click")
+                                                showAvatarDialog = true
+                                            },
+                                            shape = RoundedCornerShape(16.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = if (currentLang == Language.RU) "Настройки профиля" else "Edit Profile",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1484,222 +1425,508 @@ fun ProfileScreen(
     
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
+                                    shape = RoundedCornerShape(22.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
+                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(
+                                        modifier = Modifier.padding(18.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        // ПЛАНКА 1: Заголовок + Бейдж уровня
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "УРОВЕНЬ МАСТЕРСТВА: $masteryLevel" else "MASTERY LEVEL: $masteryLevel",
-                                                style = MaterialTheme.typography.labelLarge.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            Text(
-                                                text = "$currentLevelXp / $levelXpBound XP",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MilitaryTech,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "УРОВЕНЬ" else "LEVEL",
+                                                    style = MaterialTheme.typography.titleSmall.copy(
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        letterSpacing = 0.5.sp
+                                                    ),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                            Surface(
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = MaterialTheme.colorScheme.primaryContainer
+                                            ) {
+                                                Text(
+                                                    text = "LVL $masteryLevel",
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        LinearProgressIndicator(
-                                            progress = { xpPercentage },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(6.dp)
-                                                .clip(RoundedCornerShape(3.dp)),
-                                            color = MaterialTheme.colorScheme.primary,
-                                            trackColor = MaterialTheme.colorScheme.surfaceVariant
-                                        )
+
+                                        // ПЛАНКА 2: Прогресс-бар + инфо о XP до след. уровня
+                                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            LinearProgressIndicator(
+                                                progress = { xpPercentage },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(8.dp)
+                                                    .clip(RoundedCornerShape(4.dp)),
+                                                color = MaterialTheme.colorScheme.primary,
+                                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val xpNeeded = (levelXpBound - currentLevelXp).coerceAtLeast(0)
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "До след. уровня: $xpNeeded XP" else "To next level: $xpNeeded XP",
+                                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                                )
+                                                Text(
+                                                    text = "$currentLevelXp / $levelXpBound XP",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
                                     }
                                 }
     
-
                                 // Stats telemetries
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
+                                    shape = RoundedCornerShape(22.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
+                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(20.dp)) {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "ТЕЛЕМЕТРИЯ И СТАТИСТИКА" else "TELEMETRY AND STATISTICS",
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                    Column(modifier = Modifier.padding(18.dp)) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "СТАТИСТИКА" else "STATISTICS",
+                                                    style = MaterialTheme.typography.titleSmall.copy(
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        letterSpacing = 0.5.sp
+                                                    ),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    viewModel.triggerAudioFeedback("click")
+                                                    viewModel.resetProfileStats()
+                                                    triggerMessage(if (currentLang == Language.RU) "Статистика сброшена." else "Stats reset.")
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Refresh,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = if (currentLang == Language.RU) "Сброс" else "Reset",
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(14.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
                                             // Score High
-                                            OutlinedCard(
-                                                modifier = Modifier.weight(1f)
+                                            Surface(
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(16.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainerHighest
                                             ) {
                                                 Column(
-                                                    modifier = Modifier.padding(12.dp),
+                                                    modifier = Modifier.padding(14.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Text(
                                                         text = if (currentLang == Language.RU) "РЕКОРД ОЧКОВ" else "HIGH SCORE",
-                                                        style = MaterialTheme.typography.labelSmall,
+                                                        style = MaterialTheme.typography.labelSmall.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 9.sp
+                                                        ),
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
                                                         text = "$statsHighScore",
-                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                                                         color = MaterialTheme.colorScheme.onSurface
                                                     )
                                                 }
                                             }
                                             // Lines Cleared
-                                            OutlinedCard(
-                                                modifier = Modifier.weight(1f)
+                                            Surface(
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(16.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainerHighest
                                             ) {
                                                 Column(
-                                                    modifier = Modifier.padding(12.dp),
+                                                    modifier = Modifier.padding(14.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Text(
                                                         text = if (currentLang == Language.RU) "ЛИНИЙ ОЧИЩЕНО" else "LINES CLEARED",
-                                                        style = MaterialTheme.typography.labelSmall,
+                                                        style = MaterialTheme.typography.labelSmall.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 9.sp
+                                                        ),
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
                                                         text = "$statsClearedLines",
-                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                                                         color = MaterialTheme.colorScheme.primary
                                                     )
                                                 }
                                             }
                                         }
-    
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        
-                                        // Reset Button
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.triggerAudioFeedback("click")
-                                    viewModel.resetProfileStats()
-                                    triggerMessage(if (currentLang == Language.RU) "Статистика сброшена." else "Stats reset.")
-                                },
-                                modifier = Modifier.align(Alignment.End),
-                                shape = MaterialTheme.shapes.small,
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (currentLang == Language.RU) "Сбросить статистику" else "Reset stats",
-                                    style = MaterialTheme.typography.labelMedium
-                                )
+                                    }
+                                }
+
+                                // Real Email Verification Status Banner (Only visible when unverified)
+                                if (playerName != "Player 1" && !isEmailVerified) {
+                                    ElevatedCard(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, if (isEmailVerified) Color(0xFF00E676).copy(alpha = 0.4f) else Color(0xFFFF9100).copy(alpha = 0.4f), RoundedCornerShape(22.dp)),
+                                        shape = RoundedCornerShape(22.dp),
+                                        colors = CardDefaults.elevatedCardColors(
+                                            containerColor = if (isEmailVerified) Color(0xFF1B5E20).copy(alpha = 0.12f) else Color(0xFFE65100).copy(alpha = 0.12f)
+                                        )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (isEmailVerified) Icons.Default.Check else Icons.Default.Email,
+                                                        contentDescription = null,
+                                                        tint = if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Text(
+                                                        text = if (isEmailVerified) {
+                                                            if (currentLang == Language.RU) "ПОЧТА ПОДТВЕРЖДЕНА" else "EMAIL VERIFIED"
+                                                        } else {
+                                                            if (currentLang == Language.RU) "ПОЧТА НЕ ПОДТВЕРЖДЕНА" else "EMAIL NOT VERIFIED"
+                                                        },
+                                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                        color = if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100)
+                                                    )
+                                                }
+
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isEmailVerified) Color(0xFF00E676).copy(alpha = 0.2f) else Color(0xFFFF9100).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = if (isEmailVerified) "VERIFIED" else "PENDING",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                                                        color = if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100),
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            if (!isEmailVerified) {
+                                                Text(
+                                                    text = if (currentLang == Language.RU) 
+                                                        "Для безопасности аккаунта и восстановления доступа подтвердите адрес электронной почты." 
+                                                        else "Please verify your email address to secure your account and enable account recovery.",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            viewModel.resendVerificationEmail { success, msg ->
+                                                                triggerMessage(msg, isError = !success)
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = if (currentLang == Language.RU) "Отправить письмо" else "Send Email",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                                        )
+                                                    }
+
+                                                    Button(
+                                                        onClick = {
+                                                            viewModel.checkEmailVerificationStatus { verified ->
+                                                                if (verified) {
+                                                                    triggerMessage(if (currentLang == Language.RU) "Почта успешно подтверждена!" else "Email verified successfully!")
+                                                                } else {
+                                                                    triggerMessage(if (currentLang == Language.RU) "Почта ещё не подтверждена. Проверьте входящие!" else "Email not verified yet. Check your inbox!", isError = true)
+                                                                }
+                                                            }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(12.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = if (currentLang == Language.RU) "Проверить" else "Check Status",
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                // Log out button with confirmation dialog
+                                if (showSignOutConfirmDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showSignOutConfirmDialog = false },
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        tonalElevation = 6.dp,
+                                        shape = RoundedCornerShape(28.dp),
+                                        icon = {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.errorContainer,
+                                                modifier = Modifier.size(48.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ExitToApp,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        title = {
+                                            Text(
+                                                text = if (currentLang == Language.RU) "Выход из аккаунта" else "Log Out Confirmation",
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.titleLarge
+                                            )
+                                        },
+                                        text = {
+                                            Text(
+                                                text = if (currentLang == Language.RU) 
+                                                    "Вы уверены, что хотите выйти из аккаунта? Все синхронизированные данные сохранены в облаке." 
+                                                    else "Are you sure you want to log out? All synced data is safely stored in the cloud.",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        },
+                                        confirmButton = {
+                                            Button(
+                                                onClick = {
+                                                    showSignOutConfirmDialog = false
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    viewModel.switchAccount("Player 1", "BRONZE", 500)
+                                                    inputUsername = ""
+                                                    inputPassword = ""
+                                                    viewModel.clearLoginMessages()
+                                                },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                    contentColor = MaterialTheme.colorScheme.onError
+                                                ),
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text(if (currentLang == Language.RU) "ВЫЙТИ" else "LOG OUT", fontWeight = FontWeight.Bold)
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = { showSignOutConfirmDialog = false },
+                                                shape = RoundedCornerShape(14.dp)
+                                            ) {
+                                                Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL", fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    )
+                                }
+
+                                FilledTonalButton(
+                                    onClick = {
+                                        showSignOutConfirmDialog = true
+                                    },
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    shape = RoundedCornerShape(18.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ExitToApp,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (currentLang == Language.RU) "ВЫЙТИ ИЗ АККАУНТА" else "LOG OUT",
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Log out button
-                    Button(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.switchAccount("Player 1", "BRONZE", 500)
-                            inputUsername = ""
-                            inputPassword = ""
-                            viewModel.clearLoginMessages()
-                            triggerMessage(if (currentLang == Language.RU) "Сессия завершена." else "Session ended.")
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (currentLang == Language.RU) "ВЫЙТИ ИЗ АККАУНТА" else "LOG OUT",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                }
-            }
-        }
-        1 -> {
+                    1 -> {
             // STORE SHOP VIEW
             val avatarFramesList = remember {
                 listOf(
-                    AvatarFrameStoreData("standard", 0, if (currentLang == Language.RU) "По умолчанию" else "Default Frame", if (currentLang == Language.RU) "Классическая тонкая рамка" else "Clean subtle indicator matching color", Color.Gray),
-                    AvatarFrameStoreData("neon_ae", 350, if (currentLang == Language.RU) "Неоновая Эгида" else "Neon Aegis Pulse", if (currentLang == Language.RU) "Пульсирующий лазерный ореол" else "Dual-tone hyper bright glowing neon barrier", Color(0xFF00FFCC)),
-                    AvatarFrameStoreData("gold_ma", 600, if (currentLang == Language.RU) "Золотая Матрица" else "Golden Matrix Aura", if (currentLang == Language.RU) "Элитное золотое обрамление" else "Prestige auric shell representing dominance", Color(0xFFFFD700)),
-                    AvatarFrameStoreData("chrono_gl", 850, if (currentLang == Language.RU) "Глитч Спектр" else "Chrono Giga-Glitch", if (currentLang == Language.RU) "Сдвинутые цветовые каналы неона" else "Time distortion anomaly: desynchronized neon channels", Color(0xFFFF00FF)),
-                    AvatarFrameStoreData("omega_ti", 1100, if (currentLang == Language.RU) "Металлический Титан" else "Titanium Singularity", if (currentLang == Language.RU) "Толстая броня из темного сплава" else "Thick titanium plating with deep space coating", Color(0xFF90A4AE))
+                    AvatarFrameStoreData("standard", 0, if (currentLang == Language.RU) "По умолчанию" else "Default", if (currentLang == Language.RU) "Классическая рамка" else "Classic subtle frame", Color.Gray),
+                    AvatarFrameStoreData("neon_ae", 350, if (currentLang == Language.RU) "Неон" else "Neon", if (currentLang == Language.RU) "Неоновое свечение" else "Glowing neon frame", Color(0xFF00FFCC)),
+                    AvatarFrameStoreData("gold_ma", 600, if (currentLang == Language.RU) "Золото" else "Gold", if (currentLang == Language.RU) "Золотое обрамление" else "Prestige gold frame", Color(0xFFFFD700)),
+                    AvatarFrameStoreData("omega_ti", 1100, if (currentLang == Language.RU) "Титан" else "Titan", if (currentLang == Language.RU) "Титановая броня" else "Thick titanium frame", Color(0xFF90A4AE))
                 )
             }
             val playerBadgesList = remember {
                 listOf(
-                    PlayerBadgeStoreData("none", 0, if (currentLang == Language.RU) "Без титула" else "No Title", if (currentLang == Language.RU) "Стандартное имя" else "Standard name style", ""),
-                    PlayerBadgeStoreData("node", 2500, if (currentLang == Language.RU) "РЕКРУТ" else "RECRUIT", if (currentLang == Language.RU) "Статус новобранца в системе" else "Rookie player title status", ""),
-                    PlayerBadgeStoreData("lord", 5000, if (currentLang == Language.RU) "ВЕТЕРАН" else "VETERAN", if (currentLang == Language.RU) "Ветеран классических игр" else "Veteran player title status", ""),
-                    PlayerBadgeStoreData("cosmic_overlord", 8000, if (currentLang == Language.RU) "ЭЛИТА" else "ELITE", if (currentLang == Language.RU) "Элитный статус мастера" else "Elite class master status", ""),
-                    PlayerBadgeStoreData("ai_consensus", 12000, if (currentLang == Language.RU) "ЛЕГЕНДА" else "LEGEND", if (currentLang == Language.RU) "Легендарный чемпион сети" else "Legendary network champion status", "")
+                    PlayerBadgeStoreData("none", 0, if (currentLang == Language.RU) "Без титула" else "No Title", if (currentLang == Language.RU) "Стандартный вид" else "Standard title", ""),
+                    PlayerBadgeStoreData("node", 2500, if (currentLang == Language.RU) "РЕКРУТ" else "RECRUIT", if (currentLang == Language.RU) "Статус новобранца" else "Recruit title status", ""),
+                    PlayerBadgeStoreData("lord", 5000, if (currentLang == Language.RU) "ВЕТЕРАН" else "VETERAN", if (currentLang == Language.RU) "Опытный игрок" else "Veteran title status", ""),
+                    PlayerBadgeStoreData("cosmic_overlord", 8000, if (currentLang == Language.RU) "ЭЛИТА" else "ELITE", if (currentLang == Language.RU) "Мастер игры" else "Elite title status", ""),
+                    PlayerBadgeStoreData("ai_consensus", 12000, if (currentLang == Language.RU) "ЛЕГЕНДА" else "LEGEND", if (currentLang == Language.RU) "Легенда арены" else "Legend title status", "")
                 )
             }
-            val soundPacksList = remember {
+            var selectedStoreCategory by remember { mutableStateOf("ALL") }
+            val storeCategories = remember(currentLang) {
                 listOf(
-                    SoundPackStoreData("arcade", 0, if (currentLang == Language.RU) "Классическая Аркада" else "Standard Arcade FX", if (currentLang == Language.RU) "Ностальгические щелчки оригинальной консоли" else "Vintage blips and laser chirps from original console", "1.2 MB"),
-                    SoundPackStoreData("synthwave", 400, if (currentLang == Language.RU) "Синтвейв Хронология" else "Synthwave Retro 198X", if (currentLang == Language.RU) "Аналоговые пэды и неоновые басы" else "Chilled warm polyphonic synthesizer pads and sweeps", "4.8 MB"),
-                    SoundPackStoreData("cyber_metal", 650, if (currentLang == Language.RU) "Тяжелый Бас" else "Industrial Cyber Bass", if (currentLang == Language.RU) "Резкие зажигания тяжелых металлических пластин" else "Grinding metal mechanics and heavy physical impacts", "6.2 MB"),
-                    SoundPackStoreData("ai_voice", 900, if (currentLang == Language.RU) "Помощник Саманта" else "AI Vocal Assistant Samantha", if (currentLang == Language.RU) "Комментирование игрового процесса голосом ИИ" else "spoken tactical notifications and combo callouts", "8.9 MB")
+                    "ALL" to (if (currentLang == Language.RU) "Все" else "All"),
+                    "FRAMES" to (if (currentLang == Language.RU) "Рамки" else "Frames"),
+                    "TITLES" to (if (currentLang == Language.RU) "Титулы" else "Titles"),
+                    "SKINS" to (if (currentLang == Language.RU) "Сетка" else "Grid"),
+                    "BLOCKS" to (if (currentLang == Language.RU) "Блоки" else "Blocks"),
+                    "BUTTONS" to (if (currentLang == Language.RU) "Кнопки" else "Buttons"),
+                    "FONTS" to (if (currentLang == Language.RU) "Шрифты" else "Fonts"),
+                    "MODES" to (if (currentLang == Language.RU) "Режимы" else "Modes"),
+                    "RANKS" to (if (currentLang == Language.RU) "Ранги" else "Ranks"),
+                    "TAGS" to (if (currentLang == Language.RU) "Теги" else "Tags")
                 )
             }
 
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 16.dp,
-                    top = 16.dp,
+                    top = 12.dp,
                     end = 16.dp,
                     bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 ),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Category Filter Chips
+                item {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 2.dp)
+                    ) {
+                        items(storeCategories) { (catKey, catLabel) ->
+                            val isSelected = selectedStoreCategory == catKey
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    selectedStoreCategory = catKey
+                                },
+                                label = {
+                                    Text(
+                                        text = catLabel,
+                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                                    )
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = themeColor,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = null
+                            )
+                        }
+                    }
+                }
+
                 if (!isLoggedIn) {
                     item {
-                        OutlinedCard(
+                        ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                            )
                         ) {
                             Row(
-                                modifier = Modifier.padding(14.dp),
+                                modifier = Modifier.padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Warning,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
@@ -1717,309 +1944,419 @@ fun ProfileScreen(
                 }
                 
                 // 1. RANKS
-                item {
-                    val rankIndex = ranksList.indexOfFirst { it.id == onlineTier }
-                    val ownedRanksCount = if (rankIndex >= 0) rankIndex + 1 else 1
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "СЕТЕВЫЕ РАНГИ" else "CONSENSUS RANKS",
-                        icon = Icons.Default.MilitaryTech,
-                        purchasedCount = ownedRanksCount,
-                        totalCount = ranksList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(ranksList) { rank ->
-                    val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
-                    val currentRankIndex = ranksList.indexOfFirst { it.id == onlineTier }
-                    val isCurrent = rank.id == onlineTier
-                    val isOwned = rankIndex <= currentRankIndex
-                    val isLocked = rankIndex > currentRankIndex + 1
-                    val isNext = rankIndex == currentRankIndex + 1
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "RANKS") {
+                    item {
+                        val rankIndex = ranksList.indexOfFirst { it.id == onlineTier }
+                        val ownedRanksCount = if (rankIndex >= 0) rankIndex + 1 else 1
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "СЕТЕВЫЕ РАНГИ" else "CONSENSUS RANKS",
+                            icon = Icons.Default.MilitaryTech,
+                            purchasedCount = ownedRanksCount,
+                            totalCount = ranksList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(ranksList) { rank ->
+                        val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
+                        val currentRankIndex = ranksList.indexOfFirst { it.id == onlineTier }
+                        val isCurrent = rank.id == onlineTier
+                        val isOwned = rankIndex <= currentRankIndex
+                        val isLocked = rankIndex > currentRankIndex + 1
+                        val isNext = rankIndex == currentRankIndex + 1
 
-                    StoreItemCard(
-                        icon = Icons.Default.MilitaryTech,
-                        category = if (currentLang == Language.RU) "Ранг" else "Rank",
-                        title = rank.id,
-                        description = rank.description,
-                        isActive = isCurrent,
-                        isOwned = isOwned,
-                        cost = rank.cost,
-                        currentLang = currentLang,
-                        isLocked = isLocked,
-                        onAction = {
-                            if (isCurrent) {
-                                viewModel.setOnlineTier("BRONZE")
-                                triggerMessage(if (currentLang == Language.RU) "Ранг сброшен до базового" else "Rank reset to BRONZE.")
-                            } else if (isOwned) {
-                                viewModel.setOnlineTier(rank.id)
-                                triggerMessage(if (currentLang == Language.RU) "Ранг успешно выбран" else "Rank updated to ${rank.id}.")
-                            } else if (isNext) {
-                                purchaseRank(rank.id, rank.cost)
+                        StoreItemCard(
+                            icon = Icons.Default.MilitaryTech,
+                            category = if (currentLang == Language.RU) "Ранг" else "Rank",
+                            title = rank.id,
+                            description = rank.description,
+                            isActive = isCurrent,
+                            isOwned = isOwned,
+                            cost = rank.cost,
+                            currentLang = currentLang,
+                            isLocked = isLocked,
+                            onAction = {
+                                if (isCurrent) {
+                                    viewModel.setOnlineTier("BRONZE")
+                                    triggerMessage(if (currentLang == Language.RU) "Ранг сброшен до базового" else "Rank reset to BRONZE.")
+                                } else if (isOwned) {
+                                    viewModel.setOnlineTier(rank.id)
+                                    triggerMessage(if (currentLang == Language.RU) "Ранг успешно выбран" else "Rank updated to ${rank.id}.")
+                                } else if (isNext) {
+                                    purchaseRank(rank.id, rank.cost)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 // 2. GRID SCHEMES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ОФОРМЛЕНИЕ СЕТКИ" else "GRID THEMES",
-                        icon = Icons.Default.Palette,
-                        purchasedCount = purchasedSkinsSet.size,
-                        totalCount = skinsList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(skinsList) { skin ->
-                    val isEquipped = boardSkin == skin.id
-                    val isOwned = purchasedSkinsSet.contains(skin.id)
-                    StoreItemCard(
-                        icon = Icons.Default.Palette,
-                        category = if (currentLang == Language.RU) "Оформление" else "Theme",
-                        title = skin.displayName,
-                        description = skin.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = skin.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setBoardColorSkin("cyberpunk")
-                                triggerMessage(if (currentLang == Language.RU) "Оформление сброшено" else "Grid theme reset to cyberpunk.")
-                            } else {
-                                purchaseSkin(skin.id, skin.cost)
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "SKINS") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ОФОРМЛЕНИЕ СЕТКИ" else "GRID THEMES",
+                            icon = Icons.Default.Palette,
+                            purchasedCount = purchasedSkinsSet.size,
+                            totalCount = skinsList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(skinsList) { skin ->
+                        val isEquipped = boardSkin == skin.id
+                        val isOwned = purchasedSkinsSet.contains(skin.id)
+                        StoreItemCard(
+                            icon = Icons.Default.Palette,
+                            category = if (currentLang == Language.RU) "Оформление" else "Theme",
+                            title = skin.displayName,
+                            description = skin.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = skin.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setBoardColorSkin("cyberpunk")
+                                    triggerMessage(if (currentLang == Language.RU) "Оформление сброшено" else "Grid theme reset to cyberpunk.")
+                                } else {
+                                    purchaseSkin(skin.id, skin.cost)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 // 3. CUBE STYLES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "СТИЛИ БЛОКОВ" else "BLOCK STYLES",
-                        icon = Icons.Default.Category,
-                        purchasedCount = purchasedCubeSkinsSet.size,
-                        totalCount = cubeSkinsList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(cubeSkinsList) { cSkin ->
-                    val isEquipped = blockStyle == cSkin.id
-                    val isOwned = purchasedCubeSkinsSet.contains(cSkin.id)
-                    StoreItemCard(
-                        icon = Icons.Default.Category,
-                        category = if (currentLang == Language.RU) "Стиль блоков" else "Block Style",
-                        title = cSkin.displayName,
-                        description = cSkin.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = cSkin.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setBlockStyle("glass")
-                                triggerMessage(if (currentLang == Language.RU) "Стиль блоков сброшен" else "Cube style reset to glass.")
-                            } else {
-                                purchaseCubeSkin(cSkin.id, cSkin.cost)
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "BLOCKS") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "СТИЛИ БЛОКОВ" else "BLOCK STYLES",
+                            icon = Icons.Default.Category,
+                            purchasedCount = purchasedCubeSkinsSet.size,
+                            totalCount = cubeSkinsList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(cubeSkinsList) { cSkin ->
+                        val isEquipped = blockStyle == cSkin.id
+                        val isOwned = purchasedCubeSkinsSet.contains(cSkin.id)
+                        StoreItemCard(
+                            icon = Icons.Default.Category,
+                            category = if (currentLang == Language.RU) "Стиль блоков" else "Block Style",
+                            title = cSkin.displayName,
+                            description = cSkin.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = cSkin.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setBlockStyle("glass")
+                                    triggerMessage(if (currentLang == Language.RU) "Стиль блоков сброшен" else "Cube style reset to glass.")
+                                } else {
+                                    purchaseCubeSkin(cSkin.id, cSkin.cost)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 // 4. GAME MODES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ИГРОВЫЕ РЕЖИМЫ" else "GAME MODES",
-                        icon = Icons.Default.PlayCircleOutline,
-                        purchasedCount = purchasedModesSet.size,
-                        totalCount = premiumModesList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(premiumModesList) { pMode ->
-                    val isOwned = purchasedModesSet.contains(pMode.id)
-                    StoreItemCard(
-                        icon = Icons.Default.PlayCircleOutline,
-                        category = if (currentLang == Language.RU) "Режим" else "Game Mode",
-                        title = pMode.displayName,
-                        description = pMode.description,
-                        isActive = false,
-                        isOwned = isOwned,
-                        cost = pMode.cost,
-                        currentLang = currentLang,
-                        onAction = { purchaseMode(pMode.id, pMode.cost) }
-                    )
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "MODES") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ИГРОВЫЕ РЕЖИМЫ" else "GAME MODES",
+                            icon = Icons.Default.PlayCircleOutline,
+                            purchasedCount = purchasedModesSet.size,
+                            totalCount = premiumModesList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(premiumModesList) { pMode ->
+                        val isOwned = purchasedModesSet.contains(pMode.id)
+                        StoreItemCard(
+                            icon = Icons.Default.PlayCircleOutline,
+                            category = if (currentLang == Language.RU) "Режим" else "Game Mode",
+                            title = pMode.displayName,
+                            description = pMode.description,
+                            isActive = false,
+                            isOwned = isOwned,
+                            cost = pMode.cost,
+                            currentLang = currentLang,
+                            onAction = { purchaseMode(pMode.id, pMode.cost) }
+                        )
+                    }
                 }
 
                 // 5. AVATAR FRAMES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "РАМКИ АВАТАРА" else "AVATAR FRAMES",
-                        icon = Icons.Default.Portrait,
-                        purchasedCount = purchasedAvatarFrames.size,
-                        totalCount = avatarFramesList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(avatarFramesList) { frame ->
-                    val isEquipped = equippedAvatarFrame == frame.id
-                    val isOwned = purchasedAvatarFrames.contains(frame.id)
-                    StoreItemCard(
-                        icon = Icons.Default.Portrait,
-                        category = if (currentLang == Language.RU) "Рамка" else "Avatar Frame",
-                        title = frame.displayName,
-                        description = frame.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = frame.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setEquippedAvatarFrame("standard")
-                                triggerMessage(if (currentLang == Language.RU) "Рамка аватара сброшена" else "Avatar frame reset to standard.")
-                            } else {
-                                selectAvatarFrame(frame.id, frame.cost)
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "FRAMES") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "РАМКИ АВАТАРА" else "AVATAR FRAMES",
+                            icon = Icons.Default.Portrait,
+                            purchasedCount = purchasedAvatarFrames.size,
+                            totalCount = avatarFramesList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(avatarFramesList) { frame ->
+                        val isEquipped = equippedAvatarFrame == frame.id
+                        val isOwned = purchasedAvatarFrames.contains(frame.id)
+                        StoreItemCard(
+                            icon = Icons.Default.Portrait,
+                            category = if (currentLang == Language.RU) "Рамка" else "Avatar Frame",
+                            title = frame.displayName,
+                            description = frame.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = frame.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setEquippedAvatarFrame("standard")
+                                    triggerMessage(if (currentLang == Language.RU) "Рамка аватара сброшена" else "Avatar frame reset to standard.")
+                                } else {
+                                    selectAvatarFrame(frame.id, frame.cost)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 // 6. PLAYER TITLES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ТИТУЛЫ ИГРОКА" else "PLAYER TITLES",
-                        icon = Icons.Default.WorkspacePremium,
-                        purchasedCount = purchasedTitles.size,
-                        totalCount = playerBadgesList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(playerBadgesList) { title ->
-                    val isEquipped = equippedTitle == title.id
-                    val isOwned = purchasedTitles.contains(title.id)
-                    StoreItemCard(
-                        icon = Icons.Default.WorkspacePremium,
-                        category = if (currentLang == Language.RU) "Титул" else "Player Title",
-                        title = title.displayName,
-                        description = title.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = title.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setEquippedTitle("none")
-                                triggerMessage(if (currentLang == Language.RU) "Титул сброшен" else "Title reset to none.")
-                            } else {
-                                selectTitle(title.id, title.cost)
-                            }
-                        }
-                    )
-                }
-                // 8. COLOR THEMES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ТЕМА ОФОРМЛЕНИЯ" else "INTERFACE COLOR THEMES",
-                        icon = Icons.Default.ColorLens,
-                        purchasedCount = purchasedThemes.size,
-                        totalCount = themesList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(themesList) { theme ->
-                    val isEquipped = activeThemeKey == theme.id
-                    val isOwned = purchasedThemes.contains(theme.id)
-                    StoreItemCard(
-                        icon = Icons.Default.ColorLens,
-                        category = if (currentLang == Language.RU) "Тема" else "Color Theme",
-                        title = theme.displayName,
-                        description = theme.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = theme.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setThemeColor("indigo")
-                                triggerMessage(if (currentLang == Language.RU) "Тема сброшена" else "Color theme reset to indigo.")
-                            } else {
-                                selectTheme(theme.id, theme.cost)
-                            }
-                        }
-                    )
-                }
-
-                // 10. CONTROL BUTTON STYLES
-                item {
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "ДИЗАЙН КНОПОК" else "CONTROL BUTTON STYLES",
-                        icon = Icons.Default.Extension,
-                        purchasedCount = purchasedControlButtonStyles.size,
-                        totalCount = controlButtonStylesList.size,
-                        currentLang = currentLang
-                    )
-                }
-                items(controlButtonStylesList) { btnStyle ->
-                    val isEquipped = controlButtonStyle == btnStyle.id
-                    val isOwned = purchasedControlButtonStyles.contains(btnStyle.id)
-                    StoreItemCard(
-                        icon = Icons.Default.Extension,
-                        category = if (currentLang == Language.RU) "Кнопки" else "Button Design",
-                        title = btnStyle.displayName,
-                        description = btnStyle.description,
-                        isActive = isEquipped,
-                        isOwned = isOwned,
-                        cost = btnStyle.cost,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isEquipped) {
-                                viewModel.setControlButtonStyle("classic")
-                                triggerMessage(if (currentLang == Language.RU) "Стиль кнопок сброшен" else "Button style reset to classic.")
-                            } else {
-                                selectControlButtonStyle(btnStyle.id, btnStyle.cost)
-                            }
-                        }
-                    )
-                }
-                
-                // 11. CUSTOM LEADERBOARD TAG
-                item {
-                    val isOwned = customTagUnlocked
-                    StoreSectionHeader(
-                        title = if (currentLang == Language.RU) "КАСТОМНЫЙ ТЕГ" else "CUSTOM TAG",
-                        icon = Icons.Default.Shield,
-                        purchasedCount = if (isOwned) 1 else 0,
-                        totalCount = 1,
-                        currentLang = currentLang
-                    )
-                }
-                item {
-                    val isOwned = customTagUnlocked
-                    StoreItemCard(
-                        icon = Icons.Default.Shield,
-                        category = if (currentLang == Language.RU) "Тег" else "Custom Tag",
-                        title = if (currentLang == Language.RU) "Личный Тег" else "Leaderboard Tag",
-                        description = if (currentLang == Language.RU) "Позволяет установить свой тег в глобальной таблице рекордов" else "Unlocks custom tag customization in profile settings",
-                        isActive = isOwned,
-                        isOwned = isOwned,
-                        cost = 200000,
-                        currentLang = currentLang,
-                        onAction = {
-                            if (isOwned) {
-                                triggerMessage(if (currentLang == Language.RU) "Уже приобретено! Настройте в настройках профиля." else "Already purchased! Edit it in profile settings.")
-                            } else {
-                                if (credits >= 200000) {
-                                    viewModel.spendCredits(200000)
-                                    viewModel.setCustomTagUnlocked(true)
-                                    viewModel.triggerAudioFeedback("buy")
-                                    triggerMessage(if (currentLang == Language.RU) "Тег успешно куплен! Установите его в настройках." else "Custom tag purchased successfully! Set it in settings.")
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "TITLES") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ТИТУЛЫ ИГРОКА" else "PLAYER TITLES",
+                            icon = Icons.Default.WorkspacePremium,
+                            purchasedCount = purchasedTitles.size,
+                            totalCount = playerBadgesList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(playerBadgesList) { title ->
+                        val isEquipped = equippedTitle == title.id
+                        val isOwned = purchasedTitles.contains(title.id)
+                        StoreItemCard(
+                            icon = Icons.Default.WorkspacePremium,
+                            category = if (currentLang == Language.RU) "Титул" else "Player Title",
+                            title = title.displayName,
+                            description = title.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = title.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setEquippedTitle("none")
+                                    triggerMessage(if (currentLang == Language.RU) "Титул сброшен" else "Title reset to none.")
                                 } else {
-                                    viewModel.triggerAudioFeedback("error")
-                                    triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+                                    selectTitle(title.id, title.cost)
                                 }
                             }
+                        )
+                    }
+                }
+
+
+                // 8. FONTS
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "FONTS") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ШРИФТЫ ТЕКСТА" else "TYPOGRAPHY FONTS",
+                            icon = Icons.Default.Edit,
+                            purchasedCount = purchasedFonts.size,
+                            totalCount = fontsList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(fontsList) { fontItem ->
+                        val isEquipped = customFontKey == fontItem.id
+                        val isOwned = purchasedFonts.contains(fontItem.id)
+                        StoreItemCard(
+                            icon = Icons.Default.Edit,
+                            category = if (currentLang == Language.RU) "Шрифт" else "Font",
+                            title = fontItem.displayName,
+                            description = fontItem.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = fontItem.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setCustomFontKey("default")
+                                    triggerMessage(if (currentLang == Language.RU) "Шрифт сброшен" else "Font reset to default.")
+                                } else {
+                                    selectFont(fontItem.id, fontItem.cost)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                // 9. CONTROL BUTTON STYLES
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "BUTTONS") {
+                    item {
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ДИЗАЙН КНОПОК" else "CONTROL BUTTON STYLES",
+                            icon = Icons.Default.Extension,
+                            purchasedCount = purchasedControlButtonStyles.size,
+                            totalCount = controlButtonStylesList.size,
+                            currentLang = currentLang
+                        )
+                    }
+                    items(controlButtonStylesList) { btnStyle ->
+                        val isEquipped = controlButtonStyle == btnStyle.id
+                        val isOwned = purchasedControlButtonStyles.contains(btnStyle.id)
+                        StoreItemCard(
+                            icon = Icons.Default.Extension,
+                            category = if (currentLang == Language.RU) "Кнопки" else "Button Design",
+                            title = btnStyle.displayName,
+                            description = btnStyle.description,
+                            isActive = isEquipped,
+                            isOwned = isOwned,
+                            cost = btnStyle.cost,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isEquipped) {
+                                    viewModel.setControlButtonStyle("classic")
+                                    triggerMessage(if (currentLang == Language.RU) "Стиль кнопок сброшен" else "Button style reset to classic.")
+                                } else {
+                                    selectControlButtonStyle(btnStyle.id, btnStyle.cost)
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                // 10. CUSTOM LEADERBOARD TAG
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "TAGS") {
+                    item {
+                        val isOwned = customTagUnlocked
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "КАСТОМНЫЙ ТЕГ" else "CUSTOM TAG",
+                            icon = Icons.Default.Shield,
+                            purchasedCount = if (isOwned) 1 else 0,
+                            totalCount = 1,
+                            currentLang = currentLang
+                        )
+                    }
+                    item {
+                        val isOwned = customTagUnlocked
+                        StoreItemCard(
+                            icon = Icons.Default.Shield,
+                            category = if (currentLang == Language.RU) "Тег" else "Custom Tag",
+                            title = if (currentLang == Language.RU) "Личный Тег" else "Leaderboard Tag",
+                            description = if (currentLang == Language.RU) "Позволяет установить свой тег в глобальной таблице рекордов" else "Unlocks custom tag customization in profile settings",
+                            isActive = isOwned,
+                            isOwned = isOwned,
+                            cost = 500000,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isOwned) {
+                                    triggerMessage(if (currentLang == Language.RU) "Уже приобретено! Настройте в настройках профиля." else "Already purchased! Edit it in profile settings.")
+                                } else {
+                                    if (credits >= 500000) {
+                                        viewModel.spendCredits(500000)
+                                        viewModel.setCustomTagUnlocked(true)
+                                        viewModel.triggerAudioFeedback("buy")
+                                        triggerMessage(if (currentLang == Language.RU) "Тег успешно куплен! Установите его в настройках." else "Custom tag purchased successfully! Set it in settings.")
+                                    } else {
+                                        viewModel.triggerAudioFeedback("error")
+                                        triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+
+                // 11. PRESTIGE II
+                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "PRESTIGE") {
+                    item {
+                        val prestigeLvl by viewModel.prestigeLevel.collectAsStateWithLifecycle()
+                        val isPrestigeActive = prestigeLvl >= 2
+
+                        StoreSectionHeader(
+                            title = if (currentLang == Language.RU) "ПРЕСТИЖ II" else "PRESTIGE II",
+                            icon = Icons.Default.AutoAwesome,
+                            purchasedCount = if (isPrestigeActive) 1 else 0,
+                            totalCount = 1,
+                            currentLang = currentLang
+                        )
+                    }
+                    item {
+                        val prestigeLvl by viewModel.prestigeLevel.collectAsStateWithLifecycle()
+                        val isPrestigeActive = prestigeLvl >= 2
+                        var showPrestigeConfirm by remember { mutableStateOf(false) }
+
+                        StoreItemCard(
+                            icon = Icons.Default.AutoAwesome,
+                            category = if (currentLang == Language.RU) "Престиж" else "Prestige",
+                            title = if (currentLang == Language.RU) "Престиж II (Множитель x8)" else "Prestige II (x8 Multiplier)",
+                            description = if (currentLang == Language.RU)
+                                if (isPrestigeActive) "Престиж II активен! Постоянный множитель x8 ко всем заработкам монет."
+                                else "Требуется 1,000,000 🪙. Добровольный сброс баланса даёт Личный Тег и вечный x8 множитель ко всем доходам!"
+                            else
+                                if (isPrestigeActive) "Prestige II is active! Permanent x8 multiplier to all coin rewards."
+                                else "Requires 1,000,000 🪙. Reset balance to 0 to unlock Leaderboard Tag and permanent x8 earnings multiplier!",
+                            isActive = isPrestigeActive,
+                            isOwned = isPrestigeActive,
+                            cost = 1000000,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isPrestigeActive) {
+                                    triggerMessage(if (currentLang == Language.RU) "Престиж II уже активирован! Множитель x8 активен." else "Prestige II is already active! Multiplier x8 is applied.")
+                                } else {
+                                    if (credits >= 1000000) {
+                                        showPrestigeConfirm = true
+                                    } else {
+                                        viewModel.triggerAudioFeedback("error")
+                                        triggerMessage(if (currentLang == Language.RU) "Необходимо накопить 1,000,000 🪙" else "Need to save 1,000,000 🪙 first", isError = true)
+                                    }
+                                }
+                            }
+                        )
+
+                        if (showPrestigeConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showPrestigeConfirm = false },
+                                icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(36.dp)) },
+                                title = {
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Активировать Престиж II?" else "Activate Prestige II?",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        text = if (currentLang == Language.RU)
+                                            "Внимание! Ваш баланс монет будет сброшен до 0.\n\nВы получите навсегда:\n✨ Постоянный множитель x8 ко всем заработкам монет\n🛡️ Бесплатный Личный Тег для таблицы рекордов\n👑 Знак Престижа II"
+                                        else
+                                            "Attention! Your coin balance will be reset to 0.\n\nYou will permanently receive:\n✨ Permanent x8 multiplier to all coin rewards\n🛡️ Free Custom Leaderboard Tag\n👑 Prestige II Badge",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            showPrestigeConfirm = false
+                                            viewModel.activatePrestige2()
+                                            viewModel.triggerAudioFeedback("success")
+                                            triggerMessage(if (currentLang == Language.RU) "Престиж II активирован! Множитель x8 получен!" else "Prestige II activated! x8 Multiplier unlocked!")
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700), contentColor = Color.Black)
+                                    ) {
+                                        Text(if (currentLang == Language.RU) "СБРОСИТЬ И АКТИВИРОВАТЬ" else "RESET & ACTIVATE", fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showPrestigeConfirm = false }) {
+                                        Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                                    }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
 
                 item {
@@ -2028,50 +2365,29 @@ fun ProfileScreen(
             }
         }
         2 -> {
-                        // ACHIEVEMENTS VIEW
-                        AchievementsTabContent(
-                            viewModel = viewModel,
-                            themeColor = themeColor,
-                            currentLang = currentLang
-                        )
-                        }
-                    }
-                }
-                }
-
-            infoMessage?.let { msg ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (infoIsError) MaterialTheme.colorScheme.errorContainer
-                            else MaterialTheme.colorScheme.secondaryContainer
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = (if (infoIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary).copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(vertical = 12.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = msg,
-                        color = if (infoIsError) MaterialTheme.colorScheme.onErrorContainer
-                                else MaterialTheme.colorScheme.onSecondaryContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
+            // ACHIEVEMENTS VIEW
+            AchievementsTabContent(
+                viewModel = viewModel,
+                themeColor = themeColor,
+                currentLang = currentLang
+            )
+        }
+        3 -> {
+            if (showNewSection) {
+                NewTabContent(
+                    currentLang = currentLang,
+                    themeColor = themeColor
+                )
             }
         }
     }
+}
+}
+}
+}
+}
 
-        if (showAvatarDialog) {
+    if (showAvatarDialog) {
         androidx.compose.ui.window.Dialog(
             onDismissRequest = { 
                 showAvatarDialog = false 
@@ -2079,53 +2395,76 @@ fun ProfileScreen(
             },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Top Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { 
-                            showAvatarDialog = false 
-                            viewModel.clearUpdateMessages()
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (currentLang == Language.RU) "НАСТРОЙКИ ПРОФИЛЯ" else "PROFILE SETTINGS",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                text = if (currentLang == Language.RU) "НАСТРОЙКИ ПРОФИЛЯ" else "PROFILE SETTINGS",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { 
+                                showAvatarDialog = false 
+                                viewModel.clearUpdateMessages()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
                         )
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    )
+                }
+            ) { dialogPadding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dialogPadding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 1. Avatar & Background Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                     ) {
-                        // 1. Avatar Section
                         Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
+                            Text(
+                                text = if (currentLang == Language.RU) "АВАТАР И ФОН" else "AVATAR & BACKGROUND",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier.size(112.dp)
                             ) {
-                                // Rotating Outer Border Ring for extra beauty
                                 if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl", "omega_ti")) {
                                     Box(
                                         modifier = Modifier
@@ -2141,24 +2480,11 @@ fun ProfileScreen(
                                     )
                                 }
 
-                                val customAvatarBitmap = remember(playerName, avatarChangeCounter) {
-                                    val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
-                                    if (file.exists() && sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)) {
-                                        try {
-                                            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                                        } catch (e: Exception) {
-                                            null
-                                        }
-                                    } else {
-                                        null
-                                    }
-                                }
-
                                 Box(
                                     modifier = Modifier
                                         .size(90.dp)
                                         .clip(RoundedCornerShape(50))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                                         .border(
                                             width = 1.dp,
                                             color = Color.White.copy(alpha = 0.15f),
@@ -2166,9 +2492,10 @@ fun ProfileScreen(
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    if (customAvatarBitmap != null) {
+                                    val avatarBmp = customAvatarBitmap
+                                    if (avatarBmp != null) {
                                         Image(
-                                            bitmap = customAvatarBitmap,
+                                            bitmap = avatarBmp,
                                             contentDescription = "Avatar",
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
@@ -2185,32 +2512,32 @@ fun ProfileScreen(
                             }
 
                             Row(
-                                modifier = Modifier.fillMaxWidth(0.9f),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Button(
+                                FilledTonalButton(
                                     onClick = { avatarPickerLauncher.launch("image/*") },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                    shape = RoundedCornerShape(16.dp)
                                 ) {
                                     Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (currentLang == Language.RU) "Аватар" else "Set Avatar",
-                                        fontSize = 12.sp
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
 
-                                Button(
+                                FilledTonalButton(
                                     onClick = { bgPickerLauncher.launch("image/*") },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                    shape = RoundedCornerShape(16.dp)
                                 ) {
                                     Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (currentLang == Language.RU) "Фон карты" else "Set Card BG",
-                                        fontSize = 12.sp
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -2224,7 +2551,7 @@ fun ProfileScreen(
 
                             if (hasCustomAvatar || hasCustomBg) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(0.9f),
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     if (hasCustomAvatar) {
@@ -2236,9 +2563,10 @@ fun ProfileScreen(
                                                 avatarChangeCounter++
                                                 viewModel.triggerAudioFeedback("click")
                                             },
+                                            shape = RoundedCornerShape(14.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Сбросить аватар" else "Clear Avatar", fontSize = 10.sp)
+                                            Text(if (currentLang == Language.RU) "Сбросить аватар" else "Clear Avatar", fontSize = 11.sp)
                                         }
                                     }
                                     if (hasCustomBg) {
@@ -2250,29 +2578,38 @@ fun ProfileScreen(
                                                 bgChangeCounter++
                                                 viewModel.triggerAudioFeedback("click")
                                             },
+                                            shape = RoundedCornerShape(14.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Сбросить фон" else "Clear BG", fontSize = 10.sp)
+                                            Text(if (currentLang == Language.RU) "Сбросить фон" else "Clear BG", fontSize = 11.sp)
                                         }
                                     }
                                 }
                             }
                         }
+                    }
 
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-
-                        // 2. Nickname Section
+                    // 2. Nickname Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                    ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Text(
                                 text = if (currentLang == Language.RU) "СМЕНИТЬ НИКНЕЙМ" else "CHANGE NICKNAME",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
                                 color = MaterialTheme.colorScheme.primary
                             )
 
@@ -2284,7 +2621,7 @@ fun ProfileScreen(
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 label = { Text(if (currentLang == Language.RU) "Новый никнейм" else "New Nickname") },
                                 singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
 
@@ -2299,38 +2636,45 @@ fun ProfileScreen(
                                 onClick = {
                                     viewModel.updateNickname(editNickNameInput)
                                 },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text(if (currentLang == Language.RU) "Сохранить ник" else "Save Nickname")
+                                Text(if (currentLang == Language.RU) "Сохранить ник" else "Save Nickname", fontWeight = FontWeight.Bold)
                             }
                         }
+                    }
 
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
+                    // 3. Email Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                    ) {
+                        val currentUser = FirebaseAuth.getInstance().currentUser
+                        val currentEmail = currentUser?.email ?: ""
+                        var editEmailInput by remember(currentEmail) { mutableStateOf(currentEmail) }
 
-                        // 3. Email Section
                         Column(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            val currentUser = FirebaseAuth.getInstance().currentUser
-                            val currentEmail = currentUser?.email ?: ""
-                            
                             Text(
                                 text = if (currentEmail.isEmpty()) {
                                     if (currentLang == Language.RU) "ПРИВЯЗАТЬ ПОЧТУ" else "BIND EMAIL"
                                 } else {
                                     if (currentLang == Language.RU) "ИЗМЕНИТЬ ПОЧТУ" else "CHANGE EMAIL"
                                 },
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
                                 color = MaterialTheme.colorScheme.primary
                             )
-
-                            var editEmailInput by remember { mutableStateOf(currentEmail) }
 
                             OutlinedTextField(
                                 value = editEmailInput,
@@ -2338,7 +2682,7 @@ fun ProfileScreen(
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
                                 singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
 
@@ -2353,7 +2697,7 @@ fun ProfileScreen(
                                 onClick = {
                                     viewModel.updateEmail(editEmailInput)
                                 },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.align(Alignment.End)
                             ) {
                                 Text(
@@ -2361,27 +2705,34 @@ fun ProfileScreen(
                                         if (currentLang == Language.RU) "Привязать" else "Bind Email"
                                     } else {
                                         if (currentLang == Language.RU) "Обновить" else "Update Email"
-                                    }
+                                    },
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
+                    }
 
-
-
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-
-                        // 5. Custom Leaderboard Tag Section
+                    // 4. Custom Leaderboard Tag Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                    ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Text(
                                 text = if (currentLang == Language.RU) "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ" else "LEADERBOARD CUSTOM TAG",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
                                 color = MaterialTheme.colorScheme.primary
                             )
 
@@ -2391,22 +2742,32 @@ fun ProfileScreen(
                             var editTagInput by remember(customTagVal) { mutableStateOf(customTagVal) }
 
                             if (!customTagUnlocked) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
-                                        .padding(12.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) 
-                                            "🔒 Функция заблокирована. Купите Кастомный тег в магазине за 200 000 🪙."
-                                        else 
-                                            "🔒 Feature locked. Purchase Custom Tag in the store for 200,000 🪙.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = if (currentLang == Language.RU) 
+                                                "Функция заблокирована. Приобретите «Личный Тег» в магазине."
+                                            else 
+                                                "Feature locked. Purchase «Leaderboard Tag» in the store.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             } else {
                                 OutlinedTextField(
@@ -2415,7 +2776,7 @@ fun ProfileScreen(
                                     leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
                                     label = { Text(if (currentLang == Language.RU) "Кастомный тег (макс. 6 симв.)" else "Custom Tag (max 6 chars)") },
                                     singleLine = true,
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
@@ -2424,16 +2785,16 @@ fun ProfileScreen(
                                         viewModel.setCustomTag(editTagInput)
                                         viewModel.triggerAudioFeedback("success")
                                     },
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.align(Alignment.End)
                                 ) {
-                                    Text(if (currentLang == Language.RU) "Сохранить тег" else "Save Tag")
+                                    Text(if (currentLang == Language.RU) "Сохранить тег" else "Save Tag", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -2451,7 +2812,7 @@ private fun StoreSectionHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp)
+            .padding(top = 12.dp, bottom = 4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -2472,24 +2833,28 @@ private fun StoreSectionHeader(
                 }
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 0.5.sp),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             if (purchasedCount >= 0 && totalCount >= 0) {
-                Text(
-                    text = if (currentLang == Language.RU) "Куплено $purchasedCount из $totalCount" else "Owned $purchasedCount of $totalCount",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Bold
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest
+                ) {
+                    Text(
+                        text = if (currentLang == Language.RU) "$purchasedCount из $totalCount" else "$purchasedCount of $totalCount",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        HorizontalDivider(
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-        )
     }
 }
 
@@ -2525,149 +2890,149 @@ private fun StoreItemCard(
         else -> Color(0xFFFF9800)
     }
 
-    OutlinedCard(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                             else MaterialTheme.colorScheme.surface
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest
+                             else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        border = BorderStroke(
-            width = if (isActive) 2.dp else 1.dp,
-            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = if (isActive) 3.dp else 1.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left rarity border stripe
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(5.dp)
-                    .background(rarityColor)
-            )
-
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else rarityColor.copy(alpha = 0.12f),
+                tonalElevation = 1.dp
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else rarityColor,
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = category.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .background(rarityColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                .border(BorderStroke(0.5.dp, rarityColor.copy(alpha = 0.5f)), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = rarityText,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = rarityColor
-                                )
-                            )
-                        }
+                        Text(
+                            text = category.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = rarityColor.copy(alpha = 0.14f)
+                    ) {
+                        AdaptiveText(
+                            text = rarityText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.2.sp
+                            ),
+                            color = rarityColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                val isRank = category.equals("Rank", ignoreCase = true) || category.equals("Ранг", ignoreCase = true)
-                if (!(isRank && isOwned)) {
-                    val buttonEnabled = when {
-                        isRank -> !isOwned
-                        else -> !isLocked
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            val isRank = category.equals("Rank", ignoreCase = true) || category.equals("Ранг", ignoreCase = true)
+            if (!(isRank && isOwned)) {
+                val buttonEnabled = when {
+                    isRank -> !isOwned
+                    else -> !isLocked
+                }
+                if (isOwned || isActive) {
+                    FilledTonalButton(
+                        onClick = onAction,
+                        enabled = buttonEnabled,
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (isActive) MaterialTheme.colorScheme.primary
+                                             else MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = if (isActive) MaterialTheme.colorScheme.onPrimary
+                                           else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text(
+                            text = if (isActive) {
+                                if (currentLang == Language.RU) "ВКЛ" else "ON"
+                            } else {
+                                if (currentLang == Language.RU) "ВЫКЛ" else "OFF"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     }
+                } else {
                     Button(
                         onClick = onAction,
                         enabled = buttonEnabled,
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isRank && isOwned) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                             else if (isActive) MaterialTheme.colorScheme.primary
-                                             else if (isOwned) MaterialTheme.colorScheme.secondaryContainer
-                                             else if (isLocked) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainerHighest
                                              else MaterialTheme.colorScheme.primary,
-                            contentColor = if (isRank && isOwned) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                           else if (isActive) MaterialTheme.colorScheme.onPrimary
-                                           else if (isOwned) MaterialTheme.colorScheme.onSecondaryContainer
-                                           else if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            contentColor = if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                            else MaterialTheme.colorScheme.onPrimary
-                        ),
-                        shape = MaterialTheme.shapes.small,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                        )
                     ) {
                         Text(
-                            text = if (isRank && isOwned) {
-                                if (currentLang == Language.RU) "РАЗБЛОКИРОВАН" else "UNLOCKED"
-                            } else if (isActive) {
-                                if (currentLang == Language.RU) "ВКЛ" else "ON"
-                            } else if (isOwned) {
-                                if (currentLang == Language.RU) "ВЫКЛ" else "OFF"
-                            } else if (isLocked) {
+                            text = if (isLocked) {
                                 if (currentLang == Language.RU) "БЛОК" else "LOCKED"
                             } else {
-                                if (currentLang == Language.RU) "$cost 🪙" else "$cost 🪙"
+                                "$cost 🪙"
                             },
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
                 }
@@ -2687,58 +3052,87 @@ private fun AchievementsTabContent(
     val totalCount = remember(achievements) { achievements.size }
     val progressFactor = if (totalCount > 0) unlockedCount.toFloat() / totalCount else 0f
 
+    var achievementFilter by remember { mutableStateOf("ALL") }
+    val filterOptions = remember(currentLang) {
+        listOf(
+            "ALL" to (if (currentLang == Language.RU) "Все" else "All"),
+            "UNLOCKED" to (if (currentLang == Language.RU) "Открытые" else "Unlocked"),
+            "LOCKED" to (if (currentLang == Language.RU) "В процессе" else "In Progress")
+        )
+    }
+
+    val filteredAchievements = remember(achievements, achievementFilter) {
+        when (achievementFilter) {
+            "UNLOCKED" -> achievements.filter { it.isUnlocked }
+            "LOCKED" -> achievements.filter { !it.isUnlocked }
+            else -> achievements
+        }
+    }
+
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = 16.dp,
-            top = 16.dp,
+            top = 12.dp,
             end = 16.dp,
             bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Hall of Fame Hero Card
         item {
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        modifier = Modifier.size(72.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        tonalElevation = 2.dp
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(38.dp)
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = if (currentLang == Language.RU) "ЗАЛ СЛАВЫ" else "HALL OF FAME",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
+                        ),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (currentLang == Language.RU) {
-                            "Разблокировано наград: $unlockedCount из $totalCount"
+                            "Разблокировано наград: $unlockedCount из $totalCount (${(progressFactor * 100).toInt()}%)"
                         } else {
-                            "Unlocked achievements: $unlockedCount of $totalCount"
+                            "Unlocked achievements: $unlockedCount of $totalCount (${(progressFactor * 100).toInt()}%)"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     LinearProgressIndicator(
                         progress = { progressFactor },
                         modifier = Modifier
@@ -2746,55 +3140,89 @@ private fun AchievementsTabContent(
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp)),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
                 }
             }
         }
 
+        // Filter Chips Row
         item {
-            StoreSectionHeader(
-                title = if (currentLang == Language.RU) "СПИСОК ДОСТИЖЕНИЙ" else "ACHIEVEMENT LIST"
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                filterOptions.forEach { (filterKey, filterLabel) ->
+                    val isSelected = achievementFilter == filterKey
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            achievementFilter = filterKey
+                        },
+                        label = {
+                            Text(
+                                text = filterLabel,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                            )
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = themeColor,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = null
+                    )
+                }
+            }
         }
 
-        items(achievements, key = { it.id }) { ach ->
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
+        items(filteredAchievements, key = { it.id }) { ach ->
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (ach.isUnlocked) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (ach.isUnlocked) MaterialTheme.colorScheme.primaryContainer
+                               else MaterialTheme.colorScheme.surfaceContainerHighest,
+                        tonalElevation = 1.dp
                     ) {
-                        Icon(
-                            imageVector = when (ach.iconType) {
-                                "lines" -> Icons.Default.Extension
-                                "score" -> Icons.Default.Star
-                                "crown" -> Icons.Default.Shield
-                                "speed" -> Icons.Default.Settings
-                                "blast" -> Icons.Default.Extension
-                                "combo" -> Icons.Default.VolumeUp
-                                else -> Icons.Default.EmojiEvents
-                            },
-                            contentDescription = null,
-                            tint = if (ach.isUnlocked) MaterialTheme.colorScheme.onPrimaryContainer
-                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = when (ach.iconType) {
+                                    "lines" -> Icons.Default.Extension
+                                    "score" -> Icons.Default.Star
+                                    "crown" -> Icons.Default.Shield
+                                    "speed" -> Icons.Default.Settings
+                                    "blast" -> Icons.Default.Extension
+                                    "combo" -> Icons.Default.VolumeUp
+                                    else -> Icons.Default.EmojiEvents
+                                },
+                                contentDescription = null,
+                                tint = if (ach.isUnlocked) MaterialTheme.colorScheme.onPrimaryContainer
+                                       else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(14.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Row(
@@ -2805,28 +3233,27 @@ private fun AchievementsTabContent(
                             Text(
                                 text = if (currentLang == Language.RU) ach.titleRu else ach.titleEn,
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                       else MaterialTheme.colorScheme.surfaceContainerHighest
                             ) {
                                 Text(
                                     text = "+${ach.pointsReward} 🪙",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                    color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
                         }
 
                         val badgeTag = when (ach.iconType) {
-                            "all_unlocked" -> if (currentLang == Language.RU) "АБСОЛЮТНЫЙ ЧЕМПИОН" else "OMNIPOTENT CHAMPION"
+                            "all_unlocked", "crown" -> if (currentLang == Language.RU) "ЧЕМПИОН" else "CHAMPION"
                             "lines" -> if (currentLang == Language.RU) "МАСТЕР ЛИНИЙ" else "LINE CLEAR MASTER"
                             "score" -> if (currentLang == Language.RU) "ЧЕМПИОН ПО ОЧКАМ" else "HIGH SCORE CHAMPION"
-                            "crown" -> if (currentLang == Language.RU) "ГРОССМЕЙСТЕР ИГРЫ" else "GAME GRANDMASTER"
                             "speed" -> if (currentLang == Language.RU) "СКОРОСТНОЙ РЕКОРДСМЕН" else "SPEED MASTER"
                             "blast" -> if (currentLang == Language.RU) "ЭКСПЕРТ ОЧИСТКИ" else "BLOCK BLAST EXPERT"
                             "combo" -> if (currentLang == Language.RU) "КОМБО-ЭКСПЕРТ" else "COMBO EXPERT"
@@ -2869,15 +3296,15 @@ private fun AchievementsTabContent(
                                 progress = { fraction },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    .height(5.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "${ach.currentValue} / ${ach.targetValue}",
-                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -2892,72 +3319,170 @@ private fun AchievementsTabContent(
     }
 }
 
+@Composable
+private fun NewTabContent(
+    currentLang: Language,
+    themeColor: Color
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // О приложении / About App Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = if (currentLang == Language.RU) "О ПРИЛОЖЕНИИ" else "ABOUT APP",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Text(
+                    text = if (currentLang == Language.RU) 
+                        "ZETA Tetris — это продвинутая версия классической головоломки, сочетающая в себе традиционный игровой процесс и инновационный режим ZETA Arena (Block Blast). В игре доступны кастомизация интерфейса, система скинов, звуковые паки, глобальные рекорды, синхронизация прогресса с облаком и полноценный мультиплеер с чатом."
+                    else
+                        "ZETA Tetris is an advanced evolution of the classic block puzzle game. It seamlessly blends traditional gameplay with the innovative ZETA Arena (Block Blast). Features include full interface customization, skin packs, unique soundboards, global high scores, secure cloud sync, and a multiplayer match lobby with live chat.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (currentLang == Language.RU) "Версия" else "Version",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "2.0",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = themeColor
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (currentLang == Language.RU) "Разработчик" else "Developer",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "FsFq",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Список изменений / Change Log Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = if (currentLang == Language.RU) "СПИСОК ИЗМЕНЕНИЙ" else "CHANGE LOG",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // Version 2.0 Card Content
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Версия 2.0 (Текущая) / Version 2.0 (Current)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = themeColor
+                    )
+                    
+                    val changes = if (currentLang == Language.RU) listOf(
+                        "• Добавлена строгая верификация почты через Firebase (защита онлайн-функций)",
+                        "• Добавлен переключатель видимости вкладки 'Новое' в настройках (раздел 'Система')",
+                        "• Кэширование FirebaseAuth для оптимизации скорости работы",
+                        "• Полная реструктуризация кода с добавлением двуязычных неформальных комментариев",
+                        "• Балансировка экономики: стоимость открытия кейсов увеличена на 25%, награды скорректированы",
+                        "• Переименованы научно-фантастические и ИИ-достижения в строгие классические названия",
+                        "• Ужесточена проверка проигрыша (строго по ряду 2 или выше)",
+                        "• Немедленное удаление сессии при поражении для предотвращения дюпа монет"
+                    ) else listOf(
+                        "• Added strict Firebase Email Verification system (verifying email gates online play and chat)",
+                        "• Added toggle switch for the 'New' tab visibility in settings (System tab)",
+                        "• Cached FirebaseAuth instance globally to eliminate redundant service queries",
+                        "• Full codebase review with helpful, informal RU/EN comments",
+                        "• Economy balancing: increased crate costs by 25% and adjusted reward rates",
+                        "• Rebranded space/AI achievements into professional, classic names",
+                        "• Implemented strict game over rules (immediately triggers when block reaches row 2)",
+                        "• Added immediate saved game destruction on defeat to fix coin exploits"
+                    )
+
+                    changes.forEach { change ->
+                        Text(
+                            text = change,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Version 1.0 Card Content
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Версия 1.0 / Version 1.0",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                    Text(
+                        text = if (currentLang == Language.RU) 
+                            "• Первый релиз: режимы Тетрис и ZETA, лобби мультиплеера, аватары, рамки, теги и профиль."
+                        else
+                            "• Initial launch: Tetris & ZETA gameplay modes, multiplayer matchmaking lobbies, custom avatars, frame store, and tags.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
 data class RankData(val id: String, val cost: Int, val description: String)
 data class SkinData(val id: String, val cost: Int, val displayName: String, val description: String)
 data class GameModeStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val emoji: String)
 data class CubeSkinStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val previewEmoji: String)
 data class AvatarFrameStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val rarityColor: Color)
 data class PlayerBadgeStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val emoji: String)
-data class SoundPackStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val sizeStr: String)
 data class ThemeStoreData(val id: String, val cost: Int, val displayName: String, val description: String, val themeColor: Color)
 data class FontStoreData(val id: String, val cost: Int, val displayName: String, val description: String)
 data class ControlButtonStyleStoreData(val id: String, val cost: Int, val displayName: String, val description: String)
 
-@Composable
-fun GoogleIcon(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val strokeW = w * 0.22f
-        val r = (w - strokeW) / 2f
-        val cx = w / 2f
-        val cy = w / 2f
-        val arcSize = Size(r * 2, r * 2)
-        val arcTopLeft = Offset(cx - r, cy - r)
-
-        // Red (Top)
-        drawArc(
-            color = Color(0xFFEA4335),
-            startAngle = 180f + 45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = arcTopLeft,
-            size = arcSize,
-            style = Stroke(width = strokeW)
-        )
-        // Yellow (Left)
-        drawArc(
-            color = Color(0xFFFBBC05),
-            startAngle = 180f - 45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = arcTopLeft,
-            size = arcSize,
-            style = Stroke(width = strokeW)
-        )
-        // Green (Bottom)
-        drawArc(
-            color = Color(0xFF34A853),
-            startAngle = 45f,
-            sweepAngle = 90f,
-            useCenter = false,
-            topLeft = arcTopLeft,
-            size = arcSize,
-            style = Stroke(width = strokeW)
-        )
-        // Blue (Right)
-        drawArc(
-            color = Color(0xFF4285F4),
-            startAngle = -45f, sweepAngle = 90f,
-            useCenter = false,
-            topLeft = arcTopLeft,
-            size = arcSize,
-            style = Stroke(width = strokeW)
-        )
-        // Horizontal bar
-        drawRect(
-            color = Color(0xFF4285F4),
-            topLeft = Offset(cx, cy - strokeW / 2f),
-            size = Size(r + strokeW / 2f, strokeW)
-        )
-    }
-}
