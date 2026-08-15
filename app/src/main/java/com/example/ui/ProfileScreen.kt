@@ -103,6 +103,8 @@ fun ProfileScreen(
     val playerName by viewModel.playerName.collectAsStateWithLifecycle()
     val hasNicknameGradient by viewModel.hasNicknameGradient.collectAsStateWithLifecycle()
     val onlineTier by viewModel.onlineTier.collectAsStateWithLifecycle()
+    val onlineRating by viewModel.onlineRating.collectAsStateWithLifecycle()
+    val winStreak by viewModel.winStreak.collectAsStateWithLifecycle()
     val nicknameUpdateError by viewModel.nicknameUpdateError.collectAsStateWithLifecycle()
     val nicknameUpdateSuccess by viewModel.nicknameUpdateSuccess.collectAsStateWithLifecycle()
     val emailUpdateError by viewModel.emailUpdateError.collectAsStateWithLifecycle()
@@ -1174,11 +1176,8 @@ fun ProfileScreen(
                                                     contentColor = Color(0xFF1F1F1F)
                                                 )
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = "Google",
-                                                    modifier = Modifier.size(22.dp),
-                                                    tint = Color(0xFF4285F4)
+                                                GoogleLogoIcon(
+                                                    modifier = Modifier.size(22.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Text(
@@ -1377,18 +1376,51 @@ fun ProfileScreen(
 
                                         Spacer(modifier = Modifier.height(8.dp))
     
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Text(
-                                                text = Translations.getLocalizedRank(onlineTier, currentLang),
-                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                            ) {
+                                                Text(
+                                                    text = Translations.getLocalizedRank(onlineTier, currentLang),
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                            }
+
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = Color(0xFFFFD700).copy(alpha = 0.18f)
+                                            ) {
+                                                Text(
+                                                    text = "MMR $onlineRating",
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = Color(0xFFFFD700),
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                    maxLines = 1
+                                                )
+                                            }
+
+                                            if (winStreak > 0) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = Color(0xFFFF5722).copy(alpha = 0.18f)
+                                                ) {
+                                                    Text(
+                                                        text = "🔥 x$winStreak",
+                                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                                        color = Color(0xFFFF5722),
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                        maxLines = 1
+                                                    )
+                                                }
+                                            }
                                         }
 
                                         Spacer(modifier = Modifier.height(12.dp))

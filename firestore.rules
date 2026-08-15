@@ -85,7 +85,9 @@ service cloud.firestore {
           && (!('setting_ghost_visible' in data) || data.setting_ghost_visible is bool)
           && (!('setting_control_style' in data) || data.setting_control_style is string)
           && (!('setting_sound_enabled' in data) || data.setting_sound_enabled is bool)
-          && (!('setting_vibration_enabled' in data) || data.setting_vibration_enabled is bool);
+          && (!('setting_vibration_enabled' in data) || data.setting_vibration_enabled is bool)
+          && (!('online_rating' in data) || data.online_rating is int)
+          && (!('win_streak' in data) || data.win_streak is int);
     }
 
     // ════════════════════════════════════════════════
