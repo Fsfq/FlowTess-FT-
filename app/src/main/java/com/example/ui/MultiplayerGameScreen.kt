@@ -1,32 +1,39 @@
 package com.example.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
+import com.example.game.GameEngine
 import com.example.game.GameMode
+import com.example.game.GameState
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,21 +43,40 @@ fun MultiplayerGameScreen(
 ) {
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
     val themeColorKey by viewModel.themeColor.collectAsStateWithLifecycle()
-    
+    val themeColor = MaterialTheme.colorScheme.primary
+    val haptic = LocalHapticFeedback.current
+
     val gameState by viewModel.gameEngine.gameState.collectAsStateWithLifecycle()
     val room by viewModel.lobbyManager.currentRoom.collectAsStateWithLifecycle()
-    
-    val localUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
-    val isHost = remember(room) { room?.hostId == localUid }
-    val opponent = remember(room) { room?.players?.find { it.uid != localUid } }
-    val opponentScore = remember(room, isHost) { if (isHost) room?.opponentScore ?: 0 else room?.hostScore ?: 0 }
-    
-    val themeColor = MaterialTheme.colorScheme.primary
+
+    val customAvatarEmoji by viewModel.customAvatarEmoji.collectAsStateWithLifecycle()
+    val customAvatarBgColor by viewModel.customAvatarBgColor.collectAsStateWithLifecycle()
+    val equippedAvatarFrame by viewModel.equippedAvatarFrame.collectAsStateWithLifecycle()
+    val playerName by viewModel.playerName.collectAsStateWithLifecycle()
+    val hasNicknameGradient by viewModel.hasNicknameGradient.collectAsStateWithLifecycle()
+    val onlineRating by viewModel.onlineRating.collectAsStateWithLifecycle()
+    val winStreak by viewModel.winStreak.collectAsStateWithLifecycle()
+
+    val localUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val isHost = room?.hostId == localUid
+    val opponent = room?.players?.find { it.uid.isNotEmpty() && it.uid != localUid }
+
+    val liveHostState by viewModel.lobbyManager.liveHostBattleState.collectAsStateWithLifecycle()
+    val liveOpponentState by viewModel.lobbyManager.liveOpponentBattleState.collectAsStateWithLifecycle()
+
+    val myLiveState = if (isHost) liveHostState else liveOpponentState
+    val oppLiveState = if (isHost) liveOpponentState else liveHostState
+
+    val opponentScore = oppLiveState.score
+    val opponentLines = oppLiveState.lines
+    val opponentCombo = oppLiveState.combo
+    val opponentGameOver = oppLiveState.isGameOver
+    val opponentGrid = remember(oppLiveState.grid) { convertFlatListToGrid(oppLiveState.grid) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "BorderPulse")
     val pulseBorderAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.9f,
+        initialValue = 0.45f,
+        targetValue = 0.95f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
@@ -60,27 +86,67 @@ fun MultiplayerGameScreen(
 
     var showExitConfirmDialog by remember { mutableStateOf(false) }
     var matchFinishedAwarded by remember { mutableStateOf(false) }
-    
-    // Start game engine on entry
-    LaunchedEffect(Unit) {
+    var attackBannerText by remember { mutableStateOf<String?>(null) }
+
+    // Start Game on entry or when round increases
+    LaunchedEffect(room?.currentRound) {
         viewModel.startGame(GameMode.CLASSIC)
     }
 
-    // 1. Sync local state to Firestore
-    LaunchedEffect(gameState.grid, gameState.score, gameState.lines, gameState.isGameOver) {
-        if (room != null) {
-            // Flatten bottom 12 rows of the 22x10 grid to push to Firestore
-            val flatGrid = gameState.grid.takeLast(12).flatMap { row -> row.toList() }
-            viewModel.lobbyManager.updatePlayerGameState(flatGrid, gameState.score, gameState.lines, gameState.isGameOver)
+    // ─────────────────────────────────────────────────────────────
+    // 1. Rock-Solid Realtime State Sync to RTDB (100ms throttle + 20-row full height)
+    // ─────────────────────────────────────────────────────────────
+    LaunchedEffect(room?.roomId) {
+        while (true) {
+            delay(100)
+            if (room != null && room?.status == "playing") {
+                val flatGrid = getDisplayGridWithActivePiece(gameState)
+                viewModel.lobbyManager.updatePlayerLiveState(
+                    grid = flatGrid,
+                    score = gameState.score,
+                    lines = gameState.lines,
+                    combo = gameState.tetrisesCleared,
+                    isGameOver = gameState.isGameOver
+                )
+            }
         }
     }
 
-    // 2. Attack detection (watch line clears)
-    var prevLines by remember { mutableStateOf(0) }
+    // Immediate dispatch on line clears, piece movements, rotations, drops, or game over
+    LaunchedEffect(gameState.score, gameState.lines, gameState.isGameOver, gameState.currentPos, gameState.currentPiece) {
+        if (room != null && room?.status == "playing") {
+            val flatGrid = getDisplayGridWithActivePiece(gameState)
+            viewModel.lobbyManager.updatePlayerLiveState(
+                grid = flatGrid,
+                score = gameState.score,
+                lines = gameState.lines,
+                combo = gameState.tetrisesCleared,
+                isGameOver = gameState.isGameOver
+            )
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 2. Opponent Disconnect / Forfeit Win Detection
+    // ─────────────────────────────────────────────────────────────
+    LaunchedEffect(room?.players, room?.status) {
+        if (room != null && room?.status == "playing") {
+            val remainingPlayers = room?.players ?: emptyList()
+            if (remainingPlayers.size == 1 && remainingPlayers.first().uid == localUid) {
+                // Opponent has left the game! Award forfeit win to remaining player
+                viewModel.lobbyManager.setWinner(localUid)
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 3. Attack Detection (Send Garbage on Line Clears only if enabled)
+    // ─────────────────────────────────────────────────────────────
+    var prevLines by remember { mutableIntStateOf(0) }
     LaunchedEffect(gameState.lines) {
         val cleared = gameState.lines - prevLines
-        if (cleared > 0 && prevLines > 0) {
-            // Simple Tetris garbage mapping
+        val isAttacksEnabled = (room?.garbageIntensity ?: 1.0f) > 0f && room?.gameMode != "SCORE_RACE"
+        if (cleared > 0 && prevLines > 0 && isAttacksEnabled) {
             val garbageToSend = when (cleared) {
                 2 -> 1
                 3 -> 2
@@ -89,56 +155,98 @@ fun MultiplayerGameScreen(
             }
             if (garbageToSend > 0) {
                 viewModel.lobbyManager.sendGarbageToOpponent(garbageToSend)
+                attackBannerText = if (cleared == 4) "💥 TETRIS ATTACK! +4 💣" else "+$garbageToSend 💣"
             }
         }
         prevLines = gameState.lines
     }
 
-    // 3. Listen to incoming garbage
-    val opponentGarbageCount = if (isHost) room?.opponentGarbageToSend ?: 0 else room?.hostGarbageToSend ?: 0
-    LaunchedEffect(opponentGarbageCount) {
-        if (opponentGarbageCount > 0) {
-            viewModel.gameEngine.addGarbageLines(opponentGarbageCount)
-            // Clear in db
-            viewModel.lobbyManager.clearGarbageReceived(
-                if (isHost) "opponentGarbageToSend" else "hostGarbageToSend"
-            )
+    LaunchedEffect(attackBannerText) {
+        if (attackBannerText != null) {
+            delay(1800)
+            attackBannerText = null
         }
     }
 
-    // 4. Game Over evaluation
-    LaunchedEffect(room?.hostGameOver, room?.opponentGameOver) {
-        if (room != null && room!!.hostGameOver && room!!.opponentGameOver && room!!.winnerId.isEmpty()) {
-            if (isHost) {
-                // Determine winner
-                val winnerId = when {
-                    room!!.hostScore > room!!.opponentScore -> room!!.hostId
-                    room!!.opponentScore > room!!.hostScore -> opponent?.uid ?: "draw"
-                    else -> "draw"
+    // ─────────────────────────────────────────────────────────────
+    // 4. Incoming Garbage Processing
+    // ─────────────────────────────────────────────────────────────
+    val incomingGarbage = myLiveState.garbageToSend
+    LaunchedEffect(incomingGarbage) {
+        val isAttacksEnabled = (room?.garbageIntensity ?: 1.0f) > 0f && room?.gameMode != "SCORE_RACE"
+        if (incomingGarbage > 0 && isAttacksEnabled) {
+            viewModel.gameEngine.addGarbageLines(incomingGarbage)
+            viewModel.triggerAudioFeedback("fall")
+            viewModel.lobbyManager.clearGarbageReceived(isHost)
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 5. Round & Game Over Evaluation (Knockout vs Score Race)
+    // ─────────────────────────────────────────────────────────────
+    var roundWinEvaluated by remember { mutableStateOf(false) }
+    LaunchedEffect(room?.currentRound) {
+        roundWinEvaluated = false
+    }
+
+    LaunchedEffect(gameState.isGameOver, opponentGameOver) {
+        if (room != null && room?.status == "playing" && isHost && !roundWinEvaluated) {
+            val isScoreRace = room?.gameMode == "SCORE_RACE"
+
+            if (isScoreRace) {
+                // In Score Race mode: highest score wins when both top out
+                if (gameState.isGameOver && opponentGameOver) {
+                    roundWinEvaluated = true
+                    val winnerId = when {
+                        gameState.score > opponentScore -> localUid
+                        opponentScore > gameState.score -> opponent?.uid ?: "draw"
+                        else -> "draw"
+                    }
+                    viewModel.lobbyManager.recordRoundWin(winnerId)
                 }
-                viewModel.lobbyManager.setWinner(winnerId)
+            } else {
+                // In Battle / Knockout mode: when one player tops out, the other wins the round
+                if (gameState.isGameOver && opponentGameOver) {
+                    roundWinEvaluated = true
+                    val winnerId = when {
+                        gameState.score > opponentScore -> localUid
+                        opponentScore > gameState.score -> opponent?.uid ?: "draw"
+                        else -> "draw"
+                    }
+                    viewModel.lobbyManager.recordRoundWin(winnerId)
+                } else if (gameState.isGameOver && !opponentGameOver) {
+                    roundWinEvaluated = true
+                    opponent?.uid?.let { viewModel.lobbyManager.recordRoundWin(it) }
+                } else if (!gameState.isGameOver && opponentGameOver) {
+                    roundWinEvaluated = true
+                    viewModel.lobbyManager.recordRoundWin(localUid)
+                }
             }
         }
     }
 
-    // 5. Award credits on finish
+    // ─────────────────────────────────────────────────────────────
+    // 6. Award Credits on Match Finished
+    // ─────────────────────────────────────────────────────────────
     LaunchedEffect(room?.status, room?.winnerId) {
-        if (room?.status == "finished" && !matchFinishedAwarded && room!!.winnerId.isNotEmpty()) {
+        if (room?.status == "finished" && !matchFinishedAwarded && !room?.winnerId.isNullOrEmpty()) {
             matchFinishedAwarded = true
-            val won = room!!.winnerId == localUid
+            val isWinner = room!!.winnerId == localUid
+            val isDraw = room!!.winnerId == "draw"
             viewModel.awardMultiplayerCredits(
-                playerScore = if (isHost) room!!.hostScore else room!!.opponentScore,
-                opponentScore = if (isHost) room!!.opponentScore else room!!.hostScore,
-                won = won
+                playerScore = gameState.score,
+                opponentScore = opponentScore,
+                won = isWinner,
+                isDraw = isDraw,
+                betAmount = room?.betAmount ?: 0
             )
-            viewModel.triggerAudioFeedback(if (won) "success" else "gameover")
+            viewModel.triggerAudioFeedback(if (isWinner) "success" else "gameover")
         }
     }
 
-    // Handle sudden room deletion (opponent exits)
+    // Handle sudden room closure (e.g. room purged after delay)
     LaunchedEffect(room) {
         if (room == null && !matchFinishedAwarded) {
-            // Drop back
             onBackToLobby()
         }
     }
@@ -147,563 +255,631 @@ fun MultiplayerGameScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    AdaptiveText(
-                        text = if (currentLang == Language.RU) "МАТЧ СМЕРТИ" else "LIVE BATTLE ARENA",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { showExitConfirmDialog = true }) {
-                        Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "Surrender", tint = MaterialTheme.colorScheme.error)
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(horizontal = 12.dp)
-        ) {
-            // Scores header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.Start) {
-                    AdaptiveText(
-                        text = if (currentLang == Language.RU) "ВЫ" else "YOU",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = themeColor
-                    )
-                    AdaptiveText(
-                        text = "${gameState.score}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                }
-
-                AdaptiveText(
-                    text = "VS",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
-
-                Column(horizontalAlignment = Alignment.End) {
-                    AdaptiveText(
-                        text = opponent?.name ?: (if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White
-                    )
-                    AdaptiveText(
-                        text = "$opponentScore",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = themeColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Main Arena Boards Row
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                // Local Game board
-                Box(
-                    modifier = Modifier
-                        .weight(1.3f)
-                        .fillMaxHeight()
-                        .padding(end = 6.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .border(
-                            width = 2.dp,
-                            brush = Brush.sweepGradient(
-                                listOf(
-                                    themeColor.copy(alpha = pulseBorderAlpha),
-                                    MaterialTheme.colorScheme.secondary.copy(alpha = pulseBorderAlpha),
-                                    themeColor.copy(alpha = pulseBorderAlpha)
-                                )
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Reused GameBoardView
-                    GameBoardView(
-                        gameState = gameState,
-                        blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
-                        ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
-                        smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
-                        gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
-                        boardColorSkin = viewModel.boardColorSkin.collectAsStateWithLifecycle().value,
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    // local game over indicator
-                    if (gameState.isGameOver) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.7f)),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            AdaptiveText(
-                                text = if (currentLang == Language.RU) "ФИНИШ\nЖДЕМ ОППОНЕНТА" else "BOARD FULL\nWAITING FOR OPPONENT",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
+                            val modeLabel = if (room?.gameMode == "SCORE_RACE") {
+                                if (currentLang == Language.RU) "НА ОЧКИ" else "SCORE RACE"
+                            } else {
+                                if (currentLang == Language.RU) "РАУНД ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}" else "ROUND ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                            }
+                            Text(
+                                text = modeLabel,
+                                style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.sp),
+                                fontWeight = FontWeight.Black,
+                                color = themeColor
                             )
                         }
                     }
-
-                    // Pending garbage visual gauge indicator
-                    if (opponentGarbageCount > 0) {
-                        val gaugeColor = when {
-                            opponentGarbageCount <= 2 -> Color(0xFF00FF88) // green
-                            opponentGarbageCount <= 5 -> Color(0xFFFFCC00) // yellow
-                            else -> Color(0xFFFF3366) // red
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .width(6.dp)
-                                .align(Alignment.CenterStart)
-                                .background(Color.Black.copy(alpha = 0.3f))
+                },
+                navigationIcon = {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        IconButton(
+                            onClick = { showExitConfirmDialog = true },
+                            modifier = Modifier.size(38.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(fraction = (opponentGarbageCount.toFloat() / 10f).coerceAtMost(1f))
-                                    .align(Alignment.BottomCenter)
-                                    .background(gaugeColor)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Surrender",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
-                }
-
-                // Sidebar with Next Piece + Opponent Board
-                Column(
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .navigationBarsPadding()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // ─────────────────────────────────────────────────────────────
+                // VERSUS HEADER CARD (MD3 Perfectionism)
+                // ─────────────────────────────────────────────────────────────
+                ElevatedCard(
                     modifier = Modifier
-                        .weight(0.7f)
-                        .fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                 ) {
-                    // Next Piece Preview
-                    OutlinedCard(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(72.dp),
-                        colors = CardDefaults.outlinedCardColors(containerColor = Color.Black.copy(alpha = 0.25f)),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                        // Left: You
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            AdaptiveText(
-                                text = if (currentLang == Language.RU) "СЛЕДУЮЩИЙ" else "NEXT",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = themeColor,
-                                fontWeight = FontWeight.Bold
+                            PlayerAvatarView(
+                                playerName = playerName,
+                                avatarEmoji = customAvatarEmoji,
+                                avatarBgColorHex = customAvatarBgColor,
+                                avatarFrame = equippedAvatarFrame,
+                                size = 38.dp,
+                                themeColor = themeColor
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            if (gameState.nextPieces.isNotEmpty()) {
-                                Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-                                    PreviewNextPiece(
-                                        piece = gameState.nextPieces.first(),
-                                        style = viewModel.blockStyle.collectAsStateWithLifecycle().value
+                            Column(horizontalAlignment = Alignment.Start) {
+                                val myNickBrush = if (hasNicknameGradient) rememberAnimatedNicknameBrush(baseColor = parseHexColor(customAvatarBgColor, themeColor)) else null
+                                Text(
+                                    text = playerName.uppercase(),
+                                    style = if (myNickBrush != null) {
+                                        MaterialTheme.typography.labelSmall.copy(brush = myNickBrush, fontWeight = FontWeight.Black)
+                                    } else {
+                                        MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black)
+                                    },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${gameState.score}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                                    color = themeColor
+                                )
+                            }
+                        }
+
+                        // Center: VS + Round Tracker
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = "VS",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                            if ((room?.betAmount ?: 0) > 0) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFD700).copy(alpha = 0.18f)
+                                ) {
+                                    Text(
+                                        text = "${(room?.betAmount ?: 0) * 2} 🪙",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                     )
                                 }
                             }
+                            // Round Dots Indicator: e.g. [ ● ○ ] vs [ ○ ○ ]
+                            val myWins = if (isHost) room?.hostWins ?: 0 else room?.opponentWins ?: 0
+                            val oppWins = if (isHost) room?.opponentWins ?: 0 else room?.hostWins ?: 0
+                            val targetWins = ((room?.roundTarget ?: 1) / 2) + 1
+
+                            if (room?.roundTarget ?: 1 > 1) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    for (w in 1..targetWins) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(if (w <= myWins) themeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    for (w in 1..targetWins) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(if (w <= oppWins) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    }
 
-                    // Opponent Mini Board
-                    val opponentFlatGrid = if (isHost) room?.opponentGrid ?: emptyList() else room?.hostGrid ?: emptyList()
-                    val opponentGrid2D = remember(opponentFlatGrid) { convertFlatListToGrid(opponentFlatGrid) }
-                    val opponentCombo = if (isHost) room?.opponentCombo ?: 0 else room?.hostCombo ?: 0
-                    val opponentGameOver = if (isHost) room?.opponentGameOver ?: false else room?.hostGameOver ?: false
+                        // Right: Opponent
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            val oppColor = parseHexColor(opponent?.avatarBgColor ?: "", MaterialTheme.colorScheme.error)
+                            val oppNickBrush = if (opponent?.hasGradient == true) rememberAnimatedNicknameBrush(baseColor = oppColor) else null
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        MiniBoard(
-                            grid = opponentGrid2D,
-                            title = opponent?.name ?: (if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT"),
-                            score = opponentScore,
-                            combo = opponentCombo
-                        )
-
-                        if (opponentGameOver) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(2.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.Black.copy(alpha = 0.75f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "ВЫБЫЛ" else "OUT",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Black,
+                            Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = (opponent?.name ?: if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT").uppercase(),
+                                    style = if (oppNickBrush != null) {
+                                        MaterialTheme.typography.labelSmall.copy(brush = oppNickBrush, fontWeight = FontWeight.Black)
+                                    } else {
+                                        MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black)
+                                    },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "$opponentScore",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
-                        }
-                    }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Gameplay Controls Bar
-            val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
-            val controlStyle by viewModel.controlStyle.collectAsStateWithLifecycle()
-            val controlButtonScale by viewModel.controlButtonScale.collectAsStateWithLifecycle()
-            val controlButtonStyle by viewModel.controlButtonStyle.collectAsStateWithLifecycle()
-            val leftHandedControls by viewModel.leftHandedControls.collectAsStateWithLifecycle()
-
-            if (!gameState.isGameOver) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = if (controlVerticalPosition == "middle") 60.dp else 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (controlStyle == "split") {
-                        val leftSegment = @Composable {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ControlButton(actionType = "left", onClick = { viewModel.gameEngine.moveLeft() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                ControlButton(actionType = "down", onClick = { viewModel.gameEngine.softDrop() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                            }
-                        }
-                        val rightSegment = @Composable {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ControlButton(actionType = "right", onClick = { viewModel.gameEngine.moveRight() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                            }
-                        }
-                        val middleSegment = @Composable {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                ControlButton(actionType = "rotate", onClick = { viewModel.gameEngine.rotate() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                ControlButton(actionType = "hold", onClick = { viewModel.gameEngine.hold() }, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (leftHandedControls) {
-                                rightSegment()
-                                middleSegment()
-                                leftSegment()
-                            } else {
-                                leftSegment()
-                                middleSegment()
-                                rightSegment()
-                            }
-                        }
-                    } else if (controlStyle == "arcade") {
-                        val actionCol = @Composable {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                ControlButton(actionType = "rotate", onClick = { viewModel.gameEngine.rotate() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    ControlButton(actionType = "left", onClick = { viewModel.gameEngine.moveLeft() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                    ControlButton(actionType = "down", onClick = { viewModel.gameEngine.softDrop() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                    ControlButton(actionType = "right", onClick = { viewModel.gameEngine.moveRight() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                }
-                            }
-                        }
-                        val triggerCol = @Composable {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                                ControlButton(actionType = "hold", onClick = { viewModel.gameEngine.hold() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (leftHandedControls) {
-                                triggerCol()
-                                Spacer(modifier = Modifier.width(16.dp))
-                                actionCol()
-                            } else {
-                                actionCol()
-                                Spacer(modifier = Modifier.width(16.dp))
-                                triggerCol()
-                            }
-                        }
-                    } else {
-                        val listBtns = listOf(
-                            @Composable { ControlButton(actionType = "left", onClick = { viewModel.gameEngine.moveLeft() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-                            @Composable { ControlButton(actionType = "down", onClick = { viewModel.gameEngine.softDrop() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-                            @Composable { ControlButton(actionType = "rotate", onClick = { viewModel.gameEngine.rotate() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-                            @Composable { ControlButton(actionType = "right", onClick = { viewModel.gameEngine.moveRight() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) }
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (leftHandedControls) {
-                                listBtns.reversed().forEach { it() }
-                            } else {
-                                listBtns.forEach { it() }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ControlButton(actionType = "drop", onClick = { viewModel.gameEngine.hardDrop() }, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            ControlButton(actionType = "hold", onClick = { viewModel.gameEngine.hold() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Exit confirmation Dialog
-        if (showExitConfirmDialog) {
-            AlertDialog(
-                onDismissRequest = { showExitConfirmDialog = false },
-                title = {
-                    Text(if (currentLang == Language.RU) "Капитулировать?" else "Surrender Match?")
-                },
-                text = {
-                    Text(if (currentLang == Language.RU) "Вы действительно хотите сдаться и выйти в лобби?" 
-                         else "Are you sure you want to surrender and exit to the lobby?")
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showExitConfirmDialog = false
-                            viewModel.lobbyManager.leaveRoom()
-                            onBackToLobby()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text(if (currentLang == Language.RU) "Сдаться" else "Surrender")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showExitConfirmDialog = false }) {
-                        Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
-                    }
-                }
-            )
-        }
-
-        // Match Over Final Dialog
-        if (room?.status == "finished" && room!!.winnerId.isNotEmpty()) {
-            val won = room!!.winnerId == localUid
-            val isDraw = room!!.winnerId == "draw"
-            val myScore = if (isHost) room!!.hostScore else room!!.opponentScore
-            val oppScore = if (isHost) room!!.opponentScore else room!!.hostScore
-            val myCredits = if (won) (50 + myScore / 5 + 150) else (50 + myScore / 5)
-            
-            AlertDialog(
-                onDismissRequest = {},
-                title = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(
-                                    if (isDraw) Color.Yellow.copy(alpha = 0.15f)
-                                    else if (won) Color.Green.copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (isDraw) "🤝" else if (won) "🏆" else "💀",
-                                fontSize = 32.sp
+                            PlayerAvatarView(
+                                playerName = opponent?.name ?: "?",
+                                avatarEmoji = opponent?.avatarEmoji ?: "",
+                                avatarBgColorHex = opponent?.avatarBgColor ?: "",
+                                avatarFrame = opponent?.avatarFrame ?: "standard",
+                                size = 38.dp,
+                                themeColor = MaterialTheme.colorScheme.error
                             )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = if (isDraw) (if (currentLang == Language.RU) "НИЧЬЯ!" else "DRAW MATCH!")
-                                   else if (won) (if (currentLang == Language.RU) "ПОБЕДА!" else "VICTORY!")
-                                   else (if (currentLang == Language.RU) "ПОРАЖЕНИЕ" else "DEFEAT"),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Black,
-                            color = if (isDraw) Color.Yellow else if (won) Color.Green else MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
                     }
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = if (isDraw) (if (currentLang == Language.RU) "Оба игрока набрали равные очки!" else "Both players finished with equal score!")
-                                   else if (won) (if (currentLang == Language.RU) "Отличная игра! Награда начислена на ваш счет." else "Incredible execution! Credits awarded to your account.")
-                                   else (if (currentLang == Language.RU) "Соперник превзошел вас по очкам. Попробуйте еще раз!" else "Opponent scored higher. Practice and re-queue!"),
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            // Player Stats Card
-                            OutlinedCard(
-                                modifier = Modifier.weight(1f),
-                                colors = CardDefaults.outlinedCardColors(
-                                    containerColor = if (won) Color.Green.copy(alpha = 0.05f) else Color.Transparent
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // ─────────────────────────────────────────────────────────────
+                // MAIN BATTLE ARENA (Board + Live Opponent Feed)
+                // ─────────────────────────────────────────────────────────────
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Local Player Game Board
+                    Box(
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .aspectRatio(10f / 20f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF08080C))
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.sweepGradient(
+                                    listOf(
+                                        themeColor.copy(alpha = pulseBorderAlpha),
+                                        MaterialTheme.colorScheme.secondary.copy(alpha = pulseBorderAlpha),
+                                        themeColor.copy(alpha = pulseBorderAlpha)
+                                    )
                                 ),
-                                border = BorderStroke(
-                                    width = if (won) 2.dp else 1.dp,
-                                    color = if (won) Color.Green else MaterialTheme.colorScheme.outlineVariant
-                                )
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        GameBoardView(
+                            gameState = gameState,
+                            blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
+                            ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
+                            smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
+                            gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
+                            boardColorSkin = viewModel.boardColorSkin.collectAsStateWithLifecycle().value,
+                            ghostOutlineOnly = viewModel.ghostOutlineOnly.collectAsStateWithLifecycle().value,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Incoming Garbage Attack Warning Gauge
+                        if (incomingGarbage > 0) {
+                            val gaugeColor = when {
+                                incomingGarbage <= 2 -> Color(0xFF00E676)
+                                incomingGarbage <= 4 -> Color(0xFFFFB300)
+                                else -> Color(0xFFFF1744)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(6.dp)
+                                    .align(Alignment.CenterStart)
+                                    .background(Color.Black.copy(alpha = 0.4f))
                             ) {
-                                Column(
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ВЫ" else "YOU",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (won) Color.Green else MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "$myScore",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "+$myCredits CR",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFFFFD700),
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                        .fillMaxHeight(fraction = (incomingGarbage / 10f).coerceAtMost(1f))
+                                        .align(Alignment.BottomCenter)
+                                        .background(gaugeColor)
+                                )
+                            }
+                        }
+
+                        // Local Game Over Waiting Overlay
+                        if (gameState.isGameOver) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.82f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (currentLang == Language.RU) "ФИНИШ\nЖДЁМ СОПЕРНИКА" else "TOPPED OUT\nWAITING FOR OPPONENT",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        // Tetris Attack Pop-up Banner
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = attackBannerText != null,
+                            enter = scaleIn() + fadeIn(),
+                            exit = scaleOut() + fadeOut()
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = themeColor,
+                                shadowElevation = 6.dp
+                            ) {
+                                Text(
+                                    text = attackBannerText ?: "",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Right Side Column: Next Piece + Opponent Live Board (Full 20 rows)
+                    Column(
+                        modifier = Modifier
+                            .weight(0.72f)
+                            .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Next Piece Box
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = Translations.get("next", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = themeColor
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                if (gameState.nextPieces.isNotEmpty()) {
+                                    Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                                        PreviewNextPiece(
+                                            piece = gameState.nextPieces.first(),
+                                            style = viewModel.blockStyle.collectAsStateWithLifecycle().value
+                                        )
+                                    }
                                 }
                             }
-                            
-                            // Opponent Stats Card
-                            OutlinedCard(
-                                modifier = Modifier.weight(1f),
-                                colors = CardDefaults.outlinedCardColors(
-                                    containerColor = if (!won && !isDraw) Color.Red.copy(alpha = 0.05f) else Color.Transparent
-                                ),
-                                border = BorderStroke(
-                                    width = if (!won && !isDraw) 2.dp else 1.dp,
-                                    color = if (!won && !isDraw) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
-                                )
-                            ) {
-                                Column(
+                        }
+
+                        // Opponent Live Mini Board (Full 20 rows from top to bottom)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            MiniBoard(
+                                grid = opponentGrid,
+                                title = opponent?.name ?: if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT",
+                                score = opponentScore,
+                                combo = opponentCombo,
+                                lines = opponentLines
+                            )
+
+                            if (opponentGameOver) {
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color.Black.copy(alpha = 0.8f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = opponent?.name ?: (if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (!won && !isDraw) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "$oppScore",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = if (isDraw) "DRAW" else if (!won) "WINNER" else "OUT",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isDraw) Color.Yellow else if (!won) Color.Green else Color.Gray,
-                                        fontWeight = FontWeight.Bold
+                                        text = if (currentLang == Language.RU) "ВЫБЫЛ" else "OUT",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }
                         }
                     }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.lobbyManager.leaveRoom()
-                            onBackToLobby()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = themeColor, contentColor = Color.Black),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // ─────────────────────────────────────────────────────────────
+                // TOUCH CONTROLS
+                // ─────────────────────────────────────────────────────────────
+                val controlStyle by viewModel.controlStyle.collectAsStateWithLifecycle()
+                val leftHandedControls by viewModel.leftHandedControls.collectAsStateWithLifecycle()
+                val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
+                val controlButtonScale by viewModel.controlButtonScale.collectAsStateWithLifecycle()
+                val controlButtonStyle by viewModel.controlButtonStyle.collectAsStateWithLifecycle()
+
+                if (!gameState.isGameOver) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = if (controlVerticalPosition == "middle") 36.dp else 4.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (currentLang == Language.RU) "В ЛОББИ" else "GO TO LOBBY",
-                            fontWeight = FontWeight.Black
+                        GameControlsSection(
+                            viewModel = viewModel,
+                            gameState = gameState,
+                            controlStyle = controlStyle,
+                            leftHandedControls = leftHandedControls,
+                            controlVerticalPosition = controlVerticalPosition,
+                            controlButtonScale = controlButtonScale,
+                            controlButtonStyle = controlButtonStyle,
+                            onLeftPress = { viewModel.gameEngine.moveLeft() },
+                            onRightPress = { viewModel.gameEngine.moveRight() },
+                            onDownPress = { viewModel.gameEngine.softDrop() },
+                            onRotatePress = { viewModel.gameEngine.rotate() },
+                            onHardDropPress = { viewModel.gameEngine.hardDrop() },
+                            onHoldPress = { viewModel.gameEngine.hold() }
                         )
                     }
                 }
-            )
+            }
+
+            // ─────────────────────────────────────────────────────────────
+            // MATCH FINISHED MODAL (MD3 Perfectionism with Forfeit support)
+            // ─────────────────────────────────────────────────────────────
+            if (room?.status == "finished") {
+                val isWinner = room?.winnerId == localUid
+                val isDraw = room?.winnerId == "draw"
+                val wasForfeit = room?.players?.size ?: 0 < 2
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.88f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ElevatedCard(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isWinner) Color(0xFFFFD700).copy(alpha = 0.18f) else MaterialTheme.colorScheme.errorContainer,
+                                modifier = Modifier.size(64.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (isWinner) Icons.Default.EmojiEvents else if (isDraw) Icons.Default.Handshake else Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = if (isWinner) Color(0xFFFFD700) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(38.dp)
+                                    )
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = if (isWinner) {
+                                        if (currentLang == Language.RU) "ПОБЕДА В МАТЧЕ!" else "VICTORY!"
+                                    } else if (isDraw) {
+                                        if (currentLang == Language.RU) "НИЧЬЯ!" else "DRAW!"
+                                    } else {
+                                        if (currentLang == Language.RU) "ПОРАЖЕНИЕ" else "DEFEAT"
+                                    },
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (isWinner) Color(0xFFFFD700) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                )
+                                if (wasForfeit && isWinner) {
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Соперник покинул матч" else "Opponent forfeited the match",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Stats comparison summary
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(horizontalAlignment = Alignment.Start) {
+                                        Text(text = playerName, style = MaterialTheme.typography.labelSmall, color = themeColor, fontWeight = FontWeight.Bold)
+                                        Text(text = "${gameState.score} очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                        Text(text = "${gameState.lines} линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Text(text = "VS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.outline)
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(text = opponent?.name ?: "Оппонент", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                        Text(text = "$opponentScore очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                        Text(text = "$opponentLines линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.lobbyManager.leaveRoom()
+                                    onBackToLobby()
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (currentLang == Language.RU) "ВЕРНУТЬСЯ В ЛОББИ" else "RETURN TO LOBBY",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────
+            // SURRENDER CONFIRMATION DIALOG
+            // ─────────────────────────────────────────────────────────────
+            if (showExitConfirmDialog) {
+                AlertDialog(
+                    onDismissRequest = { showExitConfirmDialog = false },
+                    title = {
+                        Text(
+                            text = if (currentLang == Language.RU) "Сдаться и выйти?" else "Surrender match?",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = if (currentLang == Language.RU)
+                                "Выход из комнаты во время матча будет засчитан как техническое поражение."
+                                else "Leaving during an active match will count as a forfeit defeat."
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showExitConfirmDialog = false
+                                viewModel.lobbyManager.leaveRoom()
+                                onBackToLobby()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(if (currentLang == Language.RU) "Сдаться" else "Surrender", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        OutlinedButton(
+                            onClick = { showExitConfirmDialog = false },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                        }
+                    }
+                )
+            }
         }
     }
 }
 
-// Flat list deserializer helper
+// Prepare 20-row visible grid including falling active piece so opponent sees full tower in real time!
+private fun getDisplayGridWithActivePiece(gameState: GameState): List<Int> {
+    // 20 visible rows out of 22 total (rows 2..21)
+    val matrix = gameState.grid.takeLast(20).map { it.clone() }
+    val piece = gameState.currentPiece
+    val pos = gameState.currentPos
+    if (piece != null && !gameState.isGameOver) {
+        val startRowOffset = 2
+        for (p in piece.shape) {
+            val r = pos.y + p.y
+            val c = pos.x + p.x
+            val localRow = r - startRowOffset
+            if (localRow in 0 until 20 && c in 0 until 10) {
+                matrix[localRow][c] = piece.colorIndex
+            }
+        }
+    }
+    return matrix.flatMap { row -> row.toList() }
+}
+
+// Flat list deserializer helper (20x10 full height)
 private fun convertFlatListToGrid(flatList: List<Int>): List<IntArray> {
     val grid = mutableListOf<IntArray>()
-    for (r in 0 until 12) {
+    for (r in 0 until 20) {
         val row = IntArray(10)
         for (c in 0 until 10) {
             val idx = r * 10 + c

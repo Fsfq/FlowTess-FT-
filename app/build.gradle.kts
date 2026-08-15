@@ -15,8 +15,8 @@ android {
     applicationId = "com.FsFq.Tetris"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 4
+    versionName = "0.93.3 Alpha"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -46,10 +46,13 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      isDebuggable = false
       isMinifyEnabled = true
       isShrinkResources = true
+      isCrunchPngs = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("debug")
+      matchingFallbacks += listOf("release")
     }
   }
   compileOptions {
@@ -61,6 +64,15 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  lint {
+    checkReleaseBuilds = false
+    abortOnError = false
+  }
+}
+
+composeCompiler {
+  enableStrongSkippingMode = true
+  includeSourceInformation = false
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
@@ -78,7 +90,9 @@ dependencies {
   implementation(libs.firebase.analytics)
   implementation(libs.firebase.auth)
   implementation(libs.firebase.firestore)
+  implementation(libs.firebase.database)
   implementation(libs.play.services.auth)
+  implementation(libs.androidx.profileinstaller)
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
   // implementation(libs.androidx.camera.camera2)

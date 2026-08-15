@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -17,20 +18,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -39,6 +36,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
 import com.example.game.BlockBlastFigure
@@ -58,16 +59,20 @@ fun BlockBlastScreen(
     val credits by viewModel.credits.collectAsStateWithLifecycle()
     val scanlinesFilter by viewModel.scanlinesFilter.collectAsStateWithLifecycle()
     
-    // Aesthetic theme colors
-    val themeColor = when (activeThemeKey) {
-        "indigo" -> Color(0xFF6366F1)
-        "neon" -> Color(0xFF00FFCC)
-        "emerald" -> Color(0xFF10B981)
-        "amber" -> Color(0xFFF59E0B)
-        "rose" -> Color(0xFFF43F5E)
-        "sky" -> Color(0xFF0EA5E9)
-        "orange" -> Color(0xFFFF5722)
-        else -> Color(0xFF00FFCC)
+    val themeColor = remember(activeThemeKey) {
+        when (activeThemeKey) {
+            "black" -> Color(0xFFE2E2E6)
+            "indigo" -> Color(0xFFD0BCFF)
+            "neon" -> Color(0xFF00FFCC)
+            "emerald" -> Color(0xFF10B981)
+            "amber" -> Color(0xFFF59E0B)
+            "rose" -> Color(0xFFF43F5E)
+            "sky" -> Color(0xFF0EA5E9)
+            "orange" -> Color(0xFFFF5722)
+            "toxic_green" -> Color(0xFF39FF14)
+            "cyber_pink" -> Color(0xFFFF007F)
+            else -> Color(0xFF6366F1)
+        }
     }
 
     val blockBlastColors = listOf(
@@ -87,7 +92,6 @@ fun BlockBlastScreen(
     var selectedFigureIdx by remember { mutableStateOf<Int?>(null) }
     var hintText by remember { mutableStateOf<String?>(null) }
     
-    // Core Drag and Drop State properties
     var boardBounds by remember { mutableStateOf<Rect?>(null) }
     val cardOffsets = remember { mutableStateListOf(Offset.Zero, Offset.Zero, Offset.Zero) }
     val cardDragging = remember { mutableStateListOf(false, false, false) }
@@ -97,7 +101,6 @@ fun BlockBlastScreen(
     var cursorScreenPos by remember { mutableStateOf(Offset.Zero) }
     var hoverRowCol by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
-    // Reset fallback selections on layout update
     LaunchedEffect(state.pool) {
         selectedFigureIdx?.let { idx ->
             if (state.pool.getOrNull(idx) == null) {
@@ -106,7 +109,6 @@ fun BlockBlastScreen(
         }
     }
 
-    // Auto clear error hints
     LaunchedEffect(hintText) {
         if (hintText != null) {
             delay(2500)
@@ -118,30 +120,35 @@ fun BlockBlastScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        AdaptiveText(
-                            text = if (currentLang == Language.RU) "ZETA АРЕНА" else "NEON ZETA MAX",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 2.sp,
-                                shadow = Shadow(color = themeColor, blurRadius = 8f)
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        AdaptiveText(
-                            text = "SMOOTH TOUCH GESTURES DRAG-N-DROP",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            letterSpacing = 1.sp
-                        )
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TouchApp,
+                                contentDescription = null,
+                                tint = themeColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = if (currentLang == Language.RU) "ZETA АРЕНА" else "ZETA ARENA",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack
-                    ) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -166,18 +173,18 @@ fun BlockBlastScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 
-                // Aesthetic Score Dashboard (Material 3 ElevatedCard)
+                // MD3 Elevated Score Dashboard
                 ElevatedCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ),
                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                 ) {
@@ -190,54 +197,49 @@ fun BlockBlastScreen(
                     ) {
                         Column {
                             AdaptiveText(
-                                text = if (currentLang == Language.RU) "ТЕКУЩИЙ СЧЕТ" else "SCORE ENGINE",
+                                text = if (currentLang == Language.RU) "ТЕКУЩИЙ СЧЕТ" else "SCORE",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 9.sp,
-                                fontWeight = FontWeight.Black,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = themeColor,
-                                letterSpacing = 2.sp
+                                letterSpacing = 1.5.sp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             AdaptiveText(
-                                text = state.score.toString(),
-                                style = MaterialTheme.typography.headlineLarge,
+                                text = "${state.score}",
+                                style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Black,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             
-                            // Interactive active Combo tag wrapper
-                            Box(
-                                modifier = Modifier.height(30.dp),
-                                contentAlignment = Alignment.CenterStart
+                            // Dynamic Combo Badge
+                            AnimatedVisibility(
+                                visible = state.combo > 0,
+                                enter = scaleIn() + fadeIn(),
+                                exit = scaleOut() + fadeOut()
                             ) {
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = state.combo > 0,
-                                    enter = scaleIn() + fadeIn(),
-                                    exit = scaleOut() + fadeOut()
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.padding(top = 4.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(
-                                                androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                                    colors = listOf(Color(0xFFFF165D), Color(0xFFFF9A00))
-                                                )
-                                            )
-                                            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Text("🔥", fontSize = 10.sp)
-                                            AdaptiveText(
-                                                text = "ZETA COMBO x${state.combo}",
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = Color.White
-                                            )
-                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.LocalFireDepartment,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF5722),
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Text(
+                                            text = "COMBO x${state.combo}",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
                                     }
                                 }
                             }
@@ -245,43 +247,35 @@ fun BlockBlastScreen(
 
                         Column(horizontalAlignment = Alignment.End) {
                             AdaptiveText(
-                                text = if (currentLang == Language.RU) "АБСОЛЮТНЫЙ РЕКОРД" else "CYBER RECORD",
+                                text = if (currentLang == Language.RU) "РЕКОРД" else "HIGH SCORE",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 9.sp,
-                                fontWeight = FontWeight.Black,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                letterSpacing = 2.sp
+                                letterSpacing = 1.5.sp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = state.highScore.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(Color(0xFFFFD700))
+                                Icon(
+                                    imageVector = Icons.Default.EmojiEvents,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "$credits K",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "${state.highScore}",
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFFD700)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
                     }
                 }
 
-                Surface(
+                // 8x8 Grid Container (MD3 ElevatedCard)
+                ElevatedCard(
                     modifier = Modifier
                         .aspectRatio(1f)
                         .fillMaxWidth()
@@ -289,9 +283,10 @@ fun BlockBlastScreen(
                             boardBounds = coords.boundsInWindow()
                         },
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    tonalElevation = 2.dp
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -311,8 +306,7 @@ fun BlockBlastScreen(
                                         val cellValue = state.grid[r][c]
                                         val isFilled = cellValue != 0
                                         
-                                        // Evaluate design variables
-                                        val emptyCellColor = MaterialTheme.colorScheme.surface
+                                        val emptyCellColor = MaterialTheme.colorScheme.surfaceContainerHighest
                                         val emptyCellBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
 
                                         var cellColor = if (isFilled) blockBlastColors[cellValue % blockBlastColors.size] else emptyCellColor
@@ -320,9 +314,6 @@ fun BlockBlastScreen(
                                         var cellBorderColor = if (isFilled) cellColor.copy(alpha = 0.5f) else emptyCellBorderColor
                                         var isPreviewCell = false
 
-                                        // Dynamic preview highlight calculation
-                                        // If dragging or clicked selected block is hovering over a valid Board coordinate,
-                                        // draw the preview shape elements overlay directly!
                                         val currentDragIdx = activeDraggingIdx ?: selectedFigureIdx
                                         val targetHover = hoverRowCol
                                         
@@ -332,15 +323,14 @@ fun BlockBlastScreen(
                                                 val hoverRow = targetHover.first
                                                 val hoverCol = targetHover.second
                                                 
-                                                // Check if current cell is part of the hovering figure blocks relative to (hoverRow, hoverCol)
                                                 val isPart = figure.blocks.any { b -> 
                                                     (hoverRow + b.r == r) && (hoverCol + b.c == c) 
                                                 }
                                                 if (isPart) {
                                                     val fits = viewModel.blockBlastEngine.canPlaceFigure(figure, hoverRow, hoverCol, state.grid)
                                                     isPreviewCell = true
-                                                    cellColor = if (fits) themeColor else Color(0xFFFF2E93)
-                                                    cellOpacity = 0.75f
+                                                    cellColor = if (fits) themeColor else Color(0xFFFF5252)
+                                                    cellOpacity = 0.8f
                                                     cellBorderColor = Color.White
                                                 }
                                             }
@@ -350,15 +340,12 @@ fun BlockBlastScreen(
                                             Brush.verticalGradient(
                                                 colors = listOf(
                                                     cellColor.copy(alpha = cellOpacity),
-                                                    cellColor.copy(alpha = cellOpacity * 0.7f)
+                                                    cellColor.copy(alpha = cellOpacity * 0.75f)
                                                 )
                                             )
                                         } else {
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    emptyCellColor,
-                                                    emptyCellColor
-                                                )
+                                                colors = listOf(emptyCellColor, emptyCellColor)
                                             )
                                         }
 
@@ -374,11 +361,9 @@ fun BlockBlastScreen(
                                                     shape = RoundedCornerShape(8.dp)
                                                 )
                                                 .clickable {
-                                                    // Fallback traditional touch-tap controls for accessibility
                                                     selectedFigureIdx?.let { idx ->
                                                         val figure = state.pool.getOrNull(idx)
                                                         if (figure != null) {
-                                                            // Align figure center to the clicked cell
                                                             val targetR = (r - figure.rowsCount / 2).coerceIn(0, 8 - figure.rowsCount)
                                                             val targetC = (c - figure.colsCount / 2).coerceIn(0, 8 - figure.colsCount)
                                                             val success = viewModel.placeBlockBlastFigure(idx, targetR, targetC)
@@ -388,29 +373,28 @@ fun BlockBlastScreen(
                                                                 viewModel.triggerAudioFeedback("land")
                                                             } else {
                                                                 hintText = if (currentLang == Language.RU) 
-                                                                    "Сюда фигуру вставить нельзя!" 
-                                                                else "Selected block cannot fit here!"
+                                                                    "Фигура здесь не помещается" 
+                                                                else "Figure does not fit here"
                                                                 viewModel.triggerAudioFeedback("move")
                                                             }
                                                         }
                                                     }
                                                 }
                                         ) {
-                                            // Futuristic core cell shine dot or empty cell blueprint dot
                                             if (isFilled && !isPreviewCell) {
                                                 Box(
                                                     modifier = Modifier
                                                         .size(6.dp)
                                                         .align(Alignment.Center)
-                                                        .clip(RoundedCornerShape(50))
-                                                        .background(Color.White.copy(alpha = 0.40f))
+                                                        .clip(CircleShape)
+                                                        .background(Color.White.copy(alpha = 0.35f))
                                                 )
                                             } else if (!isFilled && !isPreviewCell) {
                                                 Box(
                                                     modifier = Modifier
                                                         .size(3.dp)
                                                         .align(Alignment.Center)
-                                                        .clip(RoundedCornerShape(50))
+                                                        .clip(CircleShape)
                                                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                                                 )
                                             }
@@ -420,13 +404,12 @@ fun BlockBlastScreen(
                             }
                         }
 
-                        // CRT Scanlines visual effect layer filter
                         if (scanlinesFilter) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 val count = size.height / 5f
                                 for (i in 0..count.toInt()) {
                                     drawRect(
-                                        color = Color.Black.copy(alpha = 0.15f),
+                                        color = Color.Black.copy(alpha = 0.12f),
                                         topLeft = Offset(0f, i * 5f),
                                         size = Size(size.width, 2.3f)
                                     )
@@ -436,69 +419,66 @@ fun BlockBlastScreen(
                     }
                 }
 
-                // Interactive User Status Banner Instructions
+                // Interactive Hint / UX Status Banner
                 Spacer(modifier = Modifier.height(10.dp))
                 
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(34.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    androidx.compose.animation.AnimatedContent(
+                    AnimatedContent(
                         targetState = hintText,
                         transitionSpec = {
                             slideInVertically { height -> height } + fadeIn() togetherWith
                             slideOutVertically { height -> -height } + fadeOut()
-                        }
+                        },
+                        label = "hint_anim"
                     ) { activeHint ->
                         if (activeHint != null) {
                             Text(
                                 text = activeHint,
-                                color = Color(0xFFFF2E93),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
                                 textAlign = TextAlign.Center
                             )
                         } else {
                             val msg = if (activeDraggingIdx != null) {
-                                if (currentLang == Language.RU) "Перетащите фигуру и отпустите на игровом поле" else "Drag and drop the figure over the board!"
+                                if (currentLang == Language.RU) "Отпустите фигуру на игровом поле" else "Release figure on the grid!"
                             } else if (selectedFigureIdx != null) {
-                                if (currentLang == Language.RU) "Нажмите на клетку поля, чтобы разместить блок" else "Tap on any grid area to place block!"
+                                if (currentLang == Language.RU) "Коснитесь клетки для размещения" else "Tap a grid cell to place!"
                             } else {
-                                if (currentLang == Language.RU) "ПЕРЕТАСКИВАЙТЕ блоки или нажмите для выбора" else "DRAG AND DROP figures, or tap to choose!"
+                                if (currentLang == Language.RU) "Перетаскивайте фигуры на поле" else "Drag & drop figures to the grid"
                             }
                             Text(
-                                text = "$msg",
-                                color = Color.Gray,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
+                                text = msg,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // POOL of 3 Figures supporting interactive touch gestures (Material 3 ElevatedCard)
+                // POOL SHELF of 3 Figures (MD3 ElevatedCard)
                 ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ),
                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = if (currentLang == Language.RU) "БЛОК-ПОЛКА (СЕНСОРНЫЙ ПЕРЕНОС)" else "BLOCK SHELF (TOUCH DRAG)",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -509,7 +489,7 @@ fun BlockBlastScreen(
                                 val isDragging = cardDragging.getOrNull(idx) ?: false
                                 val offset = cardOffsets.getOrNull(idx) ?: Offset.Zero
                                 val dragLiftY = if (isDragging) -180f else 0f
- 
+
                                 Box(
                                     modifier = Modifier
                                         .size(88.dp)
@@ -522,16 +502,16 @@ fun BlockBlastScreen(
                                             }
                                         }
                                         .offset { IntOffset(offset.x.roundToInt(), (offset.y + dragLiftY).roundToInt()) }
-                                        .clip(RoundedCornerShape(16.dp))
+                                        .clip(RoundedCornerShape(18.dp))
                                         .background(
-                                            if (isDragging) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                                            if (isDragging) MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
                                             else if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            else MaterialTheme.colorScheme.surfaceContainerHighest
                                         )
                                         .border(
-                                            width = if (isDragging) 2.dp else if (isSelected) 2.dp else 1.dp,
-                                            color = if (isDragging) MaterialTheme.colorScheme.primary else if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outlineVariant,
-                                            shape = RoundedCornerShape(16.dp)
+                                            width = if (isDragging || isSelected) 2.dp else 1.dp,
+                                            color = if (isDragging || isSelected) themeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(18.dp)
                                         )
                                         .pointerInput(idx) {
                                             detectDragGestures(
@@ -552,7 +532,6 @@ fun BlockBlastScreen(
                                                     cardOffsets[idx] = cardOffsets[idx] + dragAmount
                                                     cursorScreenPos = cursorScreenPos + dragAmount
                                                     
-                                                    // Map mouse/finger coordinates directly to grid board indices
                                                     val liftedCursorPos = cursorScreenPos + Offset(0f, -180f)
                                                     val board = boardBounds
                                                     if (board != null && board.contains(liftedCursorPos)) {
@@ -567,7 +546,6 @@ fun BlockBlastScreen(
                                                         
                                                         val poolFig = state.pool.getOrNull(idx)
                                                         if (poolFig != null) {
-                                                            // Center figure boundary relative to cell
                                                             val offsetC = (col - poolFig.colsCount / 2).coerceIn(0, 8 - poolFig.colsCount)
                                                             val offsetR = (row - poolFig.rowsCount / 2).coerceIn(0, 8 - poolFig.rowsCount)
                                                             hoverRowCol = Pair(offsetR, offsetC)
@@ -589,7 +567,7 @@ fun BlockBlastScreen(
                                                             hintText = null
                                                         } else {
                                                             viewModel.triggerAudioFeedback("gameover")
-                                                            hintText = if (currentLang == Language.RU) "Фигура здесь не помещается!" else "Figure doesn't fit here!"
+                                                            hintText = if (currentLang == Language.RU) "Фигура здесь не помещается" else "Figure does not fit here"
                                                         }
                                                     }
                                                     hoverRowCol = null
@@ -622,15 +600,8 @@ fun BlockBlastScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Placed",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint = themeColor,
                                                 modifier = Modifier.size(24.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "PLACED",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                                fontWeight = FontWeight.Bold
                                             )
                                         }
                                     }
@@ -639,8 +610,8 @@ fun BlockBlastScreen(
                         }
                     }
                 }
- 
-                // Game Over Screen Modal panel 
+
+                // Game Over Dialog
                 if (state.isGameOver) {
                     val rewardedCC = (state.score / 12).coerceAtLeast(15)
                     AlertDialog(
@@ -648,20 +619,32 @@ fun BlockBlastScreen(
                         title = {
                             Text(
                                 text = if (currentLang == Language.RU) "ИГРА ОКОНЧЕНА" else "GAME OVER",
-                                fontWeight = FontWeight.Black,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.error,
-                                letterSpacing = 1.5.sp
+                                letterSpacing = 1.sp
                             )
                         },
                         text = {
-                            Text(
-                                text = if (currentLang == Language.RU) {
-                                    "Ваш финальный счёт: ${state.score}\nНаграда: +$rewardedCC 🪙"
-                                } else {
-                                    "Your final score: ${state.score}\nReward earned: +$rewardedCC 🪙"
-                                },
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = if (currentLang == Language.RU) 
+                                        "Финальный счёт: ${state.score}" 
+                                    else 
+                                        "Final score: ${state.score}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (currentLang == Language.RU) 
+                                        "Награда: +$rewardedCC монет" 
+                                    else 
+                                        "Reward: +$rewardedCC coins",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = themeColor,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         },
                         confirmButton = {
                             Button(
@@ -670,20 +653,22 @@ fun BlockBlastScreen(
                                     viewModel.startBlockBlast()
                                     viewModel.triggerAudioFeedback("start")
                                 },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(16.dp)
                             ) {
+                                Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (currentLang == Language.RU) "ИГРАТЬ СНОВА" else "PLAY AGAIN",
-                                    fontWeight = FontWeight.Black
+                                    text = if (currentLang == Language.RU) "ЗАНОВО" else "RETRY",
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = onBack) {
-                                Text(text = if (currentLang == Language.RU) "В МЕНЮ" else "TO MENU")
+                            OutlinedButton(
+                                onClick = onBack,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text(text = if (currentLang == Language.RU) "В МЕНЮ" else "MENU")
                             }
                         }
                     )
@@ -717,15 +702,15 @@ fun MiniFigureRenderer(figure: BlockBlastFigure, color: Color) {
                             modifier = Modifier
                                 .size(cellSize)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(
-                                    if (hasBlock) color 
-                                    else Color.White.copy(alpha = 0.02f)
-                                )
-                                .border(
-                                    width = 0.5.dp,
-                                    color = if (hasBlock) Color.White.copy(alpha = 0.25f) else Color.Transparent,
-                                    shape = RoundedCornerShape(3.dp)
-                                )
+                            .background(
+                                if (hasBlock) color 
+                                else Color.White.copy(alpha = 0.02f)
+                            )
+                            .border(
+                                width = 0.5.dp,
+                                color = if (hasBlock) Color.White.copy(alpha = 0.3f) else Color.Transparent,
+                                shape = RoundedCornerShape(3.dp)
+                            )
                         )
                     }
                 }

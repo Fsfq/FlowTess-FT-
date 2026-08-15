@@ -45,7 +45,13 @@ data class HighScore(
     val playerName: String,
     val score: Int,
     val timestamp: Long = System.currentTimeMillis(),
-    val hasGradient: Boolean = false
+    val hasGradient: Boolean = false,
+    val avatarEmoji: String = "",
+    val avatarBgColorHex: String = "",
+    val avatarFrame: String = "",
+    val onlineTier: String = "BRONZE",
+    val title: String = "",
+    val uid: String = ""
 ) {
     @androidx.room.Ignore
     var customTag: String = ""
@@ -54,14 +60,18 @@ data class HighScore(
 @Entity(tableName = "user_accounts")
 data class UserAccount(
     @PrimaryKey val username: String,
-    // Хранится только SHA-256 хеш (см. PasswordHasher). Не plaintext.
-    val password: String = PasswordHasher.hash("1111333322"),
+    val password: String = "",
     val avatarColor: String = "indigo",
+    val avatarEmoji: String = "",
+    val avatarFrame: String = "standard",
     val onlineTier: String = "BRONZE",
+    val title: String = "none",
+    val customTag: String = "",
     val credits: Int = 750,
     val creationTime: Long = System.currentTimeMillis(),
     val hasGradient: Boolean = false,
-    val bonusXp: Int = 0
+    val bonusXp: Int = 0,
+    val uid: String = ""
 )
 
 @Dao
@@ -90,11 +100,11 @@ interface UserAccountDao {
     @Query("DELETE FROM user_accounts WHERE username = :username")
     suspend fun deleteAccount(username: String)
 
-    @Query("DELETE FROM user_accounts WHERE username != 'FsFq'")
+    @Query("DELETE FROM user_accounts WHERE username != 'Admin'")
     suspend fun deleteAllNonAdminAccounts()
 }
 
-@Database(entities = [HighScore::class, UserAccount::class], version = 5, exportSchema = false)
+@Database(entities = [HighScore::class, UserAccount::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun highScoreDao(): HighScoreDao
     abstract fun userAccountDao(): UserAccountDao
