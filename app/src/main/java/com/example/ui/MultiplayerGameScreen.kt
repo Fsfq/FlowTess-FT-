@@ -768,23 +768,65 @@ fun MultiplayerGameScreen(
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                             ) {
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(14.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Column(horizontalAlignment = Alignment.Start) {
-                                        Text(text = playerName, style = MaterialTheme.typography.labelSmall, color = themeColor, fontWeight = FontWeight.Bold)
-                                        Text(text = "${gameState.score} очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                                        Text(text = "${gameState.lines} линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.Start) {
+                                            Text(text = playerName, style = MaterialTheme.typography.labelSmall, color = themeColor, fontWeight = FontWeight.Bold)
+                                            Text(text = "${gameState.score} очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                            Text(text = "${gameState.lines} линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Text(text = "VS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.outline)
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(text = opponent?.name ?: "Оппонент", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                            Text(text = "$opponentScore очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                            Text(text = "$opponentLines линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
-                                    Text(text = "VS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.outline)
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(text = opponent?.name ?: "Оппонент", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                                        Text(text = "$opponentScore очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                                        Text(text = "$opponentLines линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                                    // Match Rewards & MMR
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (isWinner) Color(0xFF00E676).copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                                        ) {
+                                            Text(
+                                                text = if (isWinner) "+25 MMR 📈" else if (isDraw) "±0 MMR" else "-15 MMR 📉",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Black,
+                                                color = if (isWinner) Color(0xFF00E676) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+
+                                        if ((room?.betAmount ?: 0) > 0) {
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                                            ) {
+                                                Text(
+                                                    text = if (isWinner) "+${(room?.betAmount ?: 0) * 2} 🪙 Банк!" else if (isDraw) "${room?.betAmount} 🪙 Возврат" else "-${room?.betAmount} 🪙",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFFFFD700),
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -6434,6 +6434,59 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 }
 
 @Composable
+fun GoogleLogoIcon(modifier: Modifier = Modifier.size(20.dp)) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val radius = w * 0.40f
+        val stroke = w * 0.18f
+
+        // Red arc (top)
+        drawArc(
+            color = Color(0xFFEA4335),
+            startAngle = 180f,
+            sweepAngle = 100f,
+            useCenter = false,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+        )
+        // Yellow arc (left / bottom-left)
+        drawArc(
+            color = Color(0xFFFBBC05),
+            startAngle = 120f,
+            sweepAngle = 60f,
+            useCenter = false,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+        )
+        // Green arc (bottom / bottom-right)
+        drawArc(
+            color = Color(0xFF34A853),
+            startAngle = 0f,
+            sweepAngle = 120f,
+            useCenter = false,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+        )
+        // Blue arc (top-right)
+        drawArc(
+            color = Color(0xFF4285F4),
+            startAngle = 280f,
+            sweepAngle = 80f,
+            useCenter = false,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+        )
+        // Blue horizontal crossbar
+        drawLine(
+            color = Color(0xFF4285F4),
+            start = androidx.compose.ui.geometry.Offset(cx - stroke * 0.5f, cy),
+            end = androidx.compose.ui.geometry.Offset(cx + radius + stroke * 0.5f, cy),
+            strokeWidth = stroke,
+            cap = androidx.compose.ui.graphics.StrokeCap.Square
+        )
+    }
+}
+
+@Composable
 fun PlayerAvatarView(
     playerName: String,
     avatarEmoji: String = "",
@@ -7159,22 +7212,55 @@ fun FriendsDialog(
                                                     }
                                                 }
 
+                                                val currentRoom by viewModel.lobbyManager.currentRoom.collectAsStateWithLifecycle()
+                                                val customAvatarEmoji by viewModel.customAvatarEmoji.collectAsStateWithLifecycle()
+                                                val customAvatarBgColor by viewModel.customAvatarBgColor.collectAsStateWithLifecycle()
+                                                val equippedAvatarFrame by viewModel.equippedAvatarFrame.collectAsStateWithLifecycle()
+                                                val localPlayerName by viewModel.playerName.collectAsStateWithLifecycle()
+                                                val localTier by viewModel.onlineTier.collectAsStateWithLifecycle()
+
                                                 Row(
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
-                                                    IconButton(
-                                                        onClick = {
-                                                            onOpenLobby()
-                                                        },
-                                                        modifier = Modifier.size(36.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.SportsEsports,
-                                                            contentDescription = "Duel",
-                                                            tint = themeColor,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
+                                                    if (friend.isOnline && currentRoom != null && currentRoom!!.status == "waiting") {
+                                                        FilledTonalButton(
+                                                            onClick = {
+                                                                viewModel.triggerAudioFeedback("click")
+                                                                viewModel.lobbyManager.sendRoomInvite(
+                                                                    targetUid = friend.uid,
+                                                                    roomId = currentRoom!!.roomId,
+                                                                    roomName = currentRoom!!.name,
+                                                                    hostName = localPlayerName,
+                                                                    avatarEmoji = customAvatarEmoji,
+                                                                    avatarBgColor = customAvatarBgColor,
+                                                                    avatarFrame = equippedAvatarFrame,
+                                                                    hostTier = localTier,
+                                                                    betAmount = currentRoom!!.betAmount
+                                                                )
+                                                                actionToast = if (currentLang == Language.RU) "Приглашение отправлено!" else "Invite sent!"
+                                                            },
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text(if (currentLang == Language.RU) "Позвать" else "Invite", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                                        }
+                                                    } else {
+                                                        IconButton(
+                                                            onClick = {
+                                                                onOpenLobby()
+                                                            },
+                                                            modifier = Modifier.size(36.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.SportsEsports,
+                                                                contentDescription = "Duel",
+                                                                tint = themeColor,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        }
                                                     }
 
                                                     IconButton(

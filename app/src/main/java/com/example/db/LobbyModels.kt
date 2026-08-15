@@ -442,3 +442,54 @@ data class RoomInvite(
         )
     }
 }
+
+data class PresenceUser(
+    val uid: String = "",
+    val username: String = "",
+    val onlineTier: String = "BRONZE",
+    val hasGradient: Boolean = false,
+    val avatarEmoji: String = "",
+    val avatarBgColor: String = "",
+    val avatarFrame: String = "standard",
+    val winStreak: Int = 0,
+    val rating: Int = 1000,
+    val title: String = "",
+    val isOnline: Boolean = true,
+    val lastSeen: Long = 0L
+) {
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "uid" to uid,
+            "username" to username,
+            "onlineTier" to onlineTier,
+            "hasGradient" to hasGradient,
+            "avatarEmoji" to avatarEmoji,
+            "avatarBgColor" to avatarBgColor,
+            "avatarFrame" to avatarFrame,
+            "winStreak" to winStreak,
+            "rating" to rating,
+            "title" to title,
+            "isOnline" to isOnline,
+            "lastSeen" to lastSeen
+        )
+    }
+
+    companion object {
+        fun fromMap(map: Map<String, Any>): PresenceUser {
+            return PresenceUser(
+                uid = map["uid"] as? String ?: "",
+                username = (map["username"] as? String) ?: (map["playerName"] as? String) ?: "Player",
+                onlineTier = (map["onlineTier"] as? String) ?: (map["rank"] as? String) ?: "BRONZE",
+                hasGradient = (map["hasGradient"] as? Boolean) ?: (map["hasNicknameGradient"] as? Boolean) ?: false,
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: "standard",
+                winStreak = (map["winStreak"] as? Number)?.toInt() ?: 0,
+                rating = (map["rating"] as? Number)?.toInt() ?: 1000,
+                title = (map["title"] as? String) ?: (map["equippedTitle"] as? String) ?: "",
+                isOnline = (map["isOnline"] as? Boolean) ?: true,
+                lastSeen = (map["lastSeen"] as? Number)?.toLong() ?: 0L
+            )
+        }
+    }
+}

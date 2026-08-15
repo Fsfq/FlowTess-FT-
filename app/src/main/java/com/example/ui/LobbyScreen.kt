@@ -1372,6 +1372,26 @@ fun RoomListItemCard(
                                 )
                             }
                         }
+                        if (room.betAmount > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(11.dp))
+                                    Text(
+                                        text = "${room.betAmount * 2} 🪙",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700)
+                                    )
+                                }
+                            }
+                        }
                         if (room.roundTarget > 1) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -2036,6 +2056,27 @@ fun LobbyRoomView(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (room.betAmount > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                                modifier = Modifier.padding(top = 2.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
+                                    Text(
+                                        text = "${if (currentLang == Language.RU) "Банк" else "Pot"}: ${room.betAmount * 2} 🪙",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700)
+                                    )
+                                }
+                            }
+                        }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -2082,6 +2123,91 @@ fun LobbyRoomView(
             )
         }
     ) { padding ->
+        var showInviteFriendsDialog by remember { mutableStateOf(false) }
+
+        if (showInviteFriendsDialog) {
+            val friends by viewModel.friendsList.collectAsStateWithLifecycle()
+            AlertDialog(
+                onDismissRequest = { showInviteFriendsDialog = false },
+                title = {
+                    Text(
+                        text = if (currentLang == Language.RU) "Пригласить друга в дуэль" else "Invite Friend to Duel",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    if (friends.isEmpty()) {
+                        Text(
+                            text = if (currentLang == Language.RU) "У вас пока нет друзей в списке." else "You have no friends in your list.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(friends) { friend ->
+                                ElevatedCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            PlayerAvatarView(
+                                                playerName = friend.username,
+                                                avatarEmoji = friend.avatarEmoji,
+                                                avatarBgColorHex = friend.avatarBgColor,
+                                                avatarFrame = friend.avatarFrame,
+                                                size = 36.dp,
+                                                themeColor = themeColor
+                                            )
+                                            Column {
+                                                Text(friend.username, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                                Text(friend.onlineTier, style = MaterialTheme.typography.labelSmall, color = themeColor)
+                                            }
+                                        }
+                                        Button(
+                                            onClick = {
+                                                viewModel.lobbyManager.sendRoomInvite(
+                                                    targetUid = friend.uid,
+                                                    roomId = room.roomId,
+                                                    roomName = room.name,
+                                                    hostName = localName,
+                                                    avatarEmoji = customAvatarEmoji,
+                                                    avatarBgColor = customAvatarBgColor,
+                                                    avatarFrame = equippedAvatarFrame,
+                                                    hostTier = localTier,
+                                                    betAmount = room.betAmount
+                                                )
+                                                viewModel.triggerAudioFeedback("success")
+                                                showInviteFriendsDialog = false
+                                            },
+                                            shape = RoundedCornerShape(10.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(if (currentLang == Language.RU) "Позвать" else "Invite", style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showInviteFriendsDialog = false }) {
+                        Text(if (currentLang == Language.RU) "Закрыть" else "Close")
+                    }
+                }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -2111,7 +2237,10 @@ fun LobbyRoomView(
                     avatarBgColor = hostPlayer?.avatarBgColor ?: "",
                     avatarFrame = hostPlayer?.avatarFrame ?: "standard",
                     modifier = Modifier.weight(1f),
-                    hasGradient = hostPlayer?.hasGradient ?: false
+                    hasGradient = hostPlayer?.hasGradient ?: false,
+                    winStreak = hostPlayer?.winStreak ?: 0,
+                    rating = hostPlayer?.rating ?: 1000,
+                    customTag = hostPlayer?.customTag ?: ""
                 )
 
                 // Neon VS Badge
@@ -2136,7 +2265,7 @@ fun LobbyRoomView(
                     ElevatedCard(
                         modifier = Modifier
                             .weight(1f)
-                            .height(150.dp),
+                            .height(168.dp),
                         shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -2145,27 +2274,47 @@ fun LobbyRoomView(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(12.dp),
+                                .padding(10.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            CircularProgressIndicator(
-                                color = themeColor,
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.5.dp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = if (currentLang == Language.RU) "Ожидание игрока..." else "Waiting for player...",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "${if (currentLang == Language.RU) "Код" else "Code"}: ${room.roomId}",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = themeColor
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = themeColor,
+                                    modifier = Modifier.size(22.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Text(
+                                    text = if (currentLang == Language.RU) "Ожидание..." else "Waiting...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${if (currentLang == Language.RU) "Код" else "Code"}: ${room.roomId}",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = themeColor
+                                )
+                            }
+                            if (isMeHost) {
+                                FilledTonalButton(
+                                    onClick = { showInviteFriendsDialog = true },
+                                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (currentLang == Language.RU) "Позвать друга" else "Invite Friend",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {
@@ -2180,7 +2329,10 @@ fun LobbyRoomView(
                         avatarBgColor = guestPlayer.avatarBgColor,
                         avatarFrame = guestPlayer.avatarFrame,
                         modifier = Modifier.weight(1f),
-                        hasGradient = guestPlayer.hasGradient
+                        hasGradient = guestPlayer.hasGradient,
+                        winStreak = guestPlayer.winStreak,
+                        rating = guestPlayer.rating,
+                        customTag = guestPlayer.customTag
                     )
                 }
             }
@@ -2297,10 +2449,13 @@ fun RoomPlayerCard(
     avatarBgColor: String = "",
     avatarFrame: String = "standard",
     modifier: Modifier = Modifier,
-    hasGradient: Boolean = false
+    hasGradient: Boolean = false,
+    winStreak: Int = 0,
+    rating: Int = 1000,
+    customTag: String = ""
 ) {
     ElevatedCard(
-        modifier = modifier.height(150.dp),
+        modifier = modifier.height(168.dp),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -2310,21 +2465,41 @@ fun RoomPlayerCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(8.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = themeColor.copy(alpha = 0.15f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
             ) {
-                Text(
-                    text = roleTitle,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    fontWeight = FontWeight.ExtraBold,
-                    color = themeColor,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = themeColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = roleTitle,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = themeColor,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+                if (winStreak > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFFF5722).copy(alpha = 0.18f)
+                    ) {
+                        Text(
+                            text = "🔥 x$winStreak",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFFF5722),
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
 
             // Circular Player Avatar
@@ -2333,7 +2508,7 @@ fun RoomPlayerCard(
                 avatarEmoji = avatarEmoji,
                 avatarBgColorHex = avatarBgColor,
                 avatarFrame = avatarFrame,
-                size = 46.dp,
+                size = 44.dp,
                 themeColor = themeColor,
                 showOnlineDot = true,
                 isOnline = true
@@ -2341,17 +2516,40 @@ fun RoomPlayerCard(
 
             val playerColor = parseHexColor(avatarBgColor, themeColor)
             val playerBrush = rememberAnimatedNicknameBrush(baseColor = playerColor)
-            Text(
-                text = playerName,
-                style = if (hasGradient) {
-                    MaterialTheme.typography.titleSmall.copy(brush = playerBrush)
-                } else {
-                    MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.onSurface)
-                },
-                fontWeight = FontWeight.ExtraBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    if (customTag.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = "[$customTag]",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFFD700),
+                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = playerName,
+                        style = if (hasGradient) {
+                            MaterialTheme.typography.labelMedium.copy(brush = playerBrush)
+                        } else {
+                            MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+                        },
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = "MMR $rating • $playerTier",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Surface(
                 shape = RoundedCornerShape(10.dp),
@@ -2379,3 +2577,4 @@ fun RoomPlayerCard(
         }
     }
 }
+
