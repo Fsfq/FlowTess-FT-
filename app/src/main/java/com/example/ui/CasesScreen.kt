@@ -1305,30 +1305,34 @@ fun CasesScreen(
                                     }
                                 }
                             } else {
-                                val invCols = if (widthDp >= 1000.dp) 4 else if (widthDp >= 600.dp) 3 else 2
-                                val cardW = (widthDp - 32.dp - (10.dp * (invCols - 1))) / invCols
-
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .verticalScroll(rememberScrollState())
-                                        .weight(1f)
+                                        .weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    FlowRow(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        filteredInventory.forEach { invItem ->
-                                            InventoryTacticalCard(
-                                                invItem = invItem,
-                                                isEquipped = isItemCurrentlyEquipped(invItem.item),
-                                                currentLang = currentLang,
-                                                modifier = Modifier.width(cardW),
-                                                onInspect = { inspectingItem = invItem },
-                                                onEquip = { equipInventoryItem(invItem) },
-                                                onSell = { sellInventoryItem(invItem) }
-                                            )
+                                    filteredInventory.chunked(2).forEach { rowPair ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            for (invItem in rowPair) {
+                                                Box(modifier = Modifier.weight(1f)) {
+                                                    InventoryTacticalCard(
+                                                        invItem = invItem,
+                                                        isEquipped = isItemCurrentlyEquipped(invItem.item),
+                                                        currentLang = currentLang,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        onInspect = { inspectingItem = invItem },
+                                                        onEquip = { equipInventoryItem(invItem) },
+                                                        onSell = { sellInventoryItem(invItem) }
+                                                    )
+                                                }
+                                            }
+                                            if (rowPair.size == 1) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(24.dp))

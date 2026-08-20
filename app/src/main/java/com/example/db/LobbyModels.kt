@@ -307,6 +307,7 @@ data class PublicUserProfile(
     val avatarBgColor: String = "",
     val avatarFrame: String = "standard",
     val avatarBase64: String = "",
+    val customBackgroundBase64: String = "",
     val hasGradient: Boolean = false,
     val highScore: Int = 0,
     val userLevel: Int = 1,
@@ -315,7 +316,17 @@ data class PublicUserProfile(
     val createdAt: Long = 0L,
     val credits: Int = 0,
     val rating: Int = 1000,
-    val winStreak: Int = 0
+    val winStreak: Int = 0,
+    val gamesPlayed: Int = 0,
+    val clearedLines: Int = 0,
+    val tetrisesCount: Int = 0,
+    val maxSpeedReached: Int = 0,
+    val prestigeLevel: Int = 0,
+    val customTag: String = "",
+    val themeColor: String = "indigo",
+    val boardSkin: String = "cyberpunk",
+    val blockStyle: String = "glass",
+    val unlockedAchievements: List<String> = emptyList()
 ) {
     companion object {
         fun fromMap(uid: String, map: Map<String, Any>): PublicUserProfile {
@@ -332,6 +343,10 @@ data class PublicUserProfile(
                 ?: (map["coins"] as? Number)?.toInt()
                 ?: (map["user_credits"] as? Number)?.toInt()
                 ?: 0
+
+            val achievementsList = (map["unlocked_achievements"] as? List<*>)?.mapNotNull { it as? String }
+                ?: (map["achievements"] as? List<*>)?.mapNotNull { it as? String }
+                ?: emptyList()
 
             return PublicUserProfile(
                 uid = uid,
@@ -361,6 +376,10 @@ data class PublicUserProfile(
                 avatarBase64 = (map["custom_avatar_base64"] as? String)
                     ?: (map["avatarBase64"] as? String)
                     ?: "",
+                customBackgroundBase64 = (map["custom_background_base64"] as? String)
+                    ?: (map["customBackgroundBase64"] as? String)
+                    ?: (map["backgroundBase64"] as? String)
+                    ?: "",
                 hasGradient = (map["has_nickname_gradient"] as? Boolean)
                     ?: (map["hasGradient"] as? Boolean)
                     ?: (map["hasNicknameGradient"] as? Boolean)
@@ -388,7 +407,35 @@ data class PublicUserProfile(
                     ?: 1000,
                 winStreak = (map["win_streak"] as? Number)?.toInt()
                     ?: (map["winStreak"] as? Number)?.toInt()
-                    ?: 0
+                    ?: 0,
+                gamesPlayed = (map["stats_games_played"] as? Number)?.toInt()
+                    ?: (map["gamesPlayed"] as? Number)?.toInt()
+                    ?: 0,
+                clearedLines = (map["stats_cleared_lines"] as? Number)?.toInt()
+                    ?: (map["clearedLines"] as? Number)?.toInt()
+                    ?: 0,
+                tetrisesCount = (map["stats_tetrises_count"] as? Number)?.toInt()
+                    ?: (map["tetrisesCount"] as? Number)?.toInt()
+                    ?: 0,
+                maxSpeedReached = (map["stats_max_speed_reached"] as? Number)?.toInt()
+                    ?: (map["maxSpeed"] as? Number)?.toInt()
+                    ?: 0,
+                prestigeLevel = (map["prestige_level"] as? Number)?.toInt()
+                    ?: (map["prestige"] as? Number)?.toInt()
+                    ?: 0,
+                customTag = (map["custom_tag"] as? String)
+                    ?: (map["tag"] as? String)
+                    ?: "",
+                themeColor = (map["setting_theme_color"] as? String)
+                    ?: (map["themeColor"] as? String)
+                    ?: "indigo",
+                boardSkin = (map["board_color_skin"] as? String)
+                    ?: (map["boardSkin"] as? String)
+                    ?: "cyberpunk",
+                blockStyle = (map["block_style"] as? String)
+                    ?: (map["blockStyle"] as? String)
+                    ?: "glass",
+                unlockedAchievements = achievementsList
             )
         }
     }

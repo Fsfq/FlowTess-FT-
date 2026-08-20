@@ -48,18 +48,18 @@ val EXTENDED_SHAPES = listOf(
 )
 
 enum class GameMode(val code: String, val displayNameEn: String, val displayNameRu: String) {
-    CLASSIC("classic", "Classic Match", "Классический"),
-    EXTENDED("extended", "Extended Shapes", "Расширенный"),
-    FAST_RUN("fast_run", "Hyper Blast (Lvl 10)", "Гипер-Режим (Ур 10)"),
-    REVERSE_CONTROLS("reverse", "Chaos Controls", "Хаос-Управление"),
-    BLOCK_BLAST("block_blast", "ZETA Arena", "ZETA Арена"),
-    ZEN_FLOW("zen", "Zen Cosmic Flow", "Дзен Космо-Поток"),
-    TIME_ATTACK("time_attack", "Time Attack Protocol", "Протокол Тайм-Атак"),
-    PULSE_EXTREME("pulse_extreme", "Vortex Pulse Mode", "Импульсный Вихрь"),
-    MIRROR_DIMENSION("mirror", "Mirror Dimension", "Зеркальный Мир"),
-    PENTARY_CHAOS("penta", "Pentary Chaos", "Пента-Хаос"),
-    RELAX("relax", "Relax Sandbox", "Релакс-Песочница"),
-    PERFECTIONIST("perfectionist", "Perfectionist", "Перфекционист")
+    CLASSIC("classic", "Standard", "Стандарт"),
+    EXTENDED("extended", "Spectrum", "Спектр"),
+    FAST_RUN("fast_run", "Sprint", "Спринт"),
+    REVERSE_CONTROLS("reverse", "Inversion", "Инверсия"),
+    BLOCK_BLAST("block_blast", "Zeta", "Zeta"),
+    ZEN_FLOW("zen", "Zen", "Дзен"),
+    TIME_ATTACK("time_attack", "Blitz", "Блиц"),
+    PULSE_EXTREME("pulse_extreme", "Tide", "Прилив"),
+    MIRROR_DIMENSION("mirror", "Mirror", "Зеркало"),
+    PENTARY_CHAOS("penta", "Chaos", "Хаос"),
+    RELAX("relax", "Sandbox", "Песочница"),
+    PERFECTIONIST("perfectionist", "Perfection", "Идеал")
 }
 
 data class PlacementHint(
@@ -67,7 +67,9 @@ data class PlacementHint(
     val targetPos: Position,
     val score: Double,
     val shouldHold: Boolean = false,
-    val holdReason: String = ""
+    val holdReason: String = "",
+    val holes: Int = 0,
+    val linesCleared: Int = 0
 )
 
 data class GameState(
@@ -511,13 +513,22 @@ class GameEngine {
             if (candidateHoldPiece != null) {
                 val holdBest = evaluateBestPlacementForPiece(gridMasks, candidateHoldPiece)
                 if (holdBest != null) {
-                    // Если текущая фигура создает дырки или имеет очень низкий скор, а холд намного чище:
-                    val isCurrentBad = currentBest.score < -80.0
-                    val isHoldSignificantlyBetter = holdBest.score > currentBest.score + 75.0
-                    if (isCurrentBad || isHoldSignificantlyBetter) {
+                    // Строгие условия рекомендации Hold:
+                    // 1. Текущая фигура создает новые дыры (holes > 0), а фигура из холда ставится идеально чисто (0 дыр)
+                    val currentCreatesHoles = currentBest.holes > 0 && holdBest.holes == 0
+                    // 2. В реальном холде есть фигура (holdPiece != null), которая дает Tetris (4 линии), а текущая нет
+                    val holdGivesTetris = holdPiece != null && holdBest.linesCleared == 4 && currentBest.linesCleared < 4
+                    // 3. В реальном холде есть фигура, которая дает очистку линий при отсутствии очистки у текущей и значительном преимуществе скора (> 350.0)
+                    val holdGivesCleanClear = holdPiece != null && currentBest.linesCleared == 0 && holdBest.linesCleared >= 2 && (holdBest.score - currentBest.score > 350.0)
+
+                    if (currentCreatesHoles || holdGivesTetris || holdGivesCleanClear) {
                         return currentBest.copy(
                             shouldHold = true,
-                            holdReason = if (isCurrentBad) "Текущая фигура портит структуру" else "Фигура из холда дает чистое комбо"
+                            holdReason = when {
+                                currentCreatesHoles -> "Текущая фигура создает просвет"
+                                holdGivesTetris -> "В холде фигура для Тетриса"
+                                else -> "Фигура из холда дает комбо"
+                            }
                         )
                     }
                 }
@@ -705,7 +716,13 @@ class GameEngine {
 
                     if (evalScore > maxScore) {
                         maxScore = evalScore
-                        bestHint = PlacementHint(rotShape, targetPos, evalScore)
+                        bestHint = PlacementHint(
+                            shape = rotShape,
+                            targetPos = targetPos,
+                            score = evalScore,
+                            holes = holes,
+                            linesCleared = completeLines
+                        )
                     }
                 }
             }
