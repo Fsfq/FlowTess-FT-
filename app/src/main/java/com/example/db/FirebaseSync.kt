@@ -30,7 +30,7 @@ object FirebaseSync {
     }
 
     // Конвертация файлов в base64 для хранения аватаров/фонов в Firestore
-    private fun fileToBase64(file: java.io.File): String? {
+    fun fileToBase64(file: java.io.File): String? {
         if (!file.exists()) return null
         return try {
             val bytes = file.readBytes()
@@ -41,7 +41,7 @@ object FirebaseSync {
         }
     }
 
-    private fun base64ToFile(base64Str: String, file: java.io.File) {
+    fun base64ToFile(base64Str: String, file: java.io.File) {
         try {
             val bytes = android.util.Base64.decode(base64Str, android.util.Base64.NO_WRAP)
             file.writeBytes(bytes)
@@ -97,6 +97,15 @@ object FirebaseSync {
             "prestige_level" to profilePrefs.getInt("prestige_level", 0),
             "custom_tag" to (profilePrefs.getString("custom_tag", "") ?: ""),
             "custom_tag_unlocked" to profilePrefs.getBoolean("custom_tag_unlocked", false),
+            "crate_keys" to run {
+                val map = mutableMapOf<String, Int>()
+                val crates = listOf("wooden", "iron", "golden", "platinum", "legendary", "diamond", "red_crate_lite", "red_crate")
+                for (c in crates) {
+                    val k = tetrisPrefs.getInt("crate_key_$c", 0)
+                    if (k > 0) map[c] = k
+                }
+                map
+            },
             "unlocked_achievements" to unlockedAchievements,
             "last_synced_timestamp" to System.currentTimeMillis(),
             "is_online" to true,
@@ -142,12 +151,8 @@ object FirebaseSync {
             "multiplayer_launches" to tetrisPrefs.getInt("multiplayer_launches", 0)
         )
 
-        if (avatarBase64 != null) {
-            data["custom_avatar_base64"] = avatarBase64
-        }
-        if (bgBase64 != null) {
-            data["custom_background_base64"] = bgBase64
-        }
+        data["custom_avatar_base64"] = avatarBase64 ?: ""
+        data["custom_background_base64"] = bgBase64 ?: ""
 
         firestore.collection("users").document(user.uid).set(data, SetOptions.merge())
             .addOnSuccessListener {
@@ -244,9 +249,10 @@ object FirebaseSync {
                     editorTetris.putString("online_tier", it)
                 }
 
-                val localCredits = tetrisPrefs.getInt("credits", 750)
-                val cloudCredits = (data["credits"] as? Long)?.toInt() ?: localCredits
-                editorTetris.putInt("credits", maxOf(localCredits, cloudCredits))
+                val cloudCredits = (data["credits"] as? Long)?.toInt()
+                if (cloudCredits != null) {
+                    editorTetris.putInt("credits", cloudCredits)
+                }
 
                 val localCubeSkins = profilePrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
                 val cloudCubeSkins = (data["purchased_cube_skins"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
@@ -266,17 +272,27 @@ object FirebaseSync {
                 val hasGradLocal = profilePrefs.getBoolean("has_nickname_gradient", false)
                 editorProfile.putBoolean("has_nickname_gradient", hasGradCloud || hasGradLocal)
 
-                val localXp = profilePrefs.getInt("bonus_xp", 0)
-                val cloudXp = (data["bonus_xp"] as? Long)?.toInt() ?: localXp
-                editorProfile.putInt("bonus_xp", maxOf(localXp, cloudXp))
-                val localPrestige = profilePrefs.getInt("prestige_level", 0)
-                val cloudPrestige = (data["prestige_level"] as? Long)?.toInt() ?: localPrestige
-                editorProfile.putInt("prestige_level", maxOf(localPrestige, cloudPrestige))
+                val cloudXp = (data["bonus_xp"] as? Long)?.toInt()
+                if (cloudXp != null) {
+                    editorProfile.putInt("bonus_xp", cloudXp)
+                }
+                val cloudPrestige = (data["prestige_level"] as? Long)?.toInt()
+                if (cloudPrestige != null) {
+                    editorProfile.putInt("prestige_level", cloudPrestige)
+                }
 
                 (data["custom_tag"] as? String)?.let { editorProfile.putString("custom_tag", it) }
                 val tagUnlockedCloud = data["custom_tag_unlocked"] as? Boolean ?: false
                 val tagUnlockedLocal = profilePrefs.getBoolean("custom_tag_unlocked", false)
                 editorProfile.putBoolean("custom_tag_unlocked", tagUnlockedCloud || tagUnlockedLocal)
+
+                // Ключи к кейсам
+                (data["crate_keys"] as? Map<*, *>)?.forEach { (k, v) ->
+                    val crateId = k as? String ?: return@forEach
+                    val count = (v as? Number)?.toInt() ?: return@forEach
+                    val localCount = tetrisPrefs.getInt("crate_key_$crateId", 0)
+                    editorTetris.putInt("crate_key_$crateId", maxOf(localCount, count))
+                }
                 
                 // Достижения
                 (data["unlocked_achievements"] as? List<*>)?.mapNotNull { it as? String }?.forEach { achId ->
@@ -355,6 +371,23 @@ object FirebaseSync {
             }
             .addOnFailureListener {
                 continuation.resume(null)
+            }
+    }
+
+    // Atomic cloud credits update via FieldValue.increment to prevent race conditions
+    suspend fun adjustCloudCredits(delta: Long): Boolean = suspendCoroutine { continuation ->
+        val user = auth.currentUser
+        if (user == null) {
+            continuation.resume(false)
+            return@suspendCoroutine
+        }
+        firestore.collection("users").document(user.uid)
+            .update("credits", com.google.firebase.firestore.FieldValue.increment(delta))
+            .addOnSuccessListener {
+                continuation.resume(true)
+            }
+            .addOnFailureListener {
+                continuation.resume(false)
             }
     }
 }

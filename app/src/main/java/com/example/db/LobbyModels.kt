@@ -121,7 +121,9 @@ data class RoomPlayer(
     val avatarFrame: String = "standard",
     val winStreak: Int = 0,
     val rating: Int = 1000,
-    val customTag: String = ""
+    val customTag: String = "",
+    val avatarBase64: String = "",
+    val credits: Int = 0
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -135,7 +137,9 @@ data class RoomPlayer(
             "avatarFrame" to avatarFrame,
             "winStreak" to winStreak,
             "rating" to rating,
-            "customTag" to customTag
+            "customTag" to customTag,
+            "avatarBase64" to avatarBase64,
+            "credits" to credits
         )
     }
 
@@ -147,12 +151,14 @@ data class RoomPlayer(
                 tier = map["tier"] as? String ?: "BRONZE",
                 isReady = map["isReady"] as? Boolean ?: false,
                 hasGradient = (map["hasGradient"] as? Boolean) ?: (map["hasNicknameGradient"] as? Boolean) ?: false,
-                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: "",
-                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: "",
-                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: "standard",
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
                 winStreak = (map["winStreak"] as? Number)?.toInt() ?: 0,
                 rating = (map["rating"] as? Number)?.toInt() ?: 1000,
-                customTag = map["customTag"] as? String ?: ""
+                customTag = map["customTag"] as? String ?: "",
+                avatarBase64 = (map["avatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: "",
+                credits = (map["credits"] as? Number)?.toInt() ?: (map["balance"] as? Number)?.toInt() ?: 0
             )
         }
     }
@@ -169,6 +175,7 @@ data class ChatMessage(
     val senderAvatarEmoji: String = "",
     val senderAvatarBgColor: String = "",
     val senderAvatarFrame: String = "standard",
+    val senderAvatarBase64: String = "",
     val replyToSender: String = "",
     val replyToText: String = "",
     val reactions: Map<String, List<String>> = emptyMap() // emoji -> list of UIDs
@@ -185,6 +192,7 @@ data class ChatMessage(
             "senderAvatarEmoji" to senderAvatarEmoji,
             "senderAvatarBgColor" to senderAvatarBgColor,
             "senderAvatarFrame" to senderAvatarFrame,
+            "senderAvatarBase64" to senderAvatarBase64,
             "replyToSender" to replyToSender,
             "replyToText" to replyToText,
             "reactions" to reactions
@@ -213,9 +221,10 @@ data class ChatMessage(
                 timestamp = (map["timestamp"] as? Long) ?: (map["timestamp"] as? Number)?.toLong() ?: 0L,
                 hasGradient = map["hasGradient"] as? Boolean ?: false,
                 senderTier = map["senderTier"] as? String ?: "BRONZE",
-                senderAvatarEmoji = map["senderAvatarEmoji"] as? String ?: "",
-                senderAvatarBgColor = map["senderAvatarBgColor"] as? String ?: "",
-                senderAvatarFrame = map["senderAvatarFrame"] as? String ?: "standard",
+                senderAvatarEmoji = (map["senderAvatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
+                senderAvatarBgColor = (map["senderAvatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
+                senderAvatarFrame = (map["senderAvatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
+                senderAvatarBase64 = (map["senderAvatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: "",
                 replyToSender = map["replyToSender"] as? String ?: "",
                 replyToText = map["replyToText"] as? String ?: "",
                 reactions = parsedReactions
@@ -231,11 +240,13 @@ data class FriendUser(
     val avatarEmoji: String = "",
     val avatarBgColor: String = "",
     val avatarFrame: String = "standard",
+    val avatarBase64: String = "",
     val hasGradient: Boolean = false,
     val isOnline: Boolean = false,
     val status: String = "accepted", // "accepted", "pending_incoming", "pending_outgoing"
     val lastSeen: Long = 0L,
-    val customTag: String = ""
+    val customTag: String = "",
+    val credits: Int = 0
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -245,28 +256,44 @@ data class FriendUser(
             "avatarEmoji" to avatarEmoji,
             "avatarBgColor" to avatarBgColor,
             "avatarFrame" to avatarFrame,
+            "avatarBase64" to avatarBase64,
             "hasGradient" to hasGradient,
             "isOnline" to isOnline,
             "status" to status,
             "lastSeen" to lastSeen,
-            "customTag" to customTag
+            "customTag" to customTag,
+            "credits" to credits
         )
     }
 
     companion object {
         fun fromMap(map: Map<String, Any>): FriendUser {
+            val rawLastSeen = (map["lastSeen"] as? Number)?.toLong()
+                ?: (map["last_synced_timestamp"] as? Number)?.toLong()
+                ?: (map["lastActive"] as? Number)?.toLong()
+                ?: 0L
+            val isRecentlyActive = (System.currentTimeMillis() - rawLastSeen) < 120_000L
+            val rawOnline = (map["isOnline"] as? Boolean) ?: (map["is_online"] as? Boolean) ?: false
+            val computedOnline = rawOnline && (rawLastSeen == 0L || isRecentlyActive)
+            val credits = (map["credits"] as? Number)?.toInt()
+                ?: (map["balance"] as? Number)?.toInt()
+                ?: (map["coins"] as? Number)?.toInt()
+                ?: 0
+
             return FriendUser(
                 uid = map["uid"] as? String ?: "",
-                username = map["username"] as? String ?: "",
-                onlineTier = map["onlineTier"] as? String ?: "BRONZE",
-                avatarEmoji = map["avatarEmoji"] as? String ?: "",
-                avatarBgColor = map["avatarBgColor"] as? String ?: "",
-                avatarFrame = map["avatarFrame"] as? String ?: "standard",
-                hasGradient = map["hasGradient"] as? Boolean ?: false,
-                isOnline = map["isOnline"] as? Boolean ?: false,
+                username = (map["username"] as? String) ?: (map["playerName"] as? String) ?: "",
+                onlineTier = (map["onlineTier"] as? String) ?: (map["rank"] as? String) ?: "BRONZE",
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
+                avatarBase64 = (map["avatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: "",
+                hasGradient = (map["hasGradient"] as? Boolean) ?: (map["has_nickname_gradient"] as? Boolean) ?: false,
+                isOnline = computedOnline,
                 status = map["status"] as? String ?: "accepted",
-                lastSeen = (map["lastSeen"] as? Long) ?: (map["lastSeen"] as? Number)?.toLong() ?: 0L,
-                customTag = map["customTag"] as? String ?: ""
+                lastSeen = rawLastSeen,
+                customTag = (map["customTag"] as? String) ?: (map["custom_tag"] as? String) ?: "",
+                credits = credits
             )
         }
     }
@@ -279,16 +306,33 @@ data class PublicUserProfile(
     val avatarEmoji: String = "",
     val avatarBgColor: String = "",
     val avatarFrame: String = "standard",
+    val avatarBase64: String = "",
     val hasGradient: Boolean = false,
     val highScore: Int = 0,
     val userLevel: Int = 1,
     val title: String = "",
     val isOnline: Boolean = false,
     val createdAt: Long = 0L,
-    val credits: Int = 0
+    val credits: Int = 0,
+    val rating: Int = 1000,
+    val winStreak: Int = 0
 ) {
     companion object {
         fun fromMap(uid: String, map: Map<String, Any>): PublicUserProfile {
+            val rawLastSeen = (map["last_synced_timestamp"] as? Number)?.toLong()
+                ?: (map["lastActive"] as? Number)?.toLong()
+                ?: (map["lastSeen"] as? Number)?.toLong()
+                ?: (map["creationTime"] as? Number)?.toLong()
+                ?: 0L
+            val isRecentlyActive = (System.currentTimeMillis() - rawLastSeen) < 120_000L
+            val rawOnline = (map["isOnline"] as? Boolean) ?: (map["is_online"] as? Boolean) ?: false
+            val computedOnline = rawOnline && (rawLastSeen == 0L || isRecentlyActive)
+            val credits = (map["credits"] as? Number)?.toInt()
+                ?: (map["balance"] as? Number)?.toInt()
+                ?: (map["coins"] as? Number)?.toInt()
+                ?: (map["user_credits"] as? Number)?.toInt()
+                ?: 0
+
             return PublicUserProfile(
                 uid = uid,
                 username = (map["username"] as? String)
@@ -302,21 +346,28 @@ data class PublicUserProfile(
                 avatarEmoji = (map["custom_avatar_emoji"] as? String)
                     ?: (map["avatarEmoji"] as? String)
                     ?: (map["customAvatarEmoji"] as? String)
+                    ?: (map["emoji"] as? String)
                     ?: "",
                 avatarBgColor = (map["custom_avatar_bg_color"] as? String)
                     ?: (map["avatarBgColor"] as? String)
                     ?: (map["customAvatarBgColor"] as? String)
+                    ?: (map["bgColor"] as? String)
                     ?: "",
                 avatarFrame = (map["equipped_avatar_frame"] as? String)
                     ?: (map["avatarFrame"] as? String)
                     ?: (map["equippedAvatarFrame"] as? String)
+                    ?: (map["frame"] as? String)
                     ?: "standard",
+                avatarBase64 = (map["custom_avatar_base64"] as? String)
+                    ?: (map["avatarBase64"] as? String)
+                    ?: "",
                 hasGradient = (map["has_nickname_gradient"] as? Boolean)
                     ?: (map["hasGradient"] as? Boolean)
                     ?: (map["hasNicknameGradient"] as? Boolean)
                     ?: false,
                 highScore = (map["highScore"] as? Number)?.toInt()
                     ?: (map["score"] as? Number)?.toInt()
+                    ?: (map["stats_high_score"] as? Number)?.toInt()
                     ?: 0,
                 userLevel = (map["user_level"] as? Number)?.toInt()
                     ?: (map["userLevel"] as? Number)?.toInt()
@@ -325,12 +376,19 @@ data class PublicUserProfile(
                     ?: (map["title"] as? String)
                     ?: (map["equippedTitle"] as? String)
                     ?: "",
-                isOnline = (map["isOnline"] as? Boolean) ?: false,
+                isOnline = computedOnline,
                 createdAt = (map["creationTime"] as? Number)?.toLong()
                     ?: (map["createdAt"] as? Number)?.toLong()
                     ?: (map["timestamp"] as? Number)?.toLong()
                     ?: 0L,
-                credits = (map["credits"] as? Number)?.toInt() ?: 0
+                credits = credits,
+                rating = (map["online_rating"] as? Number)?.toInt()
+                    ?: (map["rating"] as? Number)?.toInt()
+                    ?: (map["elo"] as? Number)?.toInt()
+                    ?: 1000,
+                winStreak = (map["win_streak"] as? Number)?.toInt()
+                    ?: (map["winStreak"] as? Number)?.toInt()
+                    ?: 0
             )
         }
     }
@@ -412,7 +470,8 @@ data class RoomInvite(
     val hostAvatarFrame: String = "standard",
     val hostTier: String = "BRONZE",
     val betAmount: Int = 0,
-    val timestamp: Long = 0L
+    val timestamp: Long = 0L,
+    val hostAvatarBase64: String = ""
 ) {
     fun toMap(): Map<String, Any> = mapOf(
         "id" to id,
@@ -424,7 +483,8 @@ data class RoomInvite(
         "hostAvatarFrame" to hostAvatarFrame,
         "hostTier" to hostTier,
         "betAmount" to betAmount,
-        "timestamp" to timestamp
+        "timestamp" to timestamp,
+        "hostAvatarBase64" to hostAvatarBase64
     )
 
     companion object {
@@ -433,12 +493,13 @@ data class RoomInvite(
             roomId = map["roomId"] as? String ?: "",
             roomName = map["roomName"] as? String ?: "",
             hostName = map["hostName"] as? String ?: "",
-            hostAvatarEmoji = map["hostAvatarEmoji"] as? String ?: "",
-            hostAvatarBgColor = map["hostAvatarBgColor"] as? String ?: "",
-            hostAvatarFrame = map["hostAvatarFrame"] as? String ?: "standard",
+            hostAvatarEmoji = (map["hostAvatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
+            hostAvatarBgColor = (map["hostAvatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
+            hostAvatarFrame = (map["hostAvatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
             hostTier = map["hostTier"] as? String ?: "BRONZE",
             betAmount = (map["betAmount"] as? Number)?.toInt() ?: 0,
-            timestamp = (map["timestamp"] as? Number)?.toLong() ?: 0L
+            timestamp = (map["timestamp"] as? Number)?.toLong() ?: 0L,
+            hostAvatarBase64 = (map["hostAvatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: ""
         )
     }
 }
@@ -455,7 +516,8 @@ data class PresenceUser(
     val rating: Int = 1000,
     val title: String = "",
     val isOnline: Boolean = true,
-    val lastSeen: Long = 0L
+    val lastSeen: Long = 0L,
+    val credits: Int = 0
 ) {
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -470,25 +532,39 @@ data class PresenceUser(
             "rating" to rating,
             "title" to title,
             "isOnline" to isOnline,
-            "lastSeen" to lastSeen
+            "lastSeen" to lastSeen,
+            "credits" to credits
         )
     }
 
     companion object {
         fun fromMap(map: Map<String, Any>): PresenceUser {
+            val rawLastSeen = (map["lastSeen"] as? Number)?.toLong()
+                ?: (map["lastActive"] as? Number)?.toLong()
+                ?: (map["last_synced_timestamp"] as? Number)?.toLong()
+                ?: 0L
+            val isRecentlyActive = (System.currentTimeMillis() - rawLastSeen) < 120_000L
+            val rawOnline = (map["isOnline"] as? Boolean) ?: true
+            val computedOnline = rawOnline && (rawLastSeen == 0L || isRecentlyActive)
+            val credits = (map["credits"] as? Number)?.toInt()
+                ?: (map["balance"] as? Number)?.toInt()
+                ?: (map["coins"] as? Number)?.toInt()
+                ?: 0
+
             return PresenceUser(
                 uid = map["uid"] as? String ?: "",
                 username = (map["username"] as? String) ?: (map["playerName"] as? String) ?: "Player",
                 onlineTier = (map["onlineTier"] as? String) ?: (map["rank"] as? String) ?: "BRONZE",
                 hasGradient = (map["hasGradient"] as? Boolean) ?: (map["hasNicknameGradient"] as? Boolean) ?: false,
-                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: "",
-                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: "",
-                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: "standard",
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["customAvatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["customAvatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equippedAvatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
                 winStreak = (map["winStreak"] as? Number)?.toInt() ?: 0,
                 rating = (map["rating"] as? Number)?.toInt() ?: 1000,
                 title = (map["title"] as? String) ?: (map["equippedTitle"] as? String) ?: "",
-                isOnline = (map["isOnline"] as? Boolean) ?: true,
-                lastSeen = (map["lastSeen"] as? Number)?.toLong() ?: 0L
+                isOnline = computedOnline,
+                lastSeen = rawLastSeen,
+                credits = credits
             )
         }
     }

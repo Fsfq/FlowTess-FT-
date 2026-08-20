@@ -1,5 +1,7 @@
 package com.example.ui
 
+import com.example.MasterySystem
+import com.example.LevelReward
 import androidx.compose.material.icons.filled.AutoAwesome
 
 import androidx.compose.animation.*
@@ -56,6 +58,7 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
@@ -76,6 +79,8 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Portrait
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Bolt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.graphics.Bitmap
@@ -182,54 +187,107 @@ fun ProfileScreen(
         }
     }
 
-    val ranksList = listOf(
-        RankData("BRONZE", 0, if (currentLang == Language.RU) "Начальный ранг игрока" else "Starting player rank"),
-        RankData("SILVER", 1500, if (currentLang == Language.RU) "Серебряная лига игрока" else "Silver tier member"),
-        RankData("GOLD", 3000, if (currentLang == Language.RU) "Золотая лига опытных бойцов" else "Gold league experienced tier"),
-        RankData("PLATINUM", 4500, if (currentLang == Language.RU) "Платиновый мастер комбинаций" else "Platinum combination master"),
-        RankData("DIAMOND", 7500, if (currentLang == Language.RU) "Алмазная лига консенсуса" else "Diamond consensus league"),
-        RankData("MASTER", 12000, if (currentLang == Language.RU) "Магистр пространственной сетки" else "Master of spatial matrix grid"),
-        RankData("GRANDMASTER", 16500, if (currentLang == Language.RU) "Гроссмейстер тактических дуэлей" else "Grandmaster of tactical gameplay"),
-        RankData("CHALLENGER", 24000, if (currentLang == Language.RU) "Легенда абсолютного топа" else "Legendary top challenger status")
-    )
+    val ranksList = remember(currentLang) {
+        listOf(
+            RankData("BRONZE", ShopPrices.RANK_BRONZE, when (currentLang) {
+                Language.RU -> "Начальный ранг игрока"
+                Language.UA -> "Початковий ранг гравця"
+                Language.KK -> "Бастапқы ойыншы дәрежесі"
+                Language.DE -> "Anfänger-Rang"
+                Language.ZH -> "初始段位"
+                else -> "Starting player rank"
+            }),
+            RankData("SILVER", ShopPrices.RANK_SILVER, when (currentLang) {
+                Language.RU -> "Серебряная лига игрока"
+                Language.UA -> "Срібна ліга гравця"
+                Language.KK -> "Күміс лига ойыншысы"
+                Language.DE -> "Silber-Liga"
+                Language.ZH -> "白银联赛"
+                else -> "Silver tier member"
+            }),
+            RankData("GOLD", ShopPrices.RANK_GOLD, when (currentLang) {
+                Language.RU -> "Золотая лига опытных бойцов"
+                Language.UA -> "Золота ліга досвідчених бійців"
+                Language.KK -> "Тәжірибелі ойыншылардың алтын лигасы"
+                Language.DE -> "Gold-Liga"
+                Language.ZH -> "黄金精英联赛"
+                else -> "Gold league experienced tier"
+            }),
+            RankData("PLATINUM", ShopPrices.RANK_PLATINUM, when (currentLang) {
+                Language.RU -> "Платиновый мастер комбинаций"
+                Language.UA -> "Платиновий майстер комбінацій"
+                Language.KK -> "Платина комбинациялар шебері"
+                Language.DE -> "Platin-Kombinationsmeister"
+                Language.ZH -> "铂金连击大师"
+                else -> "Platinum combination master"
+            }),
+            RankData("DIAMOND", ShopPrices.RANK_DIAMOND, when (currentLang) {
+                Language.RU -> "Алмазная лига консенсуса"
+                Language.UA -> "Діамантова ліга консенсусу"
+                Language.KK -> "Гауһар консенсус лигасы"
+                Language.DE -> "Diamant-Liga"
+                Language.ZH -> "璀璨钻石联赛"
+                else -> "Diamond consensus league"
+            }),
+            RankData("MASTER", ShopPrices.RANK_MASTER, when (currentLang) {
+                Language.RU -> "Магистр пространственной сетки"
+                Language.UA -> "Магістр просторової сітки"
+                Language.KK -> "Кеңістіктік тор магистрі"
+                Language.DE -> "Meister des Gitters"
+                Language.ZH -> "网格空间宗师"
+                else -> "Master of spatial matrix grid"
+            }),
+            RankData("GRANDMASTER", ShopPrices.RANK_GRANDMASTER, when (currentLang) {
+                Language.RU -> "Гроссмейстер тактических дуэлей"
+                Language.UA -> "Гросмейстер тактичних дуелей"
+                Language.KK -> "Тактикалық дуэль гроссмейстері"
+                Language.DE -> "Großmeister der Duelle"
+                Language.ZH -> "战术对决大宗师"
+                else -> "Grandmaster of tactical gameplay"
+            }),
+            RankData("CHALLENGER", ShopPrices.RANK_CHALLENGER, when (currentLang) {
+                Language.RU -> "Легенда абсолютного топа"
+                Language.UA -> "Легенда абсолютного топу"
+                Language.KK -> "Абсолютті топтың аңызы"
+                Language.DE -> "Legende der Rangliste"
+                Language.ZH -> "巅峰至尊传奇"
+                else -> "Legendary top challenger status"
+            })
+        )
+    }
 
-    val skinsList = listOf(
-        SkinData("cyberpunk", 0, "NEON VIOLET", if (currentLang == Language.RU) "Стандартный неоново-фиолетовый стиль" else "Standard neon purple high-contrast grid"),
-        SkinData("retro_amber", 300, "AMBER GOLD", if (currentLang == Language.RU) "Классический янтарный терминальный монохром" else "Vintage monochrome amber-orange layout"),
-        SkinData("emerald_matrix", 400, "MATRIX GREEN", if (currentLang == Language.RU) "Высокотехнологичный зеленый шифр" else "Deep cyberspace digital green code rain"),
-        SkinData("vaporwave_pink", 600, "VAPORWAVE PINK", if (currentLang == Language.RU) "Розово-пурпурный закат" else "Synthwave dream sunset accents"),
-        SkinData("midnight_gold", 1000, "MIDNIGHT GOLD", if (currentLang == Language.RU) "Элитный золотой глянец на темном фоне" else "Premium carbon black with gold details"),
-        SkinData("carbon_neutral", 1200, "TITAN SLATE", if (currentLang == Language.RU) "Промышленный матовый титановый сплав" else "Industrial brushed graphite metal texture"),
-        SkinData("plasma_storm", 1500, "PLASMA BLAST", if (currentLang == Language.RU) "Импульсное плазменное поле со вспышками" else "High-energy plasma static interference overlay"),
-        SkinData("glacial_frost", 1850, "GLACIAL ZERO", if (currentLang == Language.RU) "Кристальная текстура глубокого арктического льда" else "Sub-zero deep tundra thermal blue crystal design")
-    )
+    val skinsList = remember(currentLang) {
+        listOf(
+            SkinData("cyberpunk", ShopPrices.getSkinCost("cyberpunk"), Translations.getLocalizedSkinTitle("cyberpunk", currentLang), Translations.getLocalizedSkinDesc("cyberpunk", currentLang)),
+            SkinData("retro_amber", ShopPrices.getSkinCost("retro_amber"), Translations.getLocalizedSkinTitle("retro_amber", currentLang), Translations.getLocalizedSkinDesc("retro_amber", currentLang)),
+            SkinData("emerald_matrix", ShopPrices.getSkinCost("emerald_matrix"), Translations.getLocalizedSkinTitle("emerald_matrix", currentLang), Translations.getLocalizedSkinDesc("emerald_matrix", currentLang)),
+            SkinData("vaporwave_pink", ShopPrices.getSkinCost("vaporwave_pink"), Translations.getLocalizedSkinTitle("vaporwave_pink", currentLang), Translations.getLocalizedSkinDesc("vaporwave_pink", currentLang)),
+            SkinData("midnight_gold", ShopPrices.getSkinCost("midnight_gold"), Translations.getLocalizedSkinTitle("midnight_gold", currentLang), Translations.getLocalizedSkinDesc("midnight_gold", currentLang)),
+            SkinData("carbon_neutral", ShopPrices.getSkinCost("carbon_neutral"), Translations.getLocalizedSkinTitle("carbon_neutral", currentLang), Translations.getLocalizedSkinDesc("carbon_neutral", currentLang)),
+            SkinData("plasma_storm", ShopPrices.getSkinCost("plasma_storm"), Translations.getLocalizedSkinTitle("plasma_storm", currentLang), Translations.getLocalizedSkinDesc("plasma_storm", currentLang)),
+            SkinData("glacial_frost", ShopPrices.getSkinCost("glacial_frost"), Translations.getLocalizedSkinTitle("glacial_frost", currentLang), Translations.getLocalizedSkinDesc("glacial_frost", currentLang))
+        )
+    }
 
-    val cubeSkinsList = listOf(
-        CubeSkinStoreData("neon", 0, if (currentLang == Language.RU) "ГИПЕР НЕОН" else "HYPER NEON", if (currentLang == Language.RU) "Яркие неоновые грани с белым контуром" else "Vibrant neon edges with custom white glow lines", ""),
-        CubeSkinStoreData("glass", 200, if (currentLang == Language.RU) "ГЛАССМОРФИЗМ" else "GLASSMORPHISM", if (currentLang == Language.RU) "Стеклянные плитки с эффектом матового размытия" else "Frosted tinted space glass with back-glare", ""),
-        CubeSkinStoreData("retro", 300, if (currentLang == Language.RU) "РЕТРО-КОНЦЕНТРИК" else "CONCENTRIC RETRO", if (currentLang == Language.RU) "Ретро-стиль контрастных узоров" else "Concentric retro console styles from the 80s", ""),
-        CubeSkinStoreData("flat", 400, if (currentLang == Language.RU) "ПРОСТОЙ ПЛОСКИЙ" else "MINIMAL FLAT", if (currentLang == Language.RU) "Минималистичный чистый плоский стиль блоков" else "Sleek low-footprint solid layout with sharp edges", ""),
-        CubeSkinStoreData("material", 500, if (currentLang == Language.RU) "ANDROID MATERIAL 3" else "ANDROID MATERIAL 3", if (currentLang == Language.RU) "Скругленные блоки Material со сложным градиентом" else "Organic rounded Material Design custom 3D tiles", ""),
-        CubeSkinStoreData("glowing_jewel", 700, if (currentLang == Language.RU) "ДРАГОЦЕННЫЙ САПФИР" else "GLOWING GEMSTONE", if (currentLang == Language.RU) "Ограненные сапфировые плиты с внутренним свечением" else "Chiseled luxury jewel design with internal raytracing", ""),
-        CubeSkinStoreData("steampunk", 900, if (currentLang == Language.RU) "СТИМПАНК И МЕДЬ" else "STEAM_BRASS", if (currentLang == Language.RU) "Тяжелые латунные блоки с шестеренками и заклепками" else "Heavy brass gears and rivets industrial aesthetic", "")
-    )
+    val cubeSkinsList = remember(currentLang) {
+        listOf(
+            CubeSkinStoreData("neon", ShopPrices.getCubeSkinCost("neon"), Translations.getLocalizedCubeSkinTitle("neon", currentLang), Translations.getLocalizedCubeSkinDesc("neon", currentLang), ""),
+            CubeSkinStoreData("glass", ShopPrices.getCubeSkinCost("glass"), Translations.getLocalizedCubeSkinTitle("glass", currentLang), Translations.getLocalizedCubeSkinDesc("glass", currentLang), ""),
+            CubeSkinStoreData("retro", ShopPrices.getCubeSkinCost("retro"), Translations.getLocalizedCubeSkinTitle("retro", currentLang), Translations.getLocalizedCubeSkinDesc("retro", currentLang), ""),
+            CubeSkinStoreData("flat", ShopPrices.getCubeSkinCost("flat"), Translations.getLocalizedCubeSkinTitle("flat", currentLang), Translations.getLocalizedCubeSkinDesc("flat", currentLang), ""),
+            CubeSkinStoreData("material", ShopPrices.getCubeSkinCost("material"), Translations.getLocalizedCubeSkinTitle("material", currentLang), Translations.getLocalizedCubeSkinDesc("material", currentLang), ""),
+            CubeSkinStoreData("glowing_jewel", ShopPrices.getCubeSkinCost("glowing_jewel"), Translations.getLocalizedCubeSkinTitle("glowing_jewel", currentLang), Translations.getLocalizedCubeSkinDesc("glowing_jewel", currentLang), ""),
+            CubeSkinStoreData("steampunk", ShopPrices.getCubeSkinCost("steampunk"), Translations.getLocalizedCubeSkinTitle("steampunk", currentLang), Translations.getLocalizedCubeSkinDesc("steampunk", currentLang), "")
+        )
+    }
 
-    val fontsList = listOf(
-        FontStoreData("default", 0, if (currentLang == Language.RU) "Системный" else "System default", if (currentLang == Language.RU) "Классический шрифт системы" else "Default clean sans-serif typeface"),
-        FontStoreData("monospace", 0, if (currentLang == Language.RU) "Консоль" else "Terminal Monospace", if (currentLang == Language.RU) "Ретро консольный моноширинный" else "Concentric terminal styling grid font"),
-        FontStoreData("serif", 200, if (currentLang == Language.RU) "Элегантный засечки" else "Sleek Serif", if (currentLang == Language.RU) "Книжный стиль с засечками" else "Elegant book style typeface with serifs"),
-        FontStoreData("sans-serif", 300, if (currentLang == Language.RU) "Космический" else "Space Clean Sans", if (currentLang == Language.RU) "Геометрический чистый без засечек" else "Sleek modern geometric clean layout font"),
-        FontStoreData("cursive", 500, if (currentLang == Language.RU) "Пиксельный" else "Arcade Cursive", if (currentLang == Language.RU) "Игровой пиксельный ретро-стиль" else "Retro 8-bit cursive pixel art style font"),
-        FontStoreData("condensed", 400, if (currentLang == Language.RU) "Кибер Сжатый" else "Cyberpunk Condensed", if (currentLang == Language.RU) "Плотный киберпанк-шрифт" else "High-density cyber condensed text style"),
-        FontStoreData("black", 600, if (currentLang == Language.RU) "Тяжелый Титан" else "Heavy Titan Black", if (currentLang == Language.RU) "Супер-жирный толстый шрифт" else "Max weight industrial black presentation font"),
-        FontStoreData("thin", 450, if (currentLang == Language.RU) "Минимал Тонкий" else "Sleek Thin", if (currentLang == Language.RU) "Сверхлегкий утонченный минимализм" else "Ultra light modern space minimal aesthetic")
-    )
-
-    val controlButtonStylesList = listOf(
-        ControlButtonStyleStoreData("classic", 0, if (currentLang == Language.RU) "Классический" else "Classic Solid", if (currentLang == Language.RU) "Стандартный заполненный стиль" else "Solid material-design buttons with shadow"),
-        ControlButtonStyleStoreData("neon", 0, if (currentLang == Language.RU) "Неоновое свечение" else "Neon Glow", if (currentLang == Language.RU) "Кнопки с неоновым контуром" else "Glowing neon border with transparent background"),
-        ControlButtonStyleStoreData("glass", 600, if (currentLang == Language.RU) "Матовое стекло" else "Frosted Glass", if (currentLang == Language.RU) "Эффект полупрозрачного стекла" else "Semi-transparent modern glassmorphic look")
-    )
+    val controlButtonStylesList = remember(currentLang) {
+        listOf(
+            ControlButtonStyleStoreData("classic", ShopPrices.getButtonCost("classic"), Translations.getLocalizedButtonTitle("classic", currentLang), Translations.getLocalizedButtonDesc("classic", currentLang)),
+            ControlButtonStyleStoreData("neon", ShopPrices.getButtonCost("neon"), Translations.getLocalizedButtonTitle("neon", currentLang), Translations.getLocalizedButtonDesc("neon", currentLang)),
+            ControlButtonStyleStoreData("glass", ShopPrices.getButtonCost("glass"), Translations.getLocalizedButtonTitle("glass", currentLang), Translations.getLocalizedButtonDesc("glass", currentLang))
+        )
+    }
 
     val blockStyle by viewModel.blockStyle.collectAsStateWithLifecycle()
     val customFontKey by viewModel.customFontKey.collectAsStateWithLifecycle()
@@ -246,6 +304,8 @@ fun ProfileScreen(
 
     val equippedTitle by viewModel.equippedTitle.collectAsStateWithLifecycle()
     val purchasedTitles by viewModel.purchasedTitles.collectAsStateWithLifecycle()
+
+    val purchasedRanks by viewModel.purchasedRanks.collectAsStateWithLifecycle()
 
     val equippedSoundPack by viewModel.equippedSoundPack.collectAsStateWithLifecycle()
     val purchasedSoundPacks by viewModel.purchasedSoundPacks.collectAsStateWithLifecycle()
@@ -350,6 +410,7 @@ fun ProfileScreen(
                 sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", true).apply()
                 bgChangeCounter++
             }
+            viewModel.saveCurrentProfileToDb()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -369,25 +430,40 @@ fun ProfileScreen(
 
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val avatarFrameBorderBrush = remember(equippedAvatarFrame, themeColor, secondaryColor) {
-        when (equippedAvatarFrame) {
-            "neon_ae" -> Brush.sweepGradient(listOf(Color(0xFF00FFCC), Color(0xFF0099FF), Color(0xFF00FFCC)))
-            "gold_ma" -> Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)))
-            "chrono_gl" -> Brush.sweepGradient(listOf(Color(0xFFFF0055), Color(0xFFFF5252), Color(0xFFFF7A00), Color(0xFFFF0055)))
-            "omega_ti" -> Brush.linearGradient(listOf(Color(0xFF90A4AE), Color(0xFF37474F)))
-            else -> Brush.sweepGradient(
-                listOf(
-                    themeColor,
-                    secondaryColor,
-                    themeColor
+        val isMonochrome = (themeColor.red < 0.22f && themeColor.green < 0.22f && themeColor.blue < 0.22f) ||
+                (themeColor.red > 0.80f && themeColor.green > 0.80f && themeColor.blue > 0.80f)
+
+        if (equippedAvatarFrame != "standard") {
+            if (isMonochrome) {
+                Brush.sweepGradient(listOf(Color(0xFFFFFFFF), Color(0xFFA0A5B5), Color(0xFFE8EDF8), Color(0xFF656A7A), Color(0xFFFFFFFF)))
+            } else {
+                val hsv = FloatArray(3)
+                android.graphics.Color.colorToHSV(
+                    android.graphics.Color.argb(
+                        (themeColor.alpha * 255).toInt(),
+                        (themeColor.red * 255).toInt(),
+                        (themeColor.green * 255).toInt(),
+                        (themeColor.blue * 255).toInt()
+                    ),
+                    hsv
                 )
-            )
+                val baseHue = hsv[0]
+                val sat = hsv[1].coerceIn(0.70f, 0.98f)
+                val value = hsv[2].coerceIn(0.85f, 1f)
+
+                val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+                val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+                val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c5 = c1
+
+                Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
+            }
+        } else {
+            Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
         }
     }
-    val avatarFrameThickness = when (equippedAvatarFrame) {
-        "neon_ae", "gold_ma", "chrono_gl" -> 3.5.dp
-        "omega_ti" -> 5.dp
-        else -> 2.dp
-    }
+    val avatarFrameThickness = if (equippedAvatarFrame != "standard") 3.5.dp else 2.dp
 
 
     var userId by remember {
@@ -412,7 +488,15 @@ fun ProfileScreen(
             viewModel.setBlockStyle(styleId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Оформление блоков успешно применено" else "Cube style equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Оформление блоков успешно применено"
+                Language.UA -> "Оформлення блоків успішно застосовано"
+                Language.KK -> "Блоктер дизайны сәтті қолданылды"
+                Language.DE -> "Block-Stil erfolgreich ausgerüstet."
+                Language.ZH -> "方块样式已成功应用"
+                else -> "Cube style equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -422,11 +506,27 @@ fun ProfileScreen(
             viewModel.setBlockStyle(styleId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Стиль блоков успешно приобретен и применен" else "Cube style purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Стиль блоков успешно приобретен и применен"
+                Language.UA -> "Стиль блоків успішно придбано та застосовано"
+                Language.KK -> "Блок стилі сәтті сатып алынды және қолданылды"
+                Language.DE -> "Block-Stil gekauft und ausgerüstet."
+                Language.ZH -> "方块样式已购买并装备"
+                else -> "Cube style purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -434,12 +534,14 @@ fun ProfileScreen(
         sharedPrefs.getStringSet("purchased_skins", setOf("cyberpunk")) ?: setOf("cyberpunk")
     }
 
-    val premiumModesList = listOf(
-        GameModeStoreData("zen", 400, if (currentLang == Language.RU) "Дзен" else "Zen", if (currentLang == Language.RU) "Бесконечный режим: автоматическое очищение поля при переполнении, отключено поражение." else "Endless game mode: clears the board on overflow, defeat is disabled.", ""),
-        GameModeStoreData("pulse_extreme", 800, if (currentLang == Language.RU) "Вихрь" else "Vortex Pulse", if (currentLang == Language.RU) "Повышенная сложность: каждые 4 установленные фигуры снизу поля добавляется случайная заполненная линия." else "Increased difficulty: a random garbage line is added at the bottom every 4 placed pieces.", ""),
-        GameModeStoreData("mirror", 1000, if (currentLang == Language.RU) "Зеркальный режим" else "Mirror Mode", if (currentLang == Language.RU) "Игровое поле зеркально отражается по горизонтальной оси во время игрового процесса." else "The game field is mirrored horizontally during gameplay.", ""),
-        GameModeStoreData("penta", 1200, if (currentLang == Language.RU) "Пентатрис" else "Pentatris", if (currentLang == Language.RU) "Режим повышенной сложности: все падающие фигуры состоят из пяти блоков." else "High difficulty mode: all falling pieces consist of five blocks.", "")
-    )
+    val premiumModesList = remember(currentLang) {
+        listOf(
+            GameModeStoreData("zen", ShopPrices.getModeCost("zen"), Translations.getLobbyModeTitle("zen", currentLang), Translations.getLobbyModeDesc("zen", currentLang), ""),
+            GameModeStoreData("pulse_extreme", ShopPrices.getModeCost("pulse_extreme"), Translations.getLobbyModeTitle("pulse_extreme", currentLang), Translations.getLobbyModeDesc("pulse_extreme", currentLang), ""),
+            GameModeStoreData("mirror", ShopPrices.getModeCost("mirror"), Translations.getLobbyModeTitle("mirror", currentLang), Translations.getLobbyModeDesc("mirror", currentLang), ""),
+            GameModeStoreData("penta", ShopPrices.getModeCost("penta"), Translations.getLobbyModeTitle("penta", currentLang), Translations.getLobbyModeDesc("penta", currentLang), "")
+        )
+    }
 
     val purchasedModesSet = remember(credits) {
         sharedPrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast")) 
@@ -448,7 +550,15 @@ fun ProfileScreen(
 
     fun purchaseMode(modeId: String, cost: Int) {
         if (purchasedModesSet.contains(modeId)) {
-            triggerMessage(if (currentLang == Language.RU) "Режим уже разблокирован" else "Game mode already unlocked")
+            val msg = when (currentLang) {
+                Language.RU -> "Режим уже разблокирован"
+                Language.UA -> "Режим вже розблоковано"
+                Language.KK -> "Режим әлдеқашан ашылған"
+                Language.DE -> "Modus bereits freigeschaltet"
+                Language.ZH -> "游戏模式已解锁"
+                else -> "Game mode already unlocked"
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -457,11 +567,27 @@ fun ProfileScreen(
             viewModel.spendCredits(cost)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Премиум-режим разблокирован" else "Premium game mode unlocked successfully.")
+            val msg = when (currentLang) {
+                Language.RU -> "Премиум-режим разблокирован"
+                Language.UA -> "Преміум-режим розблоковано"
+                Language.KK -> "Премиум режим ашылды"
+                Language.DE -> "Premium-Modus erfolgreich freigeschaltet."
+                Language.ZH -> "高级模式解锁成功"
+                else -> "Premium game mode unlocked successfully."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -470,7 +596,15 @@ fun ProfileScreen(
             viewModel.setBoardColorSkin(skinId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Оформление успешно применилось" else "Grid scheme equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Оформление успешно применилось"
+                Language.UA -> "Оформлення успішно застосовано"
+                Language.KK -> "Дизайн сәтті қолданылды"
+                Language.DE -> "Design erfolgreich ausgerüstet."
+                Language.ZH -> "网格主题已应用"
+                else -> "Grid scheme equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -478,39 +612,90 @@ fun ProfileScreen(
             sharedPrefs.edit().putStringSet("purchased_skins", updated).apply()
             viewModel.spendCredits(cost)
             viewModel.setBoardColorSkin(skinId)
-            viewModel.unlockAchievement("color_skin_collector", 200)
+            sharedPrefs.edit().putBoolean("ach_color_skin_collector_unlocked", true).apply()
+            viewModel.evaluateAchievements()
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Оформление успешно приобретено и применилось" else "Skin purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Оформление успешно приобретено и применилось"
+                Language.UA -> "Оформлення успішно придбано та застосовано"
+                Language.KK -> "Дизайн сәтті сатып алынды және қолданылды"
+                Language.DE -> "Design gekauft und ausgerüstet."
+                Language.ZH -> "主题已购买并装备"
+                else -> "Skin purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
     fun purchaseRank(rankId: String, cost: Int) {
-        val rankIndex = ranksList.indexOfFirst { it.id == rankId }
-        val currentRankIndex = ranksList.indexOfFirst { it.id == onlineTier }
-        if (rankIndex <= currentRankIndex) {
-            triggerMessage(if (currentLang == Language.RU) "Этот ранг уже разблокирован!" else "This rank is already unlocked.")
+        if (purchasedRanks.contains(rankId)) {
+            val msg = when (currentLang) {
+                Language.RU -> "Этот ранг уже разблокирован!"
+                Language.UA -> "Цей ранг вже розблоковано!"
+                Language.KK -> "Бұл дәреже әлдеқашан ашылған!"
+                Language.DE -> "Dieser Rang ist bereits freigeschaltet!"
+                Language.ZH -> "该段位已解锁！"
+                else -> "This rank is already unlocked."
+            }
+            triggerMessage(msg)
             return
         }
-        if (rankIndex > currentRankIndex + 1) {
-            triggerMessage(if (currentLang == Language.RU) "Нужно купить предыдущий ранг!" else "Unlock previous rank first.", isError = true)
+        val rankIndex = ranksList.indexOfFirst { it.id == rankId }
+        val prevRankId = if (rankIndex > 0) ranksList[rankIndex - 1].id else null
+        if (prevRankId != null && !purchasedRanks.contains(prevRankId)) {
+            val msg = when (currentLang) {
+                Language.RU -> "Нужно купить предыдущий ранг!"
+                Language.UA -> "Потрібно купити попередній ранг!"
+                Language.KK -> "Алдымен алдыңғы дәрежені сатып алу керек!"
+                Language.DE -> "Schalte zuerst den vorherigen Rang frei!"
+                Language.ZH -> "请先解锁前置段位！"
+                else -> "Unlock previous rank first."
+            }
+            triggerMessage(msg, isError = true)
             return
         }
         if (credits >= cost) {
             viewModel.spendCredits(cost)
+            viewModel.addPurchasedRank(rankId)
             viewModel.setOnlineTier(rankId)
-            viewModel.unlockAchievement("rank_conqueror", 350)
+            sharedPrefs.edit().putBoolean("ach_rank_conqueror_unlocked", true).apply()
+            viewModel.evaluateAchievements()
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Ранг успешно повышен" else "Rank updated to $rankId successfully.")
+            val msg = when (currentLang) {
+                Language.RU -> "Ранг успешно повышен"
+                Language.UA -> "Ранг успішно підвищено"
+                Language.KK -> "Дәреже сәтті көтерілді"
+                Language.DE -> "Rang erfolgreich aufgewertet."
+                Language.ZH -> "段位提升成功"
+                else -> "Rank updated successfully."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств для повышения" else "Insufficient funds for rank raise.", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств для повышения"
+                Language.UA -> "Недостатньо коштів для підвищення"
+                Language.KK -> "Дәрежені көтеруге қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben für Rang-Upgrade."
+                Language.ZH -> "晋升所需余额不足"
+                else -> "Insufficient funds for rank raise."
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -519,7 +704,15 @@ fun ProfileScreen(
             viewModel.setEquippedAvatarFrame(frameId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Рамка успешно выбрана" else "Avatar frame equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Рамка успешно выбрана"
+                Language.UA -> "Рамку успішно обрано"
+                Language.KK -> "Жақтау сәтті таңдалды"
+                Language.DE -> "Avatar-Rahmen ausgerüstet."
+                Language.ZH -> "头像框已装备"
+                else -> "Avatar frame equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -529,11 +722,27 @@ fun ProfileScreen(
             viewModel.spendCredits(cost)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Рамка куплена и надета" else "Avatar frame purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Рамка куплена и надета"
+                Language.UA -> "Рамку куплено та вдягнено"
+                Language.KK -> "Жақтау сатып алынды және тағылды"
+                Language.DE -> "Avatar-Rahmen gekauft und ausgerüstet."
+                Language.ZH -> "头像框已购买并装备"
+                else -> "Avatar frame purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -542,7 +751,15 @@ fun ProfileScreen(
             viewModel.setEquippedTitle(titleId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Титул успешно выбран" else "Title equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Титул успешно выбран"
+                Language.UA -> "Титул успішно обрано"
+                Language.KK -> "Атақ сәтті таңдалды"
+                Language.DE -> "Titel ausgerüstet."
+                Language.ZH -> "称号已佩戴"
+                else -> "Title equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -552,11 +769,27 @@ fun ProfileScreen(
             viewModel.spendCredits(cost)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Титул куплен и активирован" else "Title purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Титул куплен и активирован"
+                Language.UA -> "Титул куплено та активовано"
+                Language.KK -> "Атақ сатып алынды және белсендірілді"
+                Language.DE -> "Titel gekauft und aktiviert."
+                Language.ZH -> "称号已购买并佩戴"
+                else -> "Title purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -565,7 +798,15 @@ fun ProfileScreen(
             viewModel.setCustomFontKey(fontId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Шрифт успешно выбран" else "Interface font equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Шрифт успешно выбран"
+                Language.UA -> "Шрифт успішно обрано"
+                Language.KK -> "Қаріп сәтті таңдалды"
+                Language.DE -> "Schriftart ausgerüstet."
+                Language.ZH -> "界面字体已应用"
+                else -> "Interface font equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -575,11 +816,27 @@ fun ProfileScreen(
             viewModel.spendCredits(cost)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Шрифт куплен и активирован" else "Interface font purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Шрифт куплен и активирован"
+                Language.UA -> "Шрифт куплено та активовано"
+                Language.KK -> "Қаріп сатып алынды және белсендірілді"
+                Language.DE -> "Schriftart gekauft und aktiviert."
+                Language.ZH -> "界面字体已购买并应用"
+                else -> "Interface font purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -588,7 +845,15 @@ fun ProfileScreen(
             viewModel.setControlButtonStyle(styleId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
-            triggerMessage(if (currentLang == Language.RU) "Стиль кнопок успешно выбран" else "Button style equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Стиль кнопок успешно выбран"
+                Language.UA -> "Стиль кнопок успішно обрано"
+                Language.KK -> "Батырмалар стилі сәтті таңдалды"
+                Language.DE -> "Button-Stil ausgerüstet."
+                Language.ZH -> "按键样式已应用"
+                else -> "Button style equipped."
+            }
+            triggerMessage(msg)
             return
         }
         if (credits >= cost) {
@@ -598,11 +863,27 @@ fun ProfileScreen(
             viewModel.spendCredits(cost)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
-            triggerMessage(if (currentLang == Language.RU) "Стиль кнопок куплен и активирован" else "Button style purchased and equipped.")
+            val msg = when (currentLang) {
+                Language.RU -> "Стиль кнопок куплен и активирован"
+                Language.UA -> "Стиль кнопок куплено та активовано"
+                Language.KK -> "Батырмалар стилі сатып алынды және белсендірілді"
+                Language.DE -> "Button-Stil gekauft und aktiviert."
+                Language.ZH -> "按键样式已购买并应用"
+                else -> "Button style purchased and equipped."
+            }
+            triggerMessage(msg)
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("error")
-            triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
+            val msg = when (currentLang) {
+                Language.RU -> "Недостаточно средств"
+                Language.UA -> "Недостатньо коштів"
+                Language.KK -> "Қаражат жеткіліксіз"
+                Language.DE -> "Nicht genügend Guthaben"
+                Language.ZH -> "余额不足"
+                else -> "Insufficient funds"
+            }
+            triggerMessage(msg, isError = true)
         }
     }
 
@@ -615,45 +896,95 @@ fun ProfileScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    AdaptiveText(
-                        text = when (pagerState.currentPage) {
-                            0 -> if (isLoggedIn) (if (currentLang == Language.RU) "ПРОФИЛЬ" else "PROFILE") else (if (currentLang == Language.RU) "АВТОРИЗАЦИЯ" else "AUTHORIZATION")
-                            1 -> if (currentLang == Language.RU) "МАГАЗИН" else "STORE"
-                            else -> if (currentLang == Language.RU) "ДОСТИЖЕНИЯ" else "ACHIEVEMENTS"
-                        },
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
-                    )
-                },
-                actions = {
                     Surface(
-                        modifier = Modifier.padding(end = 16.dp),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(22.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        tonalElevation = 2.dp
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                        tonalElevation = 3.dp,
+                        shadowElevation = 1.dp
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Credits",
-                                tint = Color(0xFFFFB300),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            AdaptiveText(
-                                text = "$credits",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.onSurface
+                            // Primary Currency (Credits / Coins)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Credits",
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(18.dp)
                                 )
+                                AdaptiveText(
+                                    text = "$credits",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                            }
+
+                            // Elegant Gradient Vertical Divider
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 10.dp)
+                                    .height(18.dp)
+                                    .width(1.5.dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                Color.Transparent,
+                                                MaterialTheme.colorScheme.outlineVariant,
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
                             )
+
+                            // Secondary Visual Cosmetic Currency (Gems / Crystals)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Diamond,
+                                    contentDescription = "Gems",
+                                    tint = Color(0xFF00E5FF),
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                AdaptiveText(
+                                    text = "0",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                            }
                         }
                     }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            viewModel.triggerAudioFeedback("click")
+                            onBack()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                actions = {
+                    Spacer(modifier = Modifier.size(48.dp))
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -668,10 +999,34 @@ fun ProfileScreen(
                 .padding(padding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val profileTabTitle = when (currentLang) {
+                    Language.RU -> "Профиль"
+                    Language.UA -> "Профіль"
+                    Language.KK -> "Профиль"
+                    Language.DE -> "Profil"
+                    Language.ZH -> "个人资料"
+                    else -> "Profile"
+                }
+                val storeTabTitle = when (currentLang) {
+                    Language.RU -> "Магазин"
+                    Language.UA -> "Магазин"
+                    Language.KK -> "Дүкен"
+                    Language.DE -> "Shop"
+                    Language.ZH -> "商店"
+                    else -> "Store"
+                }
+                val achievementsTabTitle = when (currentLang) {
+                    Language.RU -> "Достижения"
+                    Language.UA -> "Досягнення"
+                    Language.KK -> "Жетістіктер"
+                    Language.DE -> "Erfolge"
+                    Language.ZH -> "成就"
+                    else -> "Achievements"
+                }
                 val tabsList = listOf(
-                    Triple(0, if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
-                    Triple(1, if (currentLang == Language.RU) "Магазин" else "Store", Icons.Default.ShoppingBag),
-                    Triple(2, if (currentLang == Language.RU) "Достижения" else "Achievements", Icons.Default.EmojiEvents)
+                    Triple(0, profileTabTitle, Icons.Default.Person),
+                    Triple(1, storeTabTitle, Icons.Default.ShoppingBag),
+                    Triple(2, achievementsTabTitle, Icons.Default.EmojiEvents)
                 )
 
                 Surface(
@@ -802,13 +1157,47 @@ fun ProfileScreen(
                                                 },
                                                 label = "titleAnim"
                                             ) { isRegister ->
+                                                val authTitle = if (isRegister) {
+                                                    when (currentLang) {
+                                                        Language.RU -> "РЕГИСТРАЦИЯ"
+                                                        Language.UA -> "РЕЄСТРАЦІЯ"
+                                                        Language.KK -> "ТІРКЕЛУ"
+                                                        Language.DE -> "REGISTRIERUNG"
+                                                        Language.ZH -> "注册账号"
+                                                        else -> "REGISTRATION"
+                                                    }
+                                                } else {
+                                                    when (currentLang) {
+                                                        Language.RU -> "ВХОД В АККАУНТ"
+                                                        Language.UA -> "ВХІД В АКАУНТ"
+                                                        Language.KK -> "АККАУНТҚА КІРУ"
+                                                        Language.DE -> "ANMELDUNG"
+                                                        Language.ZH -> "登录账号"
+                                                        else -> "ACCOUNT LOGIN"
+                                                    }
+                                                }
+                                                val authSubtitle = if (isRegister) {
+                                                    when (currentLang) {
+                                                        Language.RU -> "Создайте профиль для сохранения статистики"
+                                                        Language.UA -> "Створіть профіль для збереження статистики"
+                                                        Language.KK -> "Статистиканы сақтау үшін профиль жасаңыз"
+                                                        Language.DE -> "Erstelle ein Profil, um deinen Fortschritt zu speichern"
+                                                        Language.ZH -> "创建账号以保存游戏进度与成就"
+                                                        else -> "Create a profile to save your stats"
+                                                    }
+                                                } else {
+                                                    when (currentLang) {
+                                                        Language.RU -> "Войдите для синхронизации прогресса"
+                                                        Language.UA -> "Увійдіть для синхронізації прогресу"
+                                                        Language.KK -> "Прогресті синхрондау үшін кіріңіз"
+                                                        Language.DE -> "Melde dich an, um deinen Fortschritt zu synchronisieren"
+                                                        Language.ZH -> "登录以同步您的云端游戏数据"
+                                                        else -> "Sign in to sync your progress"
+                                                    }
+                                                }
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                     Text(
-                                                        text = if (isRegister) {
-                                                            if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "REGISTRATION"
-                                                        } else {
-                                                            if (currentLang == Language.RU) "ВХОД В АККАУНТ" else "ACCOUNT LOGIN"
-                                                        },
+                                                        text = authTitle,
                                                         style = MaterialTheme.typography.titleLarge,
                                                         fontWeight = FontWeight.ExtraBold,
                                                         letterSpacing = 0.5.sp,
@@ -817,11 +1206,7 @@ fun ProfileScreen(
                                                     )
                                                     Spacer(modifier = Modifier.height(6.dp))
                                                     Text(
-                                                        text = if (isRegister) {
-                                                            if (currentLang == Language.RU) "Создайте профиль для сохранения статистики" else "Create a profile to save your stats"
-                                                        } else {
-                                                            if (currentLang == Language.RU) "Войдите для синхронизации прогресса" else "Sign in to sync your progress"
-                                                        },
+                                                        text = authSubtitle,
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                         textAlign = TextAlign.Center,
@@ -836,6 +1221,22 @@ fun ProfileScreen(
                                             val primaryColor = MaterialTheme.colorScheme.primary
                                             val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
                                             val onSurfVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            val signInTabLabel = when (currentLang) {
+                                                Language.RU -> "ВХОД"
+                                                Language.UA -> "ВХІД"
+                                                Language.KK -> "КІРУ"
+                                                Language.DE -> "ANMELDEN"
+                                                Language.ZH -> "登录"
+                                                else -> "SIGN IN"
+                                            }
+                                            val signUpTabLabel = when (currentLang) {
+                                                Language.RU -> "РЕГИСТРАЦИЯ"
+                                                Language.UA -> "РЕЄСТРАЦІЯ"
+                                                Language.KK -> "ТІРКЕЛУ"
+                                                Language.DE -> "REGISTRIEREN"
+                                                Language.ZH -> "注册"
+                                                else -> "SIGN UP"
+                                            }
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
@@ -881,7 +1282,7 @@ fun ProfileScreen(
                                                                 label = "signInColor"
                                                             )
                                                             Text(
-                                                                text = if (currentLang == Language.RU) "ВХОД" else "SIGN IN",
+                                                                text = signInTabLabel,
                                                                 style = MaterialTheme.typography.labelLarge,
                                                                 fontWeight = FontWeight.ExtraBold,
                                                                 color = textColor
@@ -906,7 +1307,7 @@ fun ProfileScreen(
                                                                 label = "signUpColor"
                                                             )
                                                             Text(
-                                                                text = if (currentLang == Language.RU) "РЕГИСТРАЦИЯ" else "SIGN UP",
+                                                                text = signUpTabLabel,
                                                                 style = MaterialTheme.typography.labelLarge,
                                                                 fontWeight = FontWeight.ExtraBold,
                                                                 color = textColor
@@ -918,12 +1319,45 @@ fun ProfileScreen(
 
                                             Spacer(modifier = Modifier.height(22.dp))
 
+                                            val nicknameLabel = when (currentLang) {
+                                                Language.RU -> "Никнейм"
+                                                Language.UA -> "Нікнейм"
+                                                Language.KK -> "Лақап ат"
+                                                Language.DE -> "Benutzername"
+                                                Language.ZH -> "昵称"
+                                                else -> "Nickname"
+                                            }
+                                            val nicknameOrEmailLabel = when (currentLang) {
+                                                Language.RU -> "Никнейм или Email"
+                                                Language.UA -> "Нікнейм або Email"
+                                                Language.KK -> "Лақап ат немесе Email"
+                                                Language.DE -> "Benutzername oder E-Mail"
+                                                Language.ZH -> "昵称或电子邮箱"
+                                                else -> "Nickname or Email"
+                                            }
+                                            val emailLabel = when (currentLang) {
+                                                Language.RU -> "Электронная почта"
+                                                Language.UA -> "Електронна пошта"
+                                                Language.KK -> "Электрондық пошта"
+                                                Language.DE -> "E-Mail-Adresse"
+                                                Language.ZH -> "电子邮箱"
+                                                else -> "Email Address"
+                                            }
+                                            val passwordLabel = when (currentLang) {
+                                                Language.RU -> "Пароль"
+                                                Language.UA -> "Пароль"
+                                                Language.KK -> "Құпиясөз"
+                                                Language.DE -> "Passwort"
+                                                Language.ZH -> "密码"
+                                                else -> "Password"
+                                            }
+
                                             // Input fields
                                             OutlinedTextField(
                                                 value = inputUsername,
                                                 onValueChange = { inputUsername = it },
                                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                                label = { Text(if (authModeIsRegister) (if (currentLang == Language.RU) "Никнейм" else "Nickname") else (if (currentLang == Language.RU) "Никнейм или Email" else "Nickname or Email")) },
+                                                label = { Text(if (authModeIsRegister) nicknameLabel else nicknameOrEmailLabel) },
                                                 singleLine = true,
                                                 shape = RoundedCornerShape(16.dp),
                                                 colors = OutlinedTextFieldDefaults.colors(
@@ -946,7 +1380,7 @@ fun ProfileScreen(
                                                         value = inputEmail,
                                                         onValueChange = { inputEmail = it },
                                                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                                        label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
+                                                        label = { Text(emailLabel) },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(16.dp),
                                                         colors = OutlinedTextFieldDefaults.colors(
@@ -966,7 +1400,7 @@ fun ProfileScreen(
                                                 value = inputPassword,
                                                 onValueChange = { inputPassword = it },
                                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                                label = { Text(if (currentLang == Language.RU) "Пароль" else "Password") },
+                                                label = { Text(passwordLabel) },
                                                 singleLine = true,
                                                 shape = RoundedCornerShape(16.dp),
                                                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -983,17 +1417,7 @@ fun ProfileScreen(
 
                                             // Error message
                                             loginError?.let { err ->
-                                                val localizedErr = if (currentLang == Language.RU) {
-                                                    when {
-                                                        err.contains("empty") || err.contains("пустые") || err.contains("пустой") -> "Заполните все поля!"
-                                                        err.contains("not found") || err.contains("найден") -> "Пользователь не найден!"
-                                                        err.contains("wrong") || err.contains("пароль") -> "Неверный пароль!"
-                                                        err.contains("already in use") || err.contains("занят") -> "Этот никнейм или почта уже используются!"
-                                                        err.contains("weak") -> "Слишком простой пароль (минимум 6 символов)!"
-                                                        err.contains("network") -> "Ошибка сети! Проверьте подключение."
-                                                        else -> err
-                                                    }
-                                                } else err
+                                                val localizedErr = Translations.getAuthError(err, currentLang)
 
                                                 Surface(
                                                     modifier = Modifier.fillMaxWidth(),
@@ -1020,13 +1444,7 @@ fun ProfileScreen(
 
                                             // Success message
                                             loginSuccessMessage?.let { success ->
-                                                val localizedSucc = if (currentLang == Language.RU) {
-                                                    when {
-                                                        success.contains("created") || success.contains("успешно создан") -> "Аккаунт успешно создан!"
-                                                        success.contains("success") || success.contains("вход") -> "Успешный вход!"
-                                                        else -> success
-                                                    }
-                                                } else success
+                                                val localizedSucc = Translations.getAuthSuccess(success, currentLang)
 
                                                 Surface(
                                                     modifier = Modifier.fillMaxWidth(),
@@ -1053,6 +1471,30 @@ fun ProfileScreen(
 
                                             // Email verification banner
                                             if (showVerificationBanner) {
+                                                val verifyAccountTitle = when (currentLang) {
+                                                    Language.RU -> "Проверьте почту и подтвердите аккаунт!"
+                                                    Language.UA -> "Перевірте пошту та підтвердіть акаунт!"
+                                                    Language.KK -> "Поштаңызды тексеріп, аккаунтты растаңыз!"
+                                                    Language.DE -> "Prüfe deine E-Mails und bestätige dein Konto!"
+                                                    Language.ZH -> "请查看您的邮箱并完成账号验证！"
+                                                    else -> "Check your email and verify your account!"
+                                                }
+                                                val resendBtnText = when (currentLang) {
+                                                    Language.RU -> "Отправить"
+                                                    Language.UA -> "Надіслати"
+                                                    Language.KK -> "Жіберу"
+                                                    Language.DE -> "Erneut senden"
+                                                    Language.ZH -> "重新发送"
+                                                    else -> "Resend"
+                                                }
+                                                val verifiedBtnText = when (currentLang) {
+                                                    Language.RU -> "Я подтвердил"
+                                                    Language.UA -> "Я підтвердив"
+                                                    Language.KK -> "Мен растадым"
+                                                    Language.DE -> "Ich habe bestätigt"
+                                                    Language.ZH -> "我已完成验证"
+                                                    else -> "I verified"
+                                                }
                                                 Column(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -1064,7 +1506,7 @@ fun ProfileScreen(
                                                         Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(20.dp))
                                                         Spacer(modifier = Modifier.width(8.dp))
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "Проверьте почту и подтвердите аккаунт!" else "Check your email and verify your account!",
+                                                            text = verifyAccountTitle,
                                                             color = Color(0xFFBF360C),
                                                             style = MaterialTheme.typography.bodySmall,
                                                             fontWeight = FontWeight.Bold,
@@ -1084,7 +1526,7 @@ fun ProfileScreen(
                                                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100))
                                                         ) {
                                                             Text(
-                                                                text = if (currentLang == Language.RU) "Отправить" else "Resend",
+                                                                text = resendBtnText,
                                                                 fontSize = 12.sp,
                                                                 fontWeight = FontWeight.Bold
                                                             )
@@ -1096,7 +1538,7 @@ fun ProfileScreen(
                                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
                                                         ) {
                                                             Text(
-                                                                text = if (currentLang == Language.RU) "Я подтвердил" else "I verified",
+                                                                text = verifiedBtnText,
                                                                 fontSize = 12.sp,
                                                                 fontWeight = FontWeight.Bold
                                                             )
@@ -1107,6 +1549,25 @@ fun ProfileScreen(
                                             }
 
                                             // Submit Button
+                                            val submitBtnText = if (authModeIsRegister) {
+                                                when (currentLang) {
+                                                    Language.RU -> "СОЗДАТЬ АККАУНТ"
+                                                    Language.UA -> "СТВОРИТИ АКАУНТ"
+                                                    Language.KK -> "АККАУНТ ЖАСАУ"
+                                                    Language.DE -> "KONTO ERSTELLEN"
+                                                    Language.ZH -> "创建新账号"
+                                                    else -> "CREATE ACCOUNT"
+                                                }
+                                            } else {
+                                                when (currentLang) {
+                                                    Language.RU -> "ВОЙТИ В СИСТЕМУ"
+                                                    Language.UA -> "УВІЙТИ В СИСТЕМУ"
+                                                    Language.KK -> "ЖҮЙЕГЕ КІРУ"
+                                                    Language.DE -> "ANMELDEN"
+                                                    Language.ZH -> "立即登录"
+                                                    else -> "SIGN IN"
+                                                }
+                                            }
                                             Button(
                                                 onClick = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1126,11 +1587,7 @@ fun ProfileScreen(
                                                 )
                                             ) {
                                                 Text(
-                                                    text = if (authModeIsRegister) {
-                                                        if (currentLang == Language.RU) "СОЗДАТЬ АККАУНТ" else "CREATE ACCOUNT"
-                                                    } else {
-                                                        if (currentLang == Language.RU) "ВОЙТИ В СИСТЕМУ" else "SIGN IN"
-                                                    },
+                                                    text = submitBtnText,
                                                     fontWeight = FontWeight.ExtraBold,
                                                     letterSpacing = 0.5.sp,
                                                     style = MaterialTheme.typography.titleMedium,
@@ -1141,13 +1598,21 @@ fun ProfileScreen(
                                             Spacer(modifier = Modifier.height(20.dp))
 
                                             // Divider
+                                            val orDividerText = when (currentLang) {
+                                                Language.RU -> "ИЛИ"
+                                                Language.UA -> "АБО"
+                                                Language.KK -> "НЕМЕСЕ"
+                                                Language.DE -> "ODER"
+                                                Language.ZH -> "或"
+                                                else -> "OR"
+                                            }
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "ИЛИ" else "OR",
+                                                    text = orDividerText,
                                                     style = MaterialTheme.typography.labelMedium,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -1159,6 +1624,14 @@ fun ProfileScreen(
                                             Spacer(modifier = Modifier.height(20.dp))
 
                                             // Google Sign-In Button
+                                            val googleBtnText = when (currentLang) {
+                                                Language.RU -> "Войти через Google"
+                                                Language.UA -> "Увійти через Google"
+                                                Language.KK -> "Google арқылы кіру"
+                                                Language.DE -> "Mit Google anmelden"
+                                                Language.ZH -> "使用 Google 账号登录"
+                                                else -> "Sign in with Google"
+                                            }
                                             OutlinedButton(
                                                 onClick = {
                                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1181,7 +1654,7 @@ fun ProfileScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(10.dp))
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "Войти через Google" else "Sign in with Google",
+                                                    text = googleBtnText,
                                                     fontSize = 15.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = Color(0xFF1F1F1F),
@@ -1192,6 +1665,14 @@ fun ProfileScreen(
 
                                         // Loading overlay
                                         if (isAuthLoading) {
+                                            val waitText = when (currentLang) {
+                                                Language.RU -> "Пожалуйста, подождите..."
+                                                Language.UA -> "Будь ласка, зачекайте..."
+                                                Language.KK -> "Күте тұрыңыз..."
+                                                Language.DE -> "Bitte warten..."
+                                                Language.ZH -> "请稍候..."
+                                                else -> "Please wait..."
+                                            }
                                             Box(
                                                 modifier = Modifier
                                                     .matchParentSize()
@@ -1206,7 +1687,7 @@ fun ProfileScreen(
                                                     )
                                                     Spacer(modifier = Modifier.height(16.dp))
                                                     Text(
-                                                        text = if (currentLang == Language.RU) "Пожалуйста, подождите..." else "Please wait...",
+                                                        text = waitText,
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = MaterialTheme.colorScheme.onSurface
@@ -1290,14 +1771,7 @@ fun ProfileScreen(
     
                                         Spacer(modifier = Modifier.height(12.dp))
     
-                                        val titleString = when (equippedTitle) {
-                                            "none" -> ""
-                                            "node" -> if (currentLang == Language.RU) "РЕКРУТ" else "RECRUIT"
-                                            "lord" -> if (currentLang == Language.RU) "ВЕТЕРАН" else "VETERAN"
-                                            "cosmic_overlord" -> if (currentLang == Language.RU) "ЭЛИТА" else "ELITE"
-                                            "ai_consensus" -> if (currentLang == Language.RU) "ЛЕГЕНДА" else "LEGEND"
-                                            else -> ""
-                                        }
+                                        val titleString = Translations.getLocalizedTitle(equippedTitle, currentLang)
     
                                         if (titleString.isNotEmpty()) {
                                             Text(
@@ -1314,8 +1788,7 @@ fun ProfileScreen(
                                         }
     
                                         if (hasNicknameGradient) {
-                                            val myAvatarColor = parseHexColor(customAvatarBgColor, themeColor)
-                                            val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = myAvatarColor)
+                                            val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = themeColor)
                                             Text(
                                                 text = playerName.uppercase(),
                                                 style = MaterialTheme.typography.titleLarge.copy(
@@ -1350,7 +1823,15 @@ fun ProfileScreen(
                                                             .getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                                         val clip = android.content.ClipData.newPlainText("User ID", userId)
                                                         clipboard.setPrimaryClip(clip)
-                                                        triggerMessage(if (currentLang == Language.RU) "ID скопирован в буфер!" else "ID copied to clipboard!")
+                                                        val copyMsg = when (currentLang) {
+                                                            Language.RU -> "ID скопирован в буфер!"
+                                                            Language.UA -> "ID скопійовано в буфер!"
+                                                            Language.KK -> "ID алмасу буферіне көшірілді!"
+                                                            Language.DE -> "ID in Zwischenablage kopiert!"
+                                                            Language.ZH -> "ID 已复制到剪贴板！"
+                                                            else -> "ID copied to clipboard!"
+                                                        }
+                                                        triggerMessage(copyMsg)
                                                     } catch (e: Exception) {
                                                         triggerMessage("Error copying ID", isError = true)
                                                     }
@@ -1399,7 +1880,7 @@ fun ProfileScreen(
                                                 color = Color(0xFFFFD700).copy(alpha = 0.18f)
                                             ) {
                                                 Text(
-                                                    text = "MMR $onlineRating",
+                                                    text = "ELO $onlineRating",
                                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                                                     color = Color(0xFFFFD700),
                                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -1413,7 +1894,7 @@ fun ProfileScreen(
                                                     color = Color(0xFFFF5722).copy(alpha = 0.18f)
                                                 ) {
                                                     Text(
-                                                        text = "🔥 x$winStreak",
+                                                        text = "x$winStreak",
                                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
                                                         color = Color(0xFFFF5722),
                                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1425,6 +1906,14 @@ fun ProfileScreen(
 
                                         Spacer(modifier = Modifier.height(12.dp))
 
+                                        val editProfileBtnText = when (currentLang) {
+                                            Language.RU -> "Настройки профиля"
+                                            Language.UA -> "Налаштування профілю"
+                                            Language.KK -> "Профиль баптаулары"
+                                            Language.DE -> "Profil bearbeiten"
+                                            Language.ZH -> "编辑资料"
+                                            else -> "Edit Profile"
+                                        }
                                         FilledTonalButton(
                                             onClick = {
                                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1437,7 +1926,7 @@ fun ProfileScreen(
                                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = if (currentLang == Language.RU) "Настройки профиля" else "Edit Profile",
+                                                text = editProfileBtnText,
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -1446,28 +1935,47 @@ fun ProfileScreen(
                                 }
                             }
     
-                                // Mastery Progress
+                                // Mastery Progress & Leveling System
+                                val bonusXpVal by viewModel.bonusXp.collectAsStateWithLifecycle()
+                                val claimedLevelRewards by viewModel.claimedLevelRewards.collectAsStateWithLifecycle()
                                 val totalLines = statsClearedLines
                                 val highscoreVal = statsHighScore
-                                val totalXp = (totalLines * 25) + (highscoreVal / 10)
-                                val levelXpBound = 500
-                                val masteryLevel = (totalXp / levelXpBound) + 1
-                                val currentLevelXp = totalXp % levelXpBound
-                                val xpPercentage = if (currentLevelXp > 0) currentLevelXp.toFloat() / levelXpBound.toFloat() else 0.01f
-    
+                                val totalXp = (totalLines * 25) + (highscoreVal / 10) + bonusXpVal
+                                
+                                val (masteryLevel, currentLevelXp, xpPercentage) = remember(totalXp) {
+                                    viewModel.getPlayerLevelProgress(totalXp)
+                                }
+                                val levelXpBound = remember(masteryLevel) { viewModel.getXpRequiredForLevel(masteryLevel) }
+                                val xpNeeded = (levelXpBound - currentLevelXp).coerceAtLeast(0)
+                                val masteryTitle = remember(masteryLevel, currentLang) { 
+                                    MasterySystem.getMasteryTitle(masteryLevel, currentLang) 
+                                }
+                                val unclaimedRewards = remember(claimedLevelRewards, masteryLevel) { 
+                                    viewModel.getUnclaimedLevelRewards() 
+                                }
+
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(22.dp),
                                     colors = CardDefaults.elevatedCardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                     ),
-                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        // ПЛАНКА 1: Заголовок + Бейдж уровня
+                                        val levelSectionTitle = when (currentLang) {
+                                            Language.RU -> "УРОВЕНЬ"
+                                            Language.UA -> "РІВЕНЬ"
+                                            Language.KK -> "ДЕҢГЕЙ"
+                                            Language.DE -> "LEVEL"
+                                            Language.ZH -> "等级"
+                                            else -> "LEVEL"
+                                        }
+
+                                        // HEADER: Icon + Section Title + Title Badge + Level Badge
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1484,7 +1992,7 @@ fun ProfileScreen(
                                                     modifier = Modifier.size(22.dp)
                                                 )
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "УРОВЕНЬ" else "LEVEL",
+                                                    text = levelSectionTitle,
                                                     style = MaterialTheme.typography.titleSmall.copy(
                                                         fontWeight = FontWeight.ExtraBold,
                                                         letterSpacing = 0.5.sp
@@ -1492,20 +2000,41 @@ fun ProfileScreen(
                                                     color = MaterialTheme.colorScheme.onSurface
                                                 )
                                             }
-                                            Surface(
-                                                shape = RoundedCornerShape(10.dp),
-                                                color = MaterialTheme.colorScheme.primaryContainer
+
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
-                                                Text(
-                                                    text = "LVL $masteryLevel",
-                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                                )
+                                                // Mastery Title Badge
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = Color(masteryTitle.color).copy(alpha = 0.15f),
+                                                    border = BorderStroke(1.dp, Color(masteryTitle.color).copy(alpha = 0.5f))
+                                                ) {
+                                                    Text(
+                                                        text = "${masteryTitle.iconEmoji} ${masteryTitle.title}",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = Color(masteryTitle.color),
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                    )
+                                                }
+
+                                                // Level Number Badge
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = MaterialTheme.colorScheme.primaryContainer
+                                                ) {
+                                                    Text(
+                                                        text = "LVL $masteryLevel",
+                                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                    )
+                                                }
                                             }
                                         }
 
-                                        // ПЛАНКА 2: Прогресс-бар + инфо о XP до след. уровня
+                                        // PROGRESS BAR & XP INFO
                                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                             LinearProgressIndicator(
                                                 progress = { xpPercentage },
@@ -1521,9 +2050,16 @@ fun ProfileScreen(
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                val xpNeeded = (levelXpBound - currentLevelXp).coerceAtLeast(0)
+                                                val toNextLvlText = when (currentLang) {
+                                                    Language.RU -> "До след. уровня: $xpNeeded XP"
+                                                    Language.UA -> "До наст. рівня: $xpNeeded XP"
+                                                    Language.KK -> "Келесі деңгейге дейін: $xpNeeded XP"
+                                                    Language.DE -> "Bis zum nächsten Level: $xpNeeded XP"
+                                                    Language.ZH -> "升级还需: $xpNeeded XP"
+                                                    else -> "To next level: $xpNeeded XP"
+                                                }
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "До след. уровня: $xpNeeded XP" else "To next level: $xpNeeded XP",
+                                                    text = toNextLvlText,
                                                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                                                 )
@@ -1533,6 +2069,153 @@ fun ProfileScreen(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
+                                        }
+
+                                        // PASSIVE PERKS CHIPS
+                                        val coinBonusPercent = masteryLevel / 2
+                                        val xpBonusPercent = (masteryLevel / 5) * 2
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Text(text = "🪙", fontSize = 13.sp)
+                                                    val coinBuffLabel = when (currentLang) {
+                                                        Language.RU -> "Бонус монет: +$coinBonusPercent%"
+                                                        Language.UA -> "Бонус монет: +$coinBonusPercent%"
+                                                        Language.KK -> "Монета бонусы: +$coinBonusPercent%"
+                                                        Language.DE -> "Münzbonus: +$coinBonusPercent%"
+                                                        Language.ZH -> "金币加成: +$coinBonusPercent%"
+                                                        else -> "Coin boost: +$coinBonusPercent%"
+                                                    }
+                                                    Text(
+                                                        text = coinBuffLabel,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+
+                                            Surface(
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Text(text = "⚡", fontSize = 13.sp)
+                                                    val xpBuffLabel = when (currentLang) {
+                                                        Language.RU -> "Бонус опыта: +$xpBonusPercent%"
+                                                        Language.UA -> "Бонус досвіду: +$xpBonusPercent%"
+                                                        Language.KK -> "Тәжірибе бонусы: +$xpBonusPercent%"
+                                                        Language.DE -> "XP-Bonus: +$xpBonusPercent%"
+                                                        Language.ZH -> "经验加成: +$xpBonusPercent%"
+                                                        else -> "XP boost: +$xpBonusPercent%"
+                                                    }
+                                                    Text(
+                                                        text = xpBuffLabel,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        // LEVEL UP REWARDS SECTION
+                                        if (unclaimedRewards.isNotEmpty()) {
+                                            val totalRewardCredits = unclaimedRewards.sumOf { it.credits }
+                                            val keyRewardsCount = unclaimedRewards.filter { it.keyType != null }.sumOf { it.keyCount }
+                                            val claimRewardTitle = when (currentLang) {
+                                                Language.RU -> "ДОСТУПНЫ НАГРАДЫ (${unclaimedRewards.size})"
+                                                Language.UA -> "ДОСТУПНІ НАГОРОДИ (${unclaimedRewards.size})"
+                                                Language.KK -> "СЫЙЛЫҚТАР ҚОЛЖЕТІМДІ (${unclaimedRewards.size})"
+                                                Language.DE -> "BELOHNUNGEN VERFÜGBAR (${unclaimedRewards.size})"
+                                                Language.ZH -> "可领取等级奖励 (${unclaimedRewards.size})"
+                                                else -> "REWARDS AVAILABLE (${unclaimedRewards.size})"
+                                            }
+                                            val claimBtnLabel = when (currentLang) {
+                                                Language.RU -> "ЗАБРАТЬ (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                                Language.UA -> "ЗАБРАТИ (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                                Language.KK -> "АЛУ (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                                Language.DE -> "EINSAMMELN (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                                Language.ZH -> "立即领取 (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                                else -> "CLAIM (+$totalRewardCredits 🪙${if (keyRewardsCount > 0) " +$keyRewardsCount 🔑" else ""})"
+                                            }
+
+                                            Surface(
+                                                shape = RoundedCornerShape(16.dp),
+                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(12.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.CardGiftcard,
+                                                            contentDescription = null,
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                        Text(
+                                                            text = claimRewardTitle,
+                                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                    Button(
+                                                        onClick = {
+                                                            viewModel.triggerAudioFeedback("success")
+                                                            viewModel.claimAllLevelRewards()
+                                                        },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    ) {
+                                                        Text(
+                                                            text = claimBtnLabel,
+                                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // NEXT MILESTONE PREVIEW
+                                            val nextMilestoneLvl = ((masteryLevel / 5) + 1) * 5
+                                            val nextReward = viewModel.getLevelReward(nextMilestoneLvl)
+                                            val nextMilestoneDesc = when (currentLang) {
+                                                Language.RU -> "Следующая веха: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                                Language.UA -> "Наступна віха: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                                Language.KK -> "Келесі кезең: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                                Language.DE -> "Nächster Meilenstein: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                                Language.ZH -> "下一里程碑: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                                else -> "Next milestone: LVL $nextMilestoneLvl (+${nextReward.credits} 🪙${if (nextReward.keyType != null) " + ${nextReward.keyCount} 🔑" else ""})"
+                                            }
+                                            Text(
+                                                text = nextMilestoneDesc,
+                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                modifier = Modifier.padding(top = 2.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -1547,6 +2230,22 @@ fun ProfileScreen(
                                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(18.dp)) {
+                                        val statsTitle = when (currentLang) {
+                                            Language.RU -> "СТАТИСТИКА"
+                                            Language.UA -> "СТАТИСТИКА"
+                                            Language.KK -> "СТАТИСТИКА"
+                                            Language.DE -> "STATISTIKEN"
+                                            Language.ZH -> "数据统计"
+                                            else -> "STATISTICS"
+                                        }
+                                        val resetBtnText = when (currentLang) {
+                                            Language.RU -> "Сброс"
+                                            Language.UA -> "Скидання"
+                                            Language.KK -> "Қайтару"
+                                            Language.DE -> "Reset"
+                                            Language.ZH -> "重置"
+                                            else -> "Reset"
+                                        }
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1563,7 +2262,7 @@ fun ProfileScreen(
                                                     modifier = Modifier.size(20.dp)
                                                 )
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "СТАТИСТИКА" else "STATISTICS",
+                                                    text = statsTitle,
                                                     style = MaterialTheme.typography.titleSmall.copy(
                                                         fontWeight = FontWeight.ExtraBold,
                                                         letterSpacing = 0.5.sp
@@ -1576,7 +2275,15 @@ fun ProfileScreen(
                                                 onClick = {
                                                     viewModel.triggerAudioFeedback("click")
                                                     viewModel.resetProfileStats()
-                                                    triggerMessage(if (currentLang == Language.RU) "Статистика сброшена." else "Stats reset.")
+                                                    val resetMsg = when (currentLang) {
+                                                        Language.RU -> "Статистика сброшена."
+                                                        Language.UA -> "Статистику скинуто."
+                                                        Language.KK -> "Статистика нөлденді."
+                                                        Language.DE -> "Statistiken zurückgesetzt."
+                                                        Language.ZH -> "数据已重置。"
+                                                        else -> "Stats reset."
+                                                    }
+                                                    triggerMessage(resetMsg)
                                                 },
                                                 shape = RoundedCornerShape(12.dp),
                                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -1588,7 +2295,7 @@ fun ProfileScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "Сброс" else "Reset",
+                                                    text = resetBtnText,
                                                     style = MaterialTheme.typography.labelSmall
                                                 )
                                             }
@@ -1600,6 +2307,22 @@ fun ProfileScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
+                                            val highScoreLabel = when (currentLang) {
+                                                Language.RU -> "РЕКОРД ОЧКОВ"
+                                                Language.UA -> "РЕКОРД ОЧОК"
+                                                Language.KK -> "РЕКОРД ҰПАЙ"
+                                                Language.DE -> "REKORD"
+                                                Language.ZH -> "最高得分"
+                                                else -> "HIGH SCORE"
+                                            }
+                                            val linesClearedLabel = when (currentLang) {
+                                                Language.RU -> "ЛИНИЙ ОЧИЩЕНО"
+                                                Language.UA -> "ЛІНІЙ ОЧИЩЕНО"
+                                                Language.KK -> "ЖОЙЫЛҒАН СЫЗЫҚТАР"
+                                                Language.DE -> "REIHEN GELÖSCHT"
+                                                Language.ZH -> "消除行数"
+                                                else -> "LINES CLEARED"
+                                            }
                                             // Score High
                                             Surface(
                                                 modifier = Modifier.weight(1f),
@@ -1611,7 +2334,7 @@ fun ProfileScreen(
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Text(
-                                                        text = if (currentLang == Language.RU) "РЕКОРД ОЧКОВ" else "HIGH SCORE",
+                                                        text = highScoreLabel,
                                                         style = MaterialTheme.typography.labelSmall.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             fontSize = 9.sp
@@ -1637,7 +2360,7 @@ fun ProfileScreen(
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                     Text(
-                                                        text = if (currentLang == Language.RU) "ЛИНИЙ ОЧИЩЕНО" else "LINES CLEARED",
+                                                        text = linesClearedLabel,
                                                         style = MaterialTheme.typography.labelSmall.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             fontSize = 9.sp
@@ -1671,6 +2394,25 @@ fun ProfileScreen(
                                             modifier = Modifier.padding(16.dp),
                                             verticalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
+                                            val emailStatusTitle = if (isEmailVerified) {
+                                                when (currentLang) {
+                                                    Language.RU -> "ПОЧТА ПОДТВЕРЖДЕНА"
+                                                    Language.UA -> "ПОШТА ПІДТВЕРДЖЕНА"
+                                                    Language.KK -> "ПОШТА РАСТАЛДЫ"
+                                                    Language.DE -> "E-MAIL BESTÄTIGT"
+                                                    Language.ZH -> "邮箱已验证"
+                                                    else -> "EMAIL VERIFIED"
+                                                }
+                                            } else {
+                                                when (currentLang) {
+                                                    Language.RU -> "ПОЧТА НЕ ПОДТВЕРЖДЕНА"
+                                                    Language.UA -> "ПОШТА НЕ ПІДТВЕРДЖЕНА"
+                                                    Language.KK -> "ПОШТА РАСТАЛМАДЫ"
+                                                    Language.DE -> "E-MAIL NICHT BESTÄTIGT"
+                                                    Language.ZH -> "邮箱未验证"
+                                                    else -> "EMAIL NOT VERIFIED"
+                                                }
+                                            }
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1687,11 +2429,7 @@ fun ProfileScreen(
                                                         modifier = Modifier.size(20.dp)
                                                     )
                                                     Text(
-                                                        text = if (isEmailVerified) {
-                                                            if (currentLang == Language.RU) "ПОЧТА ПОДТВЕРЖДЕНА" else "EMAIL VERIFIED"
-                                                        } else {
-                                                            if (currentLang == Language.RU) "ПОЧТА НЕ ПОДТВЕРЖДЕНА" else "EMAIL NOT VERIFIED"
-                                                        },
+                                                        text = emailStatusTitle,
                                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                                                         color = if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100)
                                                     )
@@ -1711,10 +2449,32 @@ fun ProfileScreen(
                                             }
 
                                             if (!isEmailVerified) {
+                                                val unverifiedDesc = when (currentLang) {
+                                                    Language.RU -> "Для безопасности аккаунта и восстановления доступа подтвердите адрес электронной почты."
+                                                    Language.UA -> "Для безпеки акаунта та відновлення доступу підтвердіть адресу електронної пошти."
+                                                    Language.KK -> "Аккаунт қауіпсіздігі және қолжетімділікті қалпына келтіру үшін электрондық поштаны растаңыз."
+                                                    Language.DE -> "Bitte bestätige deine E-Mail-Adresse, um dein Konto zu sichern und Wiederherstellung zu aktivieren."
+                                                    Language.ZH -> "为了账号安全及密码找回，请尽快完成邮箱验证。"
+                                                    else -> "Please verify your email address to secure your account and enable account recovery."
+                                                }
+                                                val sendEmailBtnText = when (currentLang) {
+                                                    Language.RU -> "Отправить письмо"
+                                                    Language.UA -> "Надіслати лист"
+                                                    Language.KK -> "Хат жіберу"
+                                                    Language.DE -> "E-Mail senden"
+                                                    Language.ZH -> "发送验证邮件"
+                                                    else -> "Send Email"
+                                                }
+                                                val checkStatusBtnText = when (currentLang) {
+                                                    Language.RU -> "Проверить"
+                                                    Language.UA -> "Перевірити"
+                                                    Language.KK -> "Тексеру"
+                                                    Language.DE -> "Status prüfen"
+                                                    Language.ZH -> "检查状态"
+                                                    else -> "Check Status"
+                                                }
                                                 Text(
-                                                    text = if (currentLang == Language.RU) 
-                                                        "Для безопасности аккаунта и восстановления доступа подтвердите адрес электронной почты." 
-                                                        else "Please verify your email address to secure your account and enable account recovery.",
+                                                    text = unverifiedDesc,
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -1733,7 +2493,7 @@ fun ProfileScreen(
                                                         shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "Отправить письмо" else "Send Email",
+                                                            text = sendEmailBtnText,
                                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                                                         )
                                                     }
@@ -1742,9 +2502,25 @@ fun ProfileScreen(
                                                         onClick = {
                                                             viewModel.checkEmailVerificationStatus { verified ->
                                                                 if (verified) {
-                                                                    triggerMessage(if (currentLang == Language.RU) "Почта успешно подтверждена!" else "Email verified successfully!")
+                                                                    val verifiedSuccessMsg = when (currentLang) {
+                                                                        Language.RU -> "Почта успешно подтверждена!"
+                                                                        Language.UA -> "Пошту успішно підтверджено!"
+                                                                        Language.KK -> "Пошта сәтті расталды!"
+                                                                        Language.DE -> "E-Mail erfolgreich bestätigt!"
+                                                                        Language.ZH -> "邮箱验证成功！"
+                                                                        else -> "Email verified successfully!"
+                                                                    }
+                                                                    triggerMessage(verifiedSuccessMsg)
                                                                 } else {
-                                                                    triggerMessage(if (currentLang == Language.RU) "Почта ещё не подтверждена. Проверьте входящие!" else "Email not verified yet. Check your inbox!", isError = true)
+                                                                    val notVerifiedMsg = when (currentLang) {
+                                                                        Language.RU -> "Почта ещё не подтверждена. Проверьте входящие!"
+                                                                        Language.UA -> "Пошту ще не підтверджено. Перевірте вхідні!"
+                                                                        Language.KK -> "Пошта әлі расталмады. Кіріс хаттарды тексеріңіз!"
+                                                                        Language.DE -> "E-Mail noch nicht bestätigt. Prüfe deinen Posteingang!"
+                                                                        Language.ZH -> "邮箱尚未验证，请检查您的收件箱！"
+                                                                        else -> "Email not verified yet. Check your inbox!"
+                                                                    }
+                                                                    triggerMessage(notVerifiedMsg, isError = true)
                                                                 }
                                                             }
                                                         },
@@ -1752,7 +2528,7 @@ fun ProfileScreen(
                                                         shape = RoundedCornerShape(12.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "Проверить" else "Check Status",
+                                                            text = checkStatusBtnText,
                                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                                                         )
                                                     }
@@ -1766,6 +2542,30 @@ fun ProfileScreen(
 
                                 // Log out button with confirmation dialog
                                 if (showSignOutConfirmDialog) {
+                                    val signOutTitle = when (currentLang) {
+                                        Language.RU -> "Выход из аккаунта"
+                                        Language.UA -> "Вихід з акаунта"
+                                        Language.KK -> "Аккаунттан шығу"
+                                        Language.DE -> "Vom Konto abmelden"
+                                        Language.ZH -> "退出登录"
+                                        else -> "Log Out Confirmation"
+                                    }
+                                    val signOutDesc = when (currentLang) {
+                                        Language.RU -> "Вы уверены, что хотите выйти из аккаунта? Все синхронизированные данные сохранены в облаке."
+                                        Language.UA -> "Ви впевнені, що хочете вийти з акаунта? Усі синхронізовані дані збережено в хмарі."
+                                        Language.KK -> "Аккаунттан шыққыңыз келетініне сенімдісіз бе? Барлық синхрондалған деректер бұлтта сақталған."
+                                        Language.DE -> "Möchtest du dich wirklich abmelden? Alle synchronisierten Daten sind sicher in der Cloud gespeichert."
+                                        Language.ZH -> "确定要退出当前账号吗？所有已同步的进度都已安全保存在云端。"
+                                        else -> "Are you sure you want to log out? All synced data is safely stored in the cloud."
+                                    }
+                                    val signOutConfirmBtn = when (currentLang) {
+                                        Language.RU -> "ВЫЙТИ"
+                                        Language.UA -> "ВИЙТИ"
+                                        Language.KK -> "ШЫҒУ"
+                                        Language.DE -> "ABMELDEN"
+                                        Language.ZH -> "退出"
+                                        else -> "LOG OUT"
+                                    }
                                     AlertDialog(
                                         onDismissRequest = { showSignOutConfirmDialog = false },
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1789,16 +2589,14 @@ fun ProfileScreen(
                                         },
                                         title = {
                                             Text(
-                                                text = if (currentLang == Language.RU) "Выход из аккаунта" else "Log Out Confirmation",
+                                                text = signOutTitle,
                                                 fontWeight = FontWeight.Bold,
                                                 style = MaterialTheme.typography.titleLarge
                                             )
                                         },
                                         text = {
                                             Text(
-                                                text = if (currentLang == Language.RU) 
-                                                    "Вы уверены, что хотите выйти из аккаунта? Все синхронизированные данные сохранены в облаке." 
-                                                    else "Are you sure you want to log out? All synced data is safely stored in the cloud.",
+                                                text = signOutDesc,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1819,7 +2617,7 @@ fun ProfileScreen(
                                                 ),
                                                 shape = RoundedCornerShape(14.dp)
                                             ) {
-                                                Text(if (currentLang == Language.RU) "ВЫЙТИ" else "LOG OUT", fontWeight = FontWeight.Bold)
+                                                Text(signOutConfirmBtn, fontWeight = FontWeight.Bold)
                                             }
                                         },
                                         dismissButton = {
@@ -1827,12 +2625,20 @@ fun ProfileScreen(
                                                 onClick = { showSignOutConfirmDialog = false },
                                                 shape = RoundedCornerShape(14.dp)
                                             ) {
-                                                Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL", fontWeight = FontWeight.Bold)
+                                                Text(Translations.get("cancel", currentLang).uppercase(), fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     )
                                 }
 
+                                val logOutBtnText = when (currentLang) {
+                                    Language.RU -> "ВЫЙТИ ИЗ АККАУНТА"
+                                    Language.UA -> "ВИЙТИ З АКАУНТА"
+                                    Language.KK -> "АККАУНТТАН ШЫҒУ"
+                                    Language.DE -> "VOM KONTO ABMELDEN"
+                                    Language.ZH -> "退出当前账号"
+                                    else -> "LOG OUT"
+                                }
                                 FilledTonalButton(
                                     onClick = {
                                         showSignOutConfirmDialog = true
@@ -1853,7 +2659,7 @@ fun ProfileScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (currentLang == Language.RU) "ВЫЙТИ ИЗ АККАУНТА" else "LOG OUT",
+                                        text = logOutBtnText,
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                 }
@@ -1864,36 +2670,68 @@ fun ProfileScreen(
                     }
                     1 -> {
             // STORE SHOP VIEW
-            val avatarFramesList = remember {
+            val avatarFramesList = remember(currentLang) {
                 listOf(
-                    AvatarFrameStoreData("standard", 0, if (currentLang == Language.RU) "По умолчанию" else "Default", if (currentLang == Language.RU) "Классическая рамка" else "Classic subtle frame", Color.Gray),
-                    AvatarFrameStoreData("neon_ae", 350, if (currentLang == Language.RU) "Неон" else "Neon", if (currentLang == Language.RU) "Неоновое свечение" else "Glowing neon frame", Color(0xFF00FFCC)),
-                    AvatarFrameStoreData("gold_ma", 600, if (currentLang == Language.RU) "Золото" else "Gold", if (currentLang == Language.RU) "Золотое обрамление" else "Prestige gold frame", Color(0xFFFFD700)),
-                    AvatarFrameStoreData("omega_ti", 1100, if (currentLang == Language.RU) "Титан" else "Titan", if (currentLang == Language.RU) "Титановая броня" else "Thick titanium frame", Color(0xFF90A4AE))
+                    AvatarFrameStoreData(
+                        "standard", ShopPrices.getAvatarFrameCost("standard"),
+                        Translations.getLocalizedAvatarFrameTitle("standard", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("standard", currentLang),
+                        Color.Gray
+                    ),
+                    AvatarFrameStoreData(
+                        "chrono_gl", ShopPrices.getAvatarFrameCost("chrono_gl"),
+                        Translations.getLocalizedAvatarFrameTitle("chrono_gl", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("chrono_gl", currentLang),
+                        Color(0xFFFF0077)
+                    )
                 )
             }
-            val playerBadgesList = remember {
+            val playerBadgesList = remember(currentLang) {
                 listOf(
-                    PlayerBadgeStoreData("none", 0, if (currentLang == Language.RU) "Без титула" else "No Title", if (currentLang == Language.RU) "Стандартный вид" else "Standard title", ""),
-                    PlayerBadgeStoreData("node", 2500, if (currentLang == Language.RU) "РЕКРУТ" else "RECRUIT", if (currentLang == Language.RU) "Статус новобранца" else "Recruit title status", ""),
-                    PlayerBadgeStoreData("lord", 5000, if (currentLang == Language.RU) "ВЕТЕРАН" else "VETERAN", if (currentLang == Language.RU) "Опытный игрок" else "Veteran title status", ""),
-                    PlayerBadgeStoreData("cosmic_overlord", 8000, if (currentLang == Language.RU) "ЭЛИТА" else "ELITE", if (currentLang == Language.RU) "Мастер игры" else "Elite title status", ""),
-                    PlayerBadgeStoreData("ai_consensus", 12000, if (currentLang == Language.RU) "ЛЕГЕНДА" else "LEGEND", if (currentLang == Language.RU) "Легенда арены" else "Legend title status", "")
+                    PlayerBadgeStoreData(
+                        "none", ShopPrices.getTitleCost("none"),
+                        Translations.getLocalizedTitle("none", currentLang),
+                        Translations.getLocalizedBadgeDesc("none", currentLang),
+                        ""
+                    ),
+                    PlayerBadgeStoreData(
+                        "node", ShopPrices.getTitleCost("node"),
+                        Translations.getLocalizedTitle("node", currentLang),
+                        Translations.getLocalizedBadgeDesc("node", currentLang),
+                        ""
+                    ),
+                    PlayerBadgeStoreData(
+                        "lord", ShopPrices.getTitleCost("lord"),
+                        Translations.getLocalizedTitle("lord", currentLang),
+                        Translations.getLocalizedBadgeDesc("lord", currentLang),
+                        ""
+                    ),
+                    PlayerBadgeStoreData(
+                        "cosmic_overlord", ShopPrices.getTitleCost("cosmic_overlord"),
+                        Translations.getLocalizedTitle("cosmic_overlord", currentLang),
+                        Translations.getLocalizedBadgeDesc("cosmic_overlord", currentLang),
+                        ""
+                    ),
+                    PlayerBadgeStoreData(
+                        "ai_consensus", ShopPrices.getTitleCost("ai_consensus"),
+                        Translations.getLocalizedTitle("ai_consensus", currentLang),
+                        Translations.getLocalizedBadgeDesc("ai_consensus", currentLang),
+                        ""
+                    )
                 )
             }
             var selectedStoreCategory by remember { mutableStateOf("ALL") }
             val storeCategories = remember(currentLang) {
                 listOf(
-                    "ALL" to (if (currentLang == Language.RU) "Все" else "All"),
-                    "FRAMES" to (if (currentLang == Language.RU) "Рамки" else "Frames"),
-                    "TITLES" to (if (currentLang == Language.RU) "Титулы" else "Titles"),
-                    "SKINS" to (if (currentLang == Language.RU) "Сетка" else "Grid"),
-                    "BLOCKS" to (if (currentLang == Language.RU) "Блоки" else "Blocks"),
-                    "BUTTONS" to (if (currentLang == Language.RU) "Кнопки" else "Buttons"),
-                    "FONTS" to (if (currentLang == Language.RU) "Шрифты" else "Fonts"),
-                    "MODES" to (if (currentLang == Language.RU) "Режимы" else "Modes"),
-                    "RANKS" to (if (currentLang == Language.RU) "Ранги" else "Ranks"),
-                    "TAGS" to (if (currentLang == Language.RU) "Теги" else "Tags")
+                    "ALL" to Translations.getStoreCategoryTitle("ALL", currentLang),
+                    "FRAMES" to Translations.getStoreCategoryTitle("FRAMES", currentLang),
+                    "TITLES" to Translations.getStoreCategoryTitle("TITLES", currentLang),
+                    "SKINS" to Translations.getStoreCategoryTitle("SKINS", currentLang),
+                    "BLOCKS" to Translations.getStoreCategoryTitle("BLOCKS", currentLang),
+                    "BUTTONS" to Translations.getStoreCategoryTitle("BUTTONS", currentLang),
+                    "MODES" to Translations.getStoreCategoryTitle("MODES", currentLang),
+                    "RANKS" to Translations.getStoreCategoryTitle("RANKS", currentLang),
+                    "TAGS" to Translations.getStoreCategoryTitle("TAGS", currentLang)
                 )
             }
 
@@ -1943,6 +2781,14 @@ fun ProfileScreen(
 
                 if (!isLoggedIn) {
                     item {
+                        val guestModeText = when (currentLang) {
+                            Language.RU -> "Режим гостя: Приобретения сохраняются только локально. Зарегистрируйтесь в профиле."
+                            Language.UA -> "Режим гостя: Придбання зберігаються лише локально. Зареєструйтесь у профілі."
+                            Language.KK -> "Қонақ режимі: Сатып алулар тек жергілікті сақталады. Профильде тіркеліңіз."
+                            Language.DE -> "Gastmodus: Einkäufe werden nur lokal gespeichert. Bitte im Profil registrieren."
+                            Language.ZH -> "访客模式：购买项仅保存在本地。请在个人资料页注册账号。"
+                            else -> "Guest Mode: Purchases are saved locally. Please register in the profile tab."
+                        }
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
@@ -1962,11 +2808,7 @@ fun ProfileScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = if (currentLang == Language.RU) {
-                                        "Режим гостя: Приобретения сохраняются только локально. Зарегистрируйтесь в профиле."
-                                    } else {
-                                        "Guest Mode: Purchases are saved locally. Please register in the profile tab."
-                                    },
+                                    text = guestModeText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
@@ -1978,10 +2820,17 @@ fun ProfileScreen(
                 // 1. RANKS
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "RANKS") {
                     item {
-                        val rankIndex = ranksList.indexOfFirst { it.id == onlineTier }
-                        val ownedRanksCount = if (rankIndex >= 0) rankIndex + 1 else 1
+                        val ownedRanksCount = ranksList.count { purchasedRanks.contains(it.id) }
+                        val ranksSectionTitle = when (currentLang) {
+                            Language.RU -> "РАНГИ"
+                            Language.UA -> "РАНГИ"
+                            Language.KK -> "РАНГТАР"
+                            Language.DE -> "RÄNGE"
+                            Language.ZH -> "段位"
+                            else -> "RANKS"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "СЕТЕВЫЕ РАНГИ" else "CONSENSUS RANKS",
+                            title = ranksSectionTitle,
                             icon = Icons.Default.MilitaryTech,
                             purchasedCount = ownedRanksCount,
                             totalCount = ranksList.size,
@@ -1990,16 +2839,24 @@ fun ProfileScreen(
                     }
                     items(ranksList) { rank ->
                         val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
-                        val currentRankIndex = ranksList.indexOfFirst { it.id == onlineTier }
                         val isCurrent = rank.id == onlineTier
-                        val isOwned = rankIndex <= currentRankIndex
-                        val isLocked = rankIndex > currentRankIndex + 1
-                        val isNext = rankIndex == currentRankIndex + 1
+                        val isOwned = purchasedRanks.contains(rank.id)
+                        val prevRankId = if (rankIndex > 0) ranksList[rankIndex - 1].id else null
+                        val isNext = !isOwned && (prevRankId == null || purchasedRanks.contains(prevRankId))
+                        val isLocked = !isOwned && !isNext
+                        val rankCategoryLabel = when (currentLang) {
+                            Language.RU -> "Ранг"
+                            Language.UA -> "Ранг"
+                            Language.KK -> "Ранг"
+                            Language.DE -> "Rang"
+                            Language.ZH -> "段位"
+                            else -> "Rank"
+                        }
 
                         StoreItemCard(
                             icon = Icons.Default.MilitaryTech,
-                            category = if (currentLang == Language.RU) "Ранг" else "Rank",
-                            title = rank.id,
+                            category = rankCategoryLabel,
+                            title = Translations.getLocalizedRank(rank.id, currentLang),
                             description = rank.description,
                             isActive = isCurrent,
                             isOwned = isOwned,
@@ -2009,10 +2866,26 @@ fun ProfileScreen(
                             onAction = {
                                 if (isCurrent) {
                                     viewModel.setOnlineTier("BRONZE")
-                                    triggerMessage(if (currentLang == Language.RU) "Ранг сброшен до базового" else "Rank reset to BRONZE.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Ранг сброшен до базового"
+                                        Language.UA -> "Ранг скинуто до базового"
+                                        Language.KK -> "Ранг негізгіге қайтарылды"
+                                        Language.DE -> "Rang auf BRONZE zurückgesetzt."
+                                        Language.ZH -> "段位已重置为青铜。"
+                                        else -> "Rank reset to BRONZE."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else if (isOwned) {
                                     viewModel.setOnlineTier(rank.id)
-                                    triggerMessage(if (currentLang == Language.RU) "Ранг успешно выбран" else "Rank updated to ${rank.id}.")
+                                    val selectedMsg = when (currentLang) {
+                                        Language.RU -> "Ранг успешно выбран"
+                                        Language.UA -> "Ранг успішно обрано"
+                                        Language.KK -> "Ранг сәтті таңдалды"
+                                        Language.DE -> "Rang erfolgreich aktualisiert"
+                                        Language.ZH -> "段位更新成功"
+                                        else -> "Rank updated to ${rank.id}."
+                                    }
+                                    triggerMessage(selectedMsg)
                                 } else if (isNext) {
                                     purchaseRank(rank.id, rank.cost)
                                 }
@@ -2024,8 +2897,16 @@ fun ProfileScreen(
                 // 2. GRID SCHEMES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "SKINS") {
                     item {
+                        val gridThemesTitle = when (currentLang) {
+                            Language.RU -> "ОФОРМЛЕНИЕ СЕТКИ"
+                            Language.UA -> "ОФОРМЛЕННЯ СІТКИ"
+                            Language.KK -> "ТОР ДИЗАЙНЫ"
+                            Language.DE -> "RASTER-DESIGNS"
+                            Language.ZH -> "网格主题"
+                            else -> "GRID THEMES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ОФОРМЛЕНИЕ СЕТКИ" else "GRID THEMES",
+                            title = gridThemesTitle,
                             icon = Icons.Default.Palette,
                             purchasedCount = purchasedSkinsSet.size,
                             totalCount = skinsList.size,
@@ -2035,9 +2916,17 @@ fun ProfileScreen(
                     items(skinsList) { skin ->
                         val isEquipped = boardSkin == skin.id
                         val isOwned = purchasedSkinsSet.contains(skin.id)
+                        val themeCategoryLabel = when (currentLang) {
+                            Language.RU -> "Оформление"
+                            Language.UA -> "Оформлення"
+                            Language.KK -> "Дизайн"
+                            Language.DE -> "Design"
+                            Language.ZH -> "主题"
+                            else -> "Theme"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.Palette,
-                            category = if (currentLang == Language.RU) "Оформление" else "Theme",
+                            category = themeCategoryLabel,
                             title = skin.displayName,
                             description = skin.description,
                             isActive = isEquipped,
@@ -2047,7 +2936,15 @@ fun ProfileScreen(
                             onAction = {
                                 if (isEquipped) {
                                     viewModel.setBoardColorSkin("cyberpunk")
-                                    triggerMessage(if (currentLang == Language.RU) "Оформление сброшено" else "Grid theme reset to cyberpunk.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Оформление сброшено"
+                                        Language.UA -> "Оформлення скинуто"
+                                        Language.KK -> "Дизайн қалпына келтірілді"
+                                        Language.DE -> "Raster-Design zurückgesetzt."
+                                        Language.ZH -> "网格主题已重置"
+                                        else -> "Grid theme reset to cyberpunk."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else {
                                     purchaseSkin(skin.id, skin.cost)
                                 }
@@ -2059,8 +2956,16 @@ fun ProfileScreen(
                 // 3. CUBE STYLES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "BLOCKS") {
                     item {
+                        val blockStylesTitle = when (currentLang) {
+                            Language.RU -> "СТИЛИ БЛОКОВ"
+                            Language.UA -> "СТИЛІ БЛОКІВ"
+                            Language.KK -> "БЛОК СТИЛЬДЕРІ"
+                            Language.DE -> "BLOCK-DESIGNS"
+                            Language.ZH -> "方块样式"
+                            else -> "BLOCK STYLES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "СТИЛИ БЛОКОВ" else "BLOCK STYLES",
+                            title = blockStylesTitle,
                             icon = Icons.Default.Category,
                             purchasedCount = purchasedCubeSkinsSet.size,
                             totalCount = cubeSkinsList.size,
@@ -2070,9 +2975,17 @@ fun ProfileScreen(
                     items(cubeSkinsList) { cSkin ->
                         val isEquipped = blockStyle == cSkin.id
                         val isOwned = purchasedCubeSkinsSet.contains(cSkin.id)
+                        val blockStyleCategoryLabel = when (currentLang) {
+                            Language.RU -> "Стиль блоков"
+                            Language.UA -> "Стиль блоків"
+                            Language.KK -> "Блок стилі"
+                            Language.DE -> "Block-Stil"
+                            Language.ZH -> "方块样式"
+                            else -> "Block Style"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.Category,
-                            category = if (currentLang == Language.RU) "Стиль блоков" else "Block Style",
+                            category = blockStyleCategoryLabel,
                             title = cSkin.displayName,
                             description = cSkin.description,
                             isActive = isEquipped,
@@ -2082,7 +2995,15 @@ fun ProfileScreen(
                             onAction = {
                                 if (isEquipped) {
                                     viewModel.setBlockStyle("glass")
-                                    triggerMessage(if (currentLang == Language.RU) "Стиль блоков сброшен" else "Cube style reset to glass.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Стиль блоков сброшен"
+                                        Language.UA -> "Стиль блоків скинуто"
+                                        Language.KK -> "Блок стилі қалпына келтірілді"
+                                        Language.DE -> "Block-Design zurückgesetzt."
+                                        Language.ZH -> "方块样式已重置"
+                                        else -> "Cube style reset to glass."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else {
                                     purchaseCubeSkin(cSkin.id, cSkin.cost)
                                 }
@@ -2094,8 +3015,16 @@ fun ProfileScreen(
                 // 4. GAME MODES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "MODES") {
                     item {
+                        val gameModesTitle = when (currentLang) {
+                            Language.RU -> "ИГРОВЫЕ РЕЖИМЫ"
+                            Language.UA -> "ІГРОВІ РЕЖИМИ"
+                            Language.KK -> "ОЙЫН РЕЖИМДЕРІ"
+                            Language.DE -> "SPIELMODI"
+                            Language.ZH -> "游戏模式"
+                            else -> "GAME MODES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ИГРОВЫЕ РЕЖИМЫ" else "GAME MODES",
+                            title = gameModesTitle,
                             icon = Icons.Default.PlayCircleOutline,
                             purchasedCount = purchasedModesSet.size,
                             totalCount = premiumModesList.size,
@@ -2104,9 +3033,17 @@ fun ProfileScreen(
                     }
                     items(premiumModesList) { pMode ->
                         val isOwned = purchasedModesSet.contains(pMode.id)
+                        val modeCategoryLabel = when (currentLang) {
+                            Language.RU -> "Режим"
+                            Language.UA -> "Режим"
+                            Language.KK -> "Режим"
+                            Language.DE -> "Modus"
+                            Language.ZH -> "模式"
+                            else -> "Game Mode"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.PlayCircleOutline,
-                            category = if (currentLang == Language.RU) "Режим" else "Game Mode",
+                            category = modeCategoryLabel,
                             title = pMode.displayName,
                             description = pMode.description,
                             isActive = false,
@@ -2121,8 +3058,16 @@ fun ProfileScreen(
                 // 5. AVATAR FRAMES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "FRAMES") {
                     item {
+                        val avatarFramesTitle = when (currentLang) {
+                            Language.RU -> "РАМКИ АВАТАРА"
+                            Language.UA -> "РАМКИ АВАТАРА"
+                            Language.KK -> "АВАТАР ЖАҚТАУЛАРЫ"
+                            Language.DE -> "AVATAR-RAHMEN"
+                            Language.ZH -> "头像相框"
+                            else -> "AVATAR FRAMES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "РАМКИ АВАТАРА" else "AVATAR FRAMES",
+                            title = avatarFramesTitle,
                             icon = Icons.Default.Portrait,
                             purchasedCount = purchasedAvatarFrames.size,
                             totalCount = avatarFramesList.size,
@@ -2132,9 +3077,17 @@ fun ProfileScreen(
                     items(avatarFramesList) { frame ->
                         val isEquipped = equippedAvatarFrame == frame.id
                         val isOwned = purchasedAvatarFrames.contains(frame.id)
+                        val frameCategoryLabel = when (currentLang) {
+                            Language.RU -> "Рамка"
+                            Language.UA -> "Рамка"
+                            Language.KK -> "Жақтау"
+                            Language.DE -> "Rahmen"
+                            Language.ZH -> "相框"
+                            else -> "Avatar Frame"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.Portrait,
-                            category = if (currentLang == Language.RU) "Рамка" else "Avatar Frame",
+                            category = frameCategoryLabel,
                             title = frame.displayName,
                             description = frame.description,
                             isActive = isEquipped,
@@ -2144,7 +3097,15 @@ fun ProfileScreen(
                             onAction = {
                                 if (isEquipped) {
                                     viewModel.setEquippedAvatarFrame("standard")
-                                    triggerMessage(if (currentLang == Language.RU) "Рамка аватара сброшена" else "Avatar frame reset to standard.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Рамка аватара сброшена"
+                                        Language.UA -> "Рамку аватара скинуто"
+                                        Language.KK -> "Аватар жақтауы қалпына келтірілді"
+                                        Language.DE -> "Avatar-Rahmen zurückgesetzt."
+                                        Language.ZH -> "头像相框已重置"
+                                        else -> "Avatar frame reset to standard."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else {
                                     selectAvatarFrame(frame.id, frame.cost)
                                 }
@@ -2156,8 +3117,16 @@ fun ProfileScreen(
                 // 6. PLAYER TITLES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "TITLES") {
                     item {
+                        val playerTitlesTitle = when (currentLang) {
+                            Language.RU -> "ТИТУЛЫ ИГРОКА"
+                            Language.UA -> "ТИТУЛИ ГРАВЦЯ"
+                            Language.KK -> "ОЙЫНШЫ АТАҚТАРЫ"
+                            Language.DE -> "SPIELERTITEL"
+                            Language.ZH -> "玩家称号"
+                            else -> "PLAYER TITLES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ТИТУЛЫ ИГРОКА" else "PLAYER TITLES",
+                            title = playerTitlesTitle,
                             icon = Icons.Default.WorkspacePremium,
                             purchasedCount = purchasedTitles.size,
                             totalCount = playerBadgesList.size,
@@ -2167,9 +3136,17 @@ fun ProfileScreen(
                     items(playerBadgesList) { title ->
                         val isEquipped = equippedTitle == title.id
                         val isOwned = purchasedTitles.contains(title.id)
+                        val titleCategoryLabel = when (currentLang) {
+                            Language.RU -> "Титул"
+                            Language.UA -> "Титул"
+                            Language.KK -> "Атақ"
+                            Language.DE -> "Titel"
+                            Language.ZH -> "称号"
+                            else -> "Player Title"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.WorkspacePremium,
-                            category = if (currentLang == Language.RU) "Титул" else "Player Title",
+                            category = titleCategoryLabel,
                             title = title.displayName,
                             description = title.description,
                             isActive = isEquipped,
@@ -2179,45 +3156,17 @@ fun ProfileScreen(
                             onAction = {
                                 if (isEquipped) {
                                     viewModel.setEquippedTitle("none")
-                                    triggerMessage(if (currentLang == Language.RU) "Титул сброшен" else "Title reset to none.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Титул сброшен"
+                                        Language.UA -> "Титул скинуто"
+                                        Language.KK -> "Атақ қалпына келтірілді"
+                                        Language.DE -> "Titel zurückgesetzt."
+                                        Language.ZH -> "称号已重置"
+                                        else -> "Title reset to none."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else {
                                     selectTitle(title.id, title.cost)
-                                }
-                            }
-                        )
-                    }
-                }
-
-
-                // 8. FONTS
-                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "FONTS") {
-                    item {
-                        StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ШРИФТЫ ТЕКСТА" else "TYPOGRAPHY FONTS",
-                            icon = Icons.Default.Edit,
-                            purchasedCount = purchasedFonts.size,
-                            totalCount = fontsList.size,
-                            currentLang = currentLang
-                        )
-                    }
-                    items(fontsList) { fontItem ->
-                        val isEquipped = customFontKey == fontItem.id
-                        val isOwned = purchasedFonts.contains(fontItem.id)
-                        StoreItemCard(
-                            icon = Icons.Default.Edit,
-                            category = if (currentLang == Language.RU) "Шрифт" else "Font",
-                            title = fontItem.displayName,
-                            description = fontItem.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = fontItem.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setCustomFontKey("default")
-                                    triggerMessage(if (currentLang == Language.RU) "Шрифт сброшен" else "Font reset to default.")
-                                } else {
-                                    selectFont(fontItem.id, fontItem.cost)
                                 }
                             }
                         )
@@ -2227,8 +3176,16 @@ fun ProfileScreen(
                 // 9. CONTROL BUTTON STYLES
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "BUTTONS") {
                     item {
+                        val controlButtonsTitle = when (currentLang) {
+                            Language.RU -> "ДИЗАЙН КНОПОК"
+                            Language.UA -> "ДИЗАЙН КНОПОК"
+                            Language.KK -> "БАТЫРМАЛАР ДИЗАЙНЫ"
+                            Language.DE -> "TASTEN-DESIGNS"
+                            Language.ZH -> "按键样式"
+                            else -> "CONTROL BUTTON STYLES"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ДИЗАЙН КНОПОК" else "CONTROL BUTTON STYLES",
+                            title = controlButtonsTitle,
                             icon = Icons.Default.Extension,
                             purchasedCount = purchasedControlButtonStyles.size,
                             totalCount = controlButtonStylesList.size,
@@ -2238,9 +3195,17 @@ fun ProfileScreen(
                     items(controlButtonStylesList) { btnStyle ->
                         val isEquipped = controlButtonStyle == btnStyle.id
                         val isOwned = purchasedControlButtonStyles.contains(btnStyle.id)
+                        val buttonCategoryLabel = when (currentLang) {
+                            Language.RU -> "Кнопки"
+                            Language.UA -> "Кнопки"
+                            Language.KK -> "Батырмалар"
+                            Language.DE -> "Tasten"
+                            Language.ZH -> "按键"
+                            else -> "Button Design"
+                        }
                         StoreItemCard(
                             icon = Icons.Default.Extension,
-                            category = if (currentLang == Language.RU) "Кнопки" else "Button Design",
+                            category = buttonCategoryLabel,
                             title = btnStyle.displayName,
                             description = btnStyle.description,
                             isActive = isEquipped,
@@ -2250,7 +3215,15 @@ fun ProfileScreen(
                             onAction = {
                                 if (isEquipped) {
                                     viewModel.setControlButtonStyle("classic")
-                                    triggerMessage(if (currentLang == Language.RU) "Стиль кнопок сброшен" else "Button style reset to classic.")
+                                    val resetMsg = when (currentLang) {
+                                        Language.RU -> "Стиль кнопок сброшен"
+                                        Language.UA -> "Стиль кнопок скинуто"
+                                        Language.KK -> "Батырмалар стилі қалпына келтірілді"
+                                        Language.DE -> "Tasten-Design zurückgesetzt."
+                                        Language.ZH -> "按键样式已重置"
+                                        else -> "Button style reset to classic."
+                                    }
+                                    triggerMessage(resetMsg)
                                 } else {
                                     selectControlButtonStyle(btnStyle.id, btnStyle.cost)
                                 }
@@ -2259,131 +3232,358 @@ fun ProfileScreen(
                     }
                 }
                 
-                // 10. CUSTOM LEADERBOARD TAG
-                if (selectedStoreCategory == "ALL" || selectedStoreCategory == "TAGS") {
-                    item {
-                        val isOwned = customTagUnlocked
-                        StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "КАСТОМНЫЙ ТЕГ" else "CUSTOM TAG",
-                            icon = Icons.Default.Shield,
-                            purchasedCount = if (isOwned) 1 else 0,
-                            totalCount = 1,
-                            currentLang = currentLang
-                        )
-                    }
-                    item {
-                        val isOwned = customTagUnlocked
-                        StoreItemCard(
-                            icon = Icons.Default.Shield,
-                            category = if (currentLang == Language.RU) "Тег" else "Custom Tag",
-                            title = if (currentLang == Language.RU) "Личный Тег" else "Leaderboard Tag",
-                            description = if (currentLang == Language.RU) "Позволяет установить свой тег в глобальной таблице рекордов" else "Unlocks custom tag customization in profile settings",
-                            isActive = isOwned,
-                            isOwned = isOwned,
-                            cost = 500000,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isOwned) {
-                                    triggerMessage(if (currentLang == Language.RU) "Уже приобретено! Настройте в настройках профиля." else "Already purchased! Edit it in profile settings.")
-                                } else {
-                                    if (credits >= 500000) {
-                                        viewModel.spendCredits(500000)
-                                        viewModel.setCustomTagUnlocked(true)
-                                        viewModel.triggerAudioFeedback("buy")
-                                        triggerMessage(if (currentLang == Language.RU) "Тег успешно куплен! Установите его в настройках." else "Custom tag purchased successfully! Set it in settings.")
-                                    } else {
-                                        viewModel.triggerAudioFeedback("error")
-                                        triggerMessage(if (currentLang == Language.RU) "Недостаточно средств" else "Insufficient funds", isError = true)
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-
-                // 11. PRESTIGE II
+                // 10. PRESTIGE SYSTEM (I, II, III)
                 if (selectedStoreCategory == "ALL" || selectedStoreCategory == "PRESTIGE") {
                     item {
                         val prestigeLvl by viewModel.prestigeLevel.collectAsStateWithLifecycle()
-                        val isPrestigeActive = prestigeLvl >= 2
-
+                        val prestigeSectionTitle = when (currentLang) {
+                            Language.RU -> "СИСТЕМА ПРЕСТИЖА"
+                            Language.UA -> "СИСТЕМА ПРЕСТИЖУ"
+                            Language.KK -> "ПРЕСТИЖ ЖҮЙЕСІ"
+                            Language.DE -> "PRESTIGE-SYSTEM"
+                            Language.ZH -> "声望系统"
+                            else -> "PRESTIGE SYSTEM"
+                        }
                         StoreSectionHeader(
-                            title = if (currentLang == Language.RU) "ПРЕСТИЖ II" else "PRESTIGE II",
+                            title = prestigeSectionTitle,
                             icon = Icons.Default.AutoAwesome,
-                            purchasedCount = if (isPrestigeActive) 1 else 0,
-                            totalCount = 1,
+                            purchasedCount = prestigeLvl.coerceIn(0, 3),
+                            totalCount = 3,
                             currentLang = currentLang
                         )
                     }
+
                     item {
                         val prestigeLvl by viewModel.prestigeLevel.collectAsStateWithLifecycle()
-                        val isPrestigeActive = prestigeLvl >= 2
-                        var showPrestigeConfirm by remember { mutableStateOf(false) }
+                        var confirmPrestigeTarget by remember { mutableStateOf<Int?>(null) }
+
+                        val prestigeCategoryLabel = when (currentLang) {
+                            Language.RU -> "Престиж"
+                            Language.UA -> "Престиж"
+                            Language.KK -> "Престиж"
+                            Language.DE -> "Prestige"
+                            Language.ZH -> "声望"
+                            else -> "Prestige"
+                        }
+
+                        // ── PRESTIGE I (x2) ──
+                        val isP1Active = prestigeLvl >= 1
+                        val p1Title = when (currentLang) {
+                            Language.RU -> "Престиж I (Множитель x2)"
+                            Language.UA -> "Престиж I (Множник x2)"
+                            Language.KK -> "Престиж I (Көбейткіш x2)"
+                            Language.DE -> "Prestige I (x2 Multiplikator)"
+                            Language.ZH -> "声望 I (2倍金币加成)"
+                            else -> "Prestige I (x2 Multiplier)"
+                        }
+                        val p1Desc = if (isP1Active) {
+                            when (currentLang) {
+                                Language.RU -> "Престиж I активен! Постоянный множитель x2 ко всем заработкам монет."
+                                Language.UA -> "Престиж I активний! Постійний множник x2 до всіх заробітків монет."
+                                Language.KK -> "Престиж I белсенді! Барлық тиын табысына тұрақты x2 көбейткіш."
+                                Language.DE -> "Prestige I aktiv! Dauerhafter 2-fach-Multiplikator auf alle Münzbelohnungen."
+                                Language.ZH -> "声望 I 已激活！所有金币获取享受永久 2 倍加成。"
+                                else -> "Prestige I is active! Permanent x2 multiplier to all coin rewards."
+                            }
+                        } else {
+                            when (currentLang) {
+                                Language.RU -> "Требуется 100,000 🪙. Добровольный сброс баланса даёт вечный x2 множитель ко всем доходам!"
+                                Language.UA -> "Потрібно 100,000 🪙. Добровільне скидання балансу дає вічний x2 множник до всіх доходів!"
+                                Language.KK -> "100,000 🪙 қажет. Балансты нөлдеу барлық табысқа мәңгілік x2 көбейткіш береді!"
+                                Language.DE -> "Erfordert 100.000 🪙. Setze Guthaben auf 0 zurück für dauerhaften 2-fachen Multiplikator!"
+                                Language.ZH -> "需要 100,000 🪙。自愿重置金币为0，即可获得全收益永久2倍加成！"
+                                else -> "Requires 100,000 🪙. Reset balance to 0 to unlock permanent x2 earnings multiplier!"
+                            }
+                        }
 
                         StoreItemCard(
                             icon = Icons.Default.AutoAwesome,
-                            category = if (currentLang == Language.RU) "Престиж" else "Prestige",
-                            title = if (currentLang == Language.RU) "Престиж II (Множитель x8)" else "Prestige II (x8 Multiplier)",
-                            description = if (currentLang == Language.RU)
-                                if (isPrestigeActive) "Престиж II активен! Постоянный множитель x8 ко всем заработкам монет."
-                                else "Требуется 1,000,000 🪙. Добровольный сброс баланса даёт Личный Тег и вечный x8 множитель ко всем доходам!"
-                            else
-                                if (isPrestigeActive) "Prestige II is active! Permanent x8 multiplier to all coin rewards."
-                                else "Requires 1,000,000 🪙. Reset balance to 0 to unlock Leaderboard Tag and permanent x8 earnings multiplier!",
-                            isActive = isPrestigeActive,
-                            isOwned = isPrestigeActive,
-                            cost = 1000000,
+                            category = prestigeCategoryLabel,
+                            title = p1Title,
+                            description = p1Desc,
+                            isActive = isP1Active,
+                            isOwned = isP1Active,
+                            cost = ShopPrices.PRESTIGE_I_REQUIREMENT,
                             currentLang = currentLang,
                             onAction = {
-                                if (isPrestigeActive) {
-                                    triggerMessage(if (currentLang == Language.RU) "Престиж II уже активирован! Множитель x8 активен." else "Prestige II is already active! Multiplier x8 is applied.")
+                                if (isP1Active) {
+                                    val activeMsg = when (currentLang) {
+                                        Language.RU -> "Престиж I уже активирован!"
+                                        Language.UA -> "Престиж I вже активовано!"
+                                        Language.KK -> "Престиж I белсендірілген!"
+                                        Language.DE -> "Prestige I ist bereits aktiv!"
+                                        Language.ZH -> "声望 I 已经处于激活状态！"
+                                        else -> "Prestige I is already active!"
+                                    }
+                                    triggerMessage(activeMsg)
                                 } else {
-                                    if (credits >= 1000000) {
-                                        showPrestigeConfirm = true
+                                    if (credits >= ShopPrices.PRESTIGE_I_REQUIREMENT) {
+                                        confirmPrestigeTarget = 1
                                     } else {
                                         viewModel.triggerAudioFeedback("error")
-                                        triggerMessage(if (currentLang == Language.RU) "Необходимо накопить 1,000,000 🪙" else "Need to save 1,000,000 🪙 first", isError = true)
+                                        val needMsg = when (currentLang) {
+                                            Language.RU -> "Необходимо накопить 100,000 🪙"
+                                            Language.UA -> "Необхідно накопичити 100,000 🪙"
+                                            Language.KK -> "100,000 🪙 жинау қажет"
+                                            Language.DE -> "Es müssen zuerst 100.000 🪙 gespart werden"
+                                            Language.ZH -> "需要先攒够 100,000 🪙"
+                                            else -> "Need to save 100,000 🪙 first"
+                                        }
+                                        triggerMessage(needMsg, isError = true)
                                     }
                                 }
                             }
                         )
 
-                        if (showPrestigeConfirm) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ── PRESTIGE II (x4) ──
+                        val isP2Active = prestigeLvl >= 2
+                        val p2Title = when (currentLang) {
+                            Language.RU -> "Престиж II (Множитель x4)"
+                            Language.UA -> "Престиж II (Множник x4)"
+                            Language.KK -> "Престиж II (Көбейткіш x4)"
+                            Language.DE -> "Prestige II (x4 Multiplikator)"
+                            Language.ZH -> "声望 II (4倍金币加成)"
+                            else -> "Prestige II (x4 Multiplier)"
+                        }
+                        val p2Desc = if (isP2Active) {
+                            when (currentLang) {
+                                Language.RU -> "Престиж II активен! Постоянный множитель x4 ко всем заработкам монет."
+                                Language.UA -> "Престиж II активний! Постійний множник x4 до всіх заробітків монет."
+                                Language.KK -> "Престиж II белсенді! Барлық тиын табысына тұрақты x4 көбейткіш."
+                                Language.DE -> "Prestige II aktiv! Dauerhafter 4-fach-Multiplikator auf alle Münzbelohnungen."
+                                Language.ZH -> "声望 II 已激活！所有金币获取享受永久 4 倍加成。"
+                                else -> "Prestige II is active! Permanent x4 multiplier to all coin rewards."
+                            }
+                        } else {
+                            when (currentLang) {
+                                Language.RU -> "Требуется 400,000 🪙 и Престиж I. Добровольный сброс баланса даёт вечный x4 множитель ко всем доходам!"
+                                Language.UA -> "Потрібно 400,000 🪙 та Престиж I. Добровільне скидання балансу дає вічний x4 множник до всіх доходів!"
+                                Language.KK -> "400,000 🪙 және Престиж I қажет. Балансты нөлдеу барлық табысқа мәңгілік x4 көбейткіш береді!"
+                                Language.DE -> "Erfordert 400.000 🪙 und Prestige I. Setze Guthaben auf 0 zurück für dauerhaften 4-fachen Multiplikator!"
+                                Language.ZH -> "需要 400,000 🪙 及声望 I。自愿重置金币为0，即可获得全收益永久4倍加成！"
+                                else -> "Requires 400,000 🪙 and Prestige I. Reset balance to 0 to unlock permanent x4 earnings multiplier!"
+                            }
+                        }
+
+                        StoreItemCard(
+                            icon = Icons.Default.AutoAwesome,
+                            category = prestigeCategoryLabel,
+                            title = p2Title,
+                            description = p2Desc,
+                            isActive = isP2Active,
+                            isOwned = isP2Active,
+                            cost = ShopPrices.PRESTIGE_II_REQUIREMENT,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isP2Active) {
+                                    val activeMsg = when (currentLang) {
+                                        Language.RU -> "Престиж II уже активирован!"
+                                        Language.UA -> "Престиж II вже активовано!"
+                                        Language.KK -> "Престиж II белсендірілген!"
+                                        Language.DE -> "Prestige II ist bereits aktiv!"
+                                        Language.ZH -> "声望 II 已经处于激活状态！"
+                                        else -> "Prestige II is already active!"
+                                    }
+                                    triggerMessage(activeMsg)
+                                } else if (prestigeLvl < 1) {
+                                    viewModel.triggerAudioFeedback("error")
+                                    val reqMsg = when (currentLang) {
+                                        Language.RU -> "Сначала активируйте Престиж I!"
+                                        Language.UA -> "Спочатку активуйте Престиж I!"
+                                        Language.KK -> "Алдымен Престиж I белсендіріңіз!"
+                                        Language.DE -> "Aktiviere zuerst Prestige I!"
+                                        Language.ZH -> "请先激活声望 I！"
+                                        else -> "Activate Prestige I first!"
+                                    }
+                                    triggerMessage(reqMsg, isError = true)
+                                } else {
+                                    if (credits >= ShopPrices.PRESTIGE_II_REQUIREMENT) {
+                                        confirmPrestigeTarget = 2
+                                    } else {
+                                        viewModel.triggerAudioFeedback("error")
+                                        val needMsg = when (currentLang) {
+                                            Language.RU -> "Необходимо накопить 400,000 🪙"
+                                            Language.UA -> "Необхідно накопичити 400,000 🪙"
+                                            Language.KK -> "400,000 🪙 жинау қажет"
+                                            Language.DE -> "Es müssen zuerst 400.000 🪙 gespart werden"
+                                            Language.ZH -> "需要先攒够 400,000 🪙"
+                                            else -> "Need to save 400,000 🪙 first"
+                                        }
+                                        triggerMessage(needMsg, isError = true)
+                                    }
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // ── PRESTIGE III (x8 + Tag) ──
+                        val isP3Active = prestigeLvl >= 3
+                        val p3Title = when (currentLang) {
+                            Language.RU -> "Престиж III (Множитель x8 + Тег)"
+                            Language.UA -> "Престиж III (Множник x8 + Тег)"
+                            Language.KK -> "Престиж III (Көбейткіш x8 + Тег)"
+                            Language.DE -> "Prestige III (x8 Multiplikator + Tag)"
+                            Language.ZH -> "声望 III (8倍金币加成 + 专属标签)"
+                            else -> "Prestige III (x8 Multiplier + Tag)"
+                        }
+                        val p3Desc = if (isP3Active) {
+                            when (currentLang) {
+                                Language.RU -> "Престиж III активен! Постоянный множитель x8 ко всем заработкам монет и Личный Тег."
+                                Language.UA -> "Престиж III активний! Постійний множник x8 до всіх заробітків монет та Особистий Тег."
+                                Language.KK -> "Престиж III белсенді! Барлық тиын табысына тұрақты x8 көбейткіш пен Жеке Тег."
+                                Language.DE -> "Prestige III aktiv! Dauerhafter 8-fach-Multiplikator und Bestenlisten-Tag."
+                                Language.ZH -> "声望 III 已激活！所有金币获取享受永久 8 倍加成及专属标签。"
+                                else -> "Prestige III is active! Permanent x8 multiplier to all coin rewards and Custom Tag."
+                            }
+                        } else {
+                            when (currentLang) {
+                                Language.RU -> "Требуется 1,000,000 🪙 и Престиж II. Добровольный сброс баланса даёт Личный Тег и вечный x8 множитель ко всем доходам!"
+                                Language.UA -> "Потрібно 1,000,000 🪙 та Престиж II. Добровільне скидання балансу дає Особистий Тег та вічний x8 множник до всіх доходів!"
+                                Language.KK -> "1,000,000 🪙 және Престиж II қажет. Балансты нөлдеу Жеке Тег пен барлық табысқа мәңгілік x8 көбейткіш береді!"
+                                Language.DE -> "Erfordert 1.000.000 🪙 und Prestige II. Setze Guthaben auf 0 zurück für Bestenlisten-Tag und dauerhaften 8-fachen Multiplikator!"
+                                Language.ZH -> "需要 1,000,000 🪙 及声望 II。自愿重置金币为0，即可获得专属标签及全收益永久8倍加成！"
+                                else -> "Requires 1,000,000 🪙 and Prestige II. Reset balance to 0 to unlock Leaderboard Tag and permanent x8 earnings multiplier!"
+                            }
+                        }
+
+                        StoreItemCard(
+                            icon = Icons.Default.AutoAwesome,
+                            category = prestigeCategoryLabel,
+                            title = p3Title,
+                            description = p3Desc,
+                            isActive = isP3Active,
+                            isOwned = isP3Active,
+                            cost = ShopPrices.PRESTIGE_III_REQUIREMENT,
+                            currentLang = currentLang,
+                            onAction = {
+                                if (isP3Active) {
+                                    val activeMsg = when (currentLang) {
+                                        Language.RU -> "Престиж III уже активирован! Множитель x8 активен."
+                                        Language.UA -> "Престиж III вже активовано! Множник x8 активний."
+                                        Language.KK -> "Престиж III белсендірілген! x8 көбейткіш жұмыс істеп тұр."
+                                        Language.DE -> "Prestige III ist bereits aktiv! Multiplikator x8 wird angewendet."
+                                        Language.ZH -> "声望 III 已经处于激活状态！8倍加成生效中。"
+                                        else -> "Prestige III is already active! Multiplier x8 is applied."
+                                    }
+                                    triggerMessage(activeMsg)
+                                } else if (prestigeLvl < 2) {
+                                    viewModel.triggerAudioFeedback("error")
+                                    val reqMsg = when (currentLang) {
+                                        Language.RU -> "Сначала активируйте Престиж II!"
+                                        Language.UA -> "Спочатку активуйте Престиж II!"
+                                        Language.KK -> "Алдымен Престиж II белсендіріңіз!"
+                                        Language.DE -> "Aktiviere zuerst Prestige II!"
+                                        Language.ZH -> "请先激活声望 II！"
+                                        else -> "Activate Prestige II first!"
+                                    }
+                                    triggerMessage(reqMsg, isError = true)
+                                } else {
+                                    if (credits >= ShopPrices.PRESTIGE_III_REQUIREMENT) {
+                                        confirmPrestigeTarget = 3
+                                    } else {
+                                        viewModel.triggerAudioFeedback("error")
+                                        val needMsg = when (currentLang) {
+                                            Language.RU -> "Необходимо накопить 1,000,000 🪙"
+                                            Language.UA -> "Необхідно накопичити 1,000,000 🪙"
+                                            Language.KK -> "1,000,000 🪙 жинау қажет"
+                                            Language.DE -> "Es müssen zuerst 1.000.000 🪙 gespart werden"
+                                            Language.ZH -> "需要先攒够 1,000,000 🪙"
+                                            else -> "Need to save 1,000,000 🪙 first"
+                                        }
+                                        triggerMessage(needMsg, isError = true)
+                                    }
+                                }
+                            }
+                        )
+
+                        confirmPrestigeTarget?.let { targetLevel ->
+                            val romanNumeral = when (targetLevel) {
+                                1 -> "I"
+                                2 -> "II"
+                                else -> "III"
+                            }
+                            val multiplierText = when (targetLevel) {
+                                1 -> "x2"
+                                2 -> "x4"
+                                else -> "x8"
+                            }
+                            val dialogTitle = when (currentLang) {
+                                Language.RU -> "Активировать Престиж $romanNumeral?"
+                                Language.UA -> "Активувати Престиж $romanNumeral?"
+                                Language.KK -> "Престиж $romanNumeral белсендіру керек пе?"
+                                Language.DE -> "Prestige $romanNumeral aktivieren?"
+                                Language.ZH -> "激活声望 $romanNumeral？"
+                                else -> "Activate Prestige $romanNumeral?"
+                            }
+                            val extraBenefit = if (targetLevel >= 3) {
+                                when (currentLang) {
+                                    Language.RU -> "\n• Бесплатный Личный Тег для таблицы рекордов"
+                                    Language.UA -> "\n• Безкоштовний Особистий Тег для таблиці рекордів"
+                                    Language.KK -> "\n• Рекордтар кестесі үшін тегін Жеке Тег"
+                                    Language.DE -> "\n• Kostenloser Bestenlisten-Tag"
+                                    Language.ZH -> "\n• 免费排行榜专属标签"
+                                    else -> "\n• Free Custom Leaderboard Tag"
+                                }
+                            } else ""
+                            val dialogText = when (currentLang) {
+                                Language.RU -> "Внимание! Ваш баланс монет будет сброшен до 0.\n\nВы получите навсегда:\n• Постоянный множитель $multiplierText ко всем заработкам монет$extraBenefit\n• Знак Престижа $romanNumeral"
+                                Language.UA -> "Увага! Ваш баланс монет буде скинуто до 0.\n\nВи отримаєте назавжди:\n• Постійний множник $multiplierText до всіх заробітків монет$extraBenefit\n• Знак Престижу $romanNumeral"
+                                Language.KK -> "Назар аударыңыз! Сіздің тиын балансыңыз 0-ге дейін нөлденеді.\n\nСіз мәңгілікке аласыз:\n• Барлық тиын табысына тұрақты $multiplierText көбейткіш$extraBenefit\n• Престиж $romanNumeral белгісі"
+                                Language.DE -> "Achtung! Dein Münzguthaben wird auf 0 zurückgesetzt.\n\nDu erhältst dauerhaft:\n• Dauerhafter $multiplierText-Multiplikator auf alle Münzbelohnungen$extraBenefit\n• Prestige $romanNumeral-Abzeichen"
+                                Language.ZH -> "注意！您的金币余额将被重置为 0。\n\n您将永久获得：\n• 所有金币获取永久 $multiplierText 倍加成$extraBenefit\n• 声望 $romanNumeral 专属勋章"
+                                else -> "Attention! Your coin balance will be reset to 0.\n\nYou will permanently receive:\n• Permanent $multiplierText multiplier to all coin rewards$extraBenefit\n• Prestige $romanNumeral Badge"
+                            }
+                            val confirmBtn = when (currentLang) {
+                                Language.RU -> "СБРОСИТЬ И АКТИВИРОВАТЬ"
+                                Language.UA -> "СКИНУТИ ТА АКТИВУВАТИ"
+                                Language.KK -> "НӨЛДЕП БЕЛСЕНДІРУ"
+                                Language.DE -> "ZURÜCKSETZEN & AKTIVIEREN"
+                                Language.ZH -> "重置并激活"
+                                else -> "RESET & ACTIVATE"
+                            }
                             AlertDialog(
-                                onDismissRequest = { showPrestigeConfirm = false },
+                                onDismissRequest = { confirmPrestigeTarget = null },
                                 icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(36.dp)) },
                                 title = {
                                     Text(
-                                        text = if (currentLang == Language.RU) "Активировать Престиж II?" else "Activate Prestige II?",
+                                        text = dialogTitle,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                 },
                                 text = {
                                     Text(
-                                        text = if (currentLang == Language.RU)
-                                            "Внимание! Ваш баланс монет будет сброшен до 0.\n\nВы получите навсегда:\n✨ Постоянный множитель x8 ко всем заработкам монет\n🛡️ Бесплатный Личный Тег для таблицы рекордов\n👑 Знак Престижа II"
-                                        else
-                                            "Attention! Your coin balance will be reset to 0.\n\nYou will permanently receive:\n✨ Permanent x8 multiplier to all coin rewards\n🛡️ Free Custom Leaderboard Tag\n👑 Prestige II Badge",
+                                        text = dialogText,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 },
                                 confirmButton = {
                                     Button(
                                         onClick = {
-                                            showPrestigeConfirm = false
-                                            viewModel.activatePrestige2()
+                                            confirmPrestigeTarget = null
+                                            viewModel.activatePrestige(targetLevel)
                                             viewModel.triggerAudioFeedback("success")
-                                            triggerMessage(if (currentLang == Language.RU) "Престиж II активирован! Множитель x8 получен!" else "Prestige II activated! x8 Multiplier unlocked!")
+                                            val activatedMsg = when (currentLang) {
+                                                Language.RU -> "Престиж $romanNumeral активирован! Множитель $multiplierText получен!"
+                                                Language.UA -> "Престиж $romanNumeral активовано! Множник $multiplierText отримано!"
+                                                Language.KK -> "Престиж $romanNumeral белсендірілді! $multiplierText көбейткіш алынды!"
+                                                Language.DE -> "Prestige $romanNumeral aktiviert! $multiplierText-Multiplikator freigeschaltet!"
+                                                Language.ZH -> "声望 $romanNumeral 激活成功！已获得 $multiplierText 倍金币加成！"
+                                                else -> "Prestige $romanNumeral activated! $multiplierText Multiplier unlocked!"
+                                            }
+                                            triggerMessage(activatedMsg)
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700), contentColor = Color.Black)
                                     ) {
-                                        Text(if (currentLang == Language.RU) "СБРОСИТЬ И АКТИВИРОВАТЬ" else "RESET & ACTIVATE", fontWeight = FontWeight.Bold)
+                                        Text(confirmBtn, fontWeight = FontWeight.Bold)
                                     }
                                 },
                                 dismissButton = {
-                                    TextButton(onClick = { showPrestigeConfirm = false }) {
-                                        Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                                    TextButton(onClick = { confirmPrestigeTarget = null }) {
+                                        Text(Translations.get("cancel", currentLang))
                                     }
                                 }
                             )
@@ -2430,10 +3630,18 @@ fun ProfileScreen(
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
+                    val profileSettingsTitle = when (currentLang) {
+                        Language.RU -> "НАСТРОЙКИ ПРОФИЛЯ"
+                        Language.UA -> "НАЛАШТУВАННЯ ПРОФІЛЮ"
+                        Language.KK -> "ПРОФИЛЬ БАПТАУЛАРЫ"
+                        Language.DE -> "PROFIL-EINSTELLUNGEN"
+                        Language.ZH -> "个人资料设置"
+                        else -> "PROFILE SETTINGS"
+                    }
                     CenterAlignedTopAppBar(
                         title = {
                             Text(
-                                text = if (currentLang == Language.RU) "НАСТРОЙКИ ПРОФИЛЯ" else "PROFILE SETTINGS",
+                                text = profileSettingsTitle,
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -2484,8 +3692,16 @@ fun ProfileScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
+                            val avatarAndBgTitle = when (currentLang) {
+                                Language.RU -> "АВАТАР И ФОН"
+                                Language.UA -> "АВАТАР ТА ФОН"
+                                Language.KK -> "АВАТАР ЖӘНЕ ФОН"
+                                Language.DE -> "AVATAR & HINTERGRUND"
+                                Language.ZH -> "头像与背景"
+                                else -> "AVATAR & BACKGROUND"
+                            }
                             Text(
-                                text = if (currentLang == Language.RU) "АВАТАР И ФОН" else "AVATAR & BACKGROUND",
+                                text = avatarAndBgTitle,
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -2493,56 +3709,37 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
 
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(112.dp)
-                            ) {
-                                if (equippedAvatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl", "omega_ti")) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(98.dp)
-                                            .graphicsLayer {
-                                                rotationZ = rotationAngle
-                                            }
-                                            .border(
-                                                width = avatarFrameThickness + 0.5.dp,
-                                                brush = avatarFrameBorderBrush,
-                                                shape = RoundedCornerShape(50)
-                                            )
-                                    )
-                                }
+                            // Live Avatar Preview
+                            PlayerAvatarView(
+                                playerName = playerName,
+                                avatarEmoji = customAvatarEmoji,
+                                avatarBgColorHex = customAvatarBgColor,
+                                avatarFrame = equippedAvatarFrame,
+                                customBitmap = customAvatarBitmap,
+                                size = 100.dp,
+                                themeColor = themeColor,
+                                secondaryColor = secondaryColor,
+                                showOnlineDot = true,
+                                isOnline = true
+                            )
 
-                                Box(
-                                    modifier = Modifier
-                                        .size(90.dp)
-                                        .clip(RoundedCornerShape(50))
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color.White.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(50)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val avatarBmp = customAvatarBitmap
-                                    if (avatarBmp != null) {
-                                        Image(
-                                            bitmap = avatarBmp,
-                                            contentDescription = "Avatar",
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = "Placeholder Avatar",
-                                            modifier = Modifier.size(52.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                        )
-                                    }
-                                }
+                            // Photo Picker Buttons
+                            val pickPhotoBtnText = when (currentLang) {
+                                Language.RU -> "Выбрать фото"
+                                Language.UA -> "Обрати фото"
+                                Language.KK -> "Фото таңдау"
+                                Language.DE -> "Foto wählen"
+                                Language.ZH -> "选择头像"
+                                else -> "Pick Photo"
                             }
-
+                            val pickBgBtnText = when (currentLang) {
+                                Language.RU -> "Фон карты"
+                                Language.UA -> "Фон карти"
+                                Language.KK -> "Карта фоны"
+                                Language.DE -> "Karten-Hintergrund"
+                                Language.ZH -> "卡片背景"
+                                else -> "Pick BG"
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -2555,8 +3752,9 @@ fun ProfileScreen(
                                     Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (currentLang == Language.RU) "Аватар" else "Set Avatar",
-                                        fontWeight = FontWeight.Bold
+                                        text = pickPhotoBtnText,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
                                     )
                                 }
 
@@ -2568,8 +3766,9 @@ fun ProfileScreen(
                                     Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (currentLang == Language.RU) "Фон карты" else "Set Card BG",
-                                        fontWeight = FontWeight.Bold
+                                        text = pickBgBtnText,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
@@ -2582,6 +3781,22 @@ fun ProfileScreen(
                             }
 
                             if (hasCustomAvatar || hasCustomBg) {
+                                val resetPhotoText = when (currentLang) {
+                                    Language.RU -> "Сбросить фото"
+                                    Language.UA -> "Скинути фото"
+                                    Language.KK -> "Фотоны қалпына келтіру"
+                                    Language.DE -> "Foto zurücksetzen"
+                                    Language.ZH -> "重置头像"
+                                    else -> "Reset Photo"
+                                }
+                                val resetBgText = when (currentLang) {
+                                    Language.RU -> "Сбросить фон"
+                                    Language.UA -> "Скинути фон"
+                                    Language.KK -> "Фонды қалпына келтіру"
+                                    Language.DE -> "Hintergrund zurücksetzen"
+                                    Language.ZH -> "重置背景"
+                                    else -> "Reset BG"
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2593,12 +3808,13 @@ fun ProfileScreen(
                                                 if (file.exists()) file.delete()
                                                 sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", false).apply()
                                                 avatarChangeCounter++
+                                                viewModel.saveCurrentProfileToDb()
                                                 viewModel.triggerAudioFeedback("click")
                                             },
                                             shape = RoundedCornerShape(14.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Сбросить аватар" else "Clear Avatar", fontSize = 11.sp)
+                                            Text(resetPhotoText, fontSize = 11.sp)
                                         }
                                     }
                                     if (hasCustomBg) {
@@ -2608,12 +3824,125 @@ fun ProfileScreen(
                                                 if (file.exists()) file.delete()
                                                 sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", false).apply()
                                                 bgChangeCounter++
+                                                viewModel.saveCurrentProfileToDb()
                                                 viewModel.triggerAudioFeedback("click")
                                             },
                                             shape = RoundedCornerShape(14.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Сбросить фон" else "Clear BG", fontSize = 11.sp)
+                                            Text(resetBgText, fontSize = 11.sp)
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                            // Emoji Avatar Picker
+                            val chooseEmojiTitle = when (currentLang) {
+                                Language.RU -> "ВЫБЕРИТЕ СМАЙЛИК / ИКОНКУ"
+                                Language.UA -> "ОБЕРІТЬ СМАЙЛИК / ІКОНКУ"
+                                Language.KK -> "СМАЙЛИК / БЕЛГІШЕНІ ТАҢДАҢЫЗ"
+                                Language.DE -> "EMOJI / SYMBOL WÄHLEN"
+                                Language.ZH -> "选择表情 / 图标"
+                                else -> "CHOOSE EMOJI / ICON"
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = chooseEmojiTitle,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                val emojiPresets = listOf(
+                                    "🤖", "🐱", "👑", "🔥", "⚡", "👾", "💎", "🌟",
+                                    "🚀", "🛡️", "🎯", "🎮", "🦊", "🐯", "🦁", "🐉",
+                                    "💀", "🏆", "😎", "👻", "⭐", "🍕", "🦄", "🔮"
+                                )
+
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                ) {
+                                    items(emojiPresets) { emoji ->
+                                        val isSelected = customAvatarEmoji == emoji
+                                        Surface(
+                                            onClick = {
+                                                viewModel.setCustomAvatarEmoji(emoji)
+                                                viewModel.triggerAudioFeedback("click")
+                                            },
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = if (isSelected) themeColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            border = if (isSelected) BorderStroke(2.dp, themeColor) else null,
+                                            modifier = Modifier.size(44.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(text = emoji, fontSize = 20.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Avatar Background Color Swatches
+                            val avatarBgColorTitle = when (currentLang) {
+                                Language.RU -> "ЦВЕТ ФОНА АВАТАРА"
+                                Language.UA -> "КОЛІР ФОНУ АВАТАРА"
+                                Language.KK -> "АВАТАР ФОНЫНЫҢ ТҮСІ"
+                                Language.DE -> "AVATAR-HINTERGRUNDFARBE"
+                                Language.ZH -> "头像背景颜色"
+                                else -> "AVATAR BACKGROUND COLOR"
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = avatarBgColorTitle,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                val colorSwatches = listOf(
+                                    "3A3C44", "6C63FF", "00B4D8", "06D6A0", "FFB703", "FB5607",
+                                    "FF006E", "8338EC", "3A86FF", "2EC4B6", "E71D36", "1A1A24",
+                                    "2D3748", "D97706", "059669"
+                                )
+
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                ) {
+                                    items(colorSwatches) { hex ->
+                                        val swatchColor = try {
+                                            Color(android.graphics.Color.parseColor("#$hex"))
+                                        } catch (e: Exception) {
+                                            themeColor
+                                        }
+                                        val isSelected = customAvatarBgColor.equals(hex, ignoreCase = true)
+                                        Surface(
+                                            onClick = {
+                                                viewModel.setCustomAvatarBgColor(hex)
+                                                viewModel.triggerAudioFeedback("click")
+                                            },
+                                            shape = CircleShape,
+                                            color = swatchColor,
+                                            border = if (isSelected) BorderStroke(3.dp, Color.White) else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                            modifier = Modifier.size(38.dp)
+                                        ) {
+                                            if (isSelected) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -2636,8 +3965,32 @@ fun ProfileScreen(
                                 .padding(18.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            val changeNickTitle = when (currentLang) {
+                                Language.RU -> "СМЕНИТЬ НИКНЕЙМ"
+                                Language.UA -> "ЗМІНИТИ НІКНЕЙМ"
+                                Language.KK -> "НИКНЕЙМДІ ӨЗГЕРТУ"
+                                Language.DE -> "BENUTZERNAME ÄNDERN"
+                                Language.ZH -> "更改昵称"
+                                else -> "CHANGE NICKNAME"
+                            }
+                            val newNickLabel = when (currentLang) {
+                                Language.RU -> "Новый никнейм"
+                                Language.UA -> "Новий нікнейм"
+                                Language.KK -> "Жаңа никнейм"
+                                Language.DE -> "Neuer Benutzername"
+                                Language.ZH -> "新昵称"
+                                else -> "New Nickname"
+                            }
+                            val saveNickBtn = when (currentLang) {
+                                Language.RU -> "Сохранить ник"
+                                Language.UA -> "Зберегти нік"
+                                Language.KK -> "Никті сақтау"
+                                Language.DE -> "Name speichern"
+                                Language.ZH -> "保存昵称"
+                                else -> "Save Nickname"
+                            }
                             Text(
-                                text = if (currentLang == Language.RU) "СМЕНИТЬ НИКНЕЙМ" else "CHANGE NICKNAME",
+                                text = changeNickTitle,
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -2651,7 +4004,7 @@ fun ProfileScreen(
                                 value = editNickNameInput,
                                 onValueChange = { editNickNameInput = it },
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                label = { Text(if (currentLang == Language.RU) "Новый никнейм" else "New Nickname") },
+                                label = { Text(newNickLabel) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
@@ -2671,7 +4024,7 @@ fun ProfileScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text(if (currentLang == Language.RU) "Сохранить ник" else "Save Nickname", fontWeight = FontWeight.Bold)
+                                Text(saveNickBtn, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -2695,12 +4048,54 @@ fun ProfileScreen(
                                 .padding(18.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            val emailCardTitle = if (currentEmail.isEmpty()) {
+                                when (currentLang) {
+                                    Language.RU -> "ПРИВЯЗАТЬ ПОЧТУ"
+                                    Language.UA -> "ПРИВ'ЯЗАТИ ПОШТУ"
+                                    Language.KK -> "ПОШТАНЫ БАЙЛАНЫСТЫРУ"
+                                    Language.DE -> "E-MAIL VERKNÜPFEN"
+                                    Language.ZH -> "绑定邮箱"
+                                    else -> "BIND EMAIL"
+                                }
+                            } else {
+                                when (currentLang) {
+                                    Language.RU -> "ИЗМЕНИТЬ ПОЧТУ"
+                                    Language.UA -> "ЗМІНИТИ ПОШТУ"
+                                    Language.KK -> "ПОШТАНЫ ӨЗГЕРТУ"
+                                    Language.DE -> "E-MAIL ÄNDERN"
+                                    Language.ZH -> "更改邮箱"
+                                    else -> "CHANGE EMAIL"
+                                }
+                            }
+                            val emailInputLabel = when (currentLang) {
+                                Language.RU -> "Электронная почта"
+                                Language.UA -> "Електронна пошта"
+                                Language.KK -> "Электрондық пошта"
+                                Language.DE -> "E-Mail-Adresse"
+                                Language.ZH -> "电子邮箱"
+                                else -> "Email Address"
+                            }
+                            val emailActionBtn = if (currentEmail.isEmpty()) {
+                                when (currentLang) {
+                                    Language.RU -> "Привязать"
+                                    Language.UA -> "Прив'язати"
+                                    Language.KK -> "Байланыстыру"
+                                    Language.DE -> "Verknüpfen"
+                                    Language.ZH -> "绑定"
+                                    else -> "Bind Email"
+                                }
+                            } else {
+                                when (currentLang) {
+                                    Language.RU -> "Обновить"
+                                    Language.UA -> "Оновити"
+                                    Language.KK -> "Жаңарту"
+                                    Language.DE -> "Aktualisieren"
+                                    Language.ZH -> "更新"
+                                    else -> "Update Email"
+                                }
+                            }
                             Text(
-                                text = if (currentEmail.isEmpty()) {
-                                    if (currentLang == Language.RU) "ПРИВЯЗАТЬ ПОЧТУ" else "BIND EMAIL"
-                                } else {
-                                    if (currentLang == Language.RU) "ИЗМЕНИТЬ ПОЧТУ" else "CHANGE EMAIL"
-                                },
+                                text = emailCardTitle,
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -2712,7 +4107,7 @@ fun ProfileScreen(
                                 value = editEmailInput,
                                 onValueChange = { editEmailInput = it },
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                                label = { Text(if (currentLang == Language.RU) "Электронная почта" else "Email Address") },
+                                label = { Text(emailInputLabel) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
@@ -2732,14 +4127,7 @@ fun ProfileScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text(
-                                    if (currentEmail.isEmpty()) {
-                                        if (currentLang == Language.RU) "Привязать" else "Bind Email"
-                                    } else {
-                                        if (currentLang == Language.RU) "Обновить" else "Update Email"
-                                    },
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text(emailActionBtn, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -2759,8 +4147,16 @@ fun ProfileScreen(
                                 .padding(18.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            val customTagCardTitle = when (currentLang) {
+                                Language.RU -> "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ"
+                                Language.UA -> "ТЕГ У ТАБЛИЦІ РЕКОРДІВ"
+                                Language.KK -> "РЕКОРДТАР КЕСТЕСІНДЕГІ ТЕГ"
+                                Language.DE -> "BESTENLISTEN-TAG"
+                                Language.ZH -> "排行榜专属标签"
+                                else -> "LEADERBOARD CUSTOM TAG"
+                            }
                             Text(
-                                text = if (currentLang == Language.RU) "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ" else "LEADERBOARD CUSTOM TAG",
+                                text = customTagCardTitle,
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -2774,6 +4170,14 @@ fun ProfileScreen(
                             var editTagInput by remember(customTagVal) { mutableStateOf(customTagVal) }
 
                             if (!customTagUnlocked) {
+                                val tagLockedMsg = when (currentLang) {
+                                    Language.RU -> "Функция заблокирована. Приобретите «Личный Тег» в магазине."
+                                    Language.UA -> "Функція заблокована. Придбайте «Особистий Тег» у магазині."
+                                    Language.KK -> "Функция бұғатталған. Дүкеннен «Жеке Тег» сатып алыңыз."
+                                    Language.DE -> "Funktion gesperrt. Kaufe «Persönlicher Tag» im Shop."
+                                    Language.ZH -> "功能已锁定。请在商店中购买「专属标签」。"
+                                    else -> "Feature locked. Purchase «Leaderboard Tag» in the store."
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
                                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -2791,10 +4195,7 @@ fun ProfileScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
-                                            text = if (currentLang == Language.RU) 
-                                                "Функция заблокирована. Приобретите «Личный Тег» в магазине."
-                                            else 
-                                                "Feature locked. Purchase «Leaderboard Tag» in the store.",
+                                            text = tagLockedMsg,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontWeight = FontWeight.SemiBold
@@ -2802,11 +4203,27 @@ fun ProfileScreen(
                                     }
                                 }
                             } else {
+                                val customTagInputLabel = when (currentLang) {
+                                    Language.RU -> "Кастомный тег (макс. 6 симв.)"
+                                    Language.UA -> "Кастомний тег (макс. 6 симв.)"
+                                    Language.KK -> "Арнайы тег (макс. 6 таңба)"
+                                    Language.DE -> "Eigener Tag (max. 6 Zeichen)"
+                                    Language.ZH -> "自定义标签（最多6个字符）"
+                                    else -> "Custom Tag (max 6 chars)"
+                                }
+                                val saveTagBtnText = when (currentLang) {
+                                    Language.RU -> "Сохранить тег"
+                                    Language.UA -> "Зберегти тег"
+                                    Language.KK -> "Тегті сақтау"
+                                    Language.DE -> "Tag speichern"
+                                    Language.ZH -> "保存标签"
+                                    else -> "Save Tag"
+                                }
                                 OutlinedTextField(
                                     value = editTagInput,
                                     onValueChange = { if (it.length <= 6) editTagInput = it },
                                     leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
-                                    label = { Text(if (currentLang == Language.RU) "Кастомный тег (макс. 6 симв.)" else "Custom Tag (max 6 chars)") },
+                                    label = { Text(customTagInputLabel) },
                                     singleLine = true,
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.fillMaxWidth()
@@ -2820,7 +4237,7 @@ fun ProfileScreen(
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.align(Alignment.End)
                                 ) {
-                                    Text(if (currentLang == Language.RU) "Сохранить тег" else "Save Tag", fontWeight = FontWeight.Bold)
+                                    Text(saveTagBtnText, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -2873,12 +4290,20 @@ private fun StoreSectionHeader(
                 )
             }
             if (purchasedCount >= 0 && totalCount >= 0) {
+                val countText = when (currentLang) {
+                    Language.RU -> "$purchasedCount из $totalCount"
+                    Language.UA -> "$purchasedCount з $totalCount"
+                    Language.KK -> "$totalCount ішінен $purchasedCount"
+                    Language.DE -> "$purchasedCount von $totalCount"
+                    Language.ZH -> "$purchasedCount / $totalCount"
+                    else -> "$purchasedCount of $totalCount"
+                }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest
                 ) {
                     Text(
-                        text = if (currentLang == Language.RU) "$purchasedCount из $totalCount" else "$purchasedCount of $totalCount",
+                        text = countText,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2903,17 +4328,7 @@ private fun StoreItemCard(
     isLocked: Boolean = false,
     onAction: () -> Unit
 ) {
-    val rarityText = if (currentLang == Language.RU) {
-        if (cost <= 0) "БАЗОВЫЙ"
-        else if (cost <= 400) "РЕДКИЙ"
-        else if (cost <= 800) "ЭПИЧЕСКИЙ"
-        else "ЛЕГЕНДАРНЫЙ"
-    } else {
-        if (cost <= 0) "COMMON"
-        else if (cost <= 400) "RARE"
-        else if (cost <= 800) "EPIC"
-        else "LEGENDARY"
-    }
+    val rarityText = Translations.getStoreRarity(cost, currentLang)
 
     val rarityColor = when {
         cost <= 0 -> Color(0xFF9E9E9E)
@@ -3015,13 +4430,35 @@ private fun StoreItemCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            val isRank = category.equals("Rank", ignoreCase = true) || category.equals("Ранг", ignoreCase = true)
+            val isRank = category.equals("Rank", ignoreCase = true) || 
+                         category.equals("Ранг", ignoreCase = true) ||
+                         category.equals("Rang", ignoreCase = true) ||
+                         category.equals("段位", ignoreCase = true)
             if (!(isRank && isOwned)) {
                 val buttonEnabled = when {
                     isRank -> !isOwned
                     else -> !isLocked
                 }
                 if (isOwned || isActive) {
+                    val onOffText = if (isActive) {
+                        when (currentLang) {
+                            Language.RU -> "ВКЛ"
+                            Language.UA -> "УВІМК"
+                            Language.KK -> "ҚОС"
+                            Language.DE -> "EIN"
+                            Language.ZH -> "已开启"
+                            else -> "ON"
+                        }
+                    } else {
+                        when (currentLang) {
+                            Language.RU -> "ВЫКЛ"
+                            Language.UA -> "ВИМК"
+                            Language.KK -> "ӨШІР"
+                            Language.DE -> "AUS"
+                            Language.ZH -> "已关闭"
+                            else -> "OFF"
+                        }
+                    }
                     FilledTonalButton(
                         onClick = onAction,
                         enabled = buttonEnabled,
@@ -3035,16 +4472,20 @@ private fun StoreItemCard(
                         )
                     ) {
                         Text(
-                            text = if (isActive) {
-                                if (currentLang == Language.RU) "ВКЛ" else "ON"
-                            } else {
-                                if (currentLang == Language.RU) "ВЫКЛ" else "OFF"
-                            },
+                            text = onOffText,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
                 } else {
+                    val lockBtnText = when (currentLang) {
+                        Language.RU -> "БЛОК"
+                        Language.UA -> "БЛОК"
+                        Language.KK -> "ҚҰЛЫП"
+                        Language.DE -> "GESPERRT"
+                        Language.ZH -> "未解锁"
+                        else -> "LOCKED"
+                    }
                     Button(
                         onClick = onAction,
                         enabled = buttonEnabled,
@@ -3058,11 +4499,7 @@ private fun StoreItemCard(
                         )
                     ) {
                         Text(
-                            text = if (isLocked) {
-                                if (currentLang == Language.RU) "БЛОК" else "LOCKED"
-                            } else {
-                                "$cost 🪙"
-                            },
+                            text = if (isLocked) lockBtnText else "$cost 🪙",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -3087,9 +4524,30 @@ private fun AchievementsTabContent(
     var achievementFilter by remember { mutableStateOf("ALL") }
     val filterOptions = remember(currentLang) {
         listOf(
-            "ALL" to (if (currentLang == Language.RU) "Все" else "All"),
-            "UNLOCKED" to (if (currentLang == Language.RU) "Открытые" else "Unlocked"),
-            "LOCKED" to (if (currentLang == Language.RU) "В процессе" else "In Progress")
+            "ALL" to when (currentLang) {
+                Language.RU -> "Все"
+                Language.UA -> "Всі"
+                Language.KK -> "Барлығы"
+                Language.DE -> "Alle"
+                Language.ZH -> "全部"
+                else -> "All"
+            },
+            "UNLOCKED" to when (currentLang) {
+                Language.RU -> "Открытые"
+                Language.UA -> "Відкриті"
+                Language.KK -> "Ашылғандар"
+                Language.DE -> "Freigeschaltet"
+                Language.ZH -> "已解锁"
+                else -> "Unlocked"
+            },
+            "LOCKED" to when (currentLang) {
+                Language.RU -> "В процессе"
+                Language.UA -> "В процесі"
+                Language.KK -> "Орындалуда"
+                Language.DE -> "In Bearbeitung"
+                Language.ZH -> "进行中"
+                else -> "In Progress"
+            }
         )
     }
 
@@ -3113,6 +4571,22 @@ private fun AchievementsTabContent(
     ) {
         // Hall of Fame Hero Card
         item {
+            val hallOfFameTitle = when (currentLang) {
+                Language.RU -> "ЗАЛ СЛАВЫ"
+                Language.UA -> "ЗАЛА СЛАВИ"
+                Language.KK -> "ДАҢҚ ЗАЛЫ"
+                Language.DE -> "RUHMESHALLE"
+                Language.ZH -> "荣誉殿堂"
+                else -> "HALL OF FAME"
+            }
+            val unlockedProgressText = when (currentLang) {
+                Language.RU -> "Разблокировано наград: $unlockedCount из $totalCount (${(progressFactor * 100).toInt()}%)"
+                Language.UA -> "Розблоковано нагород: $unlockedCount з $totalCount (${(progressFactor * 100).toInt()}%)"
+                Language.KK -> "Ашылған жетістіктер: $totalCount ішінен $unlockedCount (${(progressFactor * 100).toInt()}%)"
+                Language.DE -> "Freigeschaltete Erfolge: $unlockedCount von $totalCount (${(progressFactor * 100).toInt()}%)"
+                Language.ZH -> "已解锁成就：$unlockedCount / $totalCount (${(progressFactor * 100).toInt()}%)"
+                else -> "Unlocked achievements: $unlockedCount of $totalCount (${(progressFactor * 100).toInt()}%)"
+            }
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(26.dp),
@@ -3147,7 +4621,7 @@ private fun AchievementsTabContent(
                     }
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
-                        text = if (currentLang == Language.RU) "ЗАЛ СЛАВЫ" else "HALL OF FAME",
+                        text = hallOfFameTitle,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
@@ -3156,11 +4630,7 @@ private fun AchievementsTabContent(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (currentLang == Language.RU) {
-                            "Разблокировано наград: $unlockedCount из $totalCount (${(progressFactor * 100).toInt()}%)"
-                        } else {
-                            "Unlocked achievements: $unlockedCount of $totalCount (${(progressFactor * 100).toInt()}%)"
-                        },
+                        text = unlockedProgressText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -3263,18 +4733,49 @@ private fun AchievementsTabContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (currentLang == Language.RU) ach.titleRu else ach.titleEn,
+                                text = Translations.getLocalizedAchievementTitle(ach.id, currentLang, ach.titleEn, ach.titleRu),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
+                            val rewardLabel = when {
+                                ach.crateKeyReward != null && ach.crateKeyCount > 0 && ach.pointsReward > 0 -> {
+                                    val keyName = when (ach.crateKeyReward) {
+                                        "wooden" -> if (currentLang == Language.RU) "Деревянный Ключ" else "Wooden Key"
+                                        "iron" -> if (currentLang == Language.RU) "Железный Ключ" else "Iron Key"
+                                        "golden" -> if (currentLang == Language.RU) "Золотой Ключ" else "Golden Key"
+                                        "platinum" -> if (currentLang == Language.RU) "Платиновый Ключ" else "Platinum Key"
+                                        "legendary" -> if (currentLang == Language.RU) "Легендарный Ключ" else "Legendary Key"
+                                        "diamond" -> if (currentLang == Language.RU) "Алмазный Ключ" else "Diamond Key"
+                                        "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный Ключ" else "Red Key"
+                                        else -> "Key"
+                                    }
+                                    "+${ach.pointsReward} 🪙 + 🔑 $keyName"
+                                }
+                                ach.crateKeyReward != null && ach.crateKeyCount > 0 -> {
+                                    val keyName = when (ach.crateKeyReward) {
+                                        "wooden" -> if (currentLang == Language.RU) "Деревянный Ключ" else "Wooden Key"
+                                        "iron" -> if (currentLang == Language.RU) "Железный Ключ" else "Iron Key"
+                                        "golden" -> if (currentLang == Language.RU) "Золотой Ключ" else "Golden Key"
+                                        "platinum" -> if (currentLang == Language.RU) "Платиновый Ключ" else "Platinum Key"
+                                        "legendary" -> if (currentLang == Language.RU) "Легендарный Ключ" else "Legendary Key"
+                                        "diamond" -> if (currentLang == Language.RU) "Алмазный Ключ" else "Diamond Key"
+                                        "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный Ключ" else "Red Key"
+                                        else -> "Key"
+                                    }
+                                    "🔑 $keyName"
+                                }
+                                ach.pointsReward > 0 -> "+${ach.pointsReward} 🪙"
+                                else -> if (currentLang == Language.RU) "⭐ Престиж" else "⭐ Prestige"
+                            }
+
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                        else MaterialTheme.colorScheme.surfaceContainerHighest
                             ) {
                                 Text(
-                                    text = "+${ach.pointsReward} 🪙",
+                                    text = rewardLabel,
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
                                     color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -3282,24 +4783,7 @@ private fun AchievementsTabContent(
                             }
                         }
 
-                        val badgeTag = when (ach.iconType) {
-                            "all_unlocked", "crown" -> if (currentLang == Language.RU) "ЧЕМПИОН" else "CHAMPION"
-                            "lines" -> if (currentLang == Language.RU) "МАСТЕР ЛИНИЙ" else "LINE CLEAR MASTER"
-                            "score" -> if (currentLang == Language.RU) "ЧЕМПИОН ПО ОЧКАМ" else "HIGH SCORE CHAMPION"
-                            "speed" -> if (currentLang == Language.RU) "СКОРОСТНОЙ РЕКОРДСМЕН" else "SPEED MASTER"
-                            "blast" -> if (currentLang == Language.RU) "ЭКСПЕРТ ОЧИСТКИ" else "BLOCK BLAST EXPERT"
-                            "combo" -> if (currentLang == Language.RU) "КОМБО-ЭКСПЕРТ" else "COMBO EXPERT"
-                            else -> {
-                                when (ach.id) {
-                                    "rich_player" -> if (currentLang == Language.RU) "НАКОПИТЕЛЬ БАЛЛОВ" else "CREDITS COLLECTOR"
-                                    "color_skin_collector" -> if (currentLang == Language.RU) "ДИЗАЙНЕР ИНТЕРФЕЙСА" else "INTERFACE DESIGNER"
-                                    "rank_conqueror" -> if (currentLang == Language.RU) "ЛИДЕР РЕЙТИНГА" else "LEADERBOARD LEGEND"
-                                    "extended_pioneer" -> if (currentLang == Language.RU) "ПЕРСПЕКТИВНЫЙ ИГРОК" else "PIONEERING OBSERVER"
-                                    "speed_runner" -> if (currentLang == Language.RU) "СКОРОСТНОЙ АНАЛИТИК" else "SPEED RUNNER"
-                                    else -> if (currentLang == Language.RU) "ИГРОВОЙ АКТИВ" else "ACTIVE PEER"
-                                }
-                            }
-                        }
+                        val badgeTag = Translations.getLocalizedAchievementBadge(ach.iconType, ach.id, currentLang)
                         
                         Text(
                             text = badgeTag,
@@ -3308,8 +4792,10 @@ private fun AchievementsTabContent(
                             modifier = Modifier.padding(vertical = 2.dp)
                         )
 
+                        val achDesc = Translations.getLocalizedAchievementDesc(ach.id, currentLang, ach.descriptionEn, ach.descriptionRu)
+
                         Text(
-                            text = if (currentLang == Language.RU) ach.descriptionRu else ach.descriptionEn,
+                            text = achDesc,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -3373,18 +4859,47 @@ private fun NewTabContent(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val aboutAppTitle = when (currentLang) {
+                    Language.RU -> "О ПРИЛОЖЕНИИ"
+                    Language.UA -> "ПРО ДОДАТОК"
+                    Language.KK -> "ҚОСЫМША ТУРАЛЫ"
+                    Language.DE -> "ÜBER DIE APP"
+                    Language.ZH -> "关于应用"
+                    else -> "ABOUT APP"
+                }
+                val aboutAppDesc = when (currentLang) {
+                    Language.RU -> "FlowTess — это продвинутая версия классической головоломки, сочетающая в себе традиционный игровой процесс и инновационный режим ZETA Arena (Block Blast). В игре доступны кастомизация интерфейса, система скинов, звуковые паки, глобальные рекорды, синхронизация прогресса с облаком и полноценный мультиплеер с чатом."
+                    Language.UA -> "FlowTess — це просунута версія класичної головоломки, що поєднує традиційний ігровий процес та інноваційний режим ZETA Arena (Block Blast). У грі доступні кастомізація інтерфейсу, система скінів, звукові паки, глобальні рекорди, синхронізація з хмарою та мультиплеєр з чатом."
+                    Language.KK -> "FlowTess — бұл дәстүрлі ойын процесі мен инновациялық ZETA Arena (Block Blast) режимін біріктіретін классикалық басқатырғыштың заманауи нұсқасы. Ойында интерфейсті баптау, мұқабалар жүйесі, дыбыстар жиынтығы, ғаламдық рекордтар, бұлтты синхрондау және чаты бар толық мультиплеер қолжетімді."
+                    Language.DE -> "FlowTess ist eine moderne Weiterentwicklung des klassischen Puzzlespiels. Es verbindet traditionelles Gameplay nahtlos mit der innovativen ZETA Arena (Block Blast). Zu den Features gehören Oberflächenanpassung, Skin-Pakete, Soundboards, globale Bestenlisten, Cloud-Synchronisierung und ein Mehrspieler-Modus mit Live-Chat."
+                    Language.ZH -> "FlowTess 是经典方块消除游戏的全新进化版。它将传统玩法与创新的 ZETA Arena (Block Blast) 模式完美融合。支持全界面深度自定义、皮肤包、音效包、全球排行榜、云端存档同步以及带实时聊天的多人联机对战。"
+                    else -> "FlowTess is an advanced evolution of the classic block puzzle game. It seamlessly blends traditional gameplay with the innovative ZETA Arena (Block Blast). Features include full interface customization, skin packs, unique soundboards, global high scores, secure cloud sync, and a multiplayer match lobby with live chat."
+                }
+                val versionLabel = when (currentLang) {
+                    Language.RU -> "Версия"
+                    Language.UA -> "Версія"
+                    Language.KK -> "Нұсқа"
+                    Language.DE -> "Version"
+                    Language.ZH -> "版本"
+                    else -> "Version"
+                }
+                val developerLabel = when (currentLang) {
+                    Language.RU -> "Разработчик"
+                    Language.UA -> "Розробник"
+                    Language.KK -> "Әзірлеуші"
+                    Language.DE -> "Entwickler"
+                    Language.ZH -> "开发者"
+                    else -> "Developer"
+                }
                 Text(
-                    text = if (currentLang == Language.RU) "О ПРИЛОЖЕНИИ" else "ABOUT APP",
+                    text = aboutAppTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 
                 Text(
-                    text = if (currentLang == Language.RU) 
-                        "ZETA Tetris — это продвинутая версия классической головоломки, сочетающая в себе традиционный игровой процесс и инновационный режим ZETA Arena (Block Blast). В игре доступны кастомизация интерфейса, система скинов, звуковые паки, глобальные рекорды, синхронизация прогресса с облаком и полноценный мультиплеер с чатом."
-                    else
-                        "ZETA Tetris is an advanced evolution of the classic block puzzle game. It seamlessly blends traditional gameplay with the innovative ZETA Arena (Block Blast). Features include full interface customization, skin packs, unique soundboards, global high scores, secure cloud sync, and a multiplayer match lobby with live chat.",
+                    text = aboutAppDesc,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -3396,7 +4911,7 @@ private fun NewTabContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (currentLang == Language.RU) "Версия" else "Version",
+                        text = versionLabel,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -3414,7 +4929,7 @@ private fun NewTabContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (currentLang == Language.RU) "Разработчик" else "Developer",
+                        text = developerLabel,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -3439,8 +4954,16 @@ private fun NewTabContent(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val changelogTitle = when (currentLang) {
+                    Language.RU -> "СПИСОК ИЗМЕНЕНИЙ"
+                    Language.UA -> "СПИСОК ЗМІН"
+                    Language.KK -> "ӨЗГЕРІСТЕР ТІЗІМІ"
+                    Language.DE -> "ÄNDERUNGSPROTOKOLL"
+                    Language.ZH -> "更新日志"
+                    else -> "CHANGE LOG"
+                }
                 Text(
-                    text = if (currentLang == Language.RU) "СПИСОК ИЗМЕНЕНИЙ" else "CHANGE LOG",
+                    text = changelogTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -3448,32 +4971,83 @@ private fun NewTabContent(
 
                 // Version 2.0 Card Content
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val v20Header = when (currentLang) {
+                        Language.RU -> "Версия 2.0 (Текущая)"
+                        Language.UA -> "Версія 2.0 (Поточна)"
+                        Language.KK -> "Нұсқа 2.0 (Ағымдағы)"
+                        Language.DE -> "Version 2.0 (Aktuell)"
+                        Language.ZH -> "版本 2.0 (当前)"
+                        else -> "Version 2.0 (Current)"
+                    }
                     Text(
-                        text = "Версия 2.0 (Текущая) / Version 2.0 (Current)",
+                        text = v20Header,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = themeColor
                     )
                     
-                    val changes = if (currentLang == Language.RU) listOf(
-                        "• Добавлена строгая верификация почты через Firebase (защита онлайн-функций)",
-                        "• Добавлен переключатель видимости вкладки 'Новое' в настройках (раздел 'Система')",
-                        "• Кэширование FirebaseAuth для оптимизации скорости работы",
-                        "• Полная реструктуризация кода с добавлением двуязычных неформальных комментариев",
-                        "• Балансировка экономики: стоимость открытия кейсов увеличена на 25%, награды скорректированы",
-                        "• Переименованы научно-фантастические и ИИ-достижения в строгие классические названия",
-                        "• Ужесточена проверка проигрыша (строго по ряду 2 или выше)",
-                        "• Немедленное удаление сессии при поражении для предотвращения дюпа монет"
-                    ) else listOf(
-                        "• Added strict Firebase Email Verification system (verifying email gates online play and chat)",
-                        "• Added toggle switch for the 'New' tab visibility in settings (System tab)",
-                        "• Cached FirebaseAuth instance globally to eliminate redundant service queries",
-                        "• Full codebase review with helpful, informal RU/EN comments",
-                        "• Economy balancing: increased crate costs by 25% and adjusted reward rates",
-                        "• Rebranded space/AI achievements into professional, classic names",
-                        "• Implemented strict game over rules (immediately triggers when block reaches row 2)",
-                        "• Added immediate saved game destruction on defeat to fix coin exploits"
-                    )
+                    val changes = when (currentLang) {
+                        Language.RU -> listOf(
+                            "• Добавлена строгая верификация почты через Firebase (защита онлайн-функций)",
+                            "• Добавлен переключатель видимости вкладки 'Новое' в настройках (раздел 'Система')",
+                            "• Кэширование FirebaseAuth для оптимизации скорости работы",
+                            "• Полная реструктуризация кода с добавлением двуязычных неформальных комментариев",
+                            "• Балансировка экономики: стоимость открытия кейсов увеличена на 25%, награды скорректированы",
+                            "• Переименованы научно-фантастические и ИИ-достижения в строгие классические названия",
+                            "• Ужесточена проверка проигрыша (строго по ряду 2 или выше)",
+                            "• Немедленное удаление сессии при поражении для предотвращения дюпа монет"
+                        )
+                        Language.UA -> listOf(
+                            "• Додана сувора верифікація пошти через Firebase (захист онлайн-функцій)",
+                            "• Додано перемикач видимості вкладки 'Нове' в налаштуваннях (розділ 'Система')",
+                            "• Кешування FirebaseAuth для оптимізації швидкодії",
+                            "• Повна реструктуризація коду та оптимізація продуктивності",
+                            "• Балансування економіки: вартість кейсів та нагороди скориговано",
+                            "• Оновлено назви та опис досягнень на класичні",
+                            "• Посилено перевірку завершення гри",
+                            "• Негайне видалення збереженої гри при поразці"
+                        )
+                        Language.KK -> listOf(
+                            "• Firebase арқылы қатаң пошта растауы қосылды (онлайн-функцияларды қорғау)",
+                            "• Баптауларда 'Жаңа' қойындысының көріну қосқышы қосылды",
+                            "• Жұмыс жылдамдығын оңтайландыру үшін FirebaseAuth кэштеу",
+                            "• Кодты толық қайта құрылымдау және оңтайландыру",
+                            "• Экономика балансы: кейстер құны мен сыйақылар түзетілді",
+                            "• Жетістіктердің классикалық атаулары жаңартылды",
+                            "• Ойынның аяқталуын тексеру күшейтілді",
+                            "• Жеңіліс кезінде сақталған ойынды бірден өшіру"
+                        )
+                        Language.DE -> listOf(
+                            "• Strikte Firebase-E-Mail-Verifizierung hinzugefügt (schützt Online-Funktionen)",
+                            "• Umschalter für die Sichtbarkeit des 'Neu'-Reiters in den Einstellungen hinzugefügt",
+                            "• Globale FirebaseAuth-Instanz-Optimierung",
+                            "• Vollständiges Codebase-Refactoring zur Performanceverbesserung",
+                            "• Wirtschafts-Balancing: Kistenpreise und Belohnungen angepasst",
+                            "• Klassische Namen für alle Errungenschaften",
+                            "• Strengere Game-Over-Erkennung",
+                            "• Sofortiges Löschen von Spielständen bei Niederlage"
+                        )
+                        Language.ZH -> listOf(
+                            "• 新增 Firebase 严格邮箱验证系统（保障在线对战及联机功能安全）",
+                            "• 设置界面新增「新特性」选项卡显隐开关",
+                            "• 优化 FirebaseAuth 全局缓存，提升加载速度",
+                            "• 代码结构全面重构与性能深度调优",
+                            "• 经济平衡调整：优化宝箱开启成本与奖励倍率",
+                            "• 重构成就系统名称与图标，风格更经典专业",
+                            "• 优化游戏结束检测判定",
+                            "• 失败时立即销毁临时进度以防止金币漏洞"
+                        )
+                        else -> listOf(
+                            "• Added strict Firebase Email Verification system (verifying email gates online play and chat)",
+                            "• Added toggle switch for the 'New' tab visibility in settings (System tab)",
+                            "• Cached FirebaseAuth instance globally to eliminate redundant service queries",
+                            "• Full codebase review with helpful, informal RU/EN comments",
+                            "• Economy balancing: increased crate costs by 25% and adjusted reward rates",
+                            "• Rebranded space/AI achievements into professional, classic names",
+                            "• Implemented strict game over rules (immediately triggers when block reaches row 2)",
+                            "• Added immediate saved game destruction on defeat to fix coin exploits"
+                        )
+                    }
 
                     changes.forEach { change ->
                         Text(
@@ -3488,17 +5062,30 @@ private fun NewTabContent(
 
                 // Version 1.0 Card Content
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    val v10Header = when (currentLang) {
+                        Language.RU -> "Версия 1.0"
+                        Language.UA -> "Версія 1.0"
+                        Language.KK -> "Нұсқа 1.0"
+                        Language.DE -> "Version 1.0"
+                        Language.ZH -> "版本 1.0"
+                        else -> "Version 1.0"
+                    }
+                    val v10Desc = when (currentLang) {
+                        Language.RU -> "• Первый релиз: режимы FlowTess и ZETA, лобби мультиплеера, аватары, рамки, теги и профиль."
+                        Language.UA -> "• Перший реліз: режими FlowTess і ZETA, лобі мультиплеєра, аватари, рамки, теги та профіль."
+                        Language.KK -> "• Алғашқы шығарылым: FlowTess және ZETA режимдері, мультиплеер лоббиі, аватарлар, жақтаулар, тегтер және профиль."
+                        Language.DE -> "• Erstveröffentlichung: FlowTess- & ZETA-Modi, Mehrspieler-Lobby, Avatare, Rahmen, Tags und Profil."
+                        Language.ZH -> "• 初始版本发布：FlowTess 与 ZETA 双模式、多人对战大厅、个性头像、相框商店、排行榜标签与个人资料。"
+                        else -> "• Initial launch: FlowTess & ZETA gameplay modes, multiplayer matchmaking lobbies, custom avatars, frame store, and tags."
+                    }
                     Text(
-                        text = "Версия 1.0 / Version 1.0",
+                        text = v10Header,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = if (currentLang == Language.RU) 
-                            "• Первый релиз: режимы Тетрис и ZETA, лобби мультиплеера, аватары, рамки, теги и профиль."
-                        else
-                            "• Initial launch: Tetris & ZETA gameplay modes, multiplayer matchmaking lobbies, custom avatars, frame store, and tags.",
+                        text = v10Desc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
