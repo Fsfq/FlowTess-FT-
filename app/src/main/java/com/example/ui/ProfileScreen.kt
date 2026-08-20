@@ -45,6 +45,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -2837,60 +2838,72 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(ranksList) { rank ->
-                        val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
-                        val isCurrent = rank.id == onlineTier
-                        val isOwned = purchasedRanks.contains(rank.id)
-                        val prevRankId = if (rankIndex > 0) ranksList[rankIndex - 1].id else null
-                        val isNext = !isOwned && (prevRankId == null || purchasedRanks.contains(prevRankId))
-                        val isLocked = !isOwned && !isNext
-                        val rankCategoryLabel = when (currentLang) {
-                            Language.RU -> "Ранг"
-                            Language.UA -> "Ранг"
-                            Language.KK -> "Ранг"
-                            Language.DE -> "Rang"
-                            Language.ZH -> "段位"
-                            else -> "Rank"
-                        }
+                    items(ranksList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (rank in pair) {
+                                val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
+                                val isCurrent = rank.id == onlineTier
+                                val isOwned = purchasedRanks.contains(rank.id)
+                                val prevRankId = if (rankIndex > 0) ranksList[rankIndex - 1].id else null
+                                val isNext = !isOwned && (prevRankId == null || purchasedRanks.contains(prevRankId))
+                                val isLocked = !isOwned && !isNext
+                                val rankCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Ранг"
+                                    Language.UA -> "Ранг"
+                                    Language.KK -> "Ранг"
+                                    Language.DE -> "Rang"
+                                    Language.ZH -> "段位"
+                                    else -> "Rank"
+                                }
 
-                        StoreItemCard(
-                            icon = Icons.Default.MilitaryTech,
-                            category = rankCategoryLabel,
-                            title = Translations.getLocalizedRank(rank.id, currentLang),
-                            description = rank.description,
-                            isActive = isCurrent,
-                            isOwned = isOwned,
-                            cost = rank.cost,
-                            currentLang = currentLang,
-                            isLocked = isLocked,
-                            onAction = {
-                                if (isCurrent) {
-                                    viewModel.setOnlineTier("BRONZE")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Ранг сброшен до базового"
-                                        Language.UA -> "Ранг скинуто до базового"
-                                        Language.KK -> "Ранг негізгіге қайтарылды"
-                                        Language.DE -> "Rang auf BRONZE zurückgesetzt."
-                                        Language.ZH -> "段位已重置为青铜。"
-                                        else -> "Rank reset to BRONZE."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else if (isOwned) {
-                                    viewModel.setOnlineTier(rank.id)
-                                    val selectedMsg = when (currentLang) {
-                                        Language.RU -> "Ранг успешно выбран"
-                                        Language.UA -> "Ранг успішно обрано"
-                                        Language.KK -> "Ранг сәтті таңдалды"
-                                        Language.DE -> "Rang erfolgreich aktualisiert"
-                                        Language.ZH -> "段位更新成功"
-                                        else -> "Rank updated to ${rank.id}."
-                                    }
-                                    triggerMessage(selectedMsg)
-                                } else if (isNext) {
-                                    purchaseRank(rank.id, rank.cost)
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.MilitaryTech,
+                                        category = rankCategoryLabel,
+                                        title = Translations.getLocalizedRank(rank.id, currentLang),
+                                        description = rank.description,
+                                        isActive = isCurrent,
+                                        isOwned = isOwned,
+                                        cost = rank.cost,
+                                        currentLang = currentLang,
+                                        isLocked = isLocked,
+                                        onAction = {
+                                            if (isCurrent) {
+                                                viewModel.setOnlineTier("BRONZE")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Ранг сброшен до базового"
+                                                    Language.UA -> "Ранг скинуто до базового"
+                                                    Language.KK -> "Ранг негізгіге қайтарылды"
+                                                    Language.DE -> "Rang auf BRONZE zurückgesetzt."
+                                                    Language.ZH -> "段位已重置为青铜。"
+                                                    else -> "Rank reset to BRONZE."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else if (isOwned) {
+                                                viewModel.setOnlineTier(rank.id)
+                                                val selectedMsg = when (currentLang) {
+                                                    Language.RU -> "Ранг успешно выбран"
+                                                    Language.UA -> "Ранг успішно обрано"
+                                                    Language.KK -> "Ранг сәтті таңдалды"
+                                                    Language.DE -> "Rang erfolgreich aktualisiert"
+                                                    Language.ZH -> "段位更新成功"
+                                                    else -> "Rank updated to ${rank.id}."
+                                                }
+                                                triggerMessage(selectedMsg)
+                                            } else if (isNext) {
+                                                purchaseRank(rank.id, rank.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
@@ -2913,43 +2926,55 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(skinsList) { skin ->
-                        val isEquipped = boardSkin == skin.id
-                        val isOwned = purchasedSkinsSet.contains(skin.id)
-                        val themeCategoryLabel = when (currentLang) {
-                            Language.RU -> "Оформление"
-                            Language.UA -> "Оформлення"
-                            Language.KK -> "Дизайн"
-                            Language.DE -> "Design"
-                            Language.ZH -> "主题"
-                            else -> "Theme"
-                        }
-                        StoreItemCard(
-                            icon = Icons.Default.Palette,
-                            category = themeCategoryLabel,
-                            title = skin.displayName,
-                            description = skin.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = skin.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setBoardColorSkin("cyberpunk")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Оформление сброшено"
-                                        Language.UA -> "Оформлення скинуто"
-                                        Language.KK -> "Дизайн қалпына келтірілді"
-                                        Language.DE -> "Raster-Design zurückgesetzt."
-                                        Language.ZH -> "网格主题已重置"
-                                        else -> "Grid theme reset to cyberpunk."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else {
-                                    purchaseSkin(skin.id, skin.cost)
+                    items(skinsList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (skin in pair) {
+                                val isEquipped = boardSkin == skin.id
+                                val isOwned = purchasedSkinsSet.contains(skin.id)
+                                val themeCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Оформление"
+                                    Language.UA -> "Оформлення"
+                                    Language.KK -> "Дизайн"
+                                    Language.DE -> "Design"
+                                    Language.ZH -> "主题"
+                                    else -> "Theme"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.Palette,
+                                        category = themeCategoryLabel,
+                                        title = skin.displayName,
+                                        description = skin.description,
+                                        isActive = isEquipped,
+                                        isOwned = isOwned,
+                                        cost = skin.cost,
+                                        currentLang = currentLang,
+                                        onAction = {
+                                            if (isEquipped) {
+                                                viewModel.setBoardColorSkin("cyberpunk")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Оформление сброшено"
+                                                    Language.UA -> "Оформлення скинуто"
+                                                    Language.KK -> "Дизайн қалпына келтірілді"
+                                                    Language.DE -> "Raster-Design zurückgesetzt."
+                                                    Language.ZH -> "网格主题已重置"
+                                                    else -> "Grid theme reset to cyberpunk."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else {
+                                                purchaseSkin(skin.id, skin.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
@@ -2972,43 +2997,55 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(cubeSkinsList) { cSkin ->
-                        val isEquipped = blockStyle == cSkin.id
-                        val isOwned = purchasedCubeSkinsSet.contains(cSkin.id)
-                        val blockStyleCategoryLabel = when (currentLang) {
-                            Language.RU -> "Стиль блоков"
-                            Language.UA -> "Стиль блоків"
-                            Language.KK -> "Блок стилі"
-                            Language.DE -> "Block-Stil"
-                            Language.ZH -> "方块样式"
-                            else -> "Block Style"
-                        }
-                        StoreItemCard(
-                            icon = Icons.Default.Category,
-                            category = blockStyleCategoryLabel,
-                            title = cSkin.displayName,
-                            description = cSkin.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = cSkin.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setBlockStyle("glass")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Стиль блоков сброшен"
-                                        Language.UA -> "Стиль блоків скинуто"
-                                        Language.KK -> "Блок стилі қалпына келтірілді"
-                                        Language.DE -> "Block-Design zurückgesetzt."
-                                        Language.ZH -> "方块样式已重置"
-                                        else -> "Cube style reset to glass."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else {
-                                    purchaseCubeSkin(cSkin.id, cSkin.cost)
+                    items(cubeSkinsList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (cSkin in pair) {
+                                val isEquipped = blockStyle == cSkin.id
+                                val isOwned = purchasedCubeSkinsSet.contains(cSkin.id)
+                                val blockStyleCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Стиль блоков"
+                                    Language.UA -> "Стиль блоків"
+                                    Language.KK -> "Блок стилі"
+                                    Language.DE -> "Block-Stil"
+                                    Language.ZH -> "方块样式"
+                                    else -> "Block Style"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.Category,
+                                        category = blockStyleCategoryLabel,
+                                        title = cSkin.displayName,
+                                        description = cSkin.description,
+                                        isActive = isEquipped,
+                                        isOwned = isOwned,
+                                        cost = cSkin.cost,
+                                        currentLang = currentLang,
+                                        onAction = {
+                                            if (isEquipped) {
+                                                viewModel.setBlockStyle("glass")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Стиль блоков сброшен"
+                                                    Language.UA -> "Стиль блоків скинуто"
+                                                    Language.KK -> "Блок стилі қалпына келтірілді"
+                                                    Language.DE -> "Block-Design zurückgesetzt."
+                                                    Language.ZH -> "方块样式已重置"
+                                                    else -> "Cube style reset to glass."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else {
+                                                purchaseCubeSkin(cSkin.id, cSkin.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
@@ -3031,27 +3068,39 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(premiumModesList) { pMode ->
-                        val isOwned = purchasedModesSet.contains(pMode.id)
-                        val modeCategoryLabel = when (currentLang) {
-                            Language.RU -> "Режим"
-                            Language.UA -> "Режим"
-                            Language.KK -> "Режим"
-                            Language.DE -> "Modus"
-                            Language.ZH -> "模式"
-                            else -> "Game Mode"
+                    items(premiumModesList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (pMode in pair) {
+                                val isOwned = purchasedModesSet.contains(pMode.id)
+                                val modeCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Режим"
+                                    Language.UA -> "Режим"
+                                    Language.KK -> "Режим"
+                                    Language.DE -> "Modus"
+                                    Language.ZH -> "模式"
+                                    else -> "Game Mode"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.PlayCircleOutline,
+                                        category = modeCategoryLabel,
+                                        title = pMode.displayName,
+                                        description = pMode.description,
+                                        isActive = false,
+                                        isOwned = isOwned,
+                                        cost = pMode.cost,
+                                        currentLang = currentLang,
+                                        onAction = { purchaseMode(pMode.id, pMode.cost) }
+                                    )
+                                }
+                            }
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
-                        StoreItemCard(
-                            icon = Icons.Default.PlayCircleOutline,
-                            category = modeCategoryLabel,
-                            title = pMode.displayName,
-                            description = pMode.description,
-                            isActive = false,
-                            isOwned = isOwned,
-                            cost = pMode.cost,
-                            currentLang = currentLang,
-                            onAction = { purchaseMode(pMode.id, pMode.cost) }
-                        )
                     }
                 }
 
@@ -3074,43 +3123,55 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(avatarFramesList) { frame ->
-                        val isEquipped = equippedAvatarFrame == frame.id
-                        val isOwned = purchasedAvatarFrames.contains(frame.id)
-                        val frameCategoryLabel = when (currentLang) {
-                            Language.RU -> "Рамка"
-                            Language.UA -> "Рамка"
-                            Language.KK -> "Жақтау"
-                            Language.DE -> "Rahmen"
-                            Language.ZH -> "相框"
-                            else -> "Avatar Frame"
-                        }
-                        StoreItemCard(
-                            icon = Icons.Default.Portrait,
-                            category = frameCategoryLabel,
-                            title = frame.displayName,
-                            description = frame.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = frame.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setEquippedAvatarFrame("standard")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Рамка аватара сброшена"
-                                        Language.UA -> "Рамку аватара скинуто"
-                                        Language.KK -> "Аватар жақтауы қалпына келтірілді"
-                                        Language.DE -> "Avatar-Rahmen zurückgesetzt."
-                                        Language.ZH -> "头像相框已重置"
-                                        else -> "Avatar frame reset to standard."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else {
-                                    selectAvatarFrame(frame.id, frame.cost)
+                    items(avatarFramesList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (frame in pair) {
+                                val isEquipped = equippedAvatarFrame == frame.id
+                                val isOwned = purchasedAvatarFrames.contains(frame.id)
+                                val frameCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Рамка"
+                                    Language.UA -> "Рамка"
+                                    Language.KK -> "Жақтау"
+                                    Language.DE -> "Rahmen"
+                                    Language.ZH -> "相框"
+                                    else -> "Avatar Frame"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.Portrait,
+                                        category = frameCategoryLabel,
+                                        title = frame.displayName,
+                                        description = frame.description,
+                                        isActive = isEquipped,
+                                        isOwned = isOwned,
+                                        cost = frame.cost,
+                                        currentLang = currentLang,
+                                        onAction = {
+                                            if (isEquipped) {
+                                                viewModel.setEquippedAvatarFrame("standard")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Рамка аватара сброшена"
+                                                    Language.UA -> "Рамку аватара скинуто"
+                                                    Language.KK -> "Аватар жақтауы қалпына келтірілді"
+                                                    Language.DE -> "Avatar-Rahmen zurückgesetzt."
+                                                    Language.ZH -> "头像相框已重置"
+                                                    else -> "Avatar frame reset to standard."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else {
+                                                selectAvatarFrame(frame.id, frame.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
@@ -3133,43 +3194,55 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(playerBadgesList) { title ->
-                        val isEquipped = equippedTitle == title.id
-                        val isOwned = purchasedTitles.contains(title.id)
-                        val titleCategoryLabel = when (currentLang) {
-                            Language.RU -> "Титул"
-                            Language.UA -> "Титул"
-                            Language.KK -> "Атақ"
-                            Language.DE -> "Titel"
-                            Language.ZH -> "称号"
-                            else -> "Player Title"
-                        }
-                        StoreItemCard(
-                            icon = Icons.Default.WorkspacePremium,
-                            category = titleCategoryLabel,
-                            title = title.displayName,
-                            description = title.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = title.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setEquippedTitle("none")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Титул сброшен"
-                                        Language.UA -> "Титул скинуто"
-                                        Language.KK -> "Атақ қалпына келтірілді"
-                                        Language.DE -> "Titel zurückgesetzt."
-                                        Language.ZH -> "称号已重置"
-                                        else -> "Title reset to none."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else {
-                                    selectTitle(title.id, title.cost)
+                    items(playerBadgesList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (title in pair) {
+                                val isEquipped = equippedTitle == title.id
+                                val isOwned = purchasedTitles.contains(title.id)
+                                val titleCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Титул"
+                                    Language.UA -> "Титул"
+                                    Language.KK -> "Атақ"
+                                    Language.DE -> "Titel"
+                                    Language.ZH -> "称号"
+                                    else -> "Player Title"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.WorkspacePremium,
+                                        category = titleCategoryLabel,
+                                        title = title.displayName,
+                                        description = title.description,
+                                        isActive = isEquipped,
+                                        isOwned = isOwned,
+                                        cost = title.cost,
+                                        currentLang = currentLang,
+                                        onAction = {
+                                            if (isEquipped) {
+                                                viewModel.setEquippedTitle("none")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Титул сброшен"
+                                                    Language.UA -> "Титул скинуто"
+                                                    Language.KK -> "Атақ қалпына келтірілді"
+                                                    Language.DE -> "Titel zurückgesetzt."
+                                                    Language.ZH -> "称号已重置"
+                                                    else -> "Title reset to none."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else {
+                                                selectTitle(title.id, title.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
 
@@ -3192,43 +3265,55 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(controlButtonStylesList) { btnStyle ->
-                        val isEquipped = controlButtonStyle == btnStyle.id
-                        val isOwned = purchasedControlButtonStyles.contains(btnStyle.id)
-                        val buttonCategoryLabel = when (currentLang) {
-                            Language.RU -> "Кнопки"
-                            Language.UA -> "Кнопки"
-                            Language.KK -> "Батырмалар"
-                            Language.DE -> "Tasten"
-                            Language.ZH -> "按键"
-                            else -> "Button Design"
-                        }
-                        StoreItemCard(
-                            icon = Icons.Default.Extension,
-                            category = buttonCategoryLabel,
-                            title = btnStyle.displayName,
-                            description = btnStyle.description,
-                            isActive = isEquipped,
-                            isOwned = isOwned,
-                            cost = btnStyle.cost,
-                            currentLang = currentLang,
-                            onAction = {
-                                if (isEquipped) {
-                                    viewModel.setControlButtonStyle("classic")
-                                    val resetMsg = when (currentLang) {
-                                        Language.RU -> "Стиль кнопок сброшен"
-                                        Language.UA -> "Стиль кнопок скинуто"
-                                        Language.KK -> "Батырмалар стилі қалпына келтірілді"
-                                        Language.DE -> "Tasten-Design zurückgesetzt."
-                                        Language.ZH -> "按键样式已重置"
-                                        else -> "Button style reset to classic."
-                                    }
-                                    triggerMessage(resetMsg)
-                                } else {
-                                    selectControlButtonStyle(btnStyle.id, btnStyle.cost)
+                    items(controlButtonStylesList.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (btnStyle in pair) {
+                                val isEquipped = controlButtonStyle == btnStyle.id
+                                val isOwned = purchasedControlButtonStyles.contains(btnStyle.id)
+                                val buttonCategoryLabel = when (currentLang) {
+                                    Language.RU -> "Кнопки"
+                                    Language.UA -> "Кнопки"
+                                    Language.KK -> "Батырмалар"
+                                    Language.DE -> "Tasten"
+                                    Language.ZH -> "按键"
+                                    else -> "Button Design"
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    StoreItemCard(
+                                        icon = Icons.Default.Extension,
+                                        category = buttonCategoryLabel,
+                                        title = btnStyle.displayName,
+                                        description = btnStyle.description,
+                                        isActive = isEquipped,
+                                        isOwned = isOwned,
+                                        cost = btnStyle.cost,
+                                        currentLang = currentLang,
+                                        onAction = {
+                                            if (isEquipped) {
+                                                viewModel.setControlButtonStyle("classic")
+                                                val resetMsg = when (currentLang) {
+                                                    Language.RU -> "Стиль кнопок сброшен"
+                                                    Language.UA -> "Стиль кнопок скинуто"
+                                                    Language.KK -> "Батырмалар стилі қалпына келтірілді"
+                                                    Language.DE -> "Tasten-Design zurückgesetzt."
+                                                    Language.ZH -> "按键样式已重置"
+                                                    else -> "Button style reset to classic."
+                                                }
+                                                triggerMessage(resetMsg)
+                                            } else {
+                                                selectControlButtonStyle(btnStyle.id, btnStyle.cost)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
                 
@@ -4338,8 +4423,10 @@ private fun StoreItemCard(
     }
 
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !isLocked) { onAction() },
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest
                              else MaterialTheme.colorScheme.surfaceContainerHigh
@@ -4348,88 +4435,76 @@ private fun StoreItemCard(
             defaultElevation = if (isActive) 3.dp else 1.dp
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else rarityColor.copy(alpha = 0.12f),
-                tonalElevation = 1.dp
+            // Top Row: Icon + Badges
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else rarityColor.copy(alpha = 0.12f),
+                    tonalElevation = 1.dp
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isActive) MaterialTheme.colorScheme.primary else rarityColor,
-                        modifier = Modifier.size(24.dp)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isActive) MaterialTheme.colorScheme.primary else rarityColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = rarityColor.copy(alpha = 0.14f)
+                ) {
+                    AdaptiveText(
+                        text = rarityText,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.2.sp
+                        ),
+                        color = rarityColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest
-                    ) {
-                        Text(
-                            text = category.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = rarityColor.copy(alpha = 0.14f)
-                    ) {
-                        AdaptiveText(
-                            text = rarityText,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.2.sp
-                            ),
-                            color = rarityColor,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+            // Middle: Title & Description
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
+            // Bottom: Action Button
             val isRank = category.equals("Rank", ignoreCase = true) || 
                          category.equals("Ранг", ignoreCase = true) ||
                          category.equals("Rang", ignoreCase = true) ||
@@ -4462,8 +4537,9 @@ private fun StoreItemCard(
                     FilledTonalButton(
                         onClick = onAction,
                         enabled = buttonEnabled,
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(34.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = if (isActive) MaterialTheme.colorScheme.primary
                                              else MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -4473,7 +4549,7 @@ private fun StoreItemCard(
                     ) {
                         Text(
                             text = onOffText,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -4489,8 +4565,9 @@ private fun StoreItemCard(
                     Button(
                         onClick = onAction,
                         enabled = buttonEnabled,
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(34.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainerHighest
                                              else MaterialTheme.colorScheme.primary,
@@ -4500,7 +4577,7 @@ private fun StoreItemCard(
                     ) {
                         Text(
                             text = if (isLocked) lockBtnText else "$cost 🪙",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -4680,153 +4757,155 @@ private fun AchievementsTabContent(
             }
         }
 
-        items(filteredAchievements, key = { it.id }) { ach ->
-            ElevatedCard(
+        items(filteredAchievements.chunked(2)) { pair ->
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        modifier = Modifier.size(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (ach.isUnlocked) MaterialTheme.colorScheme.primaryContainer
-                               else MaterialTheme.colorScheme.surfaceContainerHighest,
-                        tonalElevation = 1.dp
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = when (ach.iconType) {
-                                    "lines" -> Icons.Default.Extension
-                                    "score" -> Icons.Default.Star
-                                    "crown" -> Icons.Default.Shield
-                                    "speed" -> Icons.Default.Settings
-                                    "blast" -> Icons.Default.Extension
-                                    "combo" -> Icons.Default.VolumeUp
-                                    else -> Icons.Default.EmojiEvents
-                                },
-                                contentDescription = null,
-                                tint = if (ach.isUnlocked) MaterialTheme.colorScheme.onPrimaryContainer
-                                       else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
+                for (ach in pair) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                         ) {
-                            Text(
-                                text = Translations.getLocalizedAchievementTitle(ach.id, currentLang, ach.titleEn, ach.titleRu),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                            val rewardLabel = when {
-                                ach.crateKeyReward != null && ach.crateKeyCount > 0 && ach.pointsReward > 0 -> {
-                                    val keyName = when (ach.crateKeyReward) {
-                                        "wooden" -> if (currentLang == Language.RU) "Деревянный Ключ" else "Wooden Key"
-                                        "iron" -> if (currentLang == Language.RU) "Железный Ключ" else "Iron Key"
-                                        "golden" -> if (currentLang == Language.RU) "Золотой Ключ" else "Golden Key"
-                                        "platinum" -> if (currentLang == Language.RU) "Платиновый Ключ" else "Platinum Key"
-                                        "legendary" -> if (currentLang == Language.RU) "Легендарный Ключ" else "Legendary Key"
-                                        "diamond" -> if (currentLang == Language.RU) "Алмазный Ключ" else "Diamond Key"
-                                        "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный Ключ" else "Red Key"
-                                        else -> "Key"
-                                    }
-                                    "+${ach.pointsReward} 🪙 + 🔑 $keyName"
-                                }
-                                ach.crateKeyReward != null && ach.crateKeyCount > 0 -> {
-                                    val keyName = when (ach.crateKeyReward) {
-                                        "wooden" -> if (currentLang == Language.RU) "Деревянный Ключ" else "Wooden Key"
-                                        "iron" -> if (currentLang == Language.RU) "Железный Ключ" else "Iron Key"
-                                        "golden" -> if (currentLang == Language.RU) "Золотой Ключ" else "Golden Key"
-                                        "platinum" -> if (currentLang == Language.RU) "Платиновый Ключ" else "Platinum Key"
-                                        "legendary" -> if (currentLang == Language.RU) "Легендарный Ключ" else "Legendary Key"
-                                        "diamond" -> if (currentLang == Language.RU) "Алмазный Ключ" else "Diamond Key"
-                                        "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный Ключ" else "Red Key"
-                                        else -> "Key"
-                                    }
-                                    "🔑 $keyName"
-                                }
-                                ach.pointsReward > 0 -> "+${ach.pointsReward} 🪙"
-                                else -> if (currentLang == Language.RU) "⭐ Престиж" else "⭐ Prestige"
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                       else MaterialTheme.colorScheme.surfaceContainerHighest
-                            ) {
-                                Text(
-                                    text = rewardLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                                    color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-
-                        val badgeTag = Translations.getLocalizedAchievementBadge(ach.iconType, ach.id, currentLang)
-                        
-                        Text(
-                            text = badgeTag,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
-
-                        val achDesc = Translations.getLocalizedAchievementDesc(ach.id, currentLang, ach.descriptionEn, ach.descriptionRu)
-
-                        Text(
-                            text = achDesc,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val fraction = if (ach.targetValue > 0) {
-                            (ach.currentValue.toFloat() / ach.targetValue).coerceIn(0f, 1f)
-                        } else 0f
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            LinearProgressIndicator(
-                                progress = { fraction },
+                            Column(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .height(5.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "${ach.currentValue} / ${ach.targetValue}",
-                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(38.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (ach.isUnlocked) MaterialTheme.colorScheme.primaryContainer
+                                               else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        tonalElevation = 1.dp
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = when (ach.iconType) {
+                                                    "lines" -> Icons.Default.Extension
+                                                    "score" -> Icons.Default.Star
+                                                    "crown" -> Icons.Default.Shield
+                                                    "speed" -> Icons.Default.Settings
+                                                    "blast" -> Icons.Default.Extension
+                                                    "combo" -> Icons.Default.VolumeUp
+                                                    else -> Icons.Default.EmojiEvents
+                                                },
+                                                contentDescription = null,
+                                                tint = if (ach.isUnlocked) MaterialTheme.colorScheme.onPrimaryContainer
+                                                       else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+
+                                    val rewardLabel = when {
+                                        ach.crateKeyReward != null && ach.crateKeyCount > 0 && ach.pointsReward > 0 -> {
+                                            val keyName = when (ach.crateKeyReward) {
+                                                "wooden" -> if (currentLang == Language.RU) "Дер. Ключ" else "Wooden"
+                                                "iron" -> if (currentLang == Language.RU) "Жел. Ключ" else "Iron"
+                                                "golden" -> if (currentLang == Language.RU) "Зол. Ключ" else "Gold"
+                                                "platinum" -> if (currentLang == Language.RU) "Плат. Ключ" else "Plat"
+                                                "legendary" -> if (currentLang == Language.RU) "Лег. Ключ" else "Legend"
+                                                "diamond" -> if (currentLang == Language.RU) "Алмаз" else "Diamond"
+                                                "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный" else "Red"
+                                                else -> "Key"
+                                            }
+                                            "+${ach.pointsReward}🪙 🔑$keyName"
+                                        }
+                                        ach.crateKeyReward != null && ach.crateKeyCount > 0 -> {
+                                            val keyName = when (ach.crateKeyReward) {
+                                                "wooden" -> if (currentLang == Language.RU) "Дер. Ключ" else "Wooden"
+                                                "iron" -> if (currentLang == Language.RU) "Жел. Ключ" else "Iron"
+                                                "golden" -> if (currentLang == Language.RU) "Зол. Ключ" else "Gold"
+                                                "platinum" -> if (currentLang == Language.RU) "Плат. Ключ" else "Plat"
+                                                "legendary" -> if (currentLang == Language.RU) "Лег. Ключ" else "Legend"
+                                                "diamond" -> if (currentLang == Language.RU) "Алмаз" else "Diamond"
+                                                "red_crate", "red_crate_lite" -> if (currentLang == Language.RU) "Красный" else "Red"
+                                                else -> "Key"
+                                            }
+                                            "🔑 $keyName"
+                                        }
+                                        ach.pointsReward > 0 -> "+${ach.pointsReward} 🪙"
+                                        else -> if (currentLang == Language.RU) "⭐ Престиж" else "⭐ Prestige"
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                               else MaterialTheme.colorScheme.surfaceContainerHighest
+                                    ) {
+                                        Text(
+                                            text = rewardLabel,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
+                                            color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = Translations.getLocalizedAchievementTitle(ach.id, currentLang, ach.titleEn, ach.titleRu),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+
+                                val achDesc = Translations.getLocalizedAchievementDesc(ach.id, currentLang, ach.descriptionEn, ach.descriptionRu)
+
+                                Text(
+                                    text = achDesc,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                val fraction = if (ach.targetValue > 0) {
+                                    (ach.currentValue.toFloat() / ach.targetValue).coerceIn(0f, 1f)
+                                } else 0f
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    LinearProgressIndicator(
+                                        progress = { fraction },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(4.dp)
+                                            .clip(RoundedCornerShape(2.dp)),
+                                        color = if (ach.isUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "${ach.currentValue}/${ach.targetValue}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 8.5.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
+                }
+                if (pair.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

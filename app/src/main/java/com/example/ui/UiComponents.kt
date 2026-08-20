@@ -71,6 +71,9 @@ import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import com.example.db.FriendUser
 import com.example.db.PublicUserProfile
@@ -3718,12 +3721,12 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     else -> "Time Attack"
                                 },
                                 "pulse_extreme" to when (currentLang) {
-                                    Language.RU -> "Вихрь"
-                                    Language.UA -> "Вихор"
-                                    Language.KK -> "Құйын"
-                                    Language.DE -> "Wirbelsturm"
-                                    Language.ZH -> "脉冲极限"
-                                    else -> "Vortex Pulse"
+                                    Language.RU -> "Прилив"
+                                    Language.UA -> "Приплив"
+                                    Language.KK -> "Толысу"
+                                    Language.DE -> "Flut"
+                                    Language.ZH -> "潮汐"
+                                    else -> "Tide"
                                 },
                                 "mirror" to when (currentLang) {
                                     Language.RU -> "Зеркальный"
@@ -6758,16 +6761,16 @@ fun ModeSelectionScreen(
         val categoryTag: String // "FREE", "PAID", "HARD", "FUN"
     )
 
-val modes = listOf(
+    val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.CLASSIC, "classic",
             when (currentLang) {
-                Language.RU -> "Классический"
-                Language.UA -> "Класичний"
-                Language.KK -> "Классикалық"
-                Language.DE -> "Klassisch"
-                Language.ZH -> "经典模式"
-                else -> "Classic"
+                Language.RU -> "Стандарт"
+                Language.UA -> "Стандарт"
+                Language.KK -> "Стандарт"
+                Language.DE -> "Standard"
+                Language.ZH -> "标准"
+                else -> "Standard"
             },
             when (currentLang) {
                 Language.RU -> "Оригинальный режим с нарастающей сложностью."
@@ -6790,12 +6793,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.TIME_ATTACK, "time_attack",
             when (currentLang) {
-                Language.RU -> "Тайм-Атак"
-                Language.UA -> "Тайм-Атак"
-                Language.KK -> "Тайм-Атак"
-                Language.DE -> "Zeitangriff"
-                Language.ZH -> "限时挑战"
-                else -> "Time Attack"
+                Language.RU -> "Блиц"
+                Language.UA -> "Бліц"
+                Language.KK -> "Блиц"
+                Language.DE -> "Blitz"
+                Language.ZH -> "闪击"
+                else -> "Blitz"
             },
             when (currentLang) {
                 Language.RU -> "Режим с ограничением времени: старт с 60 секунд."
@@ -6818,12 +6821,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.EXTENDED, "extended",
             when (currentLang) {
-                Language.RU -> "Пентатрис"
-                Language.UA -> "Пентатріс"
-                Language.KK -> "Пентатрис"
-                Language.DE -> "Pentatris"
-                Language.ZH -> "五阶方块"
-                else -> "Pentatris"
+                Language.RU -> "Спектр"
+                Language.UA -> "Спектр"
+                Language.KK -> "Спектр"
+                Language.DE -> "Spektrum"
+                Language.ZH -> "光谱"
+                else -> "Spectrum"
             },
             when (currentLang) {
                 Language.RU -> "Игра фигурами из пяти блоков для повышенной сложности."
@@ -6846,12 +6849,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.FAST_RUN, "fast_run",
             when (currentLang) {
-                Language.RU -> "Быстрый старт"
-                Language.UA -> "Швидкий старт"
-                Language.KK -> "Жылдам бастау"
-                Language.DE -> "Schnellstart"
-                Language.ZH -> "极速冲刺"
-                else -> "Fast Start"
+                Language.RU -> "Спринт"
+                Language.UA -> "Спринт"
+                Language.KK -> "Спринт"
+                Language.DE -> "Sprint"
+                Language.ZH -> "冲刺"
+                else -> "Sprint"
             },
             when (currentLang) {
                 Language.RU -> "Начало игры с 10-го уровня сложности."
@@ -6878,8 +6881,8 @@ val modes = listOf(
                 Language.UA -> "Дзен"
                 Language.KK -> "Дзен"
                 Language.DE -> "Zen"
-                Language.ZH -> "禅意心流"
-                else -> "Zen Cosmic Flow"
+                Language.ZH -> "禅境"
+                else -> "Zen"
             },
             when (currentLang) {
                 Language.RU -> "Бесконечный режим: очистка при переполнении, без проигрыша."
@@ -6906,8 +6909,8 @@ val modes = listOf(
                 Language.UA -> "Інверсія"
                 Language.KK -> "Инверсия"
                 Language.DE -> "Inversion"
-                Language.ZH -> "反转操控"
-                else -> "Inverted Controls"
+                Language.ZH -> "反转"
+                else -> "Inversion"
             },
             when (currentLang) {
                 Language.RU -> "Классический режим с инвертированным управлением."
@@ -6930,12 +6933,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.BLOCK_BLAST, "block_blast",
             when (currentLang) {
-                Language.RU -> "Головоломка ZETA"
-                Language.UA -> "Головоломка ZETA"
-                Language.KK -> "ZETA Басқатырғышы"
-                Language.DE -> "ZETA-Puzzle"
-                Language.ZH -> "ZETA 拼图"
-                else -> "ZETA Puzzle"
+                Language.RU -> "Zeta"
+                Language.UA -> "Zeta"
+                Language.KK -> "Zeta"
+                Language.DE -> "Zeta"
+                Language.ZH -> "Zeta"
+                else -> "Zeta"
             },
             when (currentLang) {
                 Language.RU -> "Свободное размещение фигурок на игровом поле."
@@ -6958,12 +6961,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.PULSE_EXTREME, "pulse_extreme",
             when (currentLang) {
-                Language.RU -> "Импульсный Вихрь"
-                Language.UA -> "Імпульсний Вихор"
-                Language.KK -> "Импульстік Құйын"
-                Language.DE -> "Vortex-Puls"
-                Language.ZH -> "脉冲漩涡"
-                else -> "Vortex Pulse"
+                Language.RU -> "Прилив"
+                Language.UA -> "Приплив"
+                Language.KK -> "Толысу"
+                Language.DE -> "Flut"
+                Language.ZH -> "潮汐"
+                else -> "Tide"
             },
             when (currentLang) {
                 Language.RU -> "Каждые 4 фигуры снизу поднимается новая мусорная линия."
@@ -6986,12 +6989,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.MIRROR_DIMENSION, "mirror",
             when (currentLang) {
-                Language.RU -> "Зеркальный Мир"
-                Language.UA -> "Дзеркальний Світ"
-                Language.KK -> "Айналық Әлем"
-                Language.DE -> "Spiegeldimension"
-                Language.ZH -> "镜像维度"
-                else -> "Mirror Dimension"
+                Language.RU -> "Зеркало"
+                Language.UA -> "Дзеркало"
+                Language.KK -> "Айна"
+                Language.DE -> "Spiegel"
+                Language.ZH -> "镜界"
+                else -> "Mirror"
             },
             when (currentLang) {
                 Language.RU -> "Поле отражается по горизонтали во время игры."
@@ -7014,12 +7017,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.PENTARY_CHAOS, "penta",
             when (currentLang) {
-                Language.RU -> "Пента-Хаос"
-                Language.UA -> "Пента-Хаос"
-                Language.KK -> "Пента-Хаос"
-                Language.DE -> "Pentarisches Chaos"
-                Language.ZH -> "五阶混沌"
-                else -> "Pentary Chaos"
+                Language.RU -> "Хаос"
+                Language.UA -> "Хаос"
+                Language.KK -> "Хаос"
+                Language.DE -> "Chaos"
+                Language.ZH -> "混沌"
+                else -> "Chaos"
             },
             when (currentLang) {
                 Language.RU -> "Все падающие фигуры состоят из пяти блоков."
@@ -7042,12 +7045,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.RELAX, "relax",
             when (currentLang) {
-                Language.RU -> "Релакс-Песочница"
-                Language.UA -> "Релакс-Пісочниця"
-                Language.KK -> "Релакс-Құмсалғыш"
-                Language.DE -> "Entspannungs-Sandbox"
-                Language.ZH -> "休闲沙盒"
-                else -> "Relax Sandbox"
+                Language.RU -> "Песочница"
+                Language.UA -> "Пісочниця"
+                Language.KK -> "Құмсалғыш"
+                Language.DE -> "Sandbox"
+                Language.ZH -> "沙盒"
+                else -> "Sandbox"
             },
             when (currentLang) {
                 Language.RU -> "Настраиваемый режим с выбором блоков и скоростей."
@@ -7061,7 +7064,7 @@ val modes = listOf(
                 Language.RU -> "Песочница с гибкой настройкой параметров игры под ваше настроение."
                 Language.UA -> "Пісочниця з гнучким налаштуванням параметрів гри під ваш настрій."
                 Language.KK -> "Көңіл-күйіңізге сай ойын параметрлерін еркін реттейтін құмсалғыш."
-                Language.DE -> "Ein Sandbox-Modus für vollkommen individuelle Spielregeln nach Lust und Laune."
+                Language.DE -> "Ein Sandbox-Modus для vollkommen individuelle Spielregeln nach Lust und Laune."
                 Language.ZH -> "完全自由定义的沙盒模式，随心定制专属游戏规则和方块类型。"
                 else -> "A sandbox mode allowing full customization of gameplay rules to match your preference."
             },
@@ -7070,12 +7073,12 @@ val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.PERFECTIONIST, "perfectionist",
             when (currentLang) {
-                Language.RU -> "Перфекционист"
-                Language.UA -> "Перфекціоніст"
-                Language.KK -> "Перфекционист"
-                Language.DE -> "Perfektionist"
-                Language.ZH -> "完美主义者"
-                else -> "Perfectionist"
+                Language.RU -> "Идеал"
+                Language.UA -> "Ідеал"
+                Language.KK -> "Мінсіз"
+                Language.DE -> "Perfektion"
+                Language.ZH -> "完美"
+                else -> "Perfection"
             },
             when (currentLang) {
                 Language.RU -> "Идеальные фигуры и ИИ-подсветка лучшей позиции."
@@ -8296,6 +8299,13 @@ fun PlayerAvatarView(
     }
 }
 
+private data class ProfileStatItem(
+    val label: String,
+    val value: String,
+    val color: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OtherUserProfileDialog(
@@ -8308,384 +8318,571 @@ fun OtherUserProfileDialog(
 ) {
     var friendAddedState by remember { mutableStateOf(false) }
 
+    // Decode player's custom background image if present
+    val bgBitmap = remember(profile.customBackgroundBase64) {
+        if (profile.customBackgroundBase64.isNotBlank()) {
+            try {
+                val bytes = android.util.Base64.decode(profile.customBackgroundBase64, android.util.Base64.DEFAULT)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+    }
+
+    val playerAccentColor = parseHexColor(profile.avatarBgColor, themeColor)
+
+    val tierColor = when (profile.onlineTier.ifBlank { "BRONZE" }.uppercase()) {
+        "BRONZE" -> Color(0xFFCD7F32)
+        "SILVER" -> Color(0xFFC0C0C0)
+        "GOLD" -> Color(0xFFFFD700)
+        "PLATINUM" -> Color(0xFF00E5FF)
+        "DIAMOND" -> Color(0xFF7C4DFF)
+        "MASTER" -> Color(0xFFFF1744)
+        "GRANDMASTER" -> Color(0xFFFF5252)
+        "LEGEND" -> Color(0xFFFF9100)
+        else -> themeColor
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
-            )
+            decorFitsSystemWindows = false
+        )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.65f))
-                .clickable { onDismiss() }
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .wrapContentHeight()
-                    .clickable(enabled = false) {},
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp,
-                border = BorderStroke(1.dp, themeColor.copy(alpha = 0.35f))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Header with Close Button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val otherProfileTitle = when (currentLang) {
-                            Language.RU -> "ПРОФИЛЬ ИГРОКА"
-                            Language.UA -> "ПРОФІЛЬ ГРАВЦЯ"
-                            Language.KK -> "ОЙЫНШЫ ПРОФИЛІ"
-                            Language.DE -> "SPIELERPROFIL"
-                            Language.ZH -> "玩家个人资料"
-                            else -> "PLAYER PROFILE"
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = themeColor.copy(alpha = 0.15f)
-                        ) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        modifier = Modifier.statusBarsPadding(),
+                        title = {
+                            val profileTitle = when (currentLang) {
+                                Language.RU -> "ПРОФИЛЬ"
+                                Language.UA -> "ПРОФІЛЬ"
+                                Language.KK -> "ПРОФИЛЬ"
+                                Language.DE -> "PROFIL"
+                                Language.ZH -> "个人资料"
+                                else -> "PROFILE"
+                            }
                             Text(
-                                text = otherProfileTitle,
-                                style = MaterialTheme.typography.labelMedium.copy(
+                                text = profileTitle,
+                                style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp
-                                ),
-                                color = themeColor,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    letterSpacing = 0.5.sp
+                                )
                             )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onDismiss) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close"
+                                )
+                            }
+                        },
+                        actions = {
+                            // Online / Offline Status Badge
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (profile.isOnline) Color(0xFF00E676).copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f),
+                                border = BorderStroke(1.dp, if (profile.isOnline) Color(0xFF00E676).copy(alpha = 0.5f) else Color.Gray.copy(alpha = 0.35f)),
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .background(if (profile.isOnline) Color(0xFF00E676) else Color.Gray, CircleShape)
+                                    )
+                                    Text(
+                                        text = if (profile.isOnline) {
+                                            when (currentLang) {
+                                                Language.RU -> "В СЕТИ"
+                                                Language.UA -> "В МЕРЕЖІ"
+                                                Language.KK -> "ЖЕЛІДЕ"
+                                                Language.DE -> "ONLINE"
+                                                Language.ZH -> "在线"
+                                                else -> "ONLINE"
+                                            }
+                                        } else {
+                                            when (currentLang) {
+                                                Language.RU -> "ОФЛАЙН"
+                                                Language.UA -> "ОФЛАЙН"
+                                                Language.KK -> "ОФЛАЙН"
+                                                Language.DE -> "OFFLINE"
+                                                Language.ZH -> "离线"
+                                                else -> "OFFLINE"
+                                            }
+                                        },
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
+                                        color = if (profile.isOnline) Color(0xFF00E676) else Color.LightGray
+                                    )
+                                }
+                            }
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        )
+                    )
+                },
+                bottomBar = {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shadowElevation = 8.dp
+                    ) {
+                        val requestSentText = when (currentLang) {
+                            Language.RU -> "Запрос отправлен"
+                            Language.UA -> "Запит надіслано"
+                            Language.KK -> "Сұраныс жіберілді"
+                            Language.DE -> "Anfrage gesendet"
+                            Language.ZH -> "已发送申请"
+                            else -> "Request Sent"
+                        }
+                        val addFriendText = when (currentLang) {
+                            Language.RU -> "В друзья"
+                            Language.UA -> "У друзі"
+                            Language.KK -> "Дос қосу"
+                            Language.DE -> "Freund hinzufügen"
+                            Language.ZH -> "加为好友"
+                            else -> "Add Friend"
+                        }
+                        val duelBtnText = when (currentLang) {
+                            Language.RU -> "Вызвать на дуэль"
+                            Language.UA -> "Викликати на дуель"
+                            Language.KK -> "Дуэльге шақыру"
+                            Language.DE -> "1v1 Duell"
+                            Language.ZH -> "发起对战"
+                            else -> "1v1 Duel"
                         }
 
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(32.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        friendAddedState = true
+                                        onAddFriend()
+                                    },
+                                    enabled = !friendAddedState,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = playerAccentColor,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (friendAddedState) Icons.Default.Check else Icons.Default.PersonAdd,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = if (friendAddedState) requestSentText else addFriendText,
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold)
+                                        )
+                                    }
+                                }
+
+                                FilledTonalButton(
+                                    onClick = onInviteToDuel,
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color(0xFFFF5722).copy(alpha = 0.2f),
+                                        contentColor = Color(0xFFFF5722)
+                                    )
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.SportsEsports,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = duelBtnText,
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // HERO CARD (Matches Player Profile background styling)
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            if (bgBitmap != null) {
+                                Image(
+                                    bitmap = bgBitmap,
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    alpha = 0.55f
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Black.copy(alpha = 0.40f),
+                                                    Color.Black.copy(alpha = 0.75f)
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                PlayerAvatarView(
+                                    playerName = profile.username,
+                                    avatarEmoji = profile.avatarEmoji,
+                                    avatarBgColorHex = profile.avatarBgColor,
+                                    avatarFrame = profile.avatarFrame,
+                                    avatarBase64 = profile.avatarBase64,
+                                    size = 84.dp,
+                                    themeColor = playerAccentColor,
+                                    showOnlineDot = true,
+                                    isOnline = profile.isOnline
+                                )
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                // Player Nickname & Tag
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    if (profile.customTag.isNotBlank()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = playerAccentColor.copy(alpha = 0.2f),
+                                            border = BorderStroke(1.dp, playerAccentColor.copy(alpha = 0.5f)),
+                                            modifier = Modifier.padding(end = 6.dp)
+                                        ) {
+                                            Text(
+                                                text = "[${profile.customTag}]",
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                                color = playerAccentColor,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+
+                                    val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = playerAccentColor)
+                                    Text(
+                                        text = profile.username.ifBlank { "Player" },
+                                        style = if (profile.hasGradient) {
+                                            MaterialTheme.typography.titleLarge.copy(
+                                                brush = nicknameBrush,
+                                                fontWeight = FontWeight.Black
+                                            )
+                                        } else {
+                                            MaterialTheme.typography.titleLarge.copy(
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                fontWeight = FontWeight.Black
+                                            )
+                                        }
+                                    )
+                                }
+
+                                // Online Tier & Rating Badge
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = tierColor.copy(alpha = 0.15f),
+                                    border = BorderStroke(1.dp, tierColor.copy(alpha = 0.4f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocalFireDepartment,
+                                            contentDescription = null,
+                                            tint = tierColor,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "${Translations.getLocalizedRank(profile.onlineTier.ifBlank { "BRONZE" }, currentLang).uppercase()} • ${profile.rating} ELO",
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = tierColor
+                                        )
+                                    }
+                                }
+
+                                if (profile.title.isNotBlank() && profile.title != "none") {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f))
+                                    ) {
+                                        Text(
+                                            text = Translations.getLocalizedTitle(profile.title, currentLang).uppercase(),
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 9.5.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    // Avatar & Animated Nickname
-                    PlayerAvatarView(
-                        playerName = profile.username,
-                        avatarEmoji = profile.avatarEmoji,
-                        avatarBgColorHex = profile.avatarBgColor,
-                        avatarFrame = profile.avatarFrame,
-                        avatarBase64 = profile.avatarBase64,
-                        size = 80.dp,
-                        themeColor = themeColor,
-                        showOnlineDot = true,
-                        isOnline = profile.isOnline
+                    // COMPREHENSIVE STATS GRID (2x3) with Vector Icons (No Text Emojis)
+                    val statsData = listOf(
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Рекорд"
+                                Language.UA -> "Рекорд"
+                                Language.KK -> "Рекорд"
+                                Language.DE -> "Rekord"
+                                Language.ZH -> "最高分"
+                                else -> "High Score"
+                            },
+                            String.format(Locale.getDefault(), "%,d", profile.highScore),
+                            playerAccentColor,
+                            Icons.Default.EmojiEvents
+                        ),
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Линии"
+                                Language.UA -> "Лінії"
+                                Language.KK -> "Сызықтар"
+                                Language.DE -> "Linien"
+                                Language.ZH -> "消除行数"
+                                else -> "Lines"
+                            },
+                            String.format(Locale.getDefault(), "%,d", profile.clearedLines),
+                            Color(0xFF00E5FF),
+                            Icons.Default.FlashOn
+                        ),
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Матчи"
+                                Language.UA -> "Матчі"
+                                Language.KK -> "Матчтар"
+                                Language.DE -> "Spiele"
+                                Language.ZH -> "对战场次"
+                                else -> "Matches"
+                            },
+                            "${profile.gamesPlayed}",
+                            Color(0xFFB388FF),
+                            Icons.Default.SportsEsports
+                        ),
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Тетрисы"
+                                Language.UA -> "Тетріси"
+                                Language.KK -> "Тетристер"
+                                Language.DE -> "Tetrise"
+                                Language.ZH -> "四行全消"
+                                else -> "Tetrises"
+                            },
+                            "${profile.tetrisesCount}",
+                            Color(0xFFFF4081),
+                            Icons.Default.CheckCircle
+                        ),
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Уровень"
+                                Language.UA -> "Рівень"
+                                Language.KK -> "Деңгей"
+                                Language.DE -> "Level"
+                                Language.ZH -> "等级"
+                                else -> "Level"
+                            },
+                            "LVL ${profile.userLevel}",
+                            Color(0xFFFFD700),
+                            Icons.Default.Star
+                        ),
+                        ProfileStatItem(
+                            when (currentLang) {
+                                Language.RU -> "Баланс"
+                                Language.UA -> "Баланс"
+                                Language.KK -> "Баланс"
+                                Language.DE -> "Münzen"
+                                Language.ZH -> "金币"
+                                else -> "Coins"
+                            },
+                            String.format(Locale.getDefault(), "%,d", profile.credits),
+                            Color(0xFFFFD700),
+                            Icons.Default.MonetizationOn
+                        )
                     )
 
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        val playerColor = parseHexColor(profile.avatarBgColor, themeColor)
-                        val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = playerColor)
-                        Text(
-                            text = profile.username,
-                            style = if (profile.hasGradient) {
-                                MaterialTheme.typography.titleLarge.copy(
-                                    brush = nicknameBrush,
-                                    fontWeight = FontWeight.Black
-                                )
-                            } else {
-                                MaterialTheme.typography.titleLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        )
-
-                        if (profile.title.isNotBlank() && profile.title != "none") {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer
-                            ) {
-                                Text(
-                                    text = Translations.getLocalizedTitle(profile.title, currentLang).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Tier & League Badge
-                    val tierColor = when (profile.onlineTier.ifBlank { "BRONZE" }.uppercase()) {
-                        "BRONZE" -> Color(0xFFCD7F32)
-                        "SILVER" -> Color(0xFFC0C0C0)
-                        "GOLD" -> Color(0xFFFFD700)
-                        "PLATINUM" -> Color(0xFF00E5FF)
-                        "DIAMOND" -> Color(0xFF7C4DFF)
-                        "MASTER" -> Color(0xFFFF1744)
-                        "GRANDMASTER" -> Color(0xFFFF5252)
-                        "LEGEND" -> Color(0xFFFF9100)
-                        else -> themeColor
-                    }
-
-                    // Badges (Rank, ELO, Win Streak)
-                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = tierColor.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, tierColor.copy(alpha = 0.5f))
-                        ) {
+                        statsData.chunked(2).forEach { rowPair ->
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.MilitaryTech,
-                                    contentDescription = null,
-                                    tint = tierColor,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = Translations.getLocalizedRank(profile.onlineTier.ifBlank { "BRONZE" }, currentLang).uppercase(),
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                    color = tierColor
-                                )
+                                for ((label, value, color, icon) in rowPair) {
+                                    Surface(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.70f),
+                                        border = BorderStroke(1.dp, color.copy(alpha = 0.25f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier.size(32.dp),
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = color.copy(alpha = 0.15f)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = icon,
+                                                        contentDescription = null,
+                                                        tint = color,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                            Column {
+                                                Text(
+                                                    text = label.uppercase(),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = value,
+                                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 15.sp),
+                                                    color = color
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFFFD700).copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
-                        ) {
-                            Text(
-                                text = "ELO ${profile.rating}",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = Color(0xFFFFD700),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                            )
-                        }
-
-                        if (profile.winStreak > 0) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFFF5722).copy(alpha = 0.15f),
-                                border = BorderStroke(1.dp, Color(0xFFFF5722).copy(alpha = 0.5f))
-                            ) {
-                                Text(
-                                    text = "x${profile.winStreak}",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                                    color = Color(0xFFFF5722),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                                )
-                            }
-                        }
                     }
 
-                    // Stats Grid
-                    val highScoreLabel = when (currentLang) {
-                        Language.RU -> "Рекорд"
-                        Language.UA -> "Рекорд"
-                        Language.KK -> "Рекорд"
-                        Language.DE -> "Rekord"
-                        Language.ZH -> "最高分"
-                        else -> "High Score"
-                    }
-                    val levelLabel = when (currentLang) {
-                        Language.RU -> "Уровень"
-                        Language.UA -> "Рівень"
-                        Language.KK -> "Деңгей"
-                        Language.DE -> "Level"
-                        Language.ZH -> "等级"
-                        else -> "Level"
-                    }
-                    val creditsLabel = when (currentLang) {
-                        Language.RU -> "Монеты"
-                        Language.UA -> "Монети"
-                        Language.KK -> "Тиындар"
-                        Language.DE -> "Münzen"
-                        Language.ZH -> "金币"
-                        else -> "Credits"
-                    }
-                    Row(
+                    // ACHIEVEMENTS SUMMARY CARD (Only Achievements displayed)
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.70f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     ) {
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            Surface(
+                                modifier = Modifier.size(44.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFFFD700).copy(alpha = 0.15f),
+                                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.35f))
                             ) {
-                                Text(
-                                    text = highScoreLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = String.format(Locale.getDefault(), "%,d", profile.highScore),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
-                                    color = themeColor
-                                )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.WorkspacePremium,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
-                        }
 
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = levelLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    text = when (currentLang) {
+                                        Language.RU -> "ДОСТИЖЕНИЯ"
+                                        Language.UA -> "ДОСЯГНЕННЯ"
+                                        Language.KK -> "ЖЕТІСТІКТЕР"
+                                        Language.DE -> "ERFOLGE"
+                                        Language.ZH -> "成就荣誉"
+                                        else -> "ACHIEVEMENTS"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 1.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "LVL ${profile.userLevel}",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
+                                    text = when (currentLang) {
+                                        Language.RU -> "Разблокировано: ${profile.unlockedAchievements.size}"
+                                        Language.UA -> "Розблоковано: ${profile.unlockedAchievements.size}"
+                                        Language.KK -> "Ашылғандар: ${profile.unlockedAchievements.size}"
+                                        Language.DE -> "Freigeschaltet: ${profile.unlockedAchievements.size}"
+                                        Language.ZH -> "已解锁：${profile.unlockedAchievements.size}"
+                                        else -> "Unlocked: ${profile.unlockedAchievements.size}"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
-
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = creditsLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = String.format(Locale.getDefault(), "%,d", profile.credits),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
-                                    color = Color(0xFFFFD700)
-                                )
-                            }
-                        }
                     }
 
-                    // Action Buttons
-                    val requestSentText = when (currentLang) {
-                        Language.RU -> "Запрос отправлен"
-                        Language.UA -> "Запит надіслано"
-                        Language.KK -> "Сұраныс жіберілді"
-                        Language.DE -> "Anfrage gesendet"
-                        Language.ZH -> "已发送申请"
-                        else -> "Request Sent"
-                    }
-                    val addFriendText = when (currentLang) {
-                        Language.RU -> "В друзья"
-                        Language.UA -> "У друзі"
-                        Language.KK -> "Дос қосу"
-                        Language.DE -> "Freund hinzufügen"
-                        Language.ZH -> "加为好友"
-                        else -> "Add Friend"
-                    }
-                    val duelBtnText = when (currentLang) {
-                        Language.RU -> "В дуэль"
-                        Language.UA -> "У дуель"
-                        Language.KK -> "Дуэльге"
-                        Language.DE -> "Duell 1v1"
-                        Language.ZH -> "发起对战"
-                        else -> "Duel 1v1"
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                friendAddedState = true
-                                onAddFriend()
-                            },
-                            enabled = !friendAddedState,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = themeColor,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (friendAddedState) Icons.Default.Check else Icons.Default.PersonAdd,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = if (friendAddedState) requestSentText else addFriendText,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                        }
-
-                        FilledTonalButton(
-                            onClick = onInviteToDuel,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SportsEsports,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = duelBtnText,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
         }
