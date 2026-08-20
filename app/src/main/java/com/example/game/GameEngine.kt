@@ -27,7 +27,8 @@ data class Position(val x: Int, val y: Int)
 data class Tetromino(
     val shape: List<Position>,
     val colorIndex: Int,
-    val pivot: Position = Position(0, 0)
+    val pivot: Position = Position(0, 0),
+    val rotationState: Int = 0
 )
 
 val STANDARD_SHAPES = listOf(
@@ -64,7 +65,9 @@ enum class GameMode(val code: String, val displayNameEn: String, val displayName
 data class PlacementHint(
     val shape: List<Position>,
     val targetPos: Position,
-    val score: Double
+    val score: Double,
+    val shouldHold: Boolean = false,
+    val holdReason: String = ""
 )
 
 data class GameState(
@@ -274,13 +277,37 @@ class GameEngine {
     // Поворот + wall kick — пробуем сдвиг если не влезает / rotation with wall kick attempts
     fun rotate() {
         val state = _gameState.value
-        if (state.isGameOver || state.currentPiece == null) return
-        
-        val rotatedShape = state.currentPiece.shape.map { p ->
-            Position(-p.y, p.x)
+        val piece = state.currentPiece ?: return
+        if (state.isGameOver) return
+
+        // 1. Квадрат (O-форма) не вращается
+        if (piece.colorIndex == 4) return
+
+        // 2. 2-позиционные фигуры (I, S, Z, dot) переключаются туда-обратно (0 <-> 1)
+        val isTwoState = piece.colorIndex in listOf(1, 5, 7, 10)
+        val nextRotationState = if (isTwoState) {
+            if (piece.rotationState == 0) 1 else 0
+        } else {
+            (piece.rotationState + 1) % 4
         }
-        val rotatedPiece = state.currentPiece.copy(shape = rotatedShape)
-        
+
+        val rotatedShape = if (isTwoState && piece.rotationState == 1) {
+            // Поворот обратно (-90 градусов: (y, -x))
+            piece.shape.map { p ->
+                val rx = p.x - piece.pivot.x
+                val ry = p.y - piece.pivot.y
+                Position(piece.pivot.x + ry, piece.pivot.y - rx)
+            }
+        } else {
+            // Обычный поворот (+90 градусов: (-y, x))
+            piece.shape.map { p ->
+                val rx = p.x - piece.pivot.x
+                val ry = p.y - piece.pivot.y
+                Position(piece.pivot.x - ry, piece.pivot.y + rx)
+            }
+        }
+        val rotatedPiece = piece.copy(shape = rotatedShape, rotationState = nextRotationState)
+
         if (isValidMove(state.currentPos, rotatedPiece, state.grid)) {
             _gameState.update { it.copy(currentPiece = rotatedPiece) }
         } else {
@@ -452,15 +479,64 @@ class GameEngine {
         _gameState.update { it.copy(grid = currentGrid) }
     }
 
-    // AI-подсказчик для режима Перфекционист — находит идеальное положение текущей фигуры
-    fun calculateOptimalPlacement(grid: List<IntArray>, piece: Tetromino): PlacementHint? {
-        var bestHint: PlacementHint? = null
-        var maxScore = -1_000_000.0
+    // AI-подсказчик для режима Перфекционист — глубокая эвристика Dellacherie + Hold recommendation
+    fun calculateOptimalPlacement(
+        grid: List<IntArray>,
+        piece: Tetromino,
+        holdPiece: Tetromino? = null,
+        nextPiece: Tetromino? = null,
+        canHold: Boolean = true
+    ): PlacementHint? {
+        // Конвертируем grid в 10-битные маски строк (rows 0..21)
+        val gridMasks = IntArray(22)
+        for (r in 0..21) {
+            var mask = 0
+            if (r < grid.size) {
+                val rowArr = grid[r]
+                for (c in 0..9) {
+                    if (c < rowArr.size && rowArr[c] != 0) {
+                        mask = mask or (1 shl c)
+                    }
+                }
+            }
+            gridMasks[r] = mask
+        }
 
-        // 4 поворота фигуры
+        // 1. Оцениваем текущую фигуру
+        val currentBest = evaluateBestPlacementForPiece(gridMasks, piece) ?: return null
+
+        // 2. Если можно делать Hold, оцениваем кандидата из Hold
+        if (canHold) {
+            val candidateHoldPiece = holdPiece ?: nextPiece
+            if (candidateHoldPiece != null) {
+                val holdBest = evaluateBestPlacementForPiece(gridMasks, candidateHoldPiece)
+                if (holdBest != null) {
+                    // Если текущая фигура создает дырки или имеет очень низкий скор, а холд намного чище:
+                    val isCurrentBad = currentBest.score < -80.0
+                    val isHoldSignificantlyBetter = holdBest.score > currentBest.score + 75.0
+                    if (isCurrentBad || isHoldSignificantlyBetter) {
+                        return currentBest.copy(
+                            shouldHold = true,
+                            holdReason = if (isCurrentBad) "Текущая фигура портит структуру" else "Фигура из холда дает чистое комбо"
+                        )
+                    }
+                }
+            }
+        }
+
+        return currentBest
+    }
+
+    private fun evaluateBestPlacementForPiece(gridMasks: IntArray, piece: Tetromino): PlacementHint? {
+        val maxRotations = when (piece.colorIndex) {
+            4 -> 1 // Квадрат не вращается
+            1, 5, 7, 10 -> 2 // I, S, Z, dot: 2 положения
+            else -> 4 // T, L, J, и др.: 4 положения
+        }
+
         val rotations = mutableListOf<List<Position>>()
         var curShape = piece.shape
-        for (r in 0 until 4) {
+        for (r in 0 until maxRotations) {
             if (!rotations.any { rot -> rot.toSet() == curShape.toSet() }) {
                 rotations.add(curShape)
             }
@@ -471,25 +547,29 @@ class GameEngine {
             }
         }
 
+        var bestHint: PlacementHint? = null
+        var maxScore = -1_000_000.0
+        val simMasks = IntArray(22)
+        val colHeights = IntArray(10)
+
         for (rotShape in rotations) {
             val minX = rotShape.minOf { it.x }
             val maxX = rotShape.maxOf { it.x }
 
             for (posX in (0 - minX)..(9 - maxX)) {
-                // Ищем точку падения hardDrop
+                // Ищем точку падения hardDrop с битовой проверкой коллизий
                 var landingY = -1
                 for (posY in 0..21) {
-                    val testPos = Position(posX, posY)
-                    var valid = true
+                    var collision = false
                     for (p in rotShape) {
-                        val nx = testPos.x + p.x
-                        val ny = testPos.y + p.y
-                        if (nx !in 0..9 || ny >= 22 || (ny >= 0 && grid[ny][nx] != 0)) {
-                            valid = false
+                        val nx = posX + p.x
+                        val ny = posY + p.y
+                        if (nx !in 0..9 || ny >= 22 || (ny >= 0 && (gridMasks[ny] and (1 shl nx)) != 0)) {
+                            collision = true
                             break
                         }
                     }
-                    if (valid) {
+                    if (!collision) {
                         landingY = posY
                     } else {
                         break
@@ -499,62 +579,129 @@ class GameEngine {
                 if (landingY >= 0) {
                     val targetPos = Position(posX, landingY)
 
-                    // 1. Симулируем размещение
-                    val simGrid = Array(22) { r -> grid[r].clone() }
+                    // Копируем исходные маски
+                    System.arraycopy(gridMasks, 0, simMasks, 0, 22)
+
+                    // Накладываем фигуру
                     for (p in rotShape) {
                         val ny = targetPos.y + p.y
                         val nx = targetPos.x + p.x
                         if (ny in 0..21 && nx in 0..9) {
-                            simGrid[ny][nx] = piece.colorIndex
+                            simMasks[ny] = simMasks[ny] or (1 shl nx)
                         }
                     }
 
-                    // 2. Считаем заполненные линии
+                    // 1. Считаем заполненные линии (rowMask == 0x3FF)
                     var completeLines = 0
                     for (r in 0..21) {
-                        if (simGrid[r].all { it != 0 }) completeLines++
+                        if (simMasks[r] == 0x3FF) {
+                            completeLines++
+                        }
                     }
 
-                    // 3. Высоты колонок
-                    val colHeights = IntArray(10)
+                    // 2. Высоты столбцов (0..9)
+                    var maxHeight = 0
+                    var aggregateHeight = 0
                     for (c in 0..9) {
+                        val bit = 1 shl c
                         var h = 0
                         for (r in 0..21) {
-                            if (simGrid[r][c] != 0) {
+                            if ((simMasks[r] and bit) != 0) {
                                 h = 22 - r
                                 break
                             }
                         }
                         colHeights[c] = h
+                        aggregateHeight += h
+                        if (h > maxHeight) maxHeight = h
                     }
 
-                    // 4. Дырки под блоками (пустые клетки с заполненными выше)
+                    // 3. Подсчет дырок (Holes) и глубины захоронения (Hole Depth)
                     var holes = 0
+                    var holeDepth = 0
                     for (c in 0..9) {
-                        var blockSeen = false
+                        val bit = 1 shl c
+                        var blocksAbove = 0
                         for (r in 0..21) {
-                            if (simGrid[r][c] != 0) {
-                                blockSeen = true
-                            } else if (blockSeen) {
+                            if ((simMasks[r] and bit) != 0) {
+                                blocksAbove++
+                            } else if (blocksAbove > 0) {
                                 holes++
+                                holeDepth += blocksAbove
                             }
                         }
                     }
 
-                    // 5. Неровность рельефа (Bumpiness)
+                    // 4. Переходы строк (Row Transitions)
+                    var rowTransitions = 0
+                    val startRow = (22 - maxHeight).coerceAtLeast(0)
+                    for (r in startRow..21) {
+                        val m = simMasks[r]
+                        // граница слева
+                        if ((m and 1) == 0) rowTransitions++
+                        // биты между собой
+                        for (c in 0..8) {
+                            val b1 = (m shr c) and 1
+                            val b2 = (m shr (c + 1)) and 1
+                            if (b1 != b2) rowTransitions++
+                        }
+                        // граница справа
+                        if ((m and (1 shl 9)) == 0) rowTransitions++
+                    }
+
+                    // 5. Переходы столбцов (Column Transitions)
+                    var colTransitions = 0
+                    for (c in 0..9) {
+                        val bit = 1 shl c
+                        var prevBit = 0 // верхняя граница пустая
+                        for (r in 0..21) {
+                            val curBit = if ((simMasks[r] and bit) != 0) 1 else 0
+                            if (curBit != prevBit) colTransitions++
+                            prevBit = curBit
+                        }
+                        // нижняя граница (пол) заполнена (1)
+                        if (prevBit != 1) colTransitions++
+                    }
+
+                    // 6. Неровность рельефа (Bumpiness)
                     var bumpiness = 0
                     for (c in 0..8) {
                         bumpiness += kotlin.math.abs(colHeights[c] - colHeights[c + 1])
                     }
 
-                    val aggregateHeight = colHeights.sum()
+                    // 7. Контроль колодцев (Wells)
+                    var wellsPenalty = 0
+                    for (c in 0..9) {
+                        val leftH = if (c > 0) colHeights[c - 1] else 22
+                        val rightH = if (c < 9) colHeights[c + 1] else 22
+                        val minAdjacent = kotlin.math.min(leftH, rightH)
+                        val wellDepth = minAdjacent - colHeights[c]
+                        if (wellDepth > 2) {
+                            val isEdgeWell = (c == 0 || c == 9)
+                            wellsPenalty += if (isEdgeWell) wellDepth * 4 else wellDepth * 18
+                        }
+                    }
 
-                    // Оценочная функция: максимизируем линии и плоскость, минимизируем дырки и высоту
-                    val evalScore = (completeLines * completeLines * 150.0) -
-                            (holes * 45.0) -
-                            (bumpiness * 3.0) -
-                            (aggregateHeight * 1.8) +
-                            (landingY * 2.0)
+                    // Бонус за сбор линий
+                    val lineClearBonus = when (completeLines) {
+                        4 -> 850.0 // TETRIS
+                        3 -> 380.0
+                        2 -> 160.0
+                        1 -> 40.0
+                        else -> 0.0
+                    }
+
+                    // Формула Dellacherie Enhanced
+                    val evalScore = lineClearBonus -
+                            (holes * 130.0) -
+                            (holeDepth * 35.0) -
+                            (rowTransitions * 8.0) -
+                            (colTransitions * 12.0) -
+                            (bumpiness * 6.0) -
+                            (aggregateHeight * 2.2) -
+                            (maxHeight * 5.0) -
+                            (wellsPenalty * 3.0) +
+                            (landingY * 3.5)
 
                     if (evalScore > maxScore) {
                         maxScore = evalScore

@@ -2214,7 +2214,7 @@ fun MainMenuScreen(
                                                             )
                                                             SuggestionChip(
                                                                 onClick = {
-                                                                    broadcastTitle = "🚀 Обновление 0.94.8"
+                                                                    broadcastTitle = "🚀 Обновление 0.94.9"
                                                                     broadcastText = "Вышло обновление клиента: улучшена стабильность мультиплеера и синхронизация монет!"
                                                                 },
                                                                 label = { Text("Обновление", style = MaterialTheme.typography.labelSmall) }
@@ -3740,6 +3740,14 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     Language.DE -> "Pentatris"
                                     Language.ZH -> "五阶狂潮"
                                     else -> "Pentatris"
+                                },
+                                "perfectionist" to when (currentLang) {
+                                    Language.RU -> "Перфекционист"
+                                    Language.UA -> "Перфекціоніст"
+                                    Language.KK -> "Перфекционист"
+                                    Language.DE -> "Perfektionist"
+                                    Language.ZH -> "完美主义者"
+                                    else -> "Perfectionist"
                                 }
                             )
                         }
@@ -4238,6 +4246,9 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
     val gridLineDensity by viewModel.gridLineDensity.collectAsStateWithLifecycle()
     val customFontKey by viewModel.customFontKey.collectAsStateWithLifecycle()
     val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
+    val controlDas by viewModel.controlDas.collectAsStateWithLifecycle()
+    val controlArr by viewModel.controlArr.collectAsStateWithLifecycle()
+    val controlBottomPadding by viewModel.controlBottomPadding.collectAsStateWithLifecycle()
 
     val purchasedThemes by viewModel.purchasedThemes.collectAsStateWithLifecycle()
     val purchasedFonts by viewModel.purchasedFonts.collectAsStateWithLifecycle()
@@ -5125,7 +5136,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         )
                     }
 
-                    // Control Buttons Layout Preset Card
+                    // 1. Control Buttons Layout Presets Card (7 Presets)
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -5135,61 +5146,415 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
-                            Text(
-                                text = Translations.get("control_buttons_layout", currentLang),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = themeColorVal
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Gamepad,
+                                    contentDescription = null,
+                                    tint = themeColorVal,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = Translations.get("control_buttons_layout", currentLang),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = themeColorVal
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             val layouts = listOf(
-                                "classic" to when (currentLang) {
-                                    Language.RU -> "Сетка по центру"
-                                    Language.UA -> "Сітка по центру"
-                                    Language.KK -> "Орталық тор"
-                                    Language.DE -> "Taktisches Gitter mittig"
-                                    Language.ZH -> "居中战术按键"
-                                    else -> "Tactical Grid Centered"
-                                },
-                                "split" to when (currentLang) {
-                                    Language.RU -> "Разделенное по краям"
-                                    Language.UA -> "Розділене по краях"
-                                    Language.KK -> "Шеттері бойынша бөлінген"
-                                    Language.DE -> "Geteilte Randsteuerung"
-                                    Language.ZH -> "两侧分列控制"
-                                    else -> "Divided Fingertip Split"
-                                },
-                                "arcade" to when (currentLang) {
-                                    Language.RU -> "Аркадный стиль"
-                                    Language.UA -> "Аркадний стиль"
-                                    Language.KK -> "Аркадалық стиль"
-                                    Language.DE -> "Arcade-Controller-Stil"
-                                    Language.ZH -> "经典街机手柄"
-                                    else -> "Arcade Controller style"
-                                }
+                                "classic" to (Translations.getLocalizedControlPresetName("classic", currentLang) to when (currentLang) {
+                                    Language.RU -> "4 кнопки в ряд + сброс/удержание снизу"
+                                    Language.UA -> "4 кнопки в ряд + скидання/утримання знизу"
+                                    Language.KK -> "Қатардағы 4 батырма"
+                                    Language.DE -> "4 Tasten in einer Reihe + Drop/Hold"
+                                    Language.ZH -> "4键排布 + 底部下落/暂存"
+                                    else -> "4 inline buttons + drop/hold below"
+                                }),
+                                "split" to (Translations.getLocalizedControlPresetName("split", currentLang) to when (currentLang) {
+                                    Language.RU -> "Для двух больших пальцев по краям"
+                                    Language.UA -> "Для двох великих пальців по краях"
+                                    Language.KK -> "Екі бас бармаққа арналған"
+                                    Language.DE -> "Geteilte Zweihand-Steuerung"
+                                    Language.ZH -> "双拇指边缘分列布局"
+                                    else -> "Two-thumb ergonomics on edges"
+                                }),
+                                "arcade" to (Translations.getLocalizedControlPresetName("arcade", currentLang) to when (currentLang) {
+                                    Language.RU -> "Крестовина D-Pad слева, действия справа"
+                                    Language.UA -> "Хрестовина D-Pad зліва, дії справа"
+                                    Language.KK -> "D-Pad сол жақта, әрекеттер оң жақта"
+                                    Language.DE -> "Arcade D-Pad links, Aktionen rechts"
+                                    Language.ZH -> "左侧D-Pad摇杆，右侧动作键"
+                                    else -> "D-Pad left, action triggers right"
+                                }),
+                                "one_hand_right" to (Translations.getLocalizedControlPresetName("one_hand_right", currentLang) to when (currentLang) {
+                                    Language.RU -> "Компактно справа для игры одной рукой"
+                                    Language.UA -> "Компактно справа для гри однією рукою"
+                                    Language.KK -> "Оң қолмен ойнауға арналған"
+                                    Language.DE -> "Kompakt rechts für Einhand-Bedienung"
+                                    Language.ZH -> "右手单手操作紧凑布局"
+                                    else -> "Compact right cluster for 1-hand play"
+                                }),
+                                "one_hand_left" to (Translations.getLocalizedControlPresetName("one_hand_left", currentLang) to when (currentLang) {
+                                    Language.RU -> "Компактно слева для игры одной рукой"
+                                    Language.UA -> "Компактно зліва для гри однією рукою"
+                                    Language.KK -> "Сол қолмен ойнауға арналған"
+                                    Language.DE -> "Kompakt links für Einhand-Bedienung"
+                                    Language.ZH -> "左手单手操作紧凑布局"
+                                    else -> "Compact left cluster for 1-hand play"
+                                }),
+                                "claw_pro" to (Translations.getLocalizedControlPresetName("claw_pro", currentLang) to when (currentLang) {
+                                    Language.RU -> "Киберспортивная матрица из 6 клавиш"
+                                    Language.UA -> "Кіберспортивна матриця з 6 клавіш"
+                                    Language.KK -> "Киберспорттық 6 батырма"
+                                    Language.DE -> "6-Tasten Pro Matrix"
+                                    Language.ZH -> "电竞6键独立控制矩阵"
+                                    else -> "6-key competitive matrix"
+                                }),
+                                "swipe_hybrid" to (Translations.getLocalizedControlPresetName("swipe_hybrid", currentLang) to when (currentLang) {
+                                    Language.RU -> "Сенсорная панель + быстрые триггеры"
+                                    Language.UA -> "Сенсорна панель + швидкі тригери"
+                                    Language.KK -> "Сенсорлық тақта + триггерлер"
+                                    Language.DE -> "Touch-Fläche + Schnell-Trigger"
+                                    Language.ZH -> "滑动手势区 + 快捷扳机"
+                                    else -> "Gesture touch area + fast action pills"
+                                })
                             )
-                            layouts.forEach { (key, title) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { viewModel.setControlStyle(key) }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = controlStyle == key,
-                                        onClick = { viewModel.setControlStyle(key) },
-                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = title, style = MaterialTheme.typography.bodyLarge)
+
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                layouts.forEach { (key, info) ->
+                                    val (title, desc) = info
+                                    val isSelected = controlStyle == key
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.setControlStyle(key)
+                                                viewModel.triggerAudioFeedback("click")
+                                            }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = isSelected,
+                                                onClick = {
+                                                    viewModel.setControlStyle(key)
+                                                    viewModel.triggerAudioFeedback("click")
+                                                },
+                                                colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = title,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = desc,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Control Button Visual Style Card
+                    // 2. DAS & ARR Timing Tuning Card (Тонкая настройка отклика)
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "ЧУВСТВИТЕЛЬНОСТЬ И ОТКЛИК (DAS / ARR)"
+                                    Language.UA -> "ЧУТЛИВІСТЬ ТА ВІДГУК (DAS / ARR)"
+                                    Language.KK -> "СЕЗІМТАЛДЫҚ ПЕН ЖЫЛДАМДЫҚ"
+                                    Language.DE -> "ANSPRECHVERHALTEN (DAS / ARR)"
+                                    Language.ZH -> "按键响应灵敏度 (DAS / ARR)"
+                                    else -> "RESPONSE & TIMINGS (DAS / ARR)"
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+
+                            // DAS Slider
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "DAS (Задержка зажатия)"
+                                                Language.UA -> "DAS (Затримка затискання)"
+                                                Language.KK -> "DAS (Басу кідірісі)"
+                                                Language.DE -> "DAS (Startverzögerung)"
+                                                Language.ZH -> "DAS (长按触发延迟)"
+                                                else -> "DAS (Initial Hold Delay)"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Время до начала авто-повтора"
+                                                Language.UA -> "Час до початку авто-повтору"
+                                                Language.KK -> "Авто-қайталауға дейінгі уақыт"
+                                                Language.DE -> "Zeit bis Dauerfeuer startet"
+                                                Language.ZH -> "按住到开始连续移动的时间"
+                                                else -> "Delay before continuous repeat"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = themeColorVal.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "$controlDas мс",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = controlDas.toFloat(),
+                                    onValueChange = { viewModel.setControlDas(it.toInt()) },
+                                    valueRange = 100f..300f
+                                )
+                            }
+
+                            // ARR Slider
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "ARR (Скорость повтора)"
+                                                Language.UA -> "ARR (Швидкість повтору)"
+                                                Language.KK -> "ARR (Қайталау жылдамдығы)"
+                                                Language.DE -> "ARR (Wiederholrate)"
+                                                Language.ZH -> "ARR (连按重复频率)"
+                                                else -> "ARR (Auto-Repeat Rate)"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Интервал между сдвигами при зажатии"
+                                                Language.UA -> "Інтервал між зсувами при затисканні"
+                                                Language.KK -> "Қайталау арасындағы уақыт"
+                                                Language.DE -> "Intervall für Dauerfeuer-Schritte"
+                                                Language.ZH -> "连续连击移动的间隔"
+                                                else -> "Interval between repeat shifts"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = themeColorVal.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "$controlArr мс",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = controlArr.toFloat(),
+                                    onValueChange = { viewModel.setControlArr(it.toInt()) },
+                                    valueRange = 16f..80f
+                                )
+                            }
+                        }
+                    }
+
+                    // 3. Ergonomics & Geometry Tuning Card (Геометрия и размеры)
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "ГЕОМЕТРИЯ И РАЗМЕР КНОПОК"
+                                    Language.UA -> "ГЕОМЕТРІЯ ТА РОЗМІР КНОПОК"
+                                    Language.KK -> "БАТЫРМАЛАР ӨЛШЕМІ МЕН ОРНЫ"
+                                    Language.DE -> "GEOMETRIE & TASTENGRÖSSE"
+                                    Language.ZH -> "按键尺寸与底边距调整"
+                                    else -> "GEOMETRY & BUTTON SIZING"
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+
+                            // Bottom Margin Slider
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Отступ снизу экрана"
+                                                Language.UA -> "Відступ знизу екрана"
+                                                Language.KK -> "Төменнен шегініс"
+                                                Language.DE -> "Abstand zum unteren Rand"
+                                                Language.ZH -> "距离屏幕底部的边距"
+                                                else -> "Bottom Screen Margin"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Подгонка под жесты и навигацию"
+                                                Language.UA -> "Підгонка під жести"
+                                                Language.KK -> "Ыңғайлы орынға келтіру"
+                                                Language.DE -> "Anpassung an Gestenleiste"
+                                                Language.ZH -> "避免被手势导航条误触"
+                                                else -> "Avoid system navigation bar"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = themeColorVal.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "$controlBottomPadding dp",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = controlBottomPadding.toFloat(),
+                                    onValueChange = { viewModel.setControlBottomPadding(it.toInt()) },
+                                    valueRange = 0f..80f
+                                )
+                            }
+
+                            // Button Scale Slider
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = Translations.get("control_button_scale", currentLang),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Масштаб элементов управления"
+                                                Language.UA -> "Масштаб елементів керування"
+                                                Language.KK -> "Батырмалар масштабы"
+                                                Language.DE -> "Tastengröße skalieren"
+                                                Language.ZH -> "调整所有按键物理大小"
+                                                else -> "Scale overall button touch area"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = themeColorVal.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "${"%.2f".format(controlButtonScale)}x",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                }
+                                Slider(
+                                    value = controlButtonScale,
+                                    onValueChange = { viewModel.setControlButtonScale(it) },
+                                    valueRange = 0.70f..1.40f
+                                )
+                            }
+
+                            // Quick Reset to Recommended
+                            FilledTonalButton(
+                                onClick = {
+                                    viewModel.setControlDas(160)
+                                    viewModel.setControlArr(35)
+                                    viewModel.setControlBottomPadding(12)
+                                    viewModel.setControlButtonScale(1.0f)
+                                    viewModel.triggerAudioFeedback("click")
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "Сброс к оптимальным параметрам"
+                                        Language.UA -> "Скинути до оптимальних значень"
+                                        Language.KK -> "Оңтайлы мәндерге қайтару"
+                                        Language.DE -> "Auf Standardwerte zurücksetzen"
+                                        Language.ZH -> "恢复推荐默认参数"
+                                        else -> "Reset to Recommended Values"
+                                    },
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // 4. Control Button Visual Style Card
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -5278,79 +5643,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         }
                     }
 
-                    // Tactical Controller Vertical Position Card
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            val verticalPosTitle = when (currentLang) {
-                                Language.RU -> "Вертикальная позиция управления"
-                                Language.UA -> "Вертикальна позиція керування"
-                                Language.KK -> "Басқарудың тік орны"
-                                Language.DE -> "Vertikale Tastenposition"
-                                Language.ZH -> "控制器垂直位置"
-                                else -> "Tactical Controller Vertical position"
-                            }
-                            Text(
-                                text = verticalPosTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = themeColorVal
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            val positions = listOf(
-                                "bottom" to when (currentLang) {
-                                    Language.RU -> "Нижнее положение"
-                                    Language.UA -> "Нижнє положення"
-                                    Language.KK -> "Төменгі орын"
-                                    Language.DE -> "Unten platziert"
-                                    Language.ZH -> "靠底位置"
-                                    else -> "Lower Edge bottom position"
-                                },
-                                "middle" to when (currentLang) {
-                                    Language.RU -> "Центральное положение"
-                                    Language.UA -> "Центральне положення"
-                                    Language.KK -> "Орталық орын"
-                                    Language.DE -> "Mittlere Höhe"
-                                    Language.ZH -> "适中居中"
-                                    else -> "Comfort Middle height position"
-                                },
-                                "top" to when (currentLang) {
-                                    Language.RU -> "Верхнее положение"
-                                    Language.UA -> "Верхнє положення"
-                                    Language.KK -> "Жоғарғы орын"
-                                    Language.DE -> "Oben platziert"
-                                    Language.ZH -> "靠上位置"
-                                    else -> "Elevated Top reach position"
-                                }
-                            )
-                            positions.forEach { (key, title) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { viewModel.setControlVerticalPosition(key) }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = controlVerticalPosition == key,
-                                        onClick = { viewModel.setControlVerticalPosition(key) },
-                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = title, style = MaterialTheme.typography.bodyLarge)
-                                }
-                            }
-                        }
-                    }
-
-                    // Left Handed Controls Card
+                    // 5. Left Handed Controls Card
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -5374,6 +5667,74 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
+                    }
+
+                    // 6. Interactive Live Test Pad Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "ТЕСТИРОВАНИЕ КНОПОК"
+                                    Language.UA -> "ТЕСТУВАННЯ КНОПОК"
+                                    Language.KK -> "БАТЫРМАЛАРДЫ ТЕКСЕРУ"
+                                    Language.DE -> "STEUERUNG TESTEN"
+                                    Language.ZH -> "实时按键手感测试区"
+                                    else -> "LIVE CONTROLS TEST"
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Проверьте отклик, размер и удобство расположения прямо здесь:"
+                                    Language.UA -> "Перевірте відгук та розташування прямо тут:"
+                                    Language.KK -> "Батырмалардың өлшемі мен орналасуын осында тексеріңіз:"
+                                    Language.DE -> "Tastenreaktion und Position hier direkt testen:"
+                                    Language.ZH -> "直接在此区域按下并测试手感与按键延迟："
+                                    else -> "Test timings, button size, and layout position directly here:"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 14.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    GameControlsSection(
+                                        viewModel = viewModel,
+                                        gameState = com.example.game.GameState(),
+                                        controlStyle = controlStyle,
+                                        leftHandedControls = leftHandedControls,
+                                        controlVerticalPosition = "bottom",
+                                        controlButtonScale = controlButtonScale,
+                                        controlButtonStyle = controlButtonStyle,
+                                        onLeftPress = { viewModel.triggerAudioFeedback("move") },
+                                        onRightPress = { viewModel.triggerAudioFeedback("move") },
+                                        onDownPress = { viewModel.triggerAudioFeedback("move") },
+                                        onRotatePress = { viewModel.triggerAudioFeedback("rotate") },
+                                        onHardDropPress = { viewModel.triggerAudioFeedback("drop") },
+                                        onHoldPress = { viewModel.triggerAudioFeedback("click") }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -6080,7 +6441,7 @@ fun AboutAppDialog(
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
                                     Text(
-                                        text = "0.94.8 Alpha",
+                                        text = "0.94.9",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -6705,6 +7066,34 @@ val modes = listOf(
                 else -> "A sandbox mode allowing full customization of gameplay rules to match your preference."
             },
             ShopPrices.getModeCost("relax"), Icons.Default.Spa, "FREE"
+        ),
+        ModeInfo(
+            com.example.game.GameMode.PERFECTIONIST, "perfectionist",
+            when (currentLang) {
+                Language.RU -> "Перфекционист"
+                Language.UA -> "Перфекціоніст"
+                Language.KK -> "Перфекционист"
+                Language.DE -> "Perfektionist"
+                Language.ZH -> "完美主义者"
+                else -> "Perfectionist"
+            },
+            when (currentLang) {
+                Language.RU -> "Идеальные фигуры и ИИ-подсветка лучшей позиции."
+                Language.UA -> "Ідеальні фігури та ШІ-підсвічування кращої позиції."
+                Language.KK -> "Мінсіз фигуралар және ЖИ ең жақсы орын нұсқауы."
+                Language.DE -> "Ideale Steine & KI-Leitstrahl für perfekte Platzierung."
+                Language.ZH -> "极致顺滑方块序列与AI黄金最优落点辅助。"
+                else -> "Ideal piece bags & holographic AI optimal placement guide."
+            },
+            when (currentLang) {
+                Language.RU -> "Режим абсолютной гармонии: игра выдает идеальные фигуры для непрерывных линий, а золотой голографический гид подсказывает математически точную позицию сброса! (Награда в 15 раз меньше)."
+                Language.UA -> "Режим абсолютної гармонії: ідеальні фігури та золотий голографічний гід! (Нагорода в 15 разів менше)."
+                Language.KK -> "Үйлесімділік режимі: мінсіз фигуралар мен алтын голографиялық көмекші! (Сыйақы 15 есе аз)."
+                Language.DE -> "Modus der absoluten Harmonie: Perfekte Figuren und goldener KI-Leitstrahl für fehlerfreies Stapeln! (15-fach reduzierte Belohnung)."
+                Language.ZH -> "完美秩序模式：系统持续生成最易拼合的方块，全息黄金光标实时指引AI最优摆放位置！（收益为经典模式的1/15）。"
+                else -> "Mode of absolute harmony: Ideal piece sequence with real-time golden holographic optimal drop guide! (Rewards scaled 1/15th)."
+            },
+            ShopPrices.getModeCost("perfectionist"), Icons.Default.Star, "PAID"
         )
     )
 

@@ -9,6 +9,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -332,14 +334,45 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
+                    val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
+                        if (isPerfectionistMode && gameState.currentPiece != null) {
+                            viewModel.gameEngine.calculateOptimalPlacement(
+                                grid = gameState.grid,
+                                piece = gameState.currentPiece!!,
+                                holdPiece = gameState.holdPiece,
+                                nextPiece = gameState.nextPieces.firstOrNull(),
+                                canHold = !gameState.hasHeldThisTurn
+                            )
+                        } else null
+                    }
+                    val isHoldRecommended = isPerfectionistMode && perfectionistHint?.shouldHold == true && !gameState.hasHeldThisTurn
+
+                    val holdPulseTransition = rememberInfiniteTransition(label = "HoldPulse")
+                    val holdPulseAlpha by holdPulseTransition.animateFloat(
+                        initialValue = 0.35f,
+                        targetValue = 1.0f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(550, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "HoldPulseAlpha"
+                    )
+
                     // HOLD BOX
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (isHoldRecommended) {
+                                    Modifier.border(2.dp, Color(0xFFFFD700).copy(alpha = holdPulseAlpha), RoundedCornerShape(20.dp))
+                                } else Modifier
+                            ),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = if (isHoldRecommended) Color(0xFFFFD700).copy(alpha = 0.12f * holdPulseAlpha) else MaterialTheme.colorScheme.surfaceContainerHigh
                         ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isHoldRecommended) 6.dp else 2.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -352,17 +385,26 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.SaveAlt,
+                                    imageVector = if (isHoldRecommended) Icons.Default.AutoAwesome else Icons.Default.SaveAlt,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(11.dp)
+                                    tint = if (isHoldRecommended) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(12.dp)
                                 )
                                 Spacer(modifier = Modifier.width(3.dp))
                                 AdaptiveText(
-                                    text = Translations.get("hold", currentLang).uppercase(),
-                                    color = MaterialTheme.colorScheme.primary,
+                                    text = if (isHoldRecommended) {
+                                        when (currentLang) {
+                                            Language.RU -> "💡 ХОЛД!"
+                                            Language.UA -> "💡 ХОЛД!"
+                                            Language.KK -> "💡 ХОЛД!"
+                                            Language.DE -> "💡 HALTEN"
+                                            Language.ZH -> "💡 建议暂存"
+                                            else -> "💡 HOLD!"
+                                        }
+                                    } else Translations.get("hold", currentLang).uppercase(),
+                                    color = if (isHoldRecommended) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Black,
                                     letterSpacing = 0.5.sp
                                 )
                             }
@@ -370,7 +412,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             Surface(
                                 modifier = Modifier.size(64.dp),
                                 shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHighest
+                                color = if (isHoldRecommended) Color(0xFFFFD700).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                border = if (isHoldRecommended) BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.6f)) else null
                             ) {
                                 Box(
                                     modifier = Modifier.fillMaxSize().padding(4.dp),
@@ -521,6 +564,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         gridLineDensity = gridLineDensity,
                         boardColorSkin = boardColorSkin,
                         graphicsQuality = graphicsQuality,
+                        viewModel = viewModel,
                         modifier = Modifier.fillMaxSize()
                     )
 
@@ -715,6 +759,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             }
         }
     }
+}
+}
 
     // ═══════════════════════════════════════════════════
     // PAUSE OVERLAY (Zeta / Modern MD3 Full-Width Style)
@@ -1164,8 +1210,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     }
 }
-}
-}
 
 @Composable
 fun GameControlsSection(
@@ -1183,116 +1227,249 @@ fun GameControlsSection(
     onHardDropPress: () -> Unit,
     onHoldPress: () -> Unit
 ) {
-    if (controlStyle == "split") {
-        val leftSegment = @Composable {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-            }
-        }
-        val rightSegment = @Composable {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-            }
-        }
-        val middleSegment = @Composable {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
-            }
-        }
+    val controlBottomPadding by viewModel.controlBottomPadding.collectAsStateWithLifecycle()
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (leftHandedControls) {
-                rightSegment()
-                middleSegment()
-                leftSegment()
-            } else {
-                leftSegment()
-                middleSegment()
-                rightSegment()
-            }
-        }
-    } else if (controlStyle == "arcade") {
-        val actionCol = @Composable {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                    ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                    ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = controlBottomPadding.dp)
+    ) {
+        when (controlStyle) {
+            "split" -> {
+                val leftSegment = @Composable {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+                val rightSegment = @Composable {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+                val middleSegment = @Composable {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (leftHandedControls) {
+                        rightSegment()
+                        middleSegment()
+                        leftSegment()
+                    } else {
+                        leftSegment()
+                        middleSegment()
+                        rightSegment()
+                    }
                 }
             }
-        }
-        val triggerCol = @Composable {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+            "arcade" -> {
+                val dpadCol = @Composable {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        }
+                    }
+                }
+                val actionCol = @Composable {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (leftHandedControls) {
+                        actionCol()
+                        Spacer(modifier = Modifier.width(16.dp))
+                        dpadCol()
+                    } else {
+                        dpadCol()
+                        Spacer(modifier = Modifier.width(16.dp))
+                        actionCol()
+                    }
+                }
             }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (leftHandedControls) {
-                triggerCol()
-                Spacer(modifier = Modifier.width(16.dp))
-                actionCol()
-            } else {
-                actionCol()
-                Spacer(modifier = Modifier.width(16.dp))
-                triggerCol()
+            "one_hand_right" -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.85f, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        }
+                    }
+                }
             }
-        }
-    } else {
-        val listBtns = listOf(
-            @Composable { ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-            @Composable { ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-            @Composable { ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
-            @Composable { ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) }
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (leftHandedControls) {
-                listBtns.reversed().forEach { it() }
-            } else {
-                listBtns.forEach { it() }
+            "one_hand_left" -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Column(horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.85f, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                            ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        }
+                    }
+                }
             }
-        }
+            "claw_pro" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "rotate_ccw", onClick = { viewModel.gameEngine.rotate() }, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+            }
+            "swipe_hybrid" -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height((76 * controlButtonScale).dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = { onRotatePress() }
+                                )
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = onLeftPress) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Left", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = onDownPress) {
+                                Icon(Icons.Default.ArrowDownward, contentDescription = "Soft Drop", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = onRightPress) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Right", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-            Spacer(modifier = Modifier.width(12.dp))
-            ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+            }
+            else -> { // classic
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val listBtns = listOf(
+                        @Composable { ControlButton(actionType = "left", onClick = onLeftPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
+                        @Composable { ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
+                        @Composable { ControlButton(actionType = "rotate", onClick = onRotatePress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) },
+                        @Composable { ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel) }
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (leftHandedControls) {
+                            listBtns.reversed().forEach { it() }
+                        } else {
+                            listBtns.forEach { it() }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
+                    }
+                }
+            }
         }
     }
 }
@@ -1329,6 +1506,7 @@ fun GameBoardView(
     boardColorSkin: String = "cyberpunk",
     graphicsQuality: String = "medium",
     ghostOutlineOnly: Boolean = true,
+    viewModel: MainViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     val isHighOrUltra = graphicsQuality == "high" || graphicsQuality == "ultra"
@@ -1444,6 +1622,52 @@ fun GameBoardView(
                             size = cellSize,
                             style = blockStyle
                         )
+                    }
+                }
+            }
+        }
+        // AI Perfect Placement Guide for Perfectionist Mode
+        if (gameState.gameMode == com.example.game.GameMode.PERFECTIONIST && viewModel != null) {
+            gameState.currentPiece?.let { piece ->
+                val hint = viewModel.gameEngine.calculateOptimalPlacement(
+                    grid = gameState.grid,
+                    piece = piece,
+                    holdPiece = gameState.holdPiece,
+                    nextPiece = gameState.nextPieces.firstOrNull(),
+                    canHold = !gameState.hasHeldThisTurn
+                )
+                hint?.let { optimal ->
+                    val isHoldAdvised = optimal.shouldHold && !gameState.hasHeldThisTurn
+                    val guideColor = if (isHoldAdvised) Color(0xFFFF9100) else Color(0xFFFFD700)
+                    optimal.shape.forEach { p ->
+                        val hx = optimal.targetPos.x + p.x
+                        val hy = optimal.targetPos.y + p.y - 2
+                        if (hy >= 0 && hx in 0 until cols) {
+                            val drawHx = if (isMirror) cols - 1 - hx else hx
+                            // 1. Holographic Fill
+                            drawRoundRect(
+                                color = guideColor.copy(alpha = if (isHoldAdvised) 0.16f else 0.22f),
+                                topLeft = Offset(drawHx * cellSize + 1.5f, hy * cellSize + 1.5f),
+                                size = Size(cellSize - 3f, cellSize - 3f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                            )
+                            // 2. Bright Glowing Border
+                            drawRoundRect(
+                                color = guideColor.copy(alpha = 0.90f),
+                                topLeft = Offset(drawHx * cellSize + 1.5f, hy * cellSize + 1.5f),
+                                size = Size(cellSize - 3f, cellSize - 3f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx()),
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.2.dp.toPx())
+                            )
+                            // 3. Center Target Indicator
+                            val centerX = drawHx * cellSize + cellSize / 2f
+                            val centerY = hy * cellSize + cellSize / 2f
+                            drawCircle(
+                                color = guideColor,
+                                radius = cellSize * 0.12f,
+                                center = Offset(centerX, centerY)
+                            )
+                        }
                     }
                 }
             }
@@ -1715,13 +1939,16 @@ fun ControlButton(
         label = "btn_scale"
     )
 
+    val dasDelay = viewModel?.controlDas?.collectAsStateWithLifecycle()?.value ?: 160
+    val arrDelay = viewModel?.controlArr?.collectAsStateWithLifecycle()?.value ?: 35
+
     if (isPressed && canRepeat && isPlaying) {
         val currentOnClick by rememberUpdatedState(onClick)
         LaunchedEffect(isPressed) {
-            delay(180)
+            delay(dasDelay.toLong())
             while (isPressed) {
                 currentOnClick()
-                val repeatDelay = if (actionType == "down") 45L else 75L
+                val repeatDelay = if (actionType == "down") (arrDelay * 0.75f).toLong().coerceAtLeast(16L) else arrDelay.toLong()
                 delay(repeatDelay)
             }
         }
@@ -1814,6 +2041,7 @@ fun ControlButton(
             "right" -> Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Right", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((28 * scale).dp))
             "down" -> Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = "Down", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((28 * scale).dp))
             "rotate" -> Icon(imageVector = Icons.Default.RotateRight, contentDescription = "Rotate", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((28 * scale).dp))
+            "rotate_ccw" -> Icon(imageVector = Icons.Default.RotateLeft, contentDescription = "Rotate CCW", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((28 * scale).dp))
             "drop" -> Icon(imageVector = Icons.Default.KeyboardDoubleArrowDown, contentDescription = "Hard Drop", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((28 * scale).dp))
             "hold" -> Icon(imageVector = Icons.Default.Inventory2, contentDescription = "Hold", tint = iconColor.copy(alpha = finalAlpha), modifier = Modifier.size((24 * scale).dp))
             else -> {
