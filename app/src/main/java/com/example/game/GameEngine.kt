@@ -7,19 +7,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-// Палитра цветов фигур — 0=прозрачный, остальные для тетромин / piece color palette
+// FlowTess уникальная палитра цветов фигур (отличие от классического Тетриса во избежание страйков)
 val Colors = listOf(
     Color.Transparent,
-    Color(0xFF00FFFF),
-    Color(0xFF0000FF),
-    Color(0xFFFFA500),
-    Color(0xFFFFFF00),
-    Color(0xFF00FF00),
-    Color(0xFF800080),
-    Color(0xFFFF0000),
-    Color(0xFFFF1493),
-    Color(0xFF8B4513),
-    Color(0xFFDDDDDD)
+    Color(0xFF7C4DFF), // 1: Фиолетовый индиго (I-форма)
+    Color(0xFF00E676), // 2: Изумрудный лайм (J-форма)
+    Color(0xFFFF007F), // 3: Кибер-маджента (L-форма)
+    Color(0xFFFF6D00), // 4: Огненно-оранжевый (O-квадрат)
+    Color(0xFFFFD600), // 5: Солнечное золото (S-форма)
+    Color(0xFF00E5FF), // 6: Электрический циан (T-форма)
+    Color(0xFF3D5AFE), // 7: Королевский кобальт (Z-форма)
+    Color(0xFFFF3D00), // 8: Плазменный кримсон (Extended +)
+    Color(0xFF1DE9B6), // 9: Бирюзовая аква (Extended U)
+    Color(0xFFE0E0E0)  // 10: Платиновый хром (Extended dot)
 )
 
 data class Position(val x: Int, val y: Int)
@@ -57,8 +57,15 @@ enum class GameMode(val code: String, val displayNameEn: String, val displayName
     PULSE_EXTREME("pulse_extreme", "Vortex Pulse Mode", "Импульсный Вихрь"),
     MIRROR_DIMENSION("mirror", "Mirror Dimension", "Зеркальный Мир"),
     PENTARY_CHAOS("penta", "Pentary Chaos", "Пента-Хаос"),
-    RELAX("relax", "Relax Sandbox", "Релакс-Песочница")
+    RELAX("relax", "Relax Sandbox", "Релакс-Песочница"),
+    PERFECTIONIST("perfectionist", "Perfectionist", "Перфекционист")
 }
+
+data class PlacementHint(
+    val shape: List<Position>,
+    val targetPos: Position,
+    val score: Double
+)
 
 data class GameState(
     val grid: List<IntArray> = List(22) { IntArray(10) },
@@ -173,6 +180,14 @@ class GameEngine {
             if (bag.isNotEmpty() && !relaxShapes.contains(bag.firstOrNull())) {
                 bag.clear()
                 bag.addAll(relaxShapes)
+                bag.shuffle()
+            }
+            return if (bag.isNotEmpty()) bag.removeAt(0) else STANDARD_SHAPES[0]
+        }
+        if (_gameState.value.gameMode == GameMode.PERFECTIONIST) {
+            val idealShapes = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[5], STANDARD_SHAPES[1], STANDARD_SHAPES[2], STANDARD_SHAPES[4], STANDARD_SHAPES[6])
+            if (bag.isEmpty()) {
+                bag.addAll(idealShapes)
                 bag.shuffle()
             }
             return if (bag.isNotEmpty()) bag.removeAt(0) else STANDARD_SHAPES[0]
@@ -421,5 +436,134 @@ class GameEngine {
                 isGameOver = if (newTime <= 0) true else it.isGameOver
             )
         }
+    }
+
+    // Очистка нижней части поля (для Relax-режима)
+    fun clearLowerRows(count: Int = 8) {
+        val state = _gameState.value
+        val currentGrid = state.grid.map { it.clone() }.toMutableList()
+        val removeCount = minOf(count, currentGrid.size)
+        for (i in 0 until removeCount) {
+            if (currentGrid.isNotEmpty()) currentGrid.removeAt(currentGrid.size - 1)
+        }
+        for (i in 0 until removeCount) {
+            currentGrid.add(0, IntArray(10))
+        }
+        _gameState.update { it.copy(grid = currentGrid) }
+    }
+
+    // AI-подсказчик для режима Перфекционист — находит идеальное положение текущей фигуры
+    fun calculateOptimalPlacement(grid: List<IntArray>, piece: Tetromino): PlacementHint? {
+        var bestHint: PlacementHint? = null
+        var maxScore = -1_000_000.0
+
+        // 4 поворота фигуры
+        val rotations = mutableListOf<List<Position>>()
+        var curShape = piece.shape
+        for (r in 0 until 4) {
+            if (!rotations.any { rot -> rot.toSet() == curShape.toSet() }) {
+                rotations.add(curShape)
+            }
+            curShape = curShape.map { p ->
+                val rx = p.x - piece.pivot.x
+                val ry = p.y - piece.pivot.y
+                Position(piece.pivot.x - ry, piece.pivot.y + rx)
+            }
+        }
+
+        for (rotShape in rotations) {
+            val minX = rotShape.minOf { it.x }
+            val maxX = rotShape.maxOf { it.x }
+
+            for (posX in (0 - minX)..(9 - maxX)) {
+                // Ищем точку падения hardDrop
+                var landingY = -1
+                for (posY in 0..21) {
+                    val testPos = Position(posX, posY)
+                    var valid = true
+                    for (p in rotShape) {
+                        val nx = testPos.x + p.x
+                        val ny = testPos.y + p.y
+                        if (nx !in 0..9 || ny >= 22 || (ny >= 0 && grid[ny][nx] != 0)) {
+                            valid = false
+                            break
+                        }
+                    }
+                    if (valid) {
+                        landingY = posY
+                    } else {
+                        break
+                    }
+                }
+
+                if (landingY >= 0) {
+                    val targetPos = Position(posX, landingY)
+
+                    // 1. Симулируем размещение
+                    val simGrid = Array(22) { r -> grid[r].clone() }
+                    for (p in rotShape) {
+                        val ny = targetPos.y + p.y
+                        val nx = targetPos.x + p.x
+                        if (ny in 0..21 && nx in 0..9) {
+                            simGrid[ny][nx] = piece.colorIndex
+                        }
+                    }
+
+                    // 2. Считаем заполненные линии
+                    var completeLines = 0
+                    for (r in 0..21) {
+                        if (simGrid[r].all { it != 0 }) completeLines++
+                    }
+
+                    // 3. Высоты колонок
+                    val colHeights = IntArray(10)
+                    for (c in 0..9) {
+                        var h = 0
+                        for (r in 0..21) {
+                            if (simGrid[r][c] != 0) {
+                                h = 22 - r
+                                break
+                            }
+                        }
+                        colHeights[c] = h
+                    }
+
+                    // 4. Дырки под блоками (пустые клетки с заполненными выше)
+                    var holes = 0
+                    for (c in 0..9) {
+                        var blockSeen = false
+                        for (r in 0..21) {
+                            if (simGrid[r][c] != 0) {
+                                blockSeen = true
+                            } else if (blockSeen) {
+                                holes++
+                            }
+                        }
+                    }
+
+                    // 5. Неровность рельефа (Bumpiness)
+                    var bumpiness = 0
+                    for (c in 0..8) {
+                        bumpiness += kotlin.math.abs(colHeights[c] - colHeights[c + 1])
+                    }
+
+                    val aggregateHeight = colHeights.sum()
+
+                    // Оценочная функция: максимизируем линии и плоскость, минимизируем дырки и высоту
+                    val evalScore = (completeLines * completeLines * 150.0) -
+                            (holes * 45.0) -
+                            (bumpiness * 3.0) -
+                            (aggregateHeight * 1.8) +
+                            (landingY * 2.0)
+
+                    if (evalScore > maxScore) {
+                        maxScore = evalScore
+                        bestHint = PlacementHint(rotShape, targetPos, evalScore)
+                    }
+                }
+            }
+        }
+
+        return bestHint
     }
 }

@@ -74,6 +74,7 @@ fun LobbyScreen(
     val localName by viewModel.playerName.collectAsStateWithLifecycle()
     val localTier by viewModel.onlineTier.collectAsStateWithLifecycle()
     val hasNicknameGradient by viewModel.hasNicknameGradient.collectAsStateWithLifecycle()
+    val localCredits by viewModel.credits.collectAsStateWithLifecycle()
     
     val currentRoom by viewModel.lobbyManager.currentRoom.collectAsStateWithLifecycle()
     val themeColor = MaterialTheme.colorScheme.primary
@@ -81,8 +82,8 @@ fun LobbyScreen(
     val incomingInvite by viewModel.lobbyManager.incomingInvite.collectAsStateWithLifecycle()
 
     // Connect presence, room, and invite listeners on enter
-    LaunchedEffect(localName, localTier, hasNicknameGradient) {
-        viewModel.lobbyManager.startPresenceUpdates(localName, localTier, hasNicknameGradient)
+    LaunchedEffect(localName, localTier, hasNicknameGradient, localCredits) {
+        viewModel.lobbyManager.startPresenceUpdates(localName, localTier, hasNicknameGradient, localCredits)
         viewModel.lobbyManager.startRoomsSubscription()
         viewModel.lobbyManager.startLobbyChatSubscription()
         viewModel.lobbyManager.startInvitesListener()
@@ -115,7 +116,7 @@ fun LobbyScreen(
             },
             title = {
                 Text(
-                    text = if (currentLang == Language.RU) "Приглашение на дуэль!" else "Duel Invitation!",
+                    text = Translations.get("duel_invitation", currentLang),
                     fontWeight = FontWeight.Black
                 )
             },
@@ -130,30 +131,23 @@ fun LobbyScreen(
                         avatarEmoji = invite.hostAvatarEmoji,
                         avatarBgColorHex = invite.hostAvatarBgColor,
                         avatarFrame = invite.hostAvatarFrame,
+                        avatarBase64 = invite.hostAvatarBase64,
                         size = 48.dp,
                         themeColor = themeColor
                     )
+                    val inviteMsg = when (currentLang) {
+                        Language.RU -> "${invite.hostName} приглашает вас в комнату «${invite.roomName}»"
+                        Language.UA -> "${invite.hostName} запрошує вас до кімнати «${invite.roomName}»"
+                        Language.KK -> "${invite.hostName} сізді «${invite.roomName}» бөлмесіне шақырады"
+                        Language.DE -> "${invite.hostName} lädt dich in den Raum «${invite.roomName}» ein"
+                        Language.ZH -> "${invite.hostName} 邀请你加入对战房间 «${invite.roomName}»"
+                        else -> "${invite.hostName} invites you to «${invite.roomName}»"
+                    }
                     Text(
-                        text = if (currentLang == Language.RU)
-                            "${invite.hostName} приглашает вас в комнату «${invite.roomName}»"
-                            else "${invite.hostName} invites you to «${invite.roomName}»",
+                        text = inviteMsg,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    if (invite.betAmount > 0) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFFFFD700).copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                text = "${if (currentLang == Language.RU) "Ставка" else "Wager"}: ${invite.betAmount} 🪙",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFFD700),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
                 }
             },
             confirmButton = {
@@ -173,7 +167,7 @@ fun LobbyScreen(
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (currentLang == Language.RU) "Принять бой" else "Accept Duel", fontWeight = FontWeight.Bold)
+                    Text(Translations.get("accept_duel", currentLang), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -181,7 +175,7 @@ fun LobbyScreen(
                     onClick = { viewModel.lobbyManager.dismissInvite(invite.id) },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (currentLang == Language.RU) "Отклонить" else "Decline")
+                    Text(Translations.get("decline", currentLang))
                 }
             }
         )
@@ -276,7 +270,14 @@ fun LobbyHubView(
             )
         } else {
             // Auto create an open battle room
-            val defaultName = if (currentLang == Language.RU) "Комната $localName" else "$localName's Room"
+            val defaultName = when (currentLang) {
+                Language.RU -> "Комната $localName"
+                Language.UA -> "Кімната $localName"
+                Language.KK -> "$localName бөлмесі"
+                Language.DE -> "Raum von $localName"
+                Language.ZH -> "$localName 的房间"
+                else -> "$localName's Room"
+            }
             viewModel.lobbyManager.createRoom(
                 name = defaultName,
                 passwordInput = "",
@@ -303,7 +304,7 @@ fun LobbyHubView(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (currentLang == Language.RU) "МУЛЬТИПЛЕЕР" else "MULTIPLAYER",
+                            text = Translations.get("multiplayer", currentLang).uppercase(),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 0.5.sp
@@ -321,7 +322,7 @@ fun LobbyHubView(
                                     .background(Color(0xFF00E676))
                             )
                             Text(
-                                text = "${if (currentLang == Language.RU) "Онлайн" else "Online"}: $onlinePlayersCount",
+                                text = "${Translations.get("online", currentLang)}: $onlinePlayersCount",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -411,8 +412,30 @@ fun LobbyHubView(
                     )
 
                     val tabs = listOf(
-                        Triple(0, if (currentLang == Language.RU) "Комнаты" else "Rooms", activeRooms.size),
-                        Triple(1, if (currentLang == Language.RU) "Общий Чат" else "Global Chat", lobbyChatMessages.size)
+                        Triple(
+                            0,
+                            when (currentLang) {
+                                Language.RU -> "Комнаты"
+                                Language.UA -> "Кімнати"
+                                Language.KK -> "Бөлмелер"
+                                Language.DE -> "Räume"
+                                Language.ZH -> "对战房间"
+                                else -> "Rooms"
+                            },
+                            activeRooms.size
+                        ),
+                        Triple(
+                            1,
+                            when (currentLang) {
+                                Language.RU -> "Общий Чат"
+                                Language.UA -> "Загальний Чат"
+                                Language.KK -> "Жалпы Чат"
+                                Language.DE -> "Globaler Chat"
+                                Language.ZH -> "公共聊天"
+                                else -> "Global Chat"
+                            },
+                            lobbyChatMessages.size
+                        )
                     )
 
                     Row(
@@ -439,21 +462,16 @@ fun LobbyHubView(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = if (index == 0) Icons.Default.Gamepad else Icons.Default.ChatBubbleOutline,
-                                        contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
-                                    )
                                     Text(
                                         text = label,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold
+                                        ),
                                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     if (count > 0) {
                                         Surface(
-                                            shape = RoundedCornerShape(10.dp),
+                                            shape = CircleShape,
                                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f)
                                                     else MaterialTheme.colorScheme.surfaceContainerHighest
                                         ) {
@@ -461,7 +479,8 @@ fun LobbyHubView(
                                                 text = "$count",
                                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                                        else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -481,13 +500,13 @@ fun LobbyHubView(
             ) { page ->
                 when (page) {
                     0 -> {
-                        // TAB 0: BATTLE ROOMS
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            // Quick Match Hero Card
                             item {
                                 val infiniteTransition = rememberInfiniteTransition(label = "QuickMatchPulse")
                                 val boltScale by infiniteTransition.animateFloat(
@@ -543,13 +562,13 @@ fun LobbyHubView(
                                             }
                                             Column {
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "БЫСТРЫЙ БОЙ 1V1" else "QUICK MATCH 1V1",
+                                                    text = Translations.get("quick_match_1v1", currentLang),
                                                     style = MaterialTheme.typography.titleMedium,
                                                     fontWeight = FontWeight.ExtraBold,
                                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                                 )
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "Мгновенный поиск или создание дуэли" else "Instant matchmaking or auto-room host",
+                                                    text = Translations.get("quick_match_desc", currentLang),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                                                 )
@@ -565,7 +584,6 @@ fun LobbyHubView(
                                 }
                             }
 
-                            // Filter Chips Row
                             item {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -573,9 +591,9 @@ fun LobbyHubView(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val filters = listOf(
-                                        "ALL" to (if (currentLang == Language.RU) "Все комнаты" else "All Rooms"),
-                                        "OPEN" to (if (currentLang == Language.RU) "Открытые" else "Open"),
-                                        "LOCKED" to (if (currentLang == Language.RU) "С паролем" else "Locked")
+                                        "ALL" to Translations.getLobbyFilter("ALL", currentLang),
+                                        "OPEN" to Translations.getLobbyFilter("OPEN", currentLang),
+                                        "LOCKED" to Translations.getLobbyFilter("LOCKED", currentLang)
                                     )
 
                                     filters.forEach { (key, label) ->
@@ -604,7 +622,6 @@ fun LobbyHubView(
                                 }
                             }
 
-                            // Active Rooms List
                             if (filteredRooms.isEmpty()) {
                                 item {
                                     ElevatedCard(
@@ -636,13 +653,13 @@ fun LobbyHubView(
                                                 }
                                             }
                                             Text(
-                                                text = if (currentLang == Language.RU) "Нет доступных комнат" else "No Battle Rooms Found",
+                                                text = Translations.get("no_rooms_found", currentLang),
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Text(
-                                                text = if (currentLang == Language.RU) "Создайте новую комнату и пригласите друга по коду!" else "Create a new battle arena and invite your friend using the room code!",
+                                                text = Translations.get("no_rooms_desc", currentLang),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 textAlign = TextAlign.Center
@@ -654,7 +671,7 @@ fun LobbyHubView(
                                             ) {
                                                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                                 Spacer(modifier = Modifier.width(6.dp))
-                                                Text(if (currentLang == Language.RU) "Создать комнату" else "Create Room", fontWeight = FontWeight.Bold)
+                                                Text(Translations.get("create_room", currentLang), fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -734,11 +751,18 @@ fun LobbyHubView(
             exit = fadeOut(tween(150)) + slideOutVertically(targetOffsetY = { it / 4 }, animationSpec = tween(200))
         ) {
             BackHandler { showCreateRoomDialog = false }
-            var roomNameInput by remember { mutableStateOf(if (currentLang == Language.RU) "Комната $localName" else "$localName's Room") }
+            val defaultName = when (currentLang) {
+                Language.RU -> "Комната $localName"
+                Language.UA -> "Кімната $localName"
+                Language.KK -> "$localName бөлмесі"
+                Language.DE -> "Raum von $localName"
+                Language.ZH -> "$localName 的房间"
+                else -> "$localName's Room"
+            }
+            var roomNameInput by remember { mutableStateOf(defaultName) }
             var selectedGameMode by remember { mutableStateOf("CLASSIC") }
             var selectedGarbageIntensity by remember { mutableFloatStateOf(1.0f) }
             var selectedRoundTarget by remember { mutableIntStateOf(1) }
-            var selectedWager by remember { mutableIntStateOf(0) }
             var isPasswordProtected by remember { mutableStateOf(false) }
             var roomPasswordInput by remember { mutableStateOf("") }
 
@@ -753,7 +777,7 @@ fun LobbyHubView(
                             modifier = Modifier.statusBarsPadding(),
                             title = {
                                 Text(
-                                    text = if (currentLang == Language.RU) "СОЗДАНИЕ КОМНАТЫ" else "CREATE ROOM",
+                                    text = Translations.get("create_room", currentLang).uppercase(),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         letterSpacing = 0.5.sp
@@ -798,7 +822,6 @@ fun LobbyHubView(
                                                     gameMode = selectedGameMode,
                                                     garbageIntensity = selectedGarbageIntensity,
                                                     roundTarget = selectedRoundTarget,
-                                                    betAmount = selectedWager,
                                                     onSuccess = {
                                                         showCreateRoomDialog = false
                                                         viewModel.triggerAudioFeedback("success")
@@ -814,7 +837,7 @@ fun LobbyHubView(
                                         Icon(imageVector = Icons.Default.SportsEsports, contentDescription = null, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = if (currentLang == Language.RU) "СОЗДАТЬ КОМНАТУ" else "CREATE ROOM",
+                                            text = Translations.get("create_room", currentLang).uppercase(),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.ExtraBold,
                                             letterSpacing = 0.5.sp
@@ -845,7 +868,7 @@ fun LobbyHubView(
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = if (currentLang == Language.RU) "НАЗВАНИЕ КОМНАТЫ" else "ROOM NAME",
+                                        text = Translations.get("room_name", currentLang),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = themeColor
@@ -853,7 +876,7 @@ fun LobbyHubView(
                                     OutlinedTextField(
                                         value = roomNameInput,
                                         onValueChange = { roomNameInput = it },
-                                        placeholder = { Text(if (currentLang == Language.RU) "Введите имя комнаты..." else "Enter arena title...") },
+                                        placeholder = { Text(Translations.get("enter_room_name", currentLang)) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(14.dp),
                                         modifier = Modifier.fillMaxWidth()
@@ -874,18 +897,18 @@ fun LobbyHubView(
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Text(
-                                        text = if (currentLang == Language.RU) "РЕЖИМ СОРЕВНОВАНИЯ" else "MATCH GAME MODE",
+                                        text = Translations.get("match_mode", currentLang),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = themeColor
                                     )
 
                                     val modes = listOf(
-                                        Triple("CLASSIC", if (currentLang == Language.RU) "Битва (с атаками)" else "Battle (Garbage Duel)", if (currentLang == Language.RU) "Дуэль на выбывание с атаками мусорными линиями" else "Knockout duel with garbage line attacks"),
-                                        Triple("SCORE_RACE", if (currentLang == Language.RU) "Классика (на очки, без атак)" else "Pure Classic (Score Race)", if (currentLang == Language.RU) "Классический тетрис без атак, победа по очкам/выживанию" else "Pure classic mode with no attacks, highest score wins"),
-                                        Triple("SPRINT", if (currentLang == Language.RU) "Спринт 40 линий" else "Sprint 40 Lines", if (currentLang == Language.RU) "Кто быстрее очистит 40 линий" else "First to clear 40 lines"),
-                                        Triple("BLITZ", if (currentLang == Language.RU) "Блиц 2 минуты" else "Blitz 2 Minutes", if (currentLang == Language.RU) "Набор максимального счета за 120 сек" else "Highest score within 120s"),
-                                        Triple("HYPER", if (currentLang == Language.RU) "Гипер-скорость" else "Hyper Rush", if (currentLang == Language.RU) "Экстремальное ускорение падения блоков" else "High gravity drop speed")
+                                        Triple("CLASSIC", Translations.getLobbyModeTitle("CLASSIC", currentLang), Translations.getLobbyModeDesc("CLASSIC", currentLang)),
+                                        Triple("SCORE_RACE", Translations.getLobbyModeTitle("SCORE_RACE", currentLang), Translations.getLobbyModeDesc("SCORE_RACE", currentLang)),
+                                        Triple("SPRINT", Translations.getLobbyModeTitle("SPRINT", currentLang), Translations.getLobbyModeDesc("SPRINT", currentLang)),
+                                        Triple("BLITZ", Translations.getLobbyModeTitle("BLITZ", currentLang), Translations.getLobbyModeDesc("BLITZ", currentLang)),
+                                        Triple("HYPER", Translations.getLobbyModeTitle("HYPER", currentLang), Translations.getLobbyModeDesc("HYPER", currentLang))
                                     )
 
                                     modes.forEach { (modeId, modeTitle, modeDesc) ->
@@ -942,91 +965,143 @@ fun LobbyHubView(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
+                                    val seriesTitle = when (currentLang) {
+                                        Language.RU -> "ФОРМАТ СЕРИИ МАТЧА"
+                                        Language.UA -> "ФОРМАТ СЕРІЇ МАТЧУ"
+                                        Language.KK -> "МАТЧ СЕРИЯСЫНЫҢ ФОРМАТЫ"
+                                        Language.DE -> "SERIENFORMAT"
+                                        Language.ZH -> "系列赛制规则"
+                                        else -> "MATCH SERIES FORMAT"
+                                    }
                                     Text(
-                                        text = if (currentLang == Language.RU) "ФОРМАТ СЕРИИ МАТЧА" else "MATCH SERIES FORMAT",
+                                        text = seriesTitle,
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = themeColor
                                     )
 
                                     val rounds = listOf(
-                                        1 to (if (currentLang == Language.RU) "1 Раунд" else "Best of 1"),
-                                        3 to (if (currentLang == Language.RU) "До 2 побед (BO3)" else "Best of 3"),
-                                        5 to (if (currentLang == Language.RU) "До 3 побед (BO5)" else "Best of 5")
-                                    )
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        rounds.forEach { (count, label) ->
-                                            val isSelected = selectedRoundTarget == count
-                                            FilterChip(
-                                                selected = isSelected,
-                                                onClick = {
-                                                    viewModel.triggerAudioFeedback("click")
-                                                    selectedRoundTarget = count
-                                                },
-                                                label = {
-                                                    Text(
-                                                        text = label,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                                    )
-                                                },
-                                                modifier = Modifier.weight(1f),
-                                                shape = RoundedCornerShape(12.dp),
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = themeColor,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ИНТЕНСИВНОСТЬ АТАКИ МУСОРОМ" else "GARBAGE ATTACK INTENSITY",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = themeColor
-                                    )
-
-                                    val intensities = listOf(
-                                        0.0f to (if (currentLang == Language.RU) "0x Без атак" else "0x Off"),
-                                        0.5f to (if (currentLang == Language.RU) "0.5x Слаб." else "0.5x"),
-                                        1.0f to (if (currentLang == Language.RU) "1.0x Норм." else "1.0x"),
-                                        1.5f to (if (currentLang == Language.RU) "1.5x Хард" else "1.5x"),
-                                        2.0f to (if (currentLang == Language.RU) "2.0x Хаос" else "2.0x")
+                                        Triple(1, "BO1", Translations.getLobbySeriesFormat(1, currentLang)),
+                                        Triple(3, "BO3", Translations.getLobbySeriesFormat(3, currentLang)),
+                                        Triple(5, "BO5", Translations.getLobbySeriesFormat(5, currentLang))
                                     )
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        intensities.forEach { (intensity, label) ->
-                                            val isSelected = selectedGarbageIntensity == intensity
-                                            FilterChip(
-                                                selected = isSelected,
-                                                onClick = {
-                                                    viewModel.triggerAudioFeedback("click")
-                                                    selectedGarbageIntensity = intensity
-                                                },
-                                                label = {
-                                                    Text(
-                                                        text = label,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                                    )
-                                                },
-                                                modifier = Modifier.weight(1f),
+                                        rounds.forEach { (count, boText, labelText) ->
+                                            val isSelected = selectedRoundTarget == count
+                                            Surface(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(46.dp)
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        viewModel.triggerAudioFeedback("click")
+                                                        selectedRoundTarget = count
+                                                    },
                                                 shape = RoundedCornerShape(12.dp),
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = themeColor,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                                color = if (isSelected) themeColor else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (isSelected) themeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                                                 )
-                                            )
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 2.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.Center
+                                                ) {
+                                                    Text(
+                                                        text = boText,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1
+                                                    )
+                                                    Text(
+                                                        text = labelText,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                    val garbageTitle = when (currentLang) {
+                                        Language.RU -> "ИНТЕНСИВНОСТЬ АТАКИ МУСОРОМ"
+                                        Language.UA -> "ІНТЕНСИВНІСТЬ АТАКИ СМІТТЯМ"
+                                        Language.KK -> "ҚОҚЫСПЕН ШАБУЫЛ ҚАРҚЫНДЫЛЫҒЫ"
+                                        Language.DE -> "MÜLLANGRIFFS-INTENSITÄT"
+                                        Language.ZH -> "垃圾行干扰强度"
+                                        else -> "GARBAGE ATTACK INTENSITY"
+                                    }
+                                    Text(
+                                        text = garbageTitle,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = themeColor
+                                    )
+
+                                    val intensities = listOf(
+                                        Triple(0.0f, "0x", Translations.getLobbyGarbageIntensity(0.0f, currentLang)),
+                                        Triple(0.5f, "0.5x", Translations.getLobbyGarbageIntensity(0.5f, currentLang)),
+                                        Triple(1.0f, "1.0x", Translations.getLobbyGarbageIntensity(1.0f, currentLang)),
+                                        Triple(1.5f, "1.5x", Translations.getLobbyGarbageIntensity(1.5f, currentLang)),
+                                        Triple(2.0f, "2.0x", Translations.getLobbyGarbageIntensity(2.0f, currentLang))
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        intensities.forEach { (intensity, multText, labelText) ->
+                                            val isSelected = selectedGarbageIntensity == intensity
+                                            Surface(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(46.dp)
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        viewModel.triggerAudioFeedback("click")
+                                                        selectedGarbageIntensity = intensity
+                                                    },
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = if (isSelected) themeColor else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (isSelected) themeColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                                )
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.fillMaxSize().padding(horizontal = 2.dp, vertical = 2.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.Center
+                                                ) {
+                                                    Text(
+                                                        text = multText,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1
+                                                    )
+                                                    Text(
+                                                        text = labelText,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1044,6 +1119,22 @@ fun LobbyHubView(
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    val privateTitle = when (currentLang) {
+                                        Language.RU -> "ПРИВАТНАЯ КОМНАТА"
+                                        Language.UA -> "ПРИВАТНА КІМНАТА"
+                                        Language.KK -> "ЖЕКЕ БӨЛМЕ"
+                                        Language.DE -> "PRIVATER RAUM"
+                                        Language.ZH -> "私密房间"
+                                        else -> "PRIVATE ROOM"
+                                    }
+                                    val privateDesc = when (currentLang) {
+                                        Language.RU -> "Вход только по паролю"
+                                        Language.UA -> "Вхід тільки за паролем"
+                                        Language.KK -> "Тек құпия сөзбен кіру"
+                                        Language.DE -> "Beitritt nur mit Passwort"
+                                        Language.ZH -> "需要密码才能进入"
+                                        else -> "Require password to join"
+                                    }
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
@@ -1051,12 +1142,12 @@ fun LobbyHubView(
                                     ) {
                                         Column {
                                             Text(
-                                                text = if (currentLang == Language.RU) "ПРИВАТНАЯ КОМНАТА" else "PRIVATE ROOM",
+                                                text = privateTitle,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.ExtraBold
                                             )
                                             Text(
-                                                text = if (currentLang == Language.RU) "Вход только по паролю" else "Require password to join",
+                                                text = privateDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1068,10 +1159,18 @@ fun LobbyHubView(
                                     }
 
                                     if (isPasswordProtected) {
+                                        val roomPwdLabel = when (currentLang) {
+                                            Language.RU -> "Пароль комнаты"
+                                            Language.UA -> "Пароль кімнати"
+                                            Language.KK -> "Бөлме құпия сөзі"
+                                            Language.DE -> "Raum-Passwort"
+                                            Language.ZH -> "房间密码"
+                                            else -> "Room Password"
+                                        }
                                         OutlinedTextField(
                                             value = roomPasswordInput,
                                             onValueChange = { roomPasswordInput = it },
-                                            label = { Text(if (currentLang == Language.RU) "Пароль комнаты" else "Room Password") },
+                                            label = { Text(roomPwdLabel) },
                                             singleLine = true,
                                             visualTransformation = PasswordVisualTransformation(),
                                             shape = RoundedCornerShape(14.dp),
@@ -1087,6 +1186,38 @@ fun LobbyHubView(
 
         // JOIN BY CODE DIALOG
         if (showJoinCodeDialog) {
+            val joinByCodeTitle = when (currentLang) {
+                Language.RU -> "Вход по коду"
+                Language.UA -> "Вхід за кодом"
+                Language.KK -> "Код бойынша кіру"
+                Language.DE -> "Per Code beitreten"
+                Language.ZH -> "输入房间代码加入"
+                else -> "Join by Room Code"
+            }
+            val joinByCodeDesc = when (currentLang) {
+                Language.RU -> "Введите 6-значный номер комнаты, полученный от друга:"
+                Language.UA -> "Введіть 6-значний номер кімнати, отриманий від друга:"
+                Language.KK -> "Досыңыздан алған 6 таңбалы бөлме нөмірін енгізіңіз:"
+                Language.DE -> "Gib den 6-stelligen Raumcode deines Freundes ein:"
+                Language.ZH -> "请输入好友分享的6位房间代码："
+                else -> "Enter the 6-digit room code shared by your friend:"
+            }
+            val codeInputLabel = when (currentLang) {
+                Language.RU -> "Код комнаты (6 цифр)"
+                Language.UA -> "Код кімнати (6 цифр)"
+                Language.KK -> "Бөлме коды (6 сан)"
+                Language.DE -> "Raumcode (6 Ziffern)"
+                Language.ZH -> "房间代码 (6位数字)"
+                else -> "Room Code (6 digits)"
+            }
+            val joinBtn = when (currentLang) {
+                Language.RU -> "Присоединиться"
+                Language.UA -> "Приєднатися"
+                Language.KK -> "Қосылу"
+                Language.DE -> "Beitreten"
+                Language.ZH -> "加入"
+                else -> "Join"
+            }
             AlertDialog(
                 onDismissRequest = { showJoinCodeDialog = false },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1097,7 +1228,7 @@ fun LobbyHubView(
                 },
                 title = {
                     Text(
-                        text = if (currentLang == Language.RU) "Вход по коду" else "Join by Room Code",
+                        text = joinByCodeTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center
@@ -1106,14 +1237,14 @@ fun LobbyHubView(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = if (currentLang == Language.RU) "Введите 6-значный номер комнаты, полученный от друга:" else "Enter the 6-digit room code shared by your friend:",
+                            text = joinByCodeDesc,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         OutlinedTextField(
                             value = joinCodeInput,
                             onValueChange = { if (it.length <= 6) joinCodeInput = it },
-                            label = { Text(if (currentLang == Language.RU) "Код комнаты (6 цифр)" else "Room Code (6 digits)") },
+                            label = { Text(codeInputLabel) },
                             singleLine = true,
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -1165,12 +1296,12 @@ fun LobbyHubView(
                         enabled = joinCodeInput.trim().length == 6,
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text(if (currentLang == Language.RU) "Присоединиться" else "Join", fontWeight = FontWeight.Bold)
+                        Text(joinBtn, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showJoinCodeDialog = false }) {
-                        Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                        Text(Translations.get("cancel", currentLang))
                     }
                 }
             )
@@ -1178,6 +1309,30 @@ fun LobbyHubView(
 
         // PASSWORD VERIFICATION DIALOG
         joinRoomPendingPassword?.let { room ->
+            val protectedRoomTitle = when (currentLang) {
+                Language.RU -> "Защищенная комната"
+                Language.UA -> "Захищена кімната"
+                Language.KK -> "Қорғалған бөлме"
+                Language.DE -> "Geschützter Raum"
+                Language.ZH -> "加密保护房间"
+                else -> "Protected Room"
+            }
+            val protectedRoomPrompt = when (currentLang) {
+                Language.RU -> "Для входа в «${room.name}» введите пароль:"
+                Language.UA -> "Для входу в «${room.name}» введіть пароль:"
+                Language.KK -> "«${room.name}» бөлмесіне кіру үшін құпия сөзді енгізіңіз:"
+                Language.DE -> "Gib das Passwort ein, um «${room.name}» beizutreten:"
+                Language.ZH -> "加入 «${room.name}» 请输入密码："
+                else -> "Enter password to join «${room.name}»:"
+            }
+            val passwordLabel = when (currentLang) {
+                Language.RU -> "Пароль"
+                Language.UA -> "Пароль"
+                Language.KK -> "Құпия сөз"
+                Language.DE -> "Passwort"
+                Language.ZH -> "密码"
+                else -> "Password"
+            }
             AlertDialog(
                 onDismissRequest = { joinRoomPendingPassword = null },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1188,7 +1343,7 @@ fun LobbyHubView(
                 },
                 title = {
                     Text(
-                        text = if (currentLang == Language.RU) "Защищенная комната" else "Protected Room",
+                        text = protectedRoomTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center
@@ -1197,14 +1352,14 @@ fun LobbyHubView(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = if (currentLang == Language.RU) "Для входа в «${room.name}» введите пароль:" else "Enter password to join «${room.name}»:",
+                            text = protectedRoomPrompt,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         OutlinedTextField(
                             value = passwordInput,
                             onValueChange = { passwordInput = it },
-                            label = { Text(if (currentLang == Language.RU) "Пароль" else "Password") },
+                            label = { Text(passwordLabel) },
                             singleLine = true,
                             visualTransformation = PasswordVisualTransformation(),
                             shape = RoundedCornerShape(16.dp),
@@ -1236,19 +1391,34 @@ fun LobbyHubView(
                                     viewModel.triggerAudioFeedback("success")
                                 },
                                 onFailure = { err ->
-                                    joinErrorMessage = if (currentLang == Language.RU) "Неверный пароль" else "Incorrect password"
+                                    joinErrorMessage = when (currentLang) {
+                                        Language.RU -> "Неверный пароль"
+                                        Language.UA -> "Невірний пароль"
+                                        Language.KK -> "Құпия сөз қате"
+                                        Language.DE -> "Falsches Passwort"
+                                        Language.ZH -> "密码错误"
+                                        else -> "Incorrect password"
+                                    }
                                     viewModel.triggerAudioFeedback("error")
                                 }
                             )
                         },
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text(if (currentLang == Language.RU) "Войти" else "Enter", fontWeight = FontWeight.Bold)
+                        val enterBtn = when (currentLang) {
+                            Language.RU -> "Войти"
+                            Language.UA -> "Увійти"
+                            Language.KK -> "Кіру"
+                            Language.DE -> "Eintreten"
+                            Language.ZH -> "进入"
+                            else -> "Enter"
+                        }
+                        Text(enterBtn, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { joinRoomPendingPassword = null }) {
-                        Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                        Text(Translations.get("cancel", currentLang))
                     }
                 }
             )
@@ -1310,6 +1480,7 @@ fun RoomListItemCard(
                     avatarEmoji = hostPlayer?.avatarEmoji ?: "",
                     avatarBgColorHex = hostPlayer?.avatarBgColor ?: "",
                     avatarFrame = hostPlayer?.avatarFrame ?: "standard",
+                    avatarBase64 = hostPlayer?.avatarBase64 ?: "",
                     size = 44.dp,
                     themeColor = themeColor
                 )
@@ -1341,8 +1512,16 @@ fun RoomListItemCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        val hostLabel = when (currentLang) {
+                            Language.RU -> "Хост"
+                            Language.UA -> "Хост"
+                            Language.KK -> "Хост"
+                            Language.DE -> "Host"
+                            Language.ZH -> "房主"
+                            else -> "Host"
+                        }
                         Text(
-                            text = "${if (currentLang == Language.RU) "Хост" else "Host"}: ${room.hostName}",
+                            text = "$hostLabel: ${room.hostName}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1372,26 +1551,7 @@ fun RoomListItemCard(
                                 )
                             }
                         }
-                        if (room.betAmount > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFFFD700).copy(alpha = 0.2f)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(11.dp))
-                                    Text(
-                                        text = "${room.betAmount * 2} 🪙",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFFFFD700)
-                                    )
-                                }
-                            }
-                        }
+
                         if (room.roundTarget > 1) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -1415,6 +1575,14 @@ fun RoomListItemCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Slots badge
+                val inBattleLabel = when (currentLang) {
+                    Language.RU -> "В БОЮ"
+                    Language.UA -> "У БОЮ"
+                    Language.KK -> "ШАЙҚАСТА"
+                    Language.DE -> "IM KAMPF"
+                    Language.ZH -> "对战中"
+                    else -> "IN BATTLE"
+                }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = if (isPlaying) MaterialTheme.colorScheme.errorContainer
@@ -1422,8 +1590,7 @@ fun RoomListItemCard(
                             else MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Text(
-                        text = if (isPlaying) (if (currentLang == Language.RU) "В БОЮ" else "IN BATTLE")
-                               else "${room.players.size}/2",
+                        text = if (isPlaying) inBattleLabel else "${room.players.size}/2",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (isPlaying) MaterialTheme.colorScheme.onErrorContainer
@@ -1433,6 +1600,14 @@ fun RoomListItemCard(
                     )
                 }
 
+                val joinBtnText = when (currentLang) {
+                    Language.RU -> "ВОЙТИ"
+                    Language.UA -> "УВІЙТИ"
+                    Language.KK -> "КІРУ"
+                    Language.DE -> "BEITRETEN"
+                    Language.ZH -> "加入"
+                    else -> "JOIN"
+                }
                 Button(
                     onClick = onJoin,
                     enabled = !isFull && !isPlaying,
@@ -1440,7 +1615,7 @@ fun RoomListItemCard(
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = if (currentLang == Language.RU) "ВОЙТИ" else "JOIN",
+                        text = joinBtnText,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1520,12 +1695,27 @@ fun LobbyChatComponent(
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
+                        val emptyChatText = if (isRoomChat) {
+                            when (currentLang) {
+                                Language.RU -> "Чат комнаты пуст. Напишите сопернику!"
+                                Language.UA -> "Чат кімнати порожній. Напишіть супернику!"
+                                Language.KK -> "Бөлме чаты бос. Қарсыласқа жазыңыз!"
+                                Language.DE -> "Raum-Chat ist leer. Begrüße deinen Gegner!"
+                                Language.ZH -> "房间聊天室暂无消息，和对手打个招呼吧！"
+                                else -> "Room chat is empty. Greet your opponent!"
+                            }
+                        } else {
+                            when (currentLang) {
+                                Language.RU -> "Сообщений нет. Напишите первым!"
+                                Language.UA -> "Повідомлень немає. Напишіть першим!"
+                                Language.KK -> "Хабарламалар жоқ. Бірінші болып жазыңыз!"
+                                Language.DE -> "Noch keine Nachrichten. Schreib als Erster!"
+                                Language.ZH -> "暂无消息，发送第一条消息吧！"
+                                else -> "No messages yet. Start the conversation!"
+                            }
+                        }
                         Text(
-                            text = if (isRoomChat) {
-                                if (currentLang == Language.RU) "Чат комнаты пуст. Напишите сопернику!" else "Room chat is empty. Greet your opponent!"
-                            } else {
-                                if (currentLang == Language.RU) "Сообщений нет. Напишите первым!" else "No messages yet. Start the conversation!"
-                            },
+                            text = emptyChatText,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
@@ -1566,6 +1756,7 @@ fun LobbyChatComponent(
                                         avatarEmoji = msg.senderAvatarEmoji,
                                         avatarBgColorHex = msg.senderAvatarBgColor,
                                         avatarFrame = msg.senderAvatarFrame,
+                                        avatarBase64 = msg.senderAvatarBase64,
                                         size = 34.dp,
                                         themeColor = themeColor,
                                         modifier = Modifier.padding(end = 8.dp)
@@ -1766,8 +1957,16 @@ fun LobbyChatComponent(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Column {
+                                        val replyPrefix = when (currentLang) {
+                                            Language.RU -> "Ответ"
+                                            Language.UA -> "Відповідь"
+                                            Language.KK -> "Жауап"
+                                            Language.DE -> "Antwort an"
+                                            Language.ZH -> "回复"
+                                            else -> "Reply to"
+                                        }
                                         Text(
-                                            text = "${if (currentLang == Language.RU) "Ответ" else "Reply to"}: ${replyTarget.senderName}",
+                                            text = "$replyPrefix: ${replyTarget.senderName}",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = themeColor
@@ -1803,16 +2002,31 @@ fun LobbyChatComponent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val chatPlaceholder = if (isRoomChat) {
+                        when (currentLang) {
+                            Language.RU -> "Сообщение в комнату..."
+                            Language.UA -> "Повідомлення в кімнату..."
+                            Language.KK -> "Бөлмеге хабарлама..."
+                            Language.DE -> "Nachricht an Raum..."
+                            Language.ZH -> "发送房间消息..."
+                            else -> "Room message..."
+                        }
+                    } else {
+                        when (currentLang) {
+                            Language.RU -> "Сообщение в чат..."
+                            Language.UA -> "Повідомлення в чат..."
+                            Language.KK -> "Чатқа хабарлама..."
+                            Language.DE -> "Chat-Nachricht..."
+                            Language.ZH -> "发送公共消息..."
+                            else -> "Chat message..."
+                        }
+                    }
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
                         placeholder = {
                             Text(
-                                text = if (isRoomChat) {
-                                    if (currentLang == Language.RU) "Сообщение в комнату..." else "Room message..."
-                                } else {
-                                    if (currentLang == Language.RU) "Сообщение в чат..." else "Chat message..."
-                                },
+                                text = chatPlaceholder,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
@@ -1864,6 +2078,15 @@ fun LobbyChatComponent(
                 val isMyMsg = msg.senderId == localUid
                 val canDelete = isMyMsg || (isRoomChat && isRoomHost)
 
+                val actionsTitle = when (currentLang) {
+                    Language.RU -> "Действия с сообщением"
+                    Language.UA -> "Дії з повідомленням"
+                    Language.KK -> "Хабарлама әрекеттері"
+                    Language.DE -> "Nachrichtenaktionen"
+                    Language.ZH -> "消息操作"
+                    else -> "Message Actions"
+                }
+
                 AlertDialog(
                     onDismissRequest = { selectedMsgForMenu = null },
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1871,7 +2094,7 @@ fun LobbyChatComponent(
                     shape = RoundedCornerShape(28.dp),
                     title = {
                         Text(
-                            text = if (currentLang == Language.RU) "Действия с сообщением" else "Message Actions",
+                            text = actionsTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -1910,6 +2133,14 @@ fun LobbyChatComponent(
                             HorizontalDivider()
 
                             // Reply Action
+                            val replyBtn = when (currentLang) {
+                                Language.RU -> "Ответить"
+                                Language.UA -> "Відповісти"
+                                Language.KK -> "Жауап беру"
+                                Language.DE -> "Antworten"
+                                Language.ZH -> "回复"
+                                else -> "Reply"
+                            }
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1927,13 +2158,21 @@ fun LobbyChatComponent(
                                 ) {
                                     Icon(Icons.Default.Reply, contentDescription = null, tint = themeColor)
                                     Text(
-                                        text = if (currentLang == Language.RU) "Ответить" else "Reply",
+                                        text = replyBtn,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
 
                             // Copy Action
+                            val copyTextBtn = when (currentLang) {
+                                Language.RU -> "Копировать текст"
+                                Language.UA -> "Копіювати текст"
+                                Language.KK -> "Мәтінді көшіру"
+                                Language.DE -> "Text kopieren"
+                                Language.ZH -> "复制文本"
+                                else -> "Copy text"
+                            }
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1952,7 +2191,7 @@ fun LobbyChatComponent(
                                 ) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = null, tint = themeColor)
                                     Text(
-                                        text = if (currentLang == Language.RU) "Копировать текст" else "Copy text",
+                                        text = copyTextBtn,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -1960,6 +2199,14 @@ fun LobbyChatComponent(
 
                             // Delete Action
                             if (canDelete) {
+                                val deleteMsgBtn = when (currentLang) {
+                                    Language.RU -> "Удалить сообщение"
+                                    Language.UA -> "Видалити повідомлення"
+                                    Language.KK -> "Хабарламаны өшіру"
+                                    Language.DE -> "Nachricht löschen"
+                                    Language.ZH -> "删除消息"
+                                    else -> "Delete message"
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
@@ -1977,7 +2224,7 @@ fun LobbyChatComponent(
                                     ) {
                                         Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                         Text(
-                                            text = if (currentLang == Language.RU) "Удалить сообщение" else "Delete message",
+                                            text = deleteMsgBtn,
                                             color = MaterialTheme.colorScheme.error,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -1989,7 +2236,7 @@ fun LobbyChatComponent(
                     confirmButton = {},
                     dismissButton = {
                         TextButton(onClick = { selectedMsgForMenu = null }) {
-                            Text(if (currentLang == Language.RU) "Закрыть" else "Close")
+                            Text(Translations.get("cancel", currentLang))
                         }
                     }
                 )
@@ -2013,6 +2260,7 @@ fun LobbyRoomView(
     val customAvatarBgColor by viewModel.customAvatarBgColor.collectAsStateWithLifecycle()
     val equippedAvatarFrame by viewModel.equippedAvatarFrame.collectAsStateWithLifecycle()
     val localTier = viewModel.onlineTier.collectAsStateWithLifecycle().value
+    val localCredits by viewModel.credits.collectAsStateWithLifecycle()
 
     val localUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val isHost = remember(room.hostId, localUid) { room.hostId == localUid }
@@ -2056,27 +2304,6 @@ fun LobbyRoomView(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (room.betAmount > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFFFD700).copy(alpha = 0.2f),
-                                modifier = Modifier.padding(top = 2.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
-                                    Text(
-                                        text = "${if (currentLang == Language.RU) "Банк" else "Pot"}: ${room.betAmount * 2} 🪙",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFFFFD700)
-                                    )
-                                }
-                            }
-                        }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -2089,8 +2316,16 @@ fun LobbyRoomView(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
+                                val codePrefix = when (currentLang) {
+                                    Language.RU -> "Код"
+                                    Language.UA -> "Код"
+                                    Language.KK -> "Код"
+                                    Language.DE -> "Code"
+                                    Language.ZH -> "代码"
+                                    else -> "Code"
+                                }
                                 Text(
-                                    text = "${if (currentLang == Language.RU) "Код" else "Code"}: ${room.roomId}",
+                                    text = "$codePrefix: ${room.roomId}",
                                     style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                                     fontWeight = FontWeight.Bold,
                                     color = themeColor
@@ -2127,18 +2362,42 @@ fun LobbyRoomView(
 
         if (showInviteFriendsDialog) {
             val friends by viewModel.friendsList.collectAsStateWithLifecycle()
+            val inviteDuelTitle = when (currentLang) {
+                Language.RU -> "Пригласить друга в дуэль"
+                Language.UA -> "Запросити друга на дуель"
+                Language.KK -> "Досыңды дуэльге шақыру"
+                Language.DE -> "Freund zum Duell einladen"
+                Language.ZH -> "邀请好友加入对决"
+                else -> "Invite Friend to Duel"
+            }
+            val noFriendsDesc = when (currentLang) {
+                Language.RU -> "У вас пока нет друзей в списке."
+                Language.UA -> "У вас поки немає друзів у списку."
+                Language.KK -> "Сізде әзірге достар жоқ."
+                Language.DE -> "Du hast noch keine Freunde in der Liste."
+                Language.ZH -> "您的好友列表暂无好友。"
+                else -> "You have no friends in your list."
+            }
+            val inviteBtn = when (currentLang) {
+                Language.RU -> "Позвать"
+                Language.UA -> "Покликати"
+                Language.KK -> "Шақыру"
+                Language.DE -> "Einladen"
+                Language.ZH -> "邀请"
+                else -> "Invite"
+            }
             AlertDialog(
                 onDismissRequest = { showInviteFriendsDialog = false },
                 title = {
                     Text(
-                        text = if (currentLang == Language.RU) "Пригласить друга в дуэль" else "Invite Friend to Duel",
+                        text = inviteDuelTitle,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 text = {
                     if (friends.isEmpty()) {
                         Text(
-                            text = if (currentLang == Language.RU) "У вас пока нет друзей в списке." else "You have no friends in your list.",
+                            text = noFriendsDesc,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
@@ -2165,6 +2424,7 @@ fun LobbyRoomView(
                                                 avatarEmoji = friend.avatarEmoji,
                                                 avatarBgColorHex = friend.avatarBgColor,
                                                 avatarFrame = friend.avatarFrame,
+                                                avatarBase64 = friend.avatarBase64,
                                                 size = 36.dp,
                                                 themeColor = themeColor
                                             )
@@ -2183,8 +2443,7 @@ fun LobbyRoomView(
                                                     avatarEmoji = customAvatarEmoji,
                                                     avatarBgColor = customAvatarBgColor,
                                                     avatarFrame = equippedAvatarFrame,
-                                                    hostTier = localTier,
-                                                    betAmount = room.betAmount
+                                                    hostTier = localTier
                                                 )
                                                 viewModel.triggerAudioFeedback("success")
                                                 showInviteFriendsDialog = false
@@ -2192,7 +2451,7 @@ fun LobbyRoomView(
                                             shape = RoundedCornerShape(10.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Позвать" else "Invite", style = MaterialTheme.typography.labelSmall)
+                                            Text(inviteBtn, style = MaterialTheme.typography.labelSmall)
                                         }
                                     }
                                 }
@@ -2202,7 +2461,7 @@ fun LobbyRoomView(
                 },
                 confirmButton = {
                     TextButton(onClick = { showInviteFriendsDialog = false }) {
-                        Text(if (currentLang == Language.RU) "Закрыть" else "Close")
+                        Text(Translations.get("cancel", currentLang))
                     }
                 }
             )
@@ -2226,21 +2485,44 @@ fun LobbyRoomView(
                 val guestPlayer = room.players.find { it.uid != room.hostId }
                 val isMeHost = room.hostId == localUid
 
+                val hostRoleTitle = if (isMeHost) {
+                    when (currentLang) {
+                        Language.RU -> "ХОСТ (ВЫ)"
+                        Language.UA -> "ХОСТ (ВИ)"
+                        Language.KK -> "ХОСТ (СІЗ)"
+                        Language.DE -> "HOST (DU)"
+                        Language.ZH -> "房主 (您)"
+                        else -> "HOST (YOU)"
+                    }
+                } else {
+                    when (currentLang) {
+                        Language.RU -> "ХОСТ"
+                        Language.UA -> "ХОСТ"
+                        Language.KK -> "ХОСТ"
+                        Language.DE -> "HOST"
+                        Language.ZH -> "房主"
+                        else -> "ROOM HOST"
+                    }
+                }
+
                 // Left: Host Card
                 RoomPlayerCard(
                     playerName = hostPlayer?.name ?: room.hostName,
                     playerTier = hostPlayer?.tier ?: room.hostTier,
                     isReady = hostPlayer?.isReady ?: true,
-                    roleTitle = if (isMeHost) (if (currentLang == Language.RU) "ХОСТ (ВЫ)" else "HOST (YOU)") else (if (currentLang == Language.RU) "ХОСТ" else "ROOM HOST"),
+                    roleTitle = hostRoleTitle,
                     themeColor = themeColor,
                     avatarEmoji = hostPlayer?.avatarEmoji ?: "",
                     avatarBgColor = hostPlayer?.avatarBgColor ?: "",
                     avatarFrame = hostPlayer?.avatarFrame ?: "standard",
+                    avatarBase64 = hostPlayer?.avatarBase64 ?: "",
                     modifier = Modifier.weight(1f),
                     hasGradient = hostPlayer?.hasGradient ?: false,
                     winStreak = hostPlayer?.winStreak ?: 0,
                     rating = hostPlayer?.rating ?: 1000,
-                    customTag = hostPlayer?.customTag ?: ""
+                    customTag = hostPlayer?.customTag ?: "",
+                    credits = if (isMeHost) localCredits else (hostPlayer?.credits ?: 0),
+                    isOnline = true
                 )
 
                 // Neon VS Badge
@@ -2287,19 +2569,43 @@ fun LobbyRoomView(
                                     modifier = Modifier.size(22.dp),
                                     strokeWidth = 2.dp
                                 )
+                                val waitingOpponent = when (currentLang) {
+                                    Language.RU -> "Ожидание..."
+                                    Language.UA -> "Очікування..."
+                                    Language.KK -> "Күтілуде..."
+                                    Language.DE -> "Warten..."
+                                    Language.ZH -> "等待对手..."
+                                    else -> "Waiting..."
+                                }
+                                val codePrefix = when (currentLang) {
+                                    Language.RU -> "Код"
+                                    Language.UA -> "Код"
+                                    Language.KK -> "Код"
+                                    Language.DE -> "Code"
+                                    Language.ZH -> "代码"
+                                    else -> "Code"
+                                }
                                 Text(
-                                    text = if (currentLang == Language.RU) "Ожидание..." else "Waiting...",
+                                    text = waitingOpponent,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "${if (currentLang == Language.RU) "Код" else "Code"}: ${room.roomId}",
+                                    text = "$codePrefix: ${room.roomId}",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = themeColor
                                 )
                             }
                             if (isMeHost) {
+                                val inviteFriendBtnText = when (currentLang) {
+                                    Language.RU -> "Позвать друга"
+                                    Language.UA -> "Покликати друга"
+                                    Language.KK -> "Досты шақыру"
+                                    Language.DE -> "Freund einladen"
+                                    Language.ZH -> "邀请好友"
+                                    else -> "Invite Friend"
+                                }
                                 FilledTonalButton(
                                     onClick = { showInviteFriendsDialog = true },
                                     modifier = Modifier.fillMaxWidth().height(32.dp),
@@ -2309,7 +2615,7 @@ fun LobbyRoomView(
                                     Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(13.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (currentLang == Language.RU) "Позвать друга" else "Invite Friend",
+                                        text = inviteFriendBtnText,
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
                                         fontWeight = FontWeight.Bold
                                     )
@@ -2319,26 +2625,67 @@ fun LobbyRoomView(
                     }
                 } else {
                     val isMeGuest = guestPlayer.uid == localUid
+                    val guestRoleTitle = if (isMeGuest) {
+                        when (currentLang) {
+                            Language.RU -> "ГОСТЬ (ВЫ)"
+                            Language.UA -> "ГІСТЬ (ВИ)"
+                            Language.KK -> "ҚОНАҚ (СІЗ)"
+                            Language.DE -> "GAST (DU)"
+                            Language.ZH -> "挑战者 (您)"
+                            else -> "GUEST (YOU)"
+                        }
+                    } else {
+                        when (currentLang) {
+                            Language.RU -> "ГОСТЬ"
+                            Language.UA -> "ГІСТЬ"
+                            Language.KK -> "ҚОНАҚ"
+                            Language.DE -> "GAST"
+                            Language.ZH -> "挑战者"
+                            else -> "GUEST"
+                        }
+                    }
                     RoomPlayerCard(
                         playerName = guestPlayer.name,
                         playerTier = guestPlayer.tier,
                         isReady = guestPlayer.isReady,
-                        roleTitle = if (isMeGuest) (if (currentLang == Language.RU) "ГОСТЬ (ВЫ)" else "GUEST (YOU)") else (if (currentLang == Language.RU) "ГОСТЬ" else "GUEST"),
+                        roleTitle = guestRoleTitle,
                         themeColor = if (guestPlayer.isReady) Color(0xFF00E676) else MaterialTheme.colorScheme.error,
                         avatarEmoji = guestPlayer.avatarEmoji,
                         avatarBgColor = guestPlayer.avatarBgColor,
                         avatarFrame = guestPlayer.avatarFrame,
+                        avatarBase64 = guestPlayer.avatarBase64,
                         modifier = Modifier.weight(1f),
                         hasGradient = guestPlayer.hasGradient,
                         winStreak = guestPlayer.winStreak,
                         rating = guestPlayer.rating,
-                        customTag = guestPlayer.customTag
+                        customTag = guestPlayer.customTag,
+                        credits = if (isMeGuest) localCredits else guestPlayer.credits,
+                        isOnline = true
                     )
                 }
             }
 
             // ACTION READY / START BUTTON
             if (isHost) {
+                val hostBtnText = if (allReady) {
+                    when (currentLang) {
+                        Language.RU -> "НАЧАТЬ ДУЭЛЬ"
+                        Language.UA -> "ПОЧАТИ ДУЕЛЬ"
+                        Language.KK -> "ДУЭЛЬДІ БАСТАУ"
+                        Language.DE -> "DUELL STARTEN"
+                        Language.ZH -> "开启对决"
+                        else -> "START DUEL"
+                    }
+                } else {
+                    when (currentLang) {
+                        Language.RU -> "ОЖИДАНИЕ ГОТОВНОСТИ"
+                        Language.UA -> "ОЧІКУВАННЯ ГОТОВНОСТІ"
+                        Language.KK -> "ДАЙЫНДЫҚТЫ КҮТУ"
+                        Language.DE -> "WARTE AUF BEREITSCHAFT"
+                        Language.ZH -> "等待玩家准备"
+                        else -> "WAITING FOR PLAYERS"
+                    }
+                }
                 Button(
                     onClick = {
                         viewModel.triggerAudioFeedback("success")
@@ -2360,17 +2707,32 @@ fun LobbyRoomView(
                     Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (allReady) {
-                            if (currentLang == Language.RU) "НАЧАТЬ ДУЭЛЬ" else "START DUEL"
-                        } else {
-                            if (currentLang == Language.RU) "ОЖИДАНИЕ ГОТОВНОСТИ" else "WAITING FOR PLAYERS"
-                        },
+                        text = hostBtnText,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
             } else {
                 val localReady = localPlayer?.isReady ?: false
+                val guestBtnText = if (localReady) {
+                    when (currentLang) {
+                        Language.RU -> "ГОТОВ К БОЮ!"
+                        Language.UA -> "ГОТОВИЙ ДО БОЮ!"
+                        Language.KK -> "ШАЙҚАСҚА ДАЙЫН!"
+                        Language.DE -> "BEREIT ZUM KAMPF!"
+                        Language.ZH -> "准备就绪！"
+                        else -> "READY FOR BATTLE!"
+                    }
+                } else {
+                    when (currentLang) {
+                        Language.RU -> "НАЖМИ «ГОТОВ»"
+                        Language.UA -> "НАТИСНИ «ГОТОВИЙ»"
+                        Language.KK -> "«ДАЙЫН» БАСЫҢЫЗ"
+                        Language.DE -> "DRÜCKE «BEREIT»"
+                        Language.ZH -> "点击「准备」"
+                        else -> "PRESS «READY»"
+                    }
+                }
                 Button(
                     onClick = {
                         viewModel.triggerAudioFeedback("click")
@@ -2393,11 +2755,7 @@ fun LobbyRoomView(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (localReady) {
-                            if (currentLang == Language.RU) "ГОТОВ К БОЮ!" else "READY FOR BATTLE!"
-                        } else {
-                            if (currentLang == Language.RU) "НАЖМИ «ГОТОВ»" else "PRESS «READY»"
-                        },
+                        text = guestBtnText,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -2448,11 +2806,14 @@ fun RoomPlayerCard(
     avatarEmoji: String = "",
     avatarBgColor: String = "",
     avatarFrame: String = "standard",
+    avatarBase64: String = "",
     modifier: Modifier = Modifier,
     hasGradient: Boolean = false,
     winStreak: Int = 0,
     rating: Int = 1000,
-    customTag: String = ""
+    customTag: String = "",
+    credits: Int = 0,
+    isOnline: Boolean = true
 ) {
     ElevatedCard(
         modifier = modifier.height(168.dp),
@@ -2492,7 +2853,7 @@ fun RoomPlayerCard(
                         color = Color(0xFFFF5722).copy(alpha = 0.18f)
                     ) {
                         Text(
-                            text = "🔥 x$winStreak",
+                            text = "x$winStreak",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFF5722),
@@ -2508,27 +2869,41 @@ fun RoomPlayerCard(
                 avatarEmoji = avatarEmoji,
                 avatarBgColorHex = avatarBgColor,
                 avatarFrame = avatarFrame,
+                avatarBase64 = avatarBase64,
                 size = 44.dp,
                 themeColor = themeColor,
                 showOnlineDot = true,
-                isOnline = true
+                isOnline = isOnline
             )
 
             val playerColor = parseHexColor(avatarBgColor, themeColor)
             val playerBrush = rememberAnimatedNicknameBrush(baseColor = playerColor)
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     if (customTag.isNotBlank()) {
                         Surface(
                             shape = RoundedCornerShape(4.dp),
-                            color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                            color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                            modifier = Modifier.padding(end = 3.dp)
                         ) {
                             Text(
                                 text = "[$customTag]",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFFFFD700),
-                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .widthIn(max = 55.dp)
+                                    .padding(horizontal = 3.dp, vertical = 1.dp)
                             )
                         }
                     }
@@ -2541,14 +2916,29 @@ fun RoomPlayerCard(
                         },
                         fontWeight = FontWeight.ExtraBold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
-                Text(
-                    text = "MMR $rating • $playerTier",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "ELO $rating • $playerTier",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (credits > 0) {
+                        Text(
+                            text = "• 🪙 $credits",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFD700)
+                        )
+                    }
+                }
             }
 
             Surface(

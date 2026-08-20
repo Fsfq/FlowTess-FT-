@@ -58,9 +58,9 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
     private var invitesListener: ChildEventListener? = null
 
     // ─────────────────────────────────────────────────────────────
-    // 1. Presence System with RTDB onDisconnect()
+    // 1. Presence System with RTDB onDisconnect() & Heartbeat
     // ─────────────────────────────────────────────────────────────
-    fun startPresenceUpdates(username: String, tier: String, hasGradient: Boolean) {
+    fun startPresenceUpdates(username: String, tier: String, hasGradient: Boolean, credits: Int = 0) {
         presenceJob?.cancel()
         val uid = auth.currentUser?.uid ?: "guest_${System.currentTimeMillis()}"
         val userPresenceRef = database.getReference("presence/$uid")
@@ -76,6 +76,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
                         "username" to username,
                         "tier" to tier,
                         "hasGradient" to hasGradient,
+                        "credits" to credits,
                         "status" to (if (_currentRoom.value != null) "in_room" else "in_lobby"),
                         "lastActive" to ServerValue.TIMESTAMP
                     )
@@ -98,6 +99,27 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
             override fun onCancelled(error: DatabaseError) {}
         }
         allPresenceRef.addValueEventListener(presenceCountListener!!)
+
+        // Periodic Heartbeat loop (every 30 seconds update RTDB & Firestore)
+        presenceJob = CoroutineScope(Dispatchers.IO).launch {
+            while (isActive) {
+                try {
+                    val currentUid = auth.currentUser?.uid
+                    if (currentUid != null) {
+                        database.getReference("presence/$currentUid/lastActive").setValue(ServerValue.TIMESTAMP)
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("users").document(currentUid)
+                            .update(mapOf(
+                                "is_online" to true,
+                                "last_synced_timestamp" to System.currentTimeMillis()
+                            ))
+                    }
+                } catch (e: Exception) {
+                    // Ignore network fluctuations
+                }
+                delay(30_000L)
+            }
+        }
     }
 
     fun stopPresence() {
@@ -111,6 +133,16 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         val uid = auth.currentUser?.uid
         if (uid != null) {
             database.getReference("presence/$uid").removeValue()
+            try {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(uid)
+                    .update(mapOf(
+                        "is_online" to false,
+                        "last_synced_timestamp" to System.currentTimeMillis()
+                    ))
+            } catch (e: Exception) {
+                // Ignore
+            }
         }
     }
 
@@ -250,8 +282,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         avatarEmoji: String,
         avatarBgColor: String,
         avatarFrame: String,
-        hostTier: String,
-        betAmount: Int
+        hostTier: String
     ) {
         val inviteRef = database.getReference("invites/$targetUid").push()
         val invite = RoomInvite(
@@ -263,7 +294,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
             hostAvatarBgColor = avatarBgColor,
             hostAvatarFrame = avatarFrame,
             hostTier = hostTier,
-            betAmount = betAmount,
+            betAmount = 0,
             timestamp = System.currentTimeMillis()
         )
         inviteRef.setValue(invite.toMap())
@@ -327,7 +358,6 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
                         gameMode = "CLASSIC",
                         garbageIntensity = 1.0f,
                         roundTarget = 1,
-                        betAmount = 0,
                         onSuccess = onJoined
                     )
                 }
@@ -392,7 +422,6 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         gameMode: String = "CLASSIC",
         garbageIntensity: Float = 1.0f,
         roundTarget: Int = 1,
-        betAmount: Int = 0,
         onSuccess: (String) -> Unit
     ) {
         val uid = auth.currentUser?.uid ?: return
@@ -430,7 +459,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
             currentRound = 1,
             players = listOf(hostPlayer),
             createdAt = System.currentTimeMillis(),
-            betAmount = betAmount
+            betAmount = 0
         )
 
         roomRef.setValue(room.toMap()).addOnSuccessListener {

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.absoluteValue
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -408,7 +409,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.width(3.dp))
                                 AdaptiveText(
-                                    text = if (currentLang == Language.RU) "ЛИНИИ" else "LINES",
+                                    text = Translations.get("lines", currentLang).uppercase(),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                                     fontWeight = FontWeight.Bold,
@@ -459,7 +460,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     )
                                     Spacer(modifier = Modifier.width(3.dp))
                                     AdaptiveText(
-                                        text = if (currentLang == Language.RU) "ВРЕМЯ" else "TIME",
+                                        text = Translations.get("time", currentLang),
                                         color = if (gameState.timeRemainingSeconds <= 15) {
                                             MaterialTheme.colorScheme.onErrorContainer
                                         } else {
@@ -532,166 +533,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     topLeft = Offset(0f, i * 6f),
                                     size = Size(size.width, 2f)
                                 )
-                            }
-                        }
-                    }
-
-                    // PAUSE OVERLAY
-                    if (!isPlaying && !gameState.isGameOver && gameState.currentPiece != null) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.75f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ElevatedCard(
-                                shape = RoundedCornerShape(28.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                elevation = CardDefaults.elevatedCardElevation(6.dp)
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(52.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.Pause,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ИГРА НА ПАУЗЕ" else "GAME PAUSED",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Button(
-                                            onClick = { viewModel.resumeGame() },
-                                            shape = RoundedCornerShape(16.dp),
-                                            modifier = Modifier.fillMaxWidth(0.85f)
-                                        ) {
-                                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = if (currentLang == Language.RU) "ПРОДОЛЖИТЬ" else "RESUME",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        OutlinedButton(
-                                            onClick = {
-                                                viewModel.startGame(gameState.gameMode)
-                                                viewModel.triggerAudioFeedback("click")
-                                            },
-                                            shape = RoundedCornerShape(16.dp),
-                                            modifier = Modifier.fillMaxWidth(0.85f)
-                                        ) {
-                                            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = if (currentLang == Language.RU) "ЗАНОВО" else "RESTART",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // GAME OVER OVERLAY
-                    if (gameState.isGameOver) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.82f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ElevatedCard(
-                                shape = RoundedCornerShape(28.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                elevation = CardDefaults.elevatedCardElevation(8.dp)
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.errorContainer,
-                                        modifier = Modifier.size(52.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.EmojiEvents,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = Translations.get("game_over", currentLang).uppercase(),
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                    Surface(
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == Language.RU) "ИТОГОВЫЙ СЧЕТ" else "FINAL SCORE",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = "${gameState.score}",
-                                                style = MaterialTheme.typography.headlineSmall,
-                                                fontWeight = FontWeight.Black,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-                                    Button(
-                                        onClick = { viewModel.startGame(gameState.gameMode) },
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary
-                                        ),
-                                        modifier = Modifier.fillMaxWidth(0.85f)
-                                    ) {
-                                        Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = Translations.get("restart", currentLang).uppercase(),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
@@ -871,6 +712,454 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     onHardDropPress = { viewModel.gameEngine.hardDrop() },
                     onHoldPress = { viewModel.gameEngine.hold() }
                 )
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // PAUSE OVERLAY (Zeta / Modern MD3 Full-Width Style)
+    // ═══════════════════════════════════════════════════
+    if (!isPlaying && !gameState.isGameOver && gameState.currentPiece != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.82f))
+                .clickable(enabled = false) {},
+            contentAlignment = Alignment.Center
+        ) {
+            val scale = remember { Animatable(0.88f) }
+            LaunchedEffect(Unit) {
+                scale.animateTo(
+                    1f,
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                )
+            }
+
+            ElevatedCard(
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.elevatedCardElevation(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.90f)
+                    .widthIn(max = 390.dp)
+                    .scale(scale.value)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Pause Icon & Title Header
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = Translations.get("game_paused", currentLang),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Current Stats Strip
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = Translations.get("score", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${gameState.score}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(24.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = Translations.get("lines", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${gameState.lines}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(24.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = Translations.get("level", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${gameState.level}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    // Buttons
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.resumeGame()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = Translations.get("resume", currentLang).uppercase(),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        FilledTonalButton(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.startGame(gameState.gameMode)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
+                            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = Translations.get("restart", currentLang).uppercase(),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.pauseGame()
+                                onBack()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = Translations.get("exit_to_menu", currentLang),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // GAME OVER OVERLAY (Zeta / Modern MD3 Full-Width Style)
+    // ═══════════════════════════════════════════════════
+    if (gameState.isGameOver) {
+        val isNewRecord = gameState.score > statsHighScore && gameState.score > 0
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .clickable(enabled = false) {},
+            contentAlignment = Alignment.Center
+        ) {
+            val scale = remember { Animatable(0.85f) }
+            LaunchedEffect(Unit) {
+                scale.animateTo(
+                    1f,
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                )
+            }
+
+            ElevatedCard(
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.elevatedCardElevation(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .widthIn(max = 410.dp)
+                    .scale(scale.value)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Top Header Badge
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isNewRecord) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier.size(58.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isNewRecord) Icons.Default.EmojiEvents else Icons.Default.Close,
+                                contentDescription = null,
+                                tint = if (isNewRecord) Color(0xFFFFD700) else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (isNewRecord) Translations.get("new_record", currentLang)
+                                   else Translations.get("game_over", currentLang).uppercase(),
+                            color = if (isNewRecord) Color(0xFFFFD700) else MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        if (isNewRecord) {
+                            Text(
+                                text = Translations.get("incredible_performance", currentLang),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Final Score Card
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        border = BorderStroke(
+                            1.5.dp,
+                            if (isNewRecord) Color(0xFFFFD700).copy(alpha = 0.5f)
+                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = Translations.get("final_score", currentLang),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${gameState.score}",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Black,
+                                color = if (isNewRecord) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Stats Summary Row
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp, horizontal = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = Translations.get("lines", currentLang),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "${gameState.lines}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(22.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.SignalCellularAlt, contentDescription = null, modifier = Modifier.size(12.dp), tint = themeColor)
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = Translations.get("level", currentLang),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "${gameState.level}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(22.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            )
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color(0xFFFF5722))
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = Translations.get("tetrises", currentLang),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "x${gameState.tetrisesCleared}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+
+                    // Action Buttons
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.startGame(gameState.gameMode)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = Translations.get("play_again", currentLang),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                onBack()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = Translations.get("main_menu", currentLang),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1544,89 +1833,321 @@ fun ControlButton(
 @Composable
 fun RelaxSettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
-    val ghostVisible by viewModel.ghostVisible.collectAsStateWithLifecycle()
-    val ghostOutlineOnly by viewModel.ghostOutlineOnly.collectAsStateWithLifecycle()
-    val smoothFallingEnabled by viewModel.smoothFallingEnabled.collectAsStateWithLifecycle()
-    val lineClearChallenge by viewModel.lineClearChallenge.collectAsStateWithLifecycle()
+    val relaxImmortal by viewModel.relaxImmortal.collectAsStateWithLifecycle()
+    val relaxBlockSet by viewModel.relaxBlockSet.collectAsStateWithLifecycle()
+    val relaxSpeed by viewModel.relaxSpeed.collectAsStateWithLifecycle()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = if (currentLang == Language.RU) "НАСТРОЙКИ РЕЛАКС РЕЖИМА" else "RELAX MODE SETTINGS",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Spa,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = when (currentLang) {
+                        Language.RU -> "РЕЛАКС ХАБ"
+                        Language.UA -> "РЕЛАКС ХАБ"
+                        Language.KK -> "РЕЛАКС ХАБ"
+                        Language.DE -> "RELAX-HUB"
+                        Language.ZH -> "轻松解压中心"
+                        else -> "RELAX HUB"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 1. Бессмертие
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = if (currentLang == Language.RU) "Призрачная фигура" else "Ghost piece",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Switch(
-                        checked = ghostVisible,
-                        onCheckedChange = { viewModel.setGhostVisible(it) }
-                    )
-                }
-
-                if (ghostVisible) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = if (currentLang == Language.RU) "Только контур призрака" else "Ghost outline only",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Бессмертие (без Game Over)"
+                                    Language.UA -> "Безсмертя (без Game Over)"
+                                    Language.KK -> "Өлместік (Game Over жоқ)"
+                                    Language.DE -> "Unsterblichkeit (Kein Game Over)"
+                                    Language.ZH -> "无限永生 (无游戏结束)"
+                                    else -> "Immortal Mode (No Game Over)"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Очистка поля при переполнении"
+                                    Language.UA -> "Очищення поля при переповненні"
+                                    Language.KK -> "Толған кезде алаңды тазалау"
+                                    Language.DE -> "Automatisches Leeren bei Überlauf"
+                                    Language.ZH -> "顶部溢出时自动清空顶格"
+                                    else -> "Auto cleans board on overflow"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Switch(
-                            checked = ghostOutlineOnly,
-                            onCheckedChange = { viewModel.setGhostOutlineOnly(it) }
+                            checked = relaxImmortal,
+                            onCheckedChange = { viewModel.setRelaxImmortal(it) }
                         )
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                // 2. Набор фигур
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = if (currentLang == Language.RU) "Плавное падение" else "Smooth falling",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = when (currentLang) {
+                            Language.RU -> "Набор фигур:"
+                            Language.UA -> "Набір фігур:"
+                            Language.KK -> "Пішіндер жиынтығы:"
+                            Language.DE -> "Figuren-Set:"
+                            Language.ZH -> "方块组合:"
+                            else -> "Block Set:"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Switch(
-                        checked = smoothFallingEnabled,
-                        onCheckedChange = { viewModel.setSmoothFallingEnabled(it) }
+                    val blockSets = listOf(
+                        "only_i" to when (currentLang) {
+                            Language.RU -> "Только палки (I-Only)"
+                            Language.UA -> "Тільки палиці (I-Only)"
+                            Language.KK -> "Тек таяқшалар"
+                            Language.DE -> "Nur I-Balken"
+                            Language.ZH -> "纯长条天堂"
+                            else -> "Only I-Bars"
+                        },
+                        "ideal" to when (currentLang) {
+                            Language.RU -> "Идеальный баланс (I, O, T)"
+                            Language.UA -> "Ідеальний баланс"
+                            Language.KK -> "Керемет баланс"
+                            Language.DE -> "Ideale Balance"
+                            Language.ZH -> "极简易搭组合"
+                            else -> "Ideal Balance"
+                        },
+                        "standard" to when (currentLang) {
+                            Language.RU -> "Классика (7 фигур)"
+                            Language.UA -> "Класика (7 фігур)"
+                            Language.KK -> "Классика (7 пішін)"
+                            Language.DE -> "Standard (7 Figuren)"
+                            Language.ZH -> "标准7种图形"
+                            else -> "Standard 7"
+                        },
+                        "all" to when (currentLang) {
+                            Language.RU -> "Все 10 фигур (с пентамино)"
+                            Language.UA -> "Всі 10 фігур"
+                            Language.KK -> "Барлық 10 пішін"
+                            Language.DE -> "Alle 10 Figuren"
+                            Language.ZH -> "全部10种异形"
+                            else -> "All 10 Shapes"
+                        }
                     )
+                    blockSets.forEach { (key, label) ->
+                        val isSelected = relaxBlockSet == key
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setRelaxBlockSet(key)
+                                    viewModel.triggerAudioFeedback("click")
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = {
+                                        viewModel.setRelaxBlockSet(key)
+                                        viewModel.triggerAudioFeedback("click")
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                // 3. Скорость гравитации
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = if (currentLang == Language.RU) "Челлендж линий" else "Line challenge",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = when (currentLang) {
+                            Language.RU -> "Гравитация падения:"
+                            Language.UA -> "Гравітація падіння:"
+                            Language.KK -> "Құлау жылдамдығы:"
+                            Language.DE -> "Fall-Geschwindigkeit:"
+                            Language.ZH -> "下落重力:"
+                            else -> "Gravity Speed:"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Switch(
-                        checked = lineClearChallenge,
-                        onCheckedChange = { viewModel.setLineClearChallenge(it) }
+                    val speedOptions = listOf(
+                        "static" to when (currentLang) {
+                            Language.RU -> "Без гравитации (ручной сброс)"
+                            Language.UA -> "Без гравітації"
+                            Language.KK -> "Гравитациясыз"
+                            Language.DE -> "Keine Gravitation"
+                            Language.ZH -> "悬浮静止模式"
+                            else -> "Zero Gravity (Manual)"
+                        },
+                        "slow" to when (currentLang) {
+                            Language.RU -> "Медитативная (1.5 сек)"
+                            Language.UA -> "Медитативна"
+                            Language.KK -> "Медитативті"
+                            Language.DE -> "Meditativ (Langsam)"
+                            Language.ZH -> "冥想超缓流速"
+                            else -> "Meditative (Slow)"
+                        },
+                        "flow" to when (currentLang) {
+                            Language.RU -> "Плавный поток (0.9 сек)"
+                            Language.UA -> "Плавний потік"
+                            Language.KK -> "Бірқалыпты ағын"
+                            Language.DE -> "Sanfter Fluss"
+                            Language.ZH -> "平缓禅意流速"
+                            else -> "Zen Flow (Normal)"
+                        }
                     )
+                    speedOptions.forEach { (key, label) ->
+                        val isSelected = relaxSpeed == key
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setRelaxSpeed(key)
+                                    viewModel.triggerAudioFeedback("click")
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = {
+                                        viewModel.setRelaxSpeed(key)
+                                        viewModel.triggerAudioFeedback("click")
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 4. Манипуляции с полем
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Манипуляции с полем:"
+                            Language.UA -> "Дії з полем:"
+                            Language.KK -> "Алаң әрекеттері:"
+                            Language.DE -> "Feld-Aktionen:"
+                            Language.ZH -> "棋盘快捷操作:"
+                            else -> "Field Actions:"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.clearRelaxLowerRows()
+                                viewModel.triggerAudioFeedback("clear")
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Срезать низ (8)"
+                                    Language.UA -> "Зрізати низ (8)"
+                                    Language.KK -> "Астын кесу (8)"
+                                    Language.DE -> "Unten (8) leeren"
+                                    Language.ZH -> "清空底部8行"
+                                    else -> "Cut Lower 8"
+                                },
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.clearRelaxBoard()
+                                viewModel.triggerAudioFeedback("clear")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Очистить всё"
+                                    Language.UA -> "Очистити все"
+                                    Language.KK -> "Барлығын тазалау"
+                                    Language.DE -> "Alles leeren"
+                                    Language.ZH -> "清空整盘"
+                                    else -> "Clear Board"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onError
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(onClick = onDismiss, shape = RoundedCornerShape(16.dp)) {
-                Text(if (currentLang == Language.RU) "Готово" else "Done", fontWeight = FontWeight.Bold)
+                Text(Translations.get("done", currentLang), fontWeight = FontWeight.Bold)
             }
         }
     )

@@ -55,6 +55,12 @@ data class HighScore(
 ) {
     @androidx.room.Ignore
     var customTag: String = ""
+
+    @androidx.room.Ignore
+    var avatarBase64: String = ""
+
+    @androidx.room.Ignore
+    var isOnline: Boolean = false
 }
 
 @Entity(tableName = "user_accounts")

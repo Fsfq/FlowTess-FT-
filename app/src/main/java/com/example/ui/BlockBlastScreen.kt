@@ -137,7 +137,7 @@ fun BlockBlastScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = if (currentLang == Language.RU) "ZETA АРЕНА" else "ZETA ARENA",
+                                text = Translations.get("zeta_arena", currentLang),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 1.sp
@@ -197,7 +197,7 @@ fun BlockBlastScreen(
                     ) {
                         Column {
                             AdaptiveText(
-                                text = if (currentLang == Language.RU) "ТЕКУЩИЙ СЧЕТ" else "SCORE",
+                                text = Translations.get("current_score", currentLang),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -247,7 +247,7 @@ fun BlockBlastScreen(
 
                         Column(horizontalAlignment = Alignment.End) {
                             AdaptiveText(
-                                text = if (currentLang == Language.RU) "РЕКОРД" else "HIGH SCORE",
+                                text = Translations.get("high_score", currentLang),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -372,9 +372,14 @@ fun BlockBlastScreen(
                                                                 hintText = null
                                                                 viewModel.triggerAudioFeedback("land")
                                                             } else {
-                                                                hintText = if (currentLang == Language.RU) 
-                                                                    "Фигура здесь не помещается" 
-                                                                else "Figure does not fit here"
+                                                                hintText = when (currentLang) {
+                                                                    Language.RU -> "Фигура здесь не помещается"
+                                                                    Language.UA -> "Фігура тут не вміщується"
+                                                                    Language.KK -> "Фигура мұнда сыймайды"
+                                                                    Language.DE -> "Figur passt hier nicht hin"
+                                                                    Language.ZH -> "此处无法放置该方块"
+                                                                    else -> "Figure does not fit here"
+                                                                }
                                                                 viewModel.triggerAudioFeedback("move")
                                                             }
                                                         }
@@ -446,11 +451,25 @@ fun BlockBlastScreen(
                             )
                         } else {
                             val msg = if (activeDraggingIdx != null) {
-                                if (currentLang == Language.RU) "Отпустите фигуру на игровом поле" else "Release figure on the grid!"
+                                when (currentLang) {
+                                    Language.RU -> "Отпустите фигуру на игровом поле"
+                                    Language.UA -> "Відпустіть фігуру на полі"
+                                    Language.KK -> "Фигураны алаңға жіберіңіз"
+                                    Language.DE -> "Block auf dem Feld loslassen"
+                                    Language.ZH -> "将方块释放于棋盘上"
+                                    else -> "Release figure on the grid!"
+                                }
                             } else if (selectedFigureIdx != null) {
-                                if (currentLang == Language.RU) "Коснитесь клетки для размещения" else "Tap a grid cell to place!"
+                                when (currentLang) {
+                                    Language.RU -> "Коснитесь клетки для размещения"
+                                    Language.UA -> "Торкніться клітинки для розміщення"
+                                    Language.KK -> "Орналастыру үшін ұяшықты басыңыз"
+                                    Language.DE -> "Feld zum Platzieren berühren"
+                                    Language.ZH -> "点击格子放置方块"
+                                    else -> "Tap a grid cell to place!"
+                                }
                             } else {
-                                if (currentLang == Language.RU) "Перетаскивайте фигуры на поле" else "Drag & drop figures to the grid"
+                                Translations.get("drag_drop_hint", currentLang)
                             }
                             Text(
                                 text = msg,
@@ -567,7 +586,14 @@ fun BlockBlastScreen(
                                                             hintText = null
                                                         } else {
                                                             viewModel.triggerAudioFeedback("gameover")
-                                                            hintText = if (currentLang == Language.RU) "Фигура здесь не помещается" else "Figure does not fit here"
+                                                            hintText = when (currentLang) {
+                                                                Language.RU -> "Фигура здесь не помещается"
+                                                                Language.UA -> "Фігура тут не вміщується"
+                                                                Language.KK -> "Фигура мұнда сыймайды"
+                                                                Language.DE -> "Block passt hier nicht"
+                                                                Language.ZH -> "此处无法放置该方块"
+                                                                else -> "Figure does not fit here"
+                                                            }
                                                         }
                                                     }
                                                     hoverRowCol = null
@@ -618,7 +644,7 @@ fun BlockBlastScreen(
                         onDismissRequest = {},
                         title = {
                             Text(
-                                text = if (currentLang == Language.RU) "ИГРА ОКОНЧЕНА" else "GAME OVER",
+                                text = Translations.get("game_over", currentLang).uppercase(),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.error,
@@ -628,18 +654,12 @@ fun BlockBlastScreen(
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = if (currentLang == Language.RU) 
-                                        "Финальный счёт: ${state.score}" 
-                                    else 
-                                        "Final score: ${state.score}",
+                                    text = "${Translations.get("score", currentLang)}: ${state.score}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = if (currentLang == Language.RU) 
-                                        "Награда: +$rewardedCC монет" 
-                                    else 
-                                        "Reward: +$rewardedCC coins",
+                                    text = "+$rewardedCC 🪙",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = themeColor,
                                     fontWeight = FontWeight.SemiBold
@@ -658,7 +678,7 @@ fun BlockBlastScreen(
                                 Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (currentLang == Language.RU) "ЗАНОВО" else "RETRY",
+                                    text = Translations.get("retry", currentLang),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -668,7 +688,7 @@ fun BlockBlastScreen(
                                 onClick = onBack,
                                 shape = RoundedCornerShape(16.dp)
                             ) {
-                                Text(text = if (currentLang == Language.RU) "В МЕНЮ" else "MENU")
+                                Text(text = Translations.get("menu", currentLang))
                             }
                         }
                     )

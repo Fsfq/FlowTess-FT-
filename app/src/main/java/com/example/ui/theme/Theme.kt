@@ -18,6 +18,8 @@ val EmeraldPrimary = Color(0xFF4ADE80)
 val MintPrimary = Color(0xFF81E6D9)
 val GoldPrimary = Color(0xFFF6AD55)
 
+val LocalThemeName = androidx.compose.runtime.compositionLocalOf { "indigo" }
+
 @Composable
 fun MyApplicationTheme(
   themeName: String = "indigo",
@@ -349,9 +351,11 @@ fun MyApplicationTheme(
     labelSmall = TextStyle(fontFamily = fontFamily, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp, letterSpacing = 0.5.sp)
   )
 
-  MaterialTheme(
-    colorScheme = selectedColorScheme,
-    typography = customTypography,
-    content = content
-  )
+  androidx.compose.runtime.CompositionLocalProvider(LocalThemeName provides themeName) {
+    MaterialTheme(
+      colorScheme = selectedColorScheme,
+      typography = customTypography,
+      content = content
+    )
+  }
 }

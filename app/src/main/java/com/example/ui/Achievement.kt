@@ -8,7 +8,9 @@ data class Achievement(
     val descriptionRu: String,
     val targetValue: Int,
     val iconType: String, // "crown", "lines", "speed", "score", "blast", "combo"
-    val pointsReward: Int,
+    val pointsReward: Int = 0,
+    val crateKeyReward: String? = null,
+    val crateKeyCount: Int = 0,
     val isUnlocked: Boolean = false,
     val currentValue: Int = 0
 )

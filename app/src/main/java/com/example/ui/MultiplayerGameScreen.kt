@@ -27,8 +27,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
+import com.example.game.Colors
 import com.example.game.GameEngine
 import com.example.game.GameMode
 import com.example.game.GameState
@@ -190,7 +195,7 @@ fun MultiplayerGameScreen(
     }
 
     LaunchedEffect(gameState.isGameOver, opponentGameOver) {
-        if (room != null && room?.status == "playing" && isHost && !roundWinEvaluated) {
+        if (room != null && room?.status == "playing" && !roundWinEvaluated) {
             val isScoreRace = room?.gameMode == "SCORE_RACE"
 
             if (isScoreRace) {
@@ -205,7 +210,7 @@ fun MultiplayerGameScreen(
                     viewModel.lobbyManager.recordRoundWin(winnerId)
                 }
             } else {
-                // In Battle / Knockout mode: when one player tops out, the other wins the round
+                // In Battle / Knockout mode: when both top out, compare score; when one tops out, other wins
                 if (gameState.isGameOver && opponentGameOver) {
                     roundWinEvaluated = true
                     val winnerId = when {
@@ -237,8 +242,7 @@ fun MultiplayerGameScreen(
                 playerScore = gameState.score,
                 opponentScore = opponentScore,
                 won = isWinner,
-                isDraw = isDraw,
-                betAmount = room?.betAmount ?: 0
+                isDraw = isDraw
             )
             viewModel.triggerAudioFeedback(if (isWinner) "success" else "gameover")
         }
@@ -265,9 +269,23 @@ fun MultiplayerGameScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             val modeLabel = if (room?.gameMode == "SCORE_RACE") {
-                                if (currentLang == Language.RU) "НА ОЧКИ" else "SCORE RACE"
+                                when (currentLang) {
+                                    Language.RU -> "НА ОЧКИ"
+                                    Language.UA -> "НА ОЧКИ"
+                                    Language.KK -> "ҰПАЙҒА"
+                                    Language.DE -> "PUNKTEJAGD"
+                                    Language.ZH -> "竞速积分赛"
+                                    else -> "SCORE RACE"
+                                }
                             } else {
-                                if (currentLang == Language.RU) "РАУНД ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}" else "ROUND ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                when (currentLang) {
+                                    Language.RU -> "РАУНД ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                    Language.UA -> "РАУНД ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                    Language.KK -> "РАУНД ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                    Language.DE -> "RUNDE ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                    Language.ZH -> "回合 ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                    else -> "ROUND ${room?.currentRound ?: 1}/${room?.roundTarget ?: 1}"
+                                }
                             }
                             Text(
                                 text = modeLabel,
@@ -351,7 +369,7 @@ fun MultiplayerGameScreen(
                                 themeColor = themeColor
                             )
                             Column(horizontalAlignment = Alignment.Start) {
-                                val myNickBrush = if (hasNicknameGradient) rememberAnimatedNicknameBrush(baseColor = parseHexColor(customAvatarBgColor, themeColor)) else null
+                                val myNickBrush = if (hasNicknameGradient) rememberAnimatedNicknameBrush(baseColor = themeColor) else null
                                 Text(
                                     text = playerName.uppercase(),
                                     style = if (myNickBrush != null) {
@@ -387,20 +405,6 @@ fun MultiplayerGameScreen(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
-                            }
-                            if ((room?.betAmount ?: 0) > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFD700).copy(alpha = 0.18f)
-                                ) {
-                                    Text(
-                                        text = "${(room?.betAmount ?: 0) * 2} 🪙",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFFFFD700),
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                    )
-                                }
                             }
                             // Round Dots Indicator: e.g. [ ● ○ ] vs [ ○ ○ ]
                             val myWins = if (isHost) room?.hostWins ?: 0 else room?.opponentWins ?: 0
@@ -443,8 +447,16 @@ fun MultiplayerGameScreen(
                             val oppNickBrush = if (opponent?.hasGradient == true) rememberAnimatedNicknameBrush(baseColor = oppColor) else null
 
                             Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f)) {
+                                val defaultOpponentLabel = when (currentLang) {
+                                    Language.RU -> "СОПЕРНИК"
+                                    Language.UA -> "СУПЕРНИК"
+                                    Language.KK -> "ҚАРСЫЛАС"
+                                    Language.DE -> "GEGNER"
+                                    Language.ZH -> "对手"
+                                    else -> "OPPONENT"
+                                }
                                 Text(
-                                    text = (opponent?.name ?: if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT").uppercase(),
+                                    text = (opponent?.name ?: defaultOpponentLabel).uppercase(),
                                     style = if (oppNickBrush != null) {
                                         MaterialTheme.typography.labelSmall.copy(brush = oppNickBrush, fontWeight = FontWeight.Black)
                                     } else {
@@ -465,6 +477,7 @@ fun MultiplayerGameScreen(
                                 avatarEmoji = opponent?.avatarEmoji ?: "",
                                 avatarBgColorHex = opponent?.avatarBgColor ?: "",
                                 avatarFrame = opponent?.avatarFrame ?: "standard",
+                                avatarBase64 = opponent?.avatarBase64 ?: "",
                                 size = 38.dp,
                                 themeColor = MaterialTheme.colorScheme.error
                             )
@@ -542,6 +555,14 @@ fun MultiplayerGameScreen(
 
                         // Local Game Over Waiting Overlay
                         if (gameState.isGameOver) {
+                            val toppedOutMsg = when (currentLang) {
+                                Language.RU -> "ФИНИШ\nЖДЁМ СОПЕРНИКА"
+                                Language.UA -> "ФІНІШ\nЧЕКАЄМО СУПЕРНИКА"
+                                Language.KK -> "МӘРЕ\nҚАРСЫЛАСТЫ КҮТУДЕ"
+                                Language.DE -> "AUSGESCHIEDEN\nWARTE AUF GEGNER"
+                                Language.ZH -> "封顶出局\n正在等待对手完成"
+                                else -> "TOPPED OUT\nWAITING FOR OPPONENT"
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -549,7 +570,7 @@ fun MultiplayerGameScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (currentLang == Language.RU) "ФИНИШ\nЖДЁМ СОПЕРНИКА" else "TOPPED OUT\nWAITING FOR OPPONENT",
+                                    text = toppedOutMsg,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Black,
                                     color = MaterialTheme.colorScheme.error,
@@ -628,15 +649,31 @@ fun MultiplayerGameScreen(
                                 .weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
+                            val miniOpponentTitle = opponent?.name ?: when (currentLang) {
+                                Language.RU -> "СОПЕРНИК"
+                                Language.UA -> "СУПЕРНИК"
+                                Language.KK -> "ҚАРСЫЛАС"
+                                Language.DE -> "GEGNER"
+                                Language.ZH -> "对手"
+                                else -> "OPPONENT"
+                            }
                             MiniBoard(
                                 grid = opponentGrid,
-                                title = opponent?.name ?: if (currentLang == Language.RU) "СОПЕРНИК" else "OPPONENT",
+                                title = miniOpponentTitle,
                                 score = opponentScore,
                                 combo = opponentCombo,
                                 lines = opponentLines
                             )
 
                             if (opponentGameOver) {
+                                val opponentOutMsg = when (currentLang) {
+                                    Language.RU -> "ВЫБЫЛ"
+                                    Language.UA -> "ВИБУВ"
+                                    Language.KK -> "ШЫҒЫП ҚАЛДЫ"
+                                    Language.DE -> "K.O."
+                                    Language.ZH -> "出局"
+                                    else -> "OUT"
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -645,7 +682,7 @@ fun MultiplayerGameScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (currentLang == Language.RU) "ВЫБЫЛ" else "OUT",
+                                        text = opponentOutMsg,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Black,
                                         color = MaterialTheme.colorScheme.error
@@ -742,23 +779,51 @@ fun MultiplayerGameScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = if (isWinner) {
-                                        if (currentLang == Language.RU) "ПОБЕДА В МАТЧЕ!" else "VICTORY!"
+                                        when (currentLang) {
+                                            Language.RU -> "ПОБЕДА В МАТЧЕ!"
+                                            Language.UA -> "ПЕРЕМОГА В МАТЧІ!"
+                                            Language.KK -> "МАТЧТАҒЫ ЖЕҢІС!"
+                                            Language.DE -> "SIEG IM MATCH!"
+                                            Language.ZH -> "对决胜利！"
+                                            else -> "VICTORY!"
+                                        }
                                     } else if (isDraw) {
-                                        if (currentLang == Language.RU) "НИЧЬЯ!" else "DRAW!"
+                                        when (currentLang) {
+                                            Language.RU -> "НИЧЬЯ!"
+                                            Language.UA -> "НІЧИЯ!"
+                                            Language.KK -> "ТЕҢ ОЙЫН!"
+                                            Language.DE -> "UNENTSCHIEDEN!"
+                                            Language.ZH -> "平局！"
+                                            else -> "DRAW!"
+                                        }
                                     } else {
-                                        if (currentLang == Language.RU) "ПОРАЖЕНИЕ" else "DEFEAT"
+                                        when (currentLang) {
+                                            Language.RU -> "ПОРАЖЕНИЕ"
+                                            Language.UA -> "ПОРАЗКА"
+                                            Language.KK -> "ЖЕҢІЛІС"
+                                            Language.DE -> "NIEDERLAGE"
+                                            Language.ZH -> "战败"
+                                            else -> "DEFEAT"
+                                        }
                                     },
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Black,
                                     color = if (isWinner) Color(0xFFFFD700) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                                )
-                                if (wasForfeit && isWinner) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "Соперник покинул матч" else "Opponent forfeited the match",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                 )
+                                 if (wasForfeit && isWinner) {
+                                     Text(
+                                         text = when (currentLang) {
+                                             Language.RU -> "Соперник покинул матч"
+                                             Language.UA -> "Супротивник залишив матч"
+                                             Language.KK -> "Қарсылас ойыннан шығып кетті"
+                                             Language.DE -> "Gegner hat aufgegeben"
+                                             Language.ZH -> "对手已提前退出认输"
+                                             else -> "Opponent forfeited the match"
+                                         },
+                                         style = MaterialTheme.typography.bodySmall,
+                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                     )
+                                 }
                             }
 
                             // Stats comparison summary
@@ -779,22 +844,38 @@ fun MultiplayerGameScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        val ptsWord = when (currentLang) {
+                                            Language.RU -> "очков"
+                                            Language.UA -> "очок"
+                                            Language.KK -> "ұпай"
+                                            Language.DE -> "Pkt"
+                                            Language.ZH -> "分"
+                                            else -> "pts"
+                                        }
+                                        val lnsWord = when (currentLang) {
+                                            Language.RU -> "линий"
+                                            Language.UA -> "ліній"
+                                            Language.KK -> "жол"
+                                            Language.DE -> "Linien"
+                                            Language.ZH -> "行"
+                                            else -> "lines"
+                                        }
                                         Column(horizontalAlignment = Alignment.Start) {
                                             Text(text = playerName, style = MaterialTheme.typography.labelSmall, color = themeColor, fontWeight = FontWeight.Bold)
-                                            Text(text = "${gameState.score} очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                                            Text(text = "${gameState.lines} линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(text = "${gameState.score} $ptsWord", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                            Text(text = "${gameState.lines} $lnsWord", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Text(text = "VS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.outline)
                                         Column(horizontalAlignment = Alignment.End) {
-                                            Text(text = opponent?.name ?: "Оппонент", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                                            Text(text = "$opponentScore очков", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                                            Text(text = "$opponentLines линий", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(text = opponent?.name ?: Translations.get("player_opponent", currentLang), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                            Text(text = "$opponentScore $ptsWord", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                            Text(text = "$opponentLines $lnsWord", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
 
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                                    // Match Rewards & MMR
+                                    // Match Rewards & ELO
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -805,27 +886,12 @@ fun MultiplayerGameScreen(
                                             color = if (isWinner) Color(0xFF00E676).copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
                                         ) {
                                             Text(
-                                                text = if (isWinner) "+25 MMR 📈" else if (isDraw) "±0 MMR" else "-15 MMR 📉",
+                                                text = if (isWinner) "+25 ELO 📈" else if (isDraw) "±0 ELO" else "-15 ELO 📉",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Black,
                                                 color = if (isWinner) Color(0xFF00E676) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             )
-                                        }
-
-                                        if ((room?.betAmount ?: 0) > 0) {
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = Color(0xFFFFD700).copy(alpha = 0.2f)
-                                            ) {
-                                                Text(
-                                                    text = if (isWinner) "+${(room?.betAmount ?: 0) * 2} 🪙 Банк!" else if (isDraw) "${room?.betAmount} 🪙 Возврат" else "-${room?.betAmount} 🪙",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.Black,
-                                                    color = Color(0xFFFFD700),
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -842,7 +908,14 @@ fun MultiplayerGameScreen(
                                 Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (currentLang == Language.RU) "ВЕРНУТЬСЯ В ЛОББИ" else "RETURN TO LOBBY",
+                                    text = when (currentLang) {
+                                        Language.RU -> "ВЕРНУТЬСЯ В ЛОББИ"
+                                        Language.UA -> "ПОВЕРНУТИСЯ В ЛОБІ"
+                                        Language.KK -> "ЛОББИГЕ ОРАЛУ"
+                                        Language.DE -> "ZURÜCK ZUR LOBBY"
+                                        Language.ZH -> "返回对战大厅"
+                                        else -> "RETURN TO LOBBY"
+                                    },
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -860,15 +933,27 @@ fun MultiplayerGameScreen(
                     onDismissRequest = { showExitConfirmDialog = false },
                     title = {
                         Text(
-                            text = if (currentLang == Language.RU) "Сдаться и выйти?" else "Surrender match?",
+                            text = when (currentLang) {
+                                Language.RU -> "Сдаться и выйти?"
+                                Language.UA -> "Здатися та вийти?"
+                                Language.KK -> "Беріліп, шығу керек пе?"
+                                Language.DE -> "Aufgeben und verlassen?"
+                                Language.ZH -> "确定投降认输并退出？"
+                                else -> "Surrender match?"
+                            },
                             fontWeight = FontWeight.Bold
                         )
                     },
                     text = {
                         Text(
-                            text = if (currentLang == Language.RU)
-                                "Выход из комнаты во время матча будет засчитан как техническое поражение."
-                                else "Leaving during an active match will count as a forfeit defeat."
+                            text = when (currentLang) {
+                                Language.RU -> "Выход из комнаты во время матча будет засчитан как техническое поражение."
+                                Language.UA -> "Вихід з кімнати під час матчу буде зараховано як технічну поразку."
+                                Language.KK -> "Матч кезінде бөлмеден шығу техникалық жеңіліс болып саналады."
+                                Language.DE -> "Das Verlassen während des Spiels wird als Niederlage gewertet."
+                                Language.ZH -> "对决进行中离开房间将判定为弃权落败。"
+                                else -> "Leaving during an active match will count as a forfeit defeat."
+                            }
                         )
                     },
                     confirmButton = {
@@ -881,7 +966,7 @@ fun MultiplayerGameScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "Сдаться" else "Surrender", fontWeight = FontWeight.Bold)
+                            Text(Translations.get("surrender", currentLang), fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
@@ -889,7 +974,7 @@ fun MultiplayerGameScreen(
                             onClick = { showExitConfirmDialog = false },
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                            Text(Translations.get("cancel", currentLang))
                         }
                     }
                 )
@@ -930,4 +1015,59 @@ private fun convertFlatListToGrid(flatList: List<Int>): List<IntArray> {
         grid.add(row)
     }
     return grid
+}
+
+@Composable
+fun MiniBoard(
+    grid: List<IntArray>,
+    title: String,
+    score: Int,
+    combo: Int = 0,
+    lines: Int = 0,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(16.dp)),
+        color = Color(0xFF0D0E15),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .aspectRatio(10f / 20f)
+            ) {
+                val cellWidth = size.width / 10f
+                val cellHeight = size.height / 20f
+                val cellGap = 1.dp.toPx()
+
+                for (r in 0 until minOf(20, grid.size)) {
+                    val row = grid[r]
+                    for (c in 0 until minOf(10, row.size)) {
+                        val colorIdx = row[c]
+                        val cellColor = if (colorIdx != 0) {
+                            Colors.getOrElse(colorIdx) { Color(0xFF00FFCC) }
+                        } else {
+                            Color(0xFF14151F).copy(alpha = 0.5f)
+                        }
+
+                        drawRoundRect(
+                            color = cellColor,
+                            topLeft = Offset(c * cellWidth + cellGap / 2f, r * cellHeight + cellGap / 2f),
+                            size = Size(cellWidth - cellGap, cellHeight - cellGap),
+                            cornerRadius = CornerRadius(1.5.dp.toPx())
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

@@ -44,6 +44,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material.icons.filled.Computer
@@ -63,6 +68,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import com.example.db.FriendUser
 import com.example.db.PublicUserProfile
@@ -105,19 +113,39 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.TileMode
 
-fun parseHexColor(hex: String, defaultColor: Color = Color(0xFF6C63FF)): Color {
-    if (hex.isBlank()) return defaultColor
-    return try {
-        val cleanHex = hex.trim().removePrefix("#")
-        val colorInt = when (cleanHex.length) {
-            6 -> android.graphics.Color.parseColor("#FF$cleanHex")
-            8 -> android.graphics.Color.parseColor("#$cleanHex")
-            else -> return defaultColor
-        }
-        Color(colorInt)
-    } catch (e: Exception) {
-        defaultColor
+fun parsePlayerColor(hex: String, playerName: String = "", defaultColor: Color = Color(0xFF6C63FF)): Color {
+    if (hex.isNotBlank()) {
+        try {
+            val cleanHex = hex.trim().removePrefix("#")
+            val colorInt = when (cleanHex.length) {
+                6 -> android.graphics.Color.parseColor("#FF$cleanHex")
+                8 -> android.graphics.Color.parseColor("#$cleanHex")
+                else -> null
+            }
+            if (colorInt != null) return Color(colorInt)
+        } catch (e: Exception) { }
     }
+    if (playerName.isNotBlank()) {
+        val vibrantPalettes = listOf(
+            Color(0xFF6C63FF),
+            Color(0xFF00B4D8),
+            Color(0xFF06D6A0),
+            Color(0xFFFFB703),
+            Color(0xFFFB5607),
+            Color(0xFFFF006E),
+            Color(0xFF8338EC),
+            Color(0xFF3A86FF),
+            Color(0xFF2EC4B6),
+            Color(0xFFE71D36)
+        )
+        val idx = kotlin.math.abs(playerName.hashCode()) % vibrantPalettes.size
+        return vibrantPalettes[idx]
+    }
+    return defaultColor
+}
+
+fun parseHexColor(hex: String, defaultColor: Color = Color(0xFF6C63FF)): Color {
+    return parsePlayerColor(hex, "", defaultColor)
 }
 
 @Composable
@@ -134,30 +162,44 @@ fun rememberAnimatedNicknameBrush(baseColor: Color = MaterialTheme.colorScheme.p
         label = "NicknameOffset"
     )
 
-    // Generate dynamic harmonious palette seamlessly matching current interface theme
+    // Generate individualized dynamic palette strictly based on the player's personal color
     val colors = remember(baseColor) {
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV(
-            android.graphics.Color.argb(
-                (baseColor.alpha * 255).toInt(),
-                (baseColor.red * 255).toInt(),
-                (baseColor.green * 255).toInt(),
-                (baseColor.blue * 255).toInt()
-            ),
-            hsv
-        )
-        val baseHue = hsv[0]
-        val sat = hsv[1].coerceIn(0.70f, 0.95f)
-        val value = hsv[2].coerceIn(0.85f, 1f)
+        val isMonochrome = (baseColor.red < 0.22f && baseColor.green < 0.22f && baseColor.blue < 0.22f) ||
+                (baseColor.red > 0.80f && baseColor.green > 0.80f && baseColor.blue > 0.80f)
 
-        // Harmonious continuous color loop across color wheel derived from theme hue
-        val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
-        val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-        val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
-        val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-        val c5 = c1
+        if (isMonochrome) {
+            // High-Tech Liquid Mercury / Titanium Chrome for black & metallic profiles
+            listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFA0A5B5),
+                Color(0xFFE8EDF8),
+                Color(0xFF656A7A),
+                Color(0xFFFFFFFF)
+            )
+        } else {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(
+                android.graphics.Color.argb(
+                    (baseColor.alpha * 255).toInt(),
+                    (baseColor.red * 255).toInt(),
+                    (baseColor.green * 255).toInt(),
+                    (baseColor.blue * 255).toInt()
+                ),
+                hsv
+            )
+            val baseHue = hsv[0]
+            val sat = hsv[1].coerceIn(0.70f, 0.98f)
+            val value = hsv[2].coerceIn(0.85f, 1f)
 
-        listOf(c1, c2, c3, c4, c5)
+            // Harmonious continuous color loop across color wheel derived from player's personal hue
+            val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+            val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+            val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+            val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+            val c5 = c1
+
+            listOf(c1, c2, c3, c4, c5)
+        }
     }
 
     return remember(animOffset, colors) {
@@ -178,12 +220,63 @@ enum class GameMode {
     BLOCK_BLAST
 }
 
+class ClickDebouncer(private val cooldownMs: Long = 1000L) {
+    private var lastClickTime = 0L
+
+    fun canClick(): Boolean {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastClickTime >= cooldownMs) {
+            lastClickTime = now
+            return true
+        }
+        return false
+    }
+
+    inline fun process(action: () -> Unit) {
+        if (canClick()) {
+            action()
+        }
+    }
+}
+
+@Composable
+fun rememberClickDebouncer(cooldownMs: Long = 1000L): ClickDebouncer {
+    return remember { ClickDebouncer(cooldownMs) }
+}
+
 @Composable
 fun TetrisApp(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
+    val menuDebouncer = rememberClickDebouncer(1000L)
+    val backDebouncer = rememberClickDebouncer(800L)
+
+    fun navigateDirect(route: String, builder: (androidx.navigation.NavOptionsBuilder.() -> Unit)? = null) {
+        val currentDest = navController.currentBackStackEntry?.destination?.route
+        if (currentDest == route) return
+        try {
+            if (builder != null) {
+                navController.navigate(route, builder)
+            } else {
+                navController.navigate(route) {
+                    launchSingleTop = true
+                }
+            }
+        } catch (e: Exception) {
+            // Guard against race conditions during navigation transitions
+        }
+    }
+
+    fun safePopBackStack() {
+        if (!backDebouncer.canClick()) return
+        try {
+            navController.popBackStack()
+        } catch (e: Exception) {
+            // Safe back navigation
+        }
+    }
 
     val showBottomBar = currentRoute in listOf("menu", "profile", "settings", "profile_achievements", "cases")
 
@@ -231,32 +324,38 @@ fun TetrisApp(viewModel: MainViewModel) {
                 MainMenuScreen(
                     viewModel = viewModel,
                     onResumeGame = {
-                        if (viewModel.loadSavedGame()) {
-                            navController.navigate("game")
+                        if (menuDebouncer.canClick() && viewModel.loadSavedGame()) {
+                            try {
+                                navController.navigate("game") { launchSingleTop = true }
+                            } catch (e: Exception) {}
                         }
                     },
-                    onLeaderboard = { navController.navigate("leaderboard") },
-                    onProfile = { navController.navigate("profile") },
-                    onModeSelection = { navController.navigate("mode_selection") },
+                    onLeaderboard = { if (menuDebouncer.canClick()) navigateDirect("leaderboard") },
+                    onProfile = { if (menuDebouncer.canClick()) navigateDirect("profile") },
+                    onModeSelection = { if (menuDebouncer.canClick()) navigateDirect("mode_selection") },
                     onPlayMode = { mode ->
-                        if (mode == com.example.game.GameMode.BLOCK_BLAST) {
-                            viewModel.startBlockBlast()
-                            navController.navigate("block_blast")
-                        } else {
-                            viewModel.startGame(mode)
-                            navController.navigate("game")
+                        if (menuDebouncer.canClick()) {
+                            try {
+                                if (mode == com.example.game.GameMode.BLOCK_BLAST) {
+                                    viewModel.startBlockBlast()
+                                    navController.navigate("block_blast") { launchSingleTop = true }
+                                } else {
+                                    viewModel.startGame(mode)
+                                    navController.navigate("game") { launchSingleTop = true }
+                                }
+                            } catch (e: Exception) {}
                         }
                     },
                     onMultiplayer = {
-                        navController.navigate("lobby")
+                        if (menuDebouncer.canClick()) navigateDirect("lobby")
                     }
                 )
             }
             composable("game") {
-                GameScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+                GameScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
             composable("leaderboard") {
-                LeaderboardScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+                LeaderboardScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
             composable(
                 "settings",
@@ -267,15 +366,15 @@ fun TetrisApp(viewModel: MainViewModel) {
             ) {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
-                    onCustomizeControls = { navController.navigate("custom_controls") }
+                    onBack = { safePopBackStack() },
+                    onCustomizeControls = { navigateDirect("custom_controls") }
                 )
             }
             composable("custom_controls") {
-                CustomControlsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+                CustomControlsScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
             composable("block_blast") {
-                BlockBlastScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+                BlockBlastScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
             composable(
                 "cases",
@@ -284,20 +383,22 @@ fun TetrisApp(viewModel: MainViewModel) {
                 popEnterTransition = { tabEnter("cases", initialState.destination.route ?: "") },
                 popExitTransition = { tabExit("cases", targetState.destination.route ?: "") }
             ) {
-                CasesScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+                CasesScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
             composable("mode_selection") {
                 ModeSelectionScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { safePopBackStack() },
                     onPlayMode = { mode ->
-                        if (mode == com.example.game.GameMode.BLOCK_BLAST) {
-                            viewModel.startBlockBlast()
-                            navController.navigate("block_blast")
-                        } else {
-                            viewModel.startGame(mode)
-                            navController.navigate("game")
-                        }
+                        try {
+                            if (mode == com.example.game.GameMode.BLOCK_BLAST) {
+                                viewModel.startBlockBlast()
+                                navController.navigate("block_blast") { launchSingleTop = true }
+                            } else {
+                                viewModel.startGame(mode)
+                                navController.navigate("game") { launchSingleTop = true }
+                            }
+                        } catch (e: Exception) {}
                     }
                 )
             }
@@ -308,7 +409,7 @@ fun TetrisApp(viewModel: MainViewModel) {
                 popEnterTransition = { tabEnter("profile_achievements", initialState.destination.route ?: "") },
                 popExitTransition = { tabExit("profile_achievements", targetState.destination.route ?: "") }
             ) {
-                ProfileScreen(viewModel = viewModel, initialTab = 2, onBack = { navController.popBackStack() })
+                ProfileScreen(viewModel = viewModel, initialTab = 2, onBack = { safePopBackStack() })
             }
             composable(
                 "profile",
@@ -317,134 +418,33 @@ fun TetrisApp(viewModel: MainViewModel) {
                 popEnterTransition = { tabEnter("profile", initialState.destination.route ?: "") },
                 popExitTransition = { tabExit("profile", targetState.destination.route ?: "") }
             ) {
-                ProfileScreen(viewModel = viewModel, initialTab = 0, onBack = { navController.popBackStack() })
+                ProfileScreen(viewModel = viewModel, initialTab = 0, onBack = { safePopBackStack() })
             }
             composable("lobby") {
                 LobbyScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
-                    onNavigateToGame = { navController.navigate("multiplayer_game") }
+                    onBack = { safePopBackStack() },
+                    onNavigateToGame = { navigateDirect("multiplayer_game") }
                 )
             }
             composable("multiplayer_game") {
                 MultiplayerGameScreen(
                     viewModel = viewModel,
                     onBackToLobby = {
-                        navController.navigate("lobby") {
-                            popUpTo("lobby") { inclusive = true }
+                        if (backDebouncer.canClick()) {
+                            try {
+                                navController.navigate("lobby") {
+                                    popUpTo("lobby") { inclusive = true }
+                                }
+                            } catch (e: Exception) {}
                         }
                     }
                 )
             }
         }
     }
-
-    val context = LocalContext.current
-    var isPreloading by rememberSaveable { mutableStateOf(true) }
-    var preloadProgress by remember { mutableFloatStateOf(0.15f) }
-    var preloadStatusText by remember { mutableStateOf(if (currentLang == Language.RU) "Кэширование ресурсов..." else "Warming up cache...") }
 
     val themeColorVal = MaterialTheme.colorScheme.primary
-
-    val appIcon = remember(context) {
-        try {
-            val drawable = context.packageManager.getApplicationIcon(context.packageName)
-            val w = drawable.intrinsicWidth.coerceAtLeast(1)
-            val h = drawable.intrinsicHeight.coerceAtLeast(1)
-            val bitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
-            val canvas = android.graphics.Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bitmap.asImageBitmap()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (isPreloading) {
-            withContext(Dispatchers.IO) {
-                val profilePrefs = context.getSharedPreferences("block_tetris_prefs", Context.MODE_PRIVATE)
-                val gamePrefs = context.getSharedPreferences("tetris_prefs", Context.MODE_PRIVATE)
-
-                val warmSteps = listOf(
-                    if (currentLang == Language.RU) "Прогрев настроек и темы" else "Warming settings & themes",
-                    if (currentLang == Language.RU) "Инициализация аудио движка" else "Initializing audio engine",
-                    if (currentLang == Language.RU) "Кэширование профиля и кредитов" else "Caching profile & credits",
-                    if (currentLang == Language.RU) "Предзагрузка скинов и стилей" else "Preloading skins & styles",
-                    if (currentLang == Language.RU) "Кэширование базы рекордов" else "Caching highscores database",
-                    if (currentLang == Language.RU) "Десериализация инвентаря кейсов" else "Deserializing cases inventory",
-                    if (currentLang == Language.RU) "Прогрев шрифтов и локализации" else "Warming fonts & translations",
-                    if (currentLang == Language.RU) "Инициализация игровых движков" else "Initializing game engines",
-                    if (currentLang == Language.RU) "Оптимизация UI компонентов" else "Optimizing UI components",
-                    if (currentLang == Language.RU) "Финализация кэша вкладок" else "Finalizing tabs cache"
-                )
-
-                for (i in 1..10) {
-                    preloadProgress = (i - 0.2f) / 10f
-                    val stepDesc = warmSteps.getOrElse(i - 1) { "Прогрев" }
-                    preloadStatusText = if (currentLang == Language.RU) {
-                        "Прогрев кэша ($i/10): $stepDesc..."
-                    } else {
-                        "Cache warm-up ($i/10): $stepDesc..."
-                    }
-
-                    // Реальные операции прогрева кэша
-                    when (i) {
-                        1 -> {
-                            profilePrefs.all
-                            gamePrefs.all
-                            viewModel.themeColor.value
-                        }
-                        2 -> {
-                            viewModel.soundVolume.value
-                            viewModel.soundEnabled.value
-                        }
-                        3 -> {
-                            viewModel.playerName.value
-                            viewModel.credits.value
-                            viewModel.purchasedThemes.value
-                        }
-                        4 -> {
-                            viewModel.purchasedAvatarFrames.value
-                            viewModel.purchasedTitles.value
-                            viewModel.purchasedSoundPacks.value
-                            viewModel.purchasedControlButtonStyles.value
-                            viewModel.purchasedFonts.value
-                        }
-                        5 -> {
-                            viewModel.allAccounts
-                        }
-                        6 -> {
-                            val rawInv = profilePrefs.getStringSet("case_inventory", emptySet()) ?: emptySet()
-                            rawInv.forEach { deserializeInventoryItem(it) }
-                        }
-                        7 -> {
-                            Translations.get("settings", currentLang)
-                            Translations.get("profile", currentLang)
-                        }
-                        8 -> {
-                            viewModel.gameEngine
-                            viewModel.blockBlastEngine
-                        }
-                        9 -> {
-                            profilePrefs.getStringSet("purchased_modes", emptySet())
-                        }
-                        10 -> {
-                            preloadProgress = 1.0f
-                        }
-                    }
-                    delay(220)
-                }
-
-                preloadProgress = 1.0f
-                preloadStatusText = if (currentLang == Language.RU) "Все вкладки готовы к игре!" else "All tabs ready to play!"
-                delay(120)
-            }
-            isPreloading = false
-        }
-    }
-
     val configuration = LocalConfiguration.current
     val isWideScreen = configuration.screenWidthDp >= 600
 
@@ -455,10 +455,10 @@ fun TetrisApp(viewModel: MainViewModel) {
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ) {
                     val items = listOf(
-                        Triple("menu", if (currentLang == Language.RU) "Меню" else "Menu", Icons.Default.Home),
-                        Triple("profile", if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
-                        Triple("cases", if (currentLang == Language.RU) "Кейсы" else "Cases", Icons.Default.CardGiftcard),
-                        Triple("settings", if (currentLang == Language.RU) "Настройки" else "Settings", Icons.Default.Settings)
+                        Triple("menu", Translations.get("menu", currentLang), Icons.Default.Home),
+                        Triple("profile", Translations.get("profile", currentLang), Icons.Default.Person),
+                        Triple("cases", Translations.get("cases", currentLang), Icons.Default.CardGiftcard),
+                        Triple("settings", Translations.get("settings", currentLang), Icons.Default.Settings)
                     )
                     
                     Spacer(modifier = Modifier.weight(1f))
@@ -471,13 +471,15 @@ fun TetrisApp(viewModel: MainViewModel) {
                             selected = isSelected,
                             onClick = {
                                 if (currentRoute != route) {
-                                    navController.navigate(route) {
-                                        popUpTo("menu") {
-                                            saveState = true
+                                    try {
+                                        navController.navigate(route) {
+                                            popUpTo("menu") {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    } catch (e: Exception) {}
                                 }
                             }
                         )
@@ -502,10 +504,10 @@ fun TetrisApp(viewModel: MainViewModel) {
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
                             val items = listOf(
-                                Triple("menu", if (currentLang == Language.RU) "Меню" else "Menu", Icons.Default.Home),
-                                Triple("profile", if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
-                                Triple("cases", if (currentLang == Language.RU) "Кейсы" else "Cases", Icons.Default.CardGiftcard),
-                                Triple("settings", if (currentLang == Language.RU) "Настройки" else "Settings", Icons.Default.Settings)
+                                Triple("menu", Translations.get("menu", currentLang), Icons.Default.Home),
+                                Triple("profile", Translations.get("profile", currentLang), Icons.Default.Person),
+                                Triple("cases", Translations.get("cases", currentLang), Icons.Default.CardGiftcard),
+                                Triple("settings", Translations.get("settings", currentLang), Icons.Default.Settings)
                             )
                             items.forEach { (route, label, icon) ->
                                 val isSelected = currentRoute == route || (route == "profile" && currentRoute == "profile_achievements")
@@ -515,13 +517,15 @@ fun TetrisApp(viewModel: MainViewModel) {
                                     selected = isSelected,
                                     onClick = {
                                         if (currentRoute != route) {
-                                            navController.navigate(route) {
-                                                popUpTo("menu") {
-                                                    saveState = true
+                                            try {
+                                                navController.navigate(route) {
+                                                    popUpTo("menu") {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
+                                            } catch (e: Exception) {}
                                         }
                                     }
                                 )
@@ -532,141 +536,6 @@ fun TetrisApp(viewModel: MainViewModel) {
             ) { paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues).consumeWindowInsets(paddingValues)) {
                     navHostContent()
-                }
-            }
-        }
-
-        // App Launch Preload & Cache Warmup Overlay with Skip Button
-        AnimatedVisibility(
-            visible = isPreloading,
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.background,
-                                    themeColorVal.copy(alpha = 0.08f),
-                                    MaterialTheme.colorScheme.background
-                                )
-                            )
-                        )
-                ) {
-                    // Top Bar with Icon on Top-Left and Skip Button on Top-Right
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 44.dp, start = 20.dp, end = 20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // App Icon in Top-Left Corner
-                        Surface(
-                            modifier = Modifier.size(44.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            shadowElevation = 2.dp
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                if (appIcon != null) {
-                                    Image(
-                                        bitmap = appIcon,
-                                        contentDescription = "Tetris App Icon",
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.VideogameAsset,
-                                        contentDescription = "Tetris App Icon",
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-
-                        // Skip Button in Top-Right Corner
-                        FilledTonalButton(
-                            onClick = {
-                                viewModel.triggerAudioFeedback("click")
-                                isPreloading = false
-                            },
-                            shape = RoundedCornerShape(20.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        ) {
-                            Text(
-                                text = if (currentLang == Language.RU) "ПРОПУСТИТЬ" else "SKIP",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    // Center Progress Info in MD3 Style without breathing
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(horizontal = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "TETRIS MATRIX",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 2.sp,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = preloadStatusText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        val animatedProgress by animateFloatAsState(
-                            targetValue = preloadProgress,
-                            animationSpec = tween(250, easing = FastOutSlowInEasing),
-                            label = "PreloadProgressBar"
-                        )
-
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier
-                                .fillMaxWidth(0.72f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(50)),
-                            color = themeColorVal,
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
-                    }
                 }
             }
         }
@@ -686,7 +555,7 @@ fun TetrisApp(viewModel: MainViewModel) {
                 },
                 onInviteToDuel = {
                     viewModel.closeUserProfile()
-                    navController.navigate("lobby")
+                    navigateDirect("lobby")
                 }
             )
         }
@@ -701,7 +570,7 @@ fun TetrisApp(viewModel: MainViewModel) {
                 onDismiss = { viewModel.setShowFriendsDialog(false) },
                 onOpenLobby = {
                     viewModel.setShowFriendsDialog(false)
-                    navController.navigate("lobby")
+                    navigateDirect("lobby")
                 }
             )
         }
@@ -763,22 +632,44 @@ fun MainMenuScreen(
                     shape = RoundedCornerShape(28.dp),
                     icon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     title = {
+                        val authReqTitle = when (currentLang) {
+                            Language.RU -> "Требуется авторизация"
+                            Language.UA -> "Потрібна авторизація"
+                            Language.KK -> "Авторизация қажет"
+                            Language.DE -> "Anmeldung erforderlich"
+                            Language.ZH -> "需要登录账号"
+                            else -> "Authentication Required"
+                        }
                         Text(
-                            text = if (currentLang == Language.RU) "Требуется авторизация" else "Authentication Required",
+                            text = authReqTitle,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
                     text = {
+                        val authReqBody = when (currentLang) {
+                            Language.RU -> "Для игры в сетевом режиме необходимо зарегистрироваться или войти в свой аккаунт. Хотите перейти в профиль?"
+                            Language.UA -> "Для гри в мережевому режимі необхідно зареєструватися або увійти до свого акаунта. Бажаєте перейти до профілю?"
+                            Language.KK -> "Желілік режимде ойнау үшін тіркелу немесе аккаунтқа кіру қажет. Профильге өткіңіз келе ме?"
+                            Language.DE -> "Für den Online-Mehrspielermodus musst du dich anmelden oder ein Konto erstellen. Möchtest du zum Profil wechseln?"
+                            Language.ZH -> "进行在线联机对战需要先登录或注册账号。是否前往个人资料页？"
+                            else -> "To play online multiplayer, you need to sign in or create an account. Would you like to go to your profile?"
+                        }
                         Text(
-                            text = if (currentLang == Language.RU) 
-                                "Для игры в сетевом режиме необходимо зарегистрироваться или войти в свой аккаунт. Хотите перейти в профиль?" 
-                                else "To play online multiplayer, you need to sign in or create an account. Would you like to go to your profile?",
+                            text = authReqBody,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     confirmButton = {
+                        val authConfirmText = when (currentLang) {
+                            Language.RU -> "ВХОД / РЕГИСТРАЦИЯ"
+                            Language.UA -> "ВХІД / РЕЄСТРАЦІЯ"
+                            Language.KK -> "КІРУ / ТІРКЕЛУ"
+                            Language.DE -> "ANMELDEN / REGISTRIEREN"
+                            Language.ZH -> "登录 / 注册"
+                            else -> "LOGIN / REGISTER"
+                        }
                         Button(
                             onClick = {
                                 showAuthGuardDialog = false
@@ -786,7 +677,7 @@ fun MainMenuScreen(
                             },
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "ВХОД / РЕГИСТРАЦИЯ" else "LOGIN / REGISTER", fontWeight = FontWeight.Bold)
+                            Text(authConfirmText, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
@@ -797,13 +688,53 @@ fun MainMenuScreen(
                             },
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL", fontWeight = FontWeight.Bold)
+                            Text(Translations.get("cancel", currentLang).uppercase(), fontWeight = FontWeight.Bold)
                         }
                     }
                 )
             }
 
             if (showAdminPassDialog) {
+                val adminGuardTitle = when (currentLang) {
+                    Language.RU -> "Защита Админ-Панели"
+                    Language.UA -> "Захист Адмін-Панелі"
+                    Language.KK -> "Әкімші панелін қорғау"
+                    Language.DE -> "Admin-Panel-Schutz"
+                    Language.ZH -> "管理控制台安全验证"
+                    else -> "Admin Panel Guard"
+                }
+                val adminGuardDesc = when (currentLang) {
+                    Language.RU -> "Введите секретный пароль доступа к консоли администратора:"
+                    Language.UA -> "Введіть секретний пароль доступу до консолі адміністратора:"
+                    Language.KK -> "Әкімші консоліне кіру үшін құпия сөзді енгізіңіз:"
+                    Language.DE -> "Geheimes Passwort für den Zugriff auf die Administratorkonsole eingeben:"
+                    Language.ZH -> "请输入访问管理员控制台的安全密码："
+                    else -> "Enter secret password to access administrator console:"
+                }
+                val adminPassLabel = when (currentLang) {
+                    Language.RU -> "Пароль доступа"
+                    Language.UA -> "Пароль доступу"
+                    Language.KK -> "Қолжетімділік құпия сөзі"
+                    Language.DE -> "Zugangspasswort"
+                    Language.ZH -> "访问密码"
+                    else -> "Access Password"
+                }
+                val adminPassErrorText = when (currentLang) {
+                    Language.RU -> "Неверный пароль доступа!"
+                    Language.UA -> "Невірний пароль доступу!"
+                    Language.KK -> "Құпия сөз қате!"
+                    Language.DE -> "Falsches Zugangspasswort!"
+                    Language.ZH -> "访问密码错误！"
+                    else -> "Incorrect access password!"
+                }
+                val adminEnterBtn = when (currentLang) {
+                    Language.RU -> "ВОЙТИ"
+                    Language.UA -> "УВІЙТИ"
+                    Language.KK -> "КІРУ"
+                    Language.DE -> "EINTRETEN"
+                    Language.ZH -> "进入"
+                    else -> "ENTER"
+                }
                 AlertDialog(
                     onDismissRequest = {
                         showAdminPassDialog = false
@@ -816,7 +747,7 @@ fun MainMenuScreen(
                     icon = { Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp)) },
                     title = {
                         Text(
-                            text = if (currentLang == Language.RU) "Защита Админ-Панели" else "Admin Panel Guard",
+                            text = adminGuardTitle,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleLarge
                         )
@@ -824,7 +755,7 @@ fun MainMenuScreen(
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = if (currentLang == Language.RU) "Введите секретный пароль доступа к консоли администратора:" else "Enter secret password to access administrator console:",
+                                text = adminGuardDesc,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -834,7 +765,7 @@ fun MainMenuScreen(
                                     adminPassInput = it
                                     adminPassError = false
                                 },
-                                label = { Text(if (currentLang == Language.RU) "Пароль доступа" else "Access Password") },
+                                label = { Text(adminPassLabel) },
                                 singleLine = true,
                                 isError = adminPassError,
                                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -843,7 +774,7 @@ fun MainMenuScreen(
                             )
                             if (adminPassError) {
                                 Text(
-                                    text = if (currentLang == Language.RU) "Неверный пароль доступа!" else "Incorrect access password!",
+                                    text = adminPassErrorText,
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold
@@ -866,7 +797,7 @@ fun MainMenuScreen(
                             },
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "ВОЙТИ" else "ENTER", fontWeight = FontWeight.Bold)
+                            Text(adminEnterBtn, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
@@ -878,7 +809,7 @@ fun MainMenuScreen(
                             },
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text(if (currentLang == Language.RU) "ОТМЕНА" else "CANCEL")
+                            Text(Translations.get("cancel", currentLang).uppercase())
                         }
                     }
                 )
@@ -894,9 +825,12 @@ fun MainMenuScreen(
                 var broadcastText by remember { mutableStateOf("") }
                 var broadcastSentFeedback by remember { mutableStateOf<String?>(null) }
                 var userSearchQuery by remember { mutableStateOf("") }
+                var selectedUserFilter by remember { mutableIntStateOf(0) } // 0: All, 1: Online, 2: Verified, 3: Banned, 4: Rich
                 var selectedAdminTab by remember { mutableIntStateOf(0) }
                 val firebaseUsers by viewModel.firebaseUsers.collectAsStateWithLifecycle(initialValue = emptyList())
                 var editingAdminUser by remember { mutableStateOf<Map<String, Any>?>(null) }
+                var grantingCoinsUser by remember { mutableStateOf<Map<String, Any>?>(null) }
+                var grantCoinsCustomAmount by remember { mutableStateOf("") }
                 var editUserCredits by remember { mutableStateOf("") }
                 var editUserHighScore by remember { mutableStateOf("") }
                 var editUserLines by remember { mutableStateOf("") }
@@ -906,9 +840,22 @@ fun MainMenuScreen(
                 var editUserGradient by remember { mutableStateOf(false) }
                 var editUserTagUnlocked by remember { mutableStateOf(false) }
                 var editUserTag by remember { mutableStateOf("") }
+                var adminToastMessage by remember { mutableStateOf<String?>(null) }
+                val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+                LaunchedEffect(adminToastMessage) {
+                    if (adminToastMessage != null) {
+                        delay(2500)
+                        adminToastMessage = null
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    viewModel.fetchFirebaseUsersForAdmin()
+                }
 
                 LaunchedEffect(selectedAdminTab) {
-                    if (selectedAdminTab == 1) {
+                    if (selectedAdminTab == 1 || selectedAdminTab == 3) {
                         viewModel.fetchFirebaseUsersForAdmin()
                     }
                 }
@@ -930,12 +877,30 @@ fun MainMenuScreen(
                                 CenterAlignedTopAppBar(
                                     modifier = Modifier.statusBarsPadding(),
                                     title = {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "Админ-панель" else "Admin Panel",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Shield,
+                                                contentDescription = null,
+                                                tint = themeColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Админ-панель FsFq"
+                                                    Language.UA -> "Адмін-панель FsFq"
+                                                    Language.KK -> "FsFq Әкімші панелі"
+                                                    Language.DE -> "FsFq Admin-Konsole"
+                                                    Language.ZH -> "FsFq 管理控制台"
+                                                    else -> "Admin Panel FsFq"
+                                                },
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = MaterialTheme.colorScheme.onBackground
+                                            )
+                                        }
                                     },
                                     navigationIcon = {
                                         IconButton(onClick = { showAdminPanelDialog = false }) {
@@ -943,6 +908,37 @@ fun MainMenuScreen(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Close",
                                                 tint = MaterialTheme.colorScheme.onBackground
+                                            )
+                                        }
+                                    },
+                                    actions = {
+                                        IconButton(onClick = {
+                                            viewModel.fetchFirebaseUsersForAdmin()
+                                            viewModel.triggerAudioFeedback("click")
+                                            adminToastMessage = when (currentLang) {
+                                                Language.RU -> "Данные обновлены 🔄"
+                                                Language.UA -> "Дані оновлено 🔄"
+                                                Language.KK -> "Деректер жаңартылды 🔄"
+                                                Language.DE -> "Daten aktualisiert 🔄"
+                                                Language.ZH -> "数据已刷新 🔄"
+                                                else -> "Data refreshed 🔄"
+                                            }
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "Refresh",
+                                                tint = themeColor
+                                            )
+                                        }
+                                        IconButton(onClick = {
+                                            viewModel.setAdminSessionAuthenticated(false)
+                                            showAdminPanelDialog = false
+                                            viewModel.triggerAudioFeedback("gameover")
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = "Lock",
+                                                tint = MaterialTheme.colorScheme.error
                                             )
                                         }
                                     },
@@ -959,12 +955,191 @@ fun MainMenuScreen(
                                     .consumeWindowInsets(paddingValues)
                                     .imePadding()
                             ) {
+                                // Server Stats Summary Bar
+                                val totalUsers = firebaseUsers.size
+                                val onlineCount = firebaseUsers.count { (it["is_online"] as? Boolean) == true }
+                                val verifiedCount = firebaseUsers.count { (it["email_verified"] as? Boolean) == true }
+                                val bannedCount = firebaseUsers.count { (it["is_banned"] as? Boolean) == true }
+                                val totalEconomy = firebaseUsers.sumOf { (it["credits"] as? Number)?.toLong() ?: 0L }
+
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "$totalUsers",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = themeColor
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Игроки"
+                                                    Language.UA -> "Гравці"
+                                                    Language.KK -> "Ойыншылар"
+                                                    Language.DE -> "Spieler"
+                                                    Language.ZH -> "玩家总数"
+                                                    else -> "Users"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "$onlineCount",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF00E676)
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Онлайн"
+                                                    Language.UA -> "Онлайн"
+                                                    Language.KK -> "Желіде"
+                                                    Language.DE -> "Online"
+                                                    Language.ZH -> "当前在线"
+                                                    else -> "Online"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "$verifiedCount",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFF40C4FF)
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Вериф."
+                                                    Language.UA -> "Вериф."
+                                                    Language.KK -> "Тексерілді"
+                                                    Language.DE -> "Verifiziert"
+                                                    Language.ZH -> "已认证"
+                                                    else -> "Verified"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = if (totalEconomy >= 1_000_000) String.format(Locale.US, "%.1fM", totalEconomy / 1_000_000.0)
+                                                       else if (totalEconomy >= 1_000) String.format(Locale.US, "%.1fk", totalEconomy / 1_000.0)
+                                                       else "$totalEconomy",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color(0xFFFFD54F)
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Экономика"
+                                                    Language.UA -> "Економіка"
+                                                    Language.KK -> "Экономика"
+                                                    Language.DE -> "Wirtschaft"
+                                                    Language.ZH -> "经济流通"
+                                                    else -> "Economy"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (bannedCount > 0) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "$bannedCount",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                                Text(
+                                                    text = when (currentLang) {
+                                                        Language.RU -> "Бан"
+                                                        Language.UA -> "Бан"
+                                                        Language.KK -> "Бұғаттау"
+                                                        Language.DE -> "Gesperrt"
+                                                        Language.ZH -> "封禁用户"
+                                                        else -> "Banned"
+                                                    },
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                adminToastMessage?.let { msg ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFF00E676).copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = msg,
+                                            color = Color(0xFF00E676),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+                                        )
+                                    }
+                                }
+
                                 // MD3 Segmented Tab Selector
+                                val tabAdminProfile = when (currentLang) {
+                                    Language.RU -> "Профиль"
+                                    Language.UA -> "Профіль"
+                                    Language.KK -> "Профиль"
+                                    Language.DE -> "Profil"
+                                    Language.ZH -> "管理员"
+                                    else -> "Profile"
+                                }
+                                val tabAdminPlayers = when (currentLang) {
+                                    Language.RU -> "Игроки"
+                                    Language.UA -> "Гравці"
+                                    Language.KK -> "Ойыншылар"
+                                    Language.DE -> "Spieler"
+                                    Language.ZH -> "玩家列表"
+                                    else -> "Players"
+                                }
+                                val tabAdminBroadcast = when (currentLang) {
+                                    Language.RU -> "Оповещения"
+                                    Language.UA -> "Оповіщення"
+                                    Language.KK -> "Хабарландыру"
+                                    Language.DE -> "Broadcast"
+                                    Language.ZH -> "全服广播"
+                                    else -> "Broadcast"
+                                }
+                                val tabAdminSystem = when (currentLang) {
+                                    Language.RU -> "Система"
+                                    Language.UA -> "Система"
+                                    Language.KK -> "Жүйе"
+                                    Language.DE -> "System"
+                                    Language.ZH -> "系统维护"
+                                    else -> "System"
+                                }
                                 val adminTabs = listOf(
-                                    Triple(0, if (currentLang == Language.RU) "Профиль" else "Profile", Icons.Default.Person),
-                                    Triple(1, if (currentLang == Language.RU) "Игроки" else "Players", Icons.Default.People),
-                                    Triple(2, if (currentLang == Language.RU) "Оповещения" else "Broadcast", Icons.Default.Send),
-                                    Triple(3, if (currentLang == Language.RU) "Система" else "System", Icons.Default.Settings)
+                                    Triple(0, tabAdminProfile, Icons.Default.Person),
+                                    Triple(1, tabAdminPlayers, Icons.Default.People),
+                                    Triple(2, tabAdminBroadcast, Icons.Default.Send),
+                                    Triple(3, tabAdminSystem, Icons.Default.Settings)
                                 )
 
                                 Surface(
@@ -1036,7 +1211,7 @@ fun MainMenuScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
 
                                 AnimatedContent(
                                     targetState = selectedAdminTab,
@@ -1059,7 +1234,7 @@ fun MainMenuScreen(
                                 ) { tab ->
                                     when (tab) {
                                         0 -> {
-                                            // PROFILE STATE EDITOR
+                                            // TAB 0: PROFILE & QUICK COIN GENERATOR
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxSize()
@@ -1067,6 +1242,118 @@ fun MainMenuScreen(
                                                     .padding(16.dp),
                                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                                             ) {
+                                                // Live Profile Status Card
+                                                val liveCredits by viewModel.credits.collectAsStateWithLifecycle()
+                                                val liveRating by viewModel.onlineRating.collectAsStateWithLifecycle()
+                                                val liveTier by viewModel.onlineTier.collectAsStateWithLifecycle()
+                                                val liveGradient by viewModel.hasNicknameGradient.collectAsStateWithLifecycle()
+                                                val liveTag by viewModel.customTag.collectAsStateWithLifecycle()
+                                                val liveBonusXp by viewModel.bonusXp.collectAsStateWithLifecycle()
+
+                                                ElevatedCard(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    colors = CardDefaults.elevatedCardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                                    )
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(18.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                text = when (currentLang) {
+                                                                    Language.RU -> "МОЙ ПРОФИЛЬ: $playerName"
+                                                                    Language.UA -> "МІЙ ПРОФІЛЬ: $playerName"
+                                                                    Language.KK -> "МЕНІҢ ПРОФИЛІМ: $playerName"
+                                                                    Language.DE -> "MEIN PROFIL: $playerName"
+                                                                    Language.ZH -> "我的个人档案：$playerName"
+                                                                    else -> "MY PROFILE: $playerName"
+                                                                },
+                                                                style = MaterialTheme.typography.titleSmall,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = themeColor
+                                                            )
+                                                            Surface(
+                                                                shape = RoundedCornerShape(8.dp),
+                                                                color = MaterialTheme.colorScheme.primaryContainer
+                                                            ) {
+                                                                Text(
+                                                                    text = "ADMIN 👑",
+                                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.ExtraBold),
+                                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                )
+                                                            }
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                        ) {
+                                                            Surface(
+                                                                modifier = Modifier.weight(1f),
+                                                                shape = RoundedCornerShape(14.dp),
+                                                                color = Color(0xFFFFD54F).copy(alpha = 0.15f)
+                                                            ) {
+                                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                                    Text(
+                                                                        text = when (currentLang) {
+                                                                            Language.RU -> "Баланс монет"
+                                                                            Language.UA -> "Баланс монет"
+                                                                            Language.KK -> "Монета балансы"
+                                                                            Language.DE -> "Münzenbestand"
+                                                                            Language.ZH -> "代币余额"
+                                                                            else -> "Live Balance"
+                                                                        },
+                                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                                        color = Color(0xFFFFB300)
+                                                                    )
+                                                                    Text(
+                                                                        text = "🪙 $liveCredits",
+                                                                        style = MaterialTheme.typography.titleMedium,
+                                                                        fontWeight = FontWeight.Black,
+                                                                        color = Color(0xFFFFB300)
+                                                                    )
+                                                                }
+                                                            }
+
+                                                            Surface(
+                                                                modifier = Modifier.weight(1f),
+                                                                shape = RoundedCornerShape(14.dp),
+                                                                color = themeColor.copy(alpha = 0.15f)
+                                                            ) {
+                                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                                    Text(
+                                                                        text = when (currentLang) {
+                                                                            Language.RU -> "Ранг / ELO"
+                                                                            Language.UA -> "Ранг / ELO"
+                                                                            Language.KK -> "Дәреже / ELO"
+                                                                            Language.DE -> "Rang / ELO"
+                                                                            Language.ZH -> "段位积分 / ELO"
+                                                                            else -> "Tier / ELO"
+                                                                        },
+                                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                                        color = themeColor
+                                                                    )
+                                                                    Text(
+                                                                        text = "$liveTier ($liveRating)",
+                                                                        style = MaterialTheme.typography.titleMedium,
+                                                                        fontWeight = FontWeight.Black,
+                                                                        color = themeColor
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // INSTANT COIN GENERATOR & PRESETS
                                                 ElevatedCard(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     shape = RoundedCornerShape(24.dp),
@@ -1079,42 +1366,284 @@ fun MainMenuScreen(
                                                         verticalArrangement = Arrangement.spacedBy(12.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "Редактирование профиля" else "Profile Editor",
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "ВЫДАЧА МОНЕТ И РЕСУРСОВ 🪙"
+                                                                Language.UA -> "ВИДАЧА МОНЕТ ТА РЕСУРСІВ 🪙"
+                                                                Language.KK -> "МОНЕТА МЕН РЕСУРС БЕРУ 🪙"
+                                                                Language.DE -> "MÜNZEN-GENERATOR & PRESETS 🪙"
+                                                                Language.ZH -> "代币生成与快捷预设 🪙"
+                                                                else -> "COIN GENERATOR & PRESETS 🪙"
+                                                            },
                                                             style = MaterialTheme.typography.titleSmall,
                                                             fontWeight = FontWeight.ExtraBold,
-                                                            color = themeColor
+                                                            color = Color(0xFFFFB300)
                                                         )
 
                                                         OutlinedTextField(
                                                             value = editUsername,
                                                             onValueChange = { editUsername = it },
-                                                            label = { Text(if (currentLang == Language.RU) "Целевой никнейм" else "Target Username") },
+                                                            label = {
+                                                                val targetUserLabel = when (currentLang) {
+                                                                    Language.RU -> "Целевой никнейм (по умолчанию $playerName)"
+                                                                    Language.UA -> "Цільовий нікнейм (за замовчуванням $playerName)"
+                                                                    Language.KK -> "Мақсатты бүркеншік ат (әдепкі $playerName)"
+                                                                    Language.DE -> "Ziel-Benutzername (Standard $playerName)"
+                                                                    Language.ZH -> "目标玩家昵称（默认 $playerName）"
+                                                                    else -> "Target Username"
+                                                                }
+                                                                Text(targetUserLabel)
+                                                            },
                                                             singleLine = true,
                                                             shape = RoundedCornerShape(14.dp),
                                                             modifier = Modifier.fillMaxWidth()
                                                         )
 
+                                                        Text(
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "Быстрое начисление (+ к текущему балансу):"
+                                                                Language.UA -> "Швидке нарахування (+ до поточного балансу):"
+                                                                Language.KK -> "Жылдам қосу (+ ағымдағы балансқа):"
+                                                                Language.DE -> "Schnellaufladung (+ zum Guthaben):"
+                                                                Language.ZH -> "快速充值（+ 追加至现有余额）："
+                                                                else -> "Quick add (+ to balance):"
+                                                            },
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+
+                                                        // Quick Add Grid
+                                                        val quickCoins = listOf(1_000, 10_000, 50_000, 100_000, 500_000, 1_000_000)
                                                         Row(
                                                             modifier = Modifier.fillMaxWidth(),
-                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            quickCoins.take(3).forEach { amount ->
+                                                                FilledTonalButton(
+                                                                    onClick = {
+                                                                        viewModel.adminGiveCredits(username = editUsername.ifBlank { playerName }, amount = amount, isDelta = true)
+                                                                        viewModel.triggerAudioFeedback("success")
+                                                                        adminToastMessage = "+$amount 🪙 успешно начислено!"
+                                                                    },
+                                                                    modifier = Modifier.weight(1f),
+                                                                    shape = RoundedCornerShape(12.dp),
+                                                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                                                                ) {
+                                                                    Text(
+                                                                        text = "+${amount / 1000}k",
+                                                                        fontWeight = FontWeight.ExtraBold,
+                                                                        style = MaterialTheme.typography.labelMedium
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            quickCoins.drop(3).forEach { amount ->
+                                                                FilledTonalButton(
+                                                                    onClick = {
+                                                                        viewModel.adminGiveCredits(username = editUsername.ifBlank { playerName }, amount = amount, isDelta = true)
+                                                                        viewModel.triggerAudioFeedback("success")
+                                                                        adminToastMessage = "+$amount 🪙 успешно начислено!"
+                                                                    },
+                                                                    modifier = Modifier.weight(1f),
+                                                                    shape = RoundedCornerShape(12.dp),
+                                                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                                                                ) {
+                                                                    Text(
+                                                                        text = if (amount >= 1_000_000) "+1M" else "+${amount / 1000}k",
+                                                                        fontWeight = FontWeight.ExtraBold,
+                                                                        style = MaterialTheme.typography.labelMedium
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            Button(
+                                                                onClick = {
+                                                                    viewModel.adminGiveCredits(username = editUsername.ifBlank { playerName }, amount = 999_999, isDelta = false)
+                                                                    viewModel.triggerAudioFeedback("success")
+                                                                    adminToastMessage = "Баланс установлен на 999,999 🪙"
+                                                                },
+                                                                modifier = Modifier.weight(1f),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB300))
+                                                            ) {
+                                                                Text("MAX (999k)", color = Color.Black, fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium)
+                                                            }
+
+                                                            OutlinedButton(
+                                                                onClick = {
+                                                                    viewModel.adminGiveCredits(username = editUsername.ifBlank { playerName }, amount = 0, isDelta = false)
+                                                                    viewModel.triggerAudioFeedback("gameover")
+                                                                    adminToastMessage = "Баланс сброшен в 0 🪙"
+                                                                },
+                                                                modifier = Modifier.weight(1f),
+                                                                shape = RoundedCornerShape(12.dp)
+                                                            ) {
+                                                                val resetZeroLabel = when (currentLang) {
+                                                                        Language.RU -> "Сброс (0)"
+                                                                        Language.UA -> "Скидання (0)"
+                                                                        Language.KK -> "Қалпына келтіру (0)"
+                                                                        Language.DE -> "Zurücksetzen (0)"
+                                                                        Language.ZH -> "归零 (0)"
+                                                                        else -> "Reset (0)"
+                                                                    }
+                                                                    Text(resetZeroLabel, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                                            }
+                                                        }
+
+                                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                                                        // Exact manual input
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
                                                         ) {
                                                             OutlinedTextField(
                                                                 value = editCredits,
                                                                 onValueChange = { editCredits = it },
-                                                                label = { Text(if (currentLang == Language.RU) "Кредиты 🪙" else "Credits 🪙") },
+                                                                label = {
+                                                                    val exactCreditsLabel = when (currentLang) {
+                                                                        Language.RU -> "Точная сумма 🪙"
+                                                                        Language.UA -> "Точна сума 🪙"
+                                                                        Language.KK -> "Дәл сома 🪙"
+                                                                        Language.DE -> "Exakter Betrag 🪙"
+                                                                        Language.ZH -> "精确代币数值 🪙"
+                                                                        else -> "Exact Credits 🪙"
+                                                                    }
+                                                                    Text(exactCreditsLabel)
+                                                                },
                                                                 singleLine = true,
                                                                 shape = RoundedCornerShape(14.dp),
                                                                 modifier = Modifier.weight(1f)
                                                             )
 
+                                                            Button(
+                                                                onClick = {
+                                                                    val creds = editCredits.toIntOrNull()
+                                                                    if (creds != null) {
+                                                                        viewModel.adminGiveCredits(username = editUsername.ifBlank { playerName }, amount = creds, isDelta = false)
+                                                                        viewModel.triggerAudioFeedback("success")
+                                                                        adminToastMessage = "Баланс установлен на $creds 🪙"
+                                                                        editCredits = ""
+                                                                    }
+                                                                },
+                                                                shape = RoundedCornerShape(14.dp)
+                                                            ) {
+                                                                val setCoinsBtnLabel = when (currentLang) {
+                                                                        Language.RU -> "ЗАДАТЬ"
+                                                                        Language.UA -> "ЗАДАТИ"
+                                                                        Language.KK -> "ОРНАТУ"
+                                                                        Language.DE -> "FESTLEGEN"
+                                                                        Language.ZH -> "设置"
+                                                                        else -> "SET"
+                                                                    }
+                                                                    Text(setCoinsBtnLabel, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // TIER & COSMETICS EDITOR
+                                                ElevatedCard(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    colors = CardDefaults.elevatedCardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                                    )
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(18.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "РАНГ И СТАТУС"
+                                                                Language.UA -> "РАНГ ТА СТАТУС"
+                                                                Language.KK -> "ДӘРЕЖЕ МЕН МӘРТЕБЕ"
+                                                                Language.DE -> "RANG & STATUS"
+                                                                Language.ZH -> "段位与状态配置"
+                                                                else -> "TIER & STATUS"
+                                                            },
+                                                            style = MaterialTheme.typography.titleSmall,
+                                                            fontWeight = FontWeight.ExtraBold,
+                                                            color = themeColor
+                                                        )
+
+                                                        val tiers = listOf("BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "MASTER", "GRANDMASTER", "LEGEND")
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .horizontalScroll(rememberScrollState()),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            tiers.forEach { tier ->
+                                                                FilterChip(
+                                                                    selected = editRank == tier,
+                                                                    onClick = {
+                                                                        editRank = tier
+                                                                        viewModel.adminUpdateAccountRank(editUsername.ifBlank { playerName }, tier)
+                                                                        viewModel.triggerAudioFeedback("click")
+                                                                        adminToastMessage = "Ранг изменен на $tier"
+                                                                    },
+                                                                    label = { Text(tier, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall) },
+                                                                    shape = RoundedCornerShape(10.dp)
+                                                                )
+                                                            }
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
                                                             OutlinedTextField(
                                                                 value = editBonusXp,
                                                                 onValueChange = { editBonusXp = it },
-                                                                label = { Text(if (currentLang == Language.RU) "Бонус XP" else "Bonus XP") },
+                                                                label = {
+                                                                    val bonusXpLabel = when (currentLang) {
+                                                                        Language.RU -> "Бонус XP"
+                                                                        Language.UA -> "Бонус XP"
+                                                                        Language.KK -> "Бонус XP"
+                                                                        Language.DE -> "Bonus-XP"
+                                                                        Language.ZH -> "经验加成 XP"
+                                                                        else -> "Bonus XP"
+                                                                    }
+                                                                    Text(bonusXpLabel)
+                                                                },
                                                                 singleLine = true,
                                                                 shape = RoundedCornerShape(14.dp),
                                                                 modifier = Modifier.weight(1f)
                                                             )
+
+                                                            Button(
+                                                                onClick = {
+                                                                    val xp = editBonusXp.toIntOrNull() ?: 0
+                                                                    viewModel.adminUpdateAccountBonusXp(editUsername.ifBlank { playerName }, xp)
+                                                                    viewModel.triggerAudioFeedback("success")
+                                                                    adminToastMessage = "Опыт обновлен: $xp XP"
+                                                                },
+                                                                shape = RoundedCornerShape(14.dp)
+                                                            ) {
+                                                                val setXpBtnLabel = when (currentLang) {
+                                                                        Language.RU -> "ЗАДАТЬ XP"
+                                                                        Language.UA -> "ЗАДАТИ XP"
+                                                                        Language.KK -> "XP ОРНАТУ"
+                                                                        Language.DE -> "XP FESTLEGEN"
+                                                                        Language.ZH -> "设置 XP"
+                                                                        else -> "SET XP"
+                                                                    }
+                                                                    Text(setXpBtnLabel, fontWeight = FontWeight.Bold)
+                                                            }
                                                         }
 
                                                         Row(
@@ -1123,35 +1652,26 @@ fun MainMenuScreen(
                                                             horizontalArrangement = Arrangement.SpaceBetween
                                                         ) {
                                                             Text(
-                                                                text = if (currentLang == Language.RU) "Градиент никнейма" else "Nickname Gradient",
+                                                                text = when (currentLang) {
+                                                                    Language.RU -> "Градиент никнейма"
+                                                                    Language.UA -> "Градієнт нікнейму"
+                                                                    Language.KK -> "Бүркеншік ат градиенті"
+                                                                    Language.DE -> "Farbverlauf-Name"
+                                                                    Language.ZH -> "昵称渐变特效"
+                                                                    else -> "Nickname Gradient"
+                                                                },
                                                                 style = MaterialTheme.typography.bodyMedium,
                                                                 fontWeight = FontWeight.SemiBold
                                                             )
                                                             Switch(
                                                                 checked = editHasGradient,
-                                                                onCheckedChange = { editHasGradient = it }
-                                                            )
-                                                        }
-
-                                                        Button(
-                                                            onClick = {
-                                                                if (editUsername.isNotBlank()) {
-                                                                    val creds = editCredits.toIntOrNull()
-                                                                    if (creds != null) {
-                                                                        viewModel.adminUpdateAccountCredits(editUsername.trim(), creds)
-                                                                    }
-                                                                    val xp = editBonusXp.toIntOrNull() ?: 0
-                                                                    viewModel.adminUpdateAccountBonusXp(editUsername.trim(), xp)
-                                                                    viewModel.adminUpdateAccountGradient(editUsername.trim(), editHasGradient)
-                                                                    viewModel.triggerAudioFeedback("success")
+                                                                onCheckedChange = {
+                                                                    editHasGradient = it
+                                                                    viewModel.adminUpdateAccountGradient(editUsername.ifBlank { playerName }, it)
+                                                                    viewModel.triggerAudioFeedback("click")
+                                                                    adminToastMessage = if (it) "Градиент включен" else "Градиент отключен"
                                                                 }
-                                                            },
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            shape = RoundedCornerShape(14.dp)
-                                                        ) {
-                                                            Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "ПРИМЕНИТЬ ДАННЫЕ" else "SAVE PROFILE STATE", fontWeight = FontWeight.Bold)
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -1169,7 +1689,14 @@ fun MainMenuScreen(
                                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "БЫСТРЫЕ ДЕЙСТВИЯ" else "QUICK ACTIONS",
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "РАЗБЛОКИРОВКА И ЧИТЫ"
+                                                                Language.UA -> "РОЗБЛОКУВАННЯ ТА ЧІТИ"
+                                                                Language.KK -> "ҚҰЛЫПТЫ АШУ ЖӘНЕ ЧИТТЕР"
+                                                                Language.DE -> "FREISCHALTUNGEN & CHEATS"
+                                                                Language.ZH -> "全量解锁与测试指令"
+                                                                else -> "UNLOCKS & CHEATS"
+                                                            },
                                                             style = MaterialTheme.typography.titleSmall,
                                                             fontWeight = FontWeight.ExtraBold,
                                                             color = themeColor
@@ -1179,33 +1706,51 @@ fun MainMenuScreen(
                                                             onClick = {
                                                                 viewModel.adminGiveAllCosmetics(editUsername.ifBlank { playerName })
                                                                 viewModel.triggerAudioFeedback("success")
+                                                                adminToastMessage = "Вся косметика разблокирована!"
                                                             },
                                                             modifier = Modifier.fillMaxWidth(),
                                                             shape = RoundedCornerShape(14.dp)
                                                         ) {
                                                             Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "ВЫДАТЬ ВСЮ КОСМЕТИКУ (Скины, Рамки, Шрифты)" else "GRANT ALL COSMETICS & SKINS", fontWeight = FontWeight.Bold)
+                                                            val grantCosmeticsLabel = when (currentLang) {
+                                                                    Language.RU -> "ВЫДАТЬ ВСЮ КОСМЕТИКУ (Скины, Рамки, Шрифты)"
+                                                                    Language.UA -> "ВИДАТИ ВСЮ КОСМЕТИКУ (Скіни, Рамки, Шрифти)"
+                                                                    Language.KK -> "БАРЛЫҚ КОСМЕТИКАНЫ БЕРУ (Скиндер, Жақтаулар, Қаріптер)"
+                                                                    Language.DE -> "ALLE KOSMETIK FREISCHALTEN (Skins, Rahmen, Schriftarten)"
+                                                                    Language.ZH -> "解锁全部装扮道具（皮肤、头像框、特效字体）"
+                                                                    else -> "GRANT ALL COSMETICS & SKINS"
+                                                                }
+                                                                Text(grantCosmeticsLabel, fontWeight = FontWeight.Bold)
                                                         }
 
                                                         FilledTonalButton(
                                                             onClick = {
                                                                 viewModel.adminUnlockAllAchievements()
                                                                 viewModel.triggerAudioFeedback("success")
+                                                                adminToastMessage = "Все достижения открыты + 5000 🪙"
                                                             },
                                                             modifier = Modifier.fillMaxWidth(),
                                                             shape = RoundedCornerShape(14.dp)
                                                         ) {
                                                             Icon(imageVector = Icons.Default.EmojiEvents, contentDescription = null, modifier = Modifier.size(18.dp))
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "ОТКРЫТЬ ВСЕ ДОСТИЖЕНИЯ + 5000 🪙" else "UNLOCK ALL ACHIEVEMENTS + 5000 🪙", fontWeight = FontWeight.Bold)
+                                                            val unlockAchLabel = when (currentLang) {
+                                                                    Language.RU -> "ОТКРЫТЬ ВСЕ ДОСТИЖЕНИЯ + 5000 🪙"
+                                                                    Language.UA -> "ВІДКРИТИ ВСІ ДОСЯГНЕННЯ + 5000 🪙"
+                                                                    Language.KK -> "БАРЛЫҚ ЖЕТІСТІКТЕРДІ АШУ + 5000 🪙"
+                                                                    Language.DE -> "ALLE ERFOLGE FREISCHALTEN + 5000 🪙"
+                                                                    Language.ZH -> "解锁所有成就并获取 +5000 🪙"
+                                                                    else -> "UNLOCK ALL ACHIEVEMENTS + 5000 🪙"
+                                                                }
+                                                                Text(unlockAchLabel, fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }
                                             }
                                         }
                                         1 -> {
-                                            // FIREBASE USERS & BANS
+                                            // TAB 1: FIREBASE USERS & DETAILED INSPECTION
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxSize()
@@ -1215,34 +1760,76 @@ fun MainMenuScreen(
                                                 OutlinedTextField(
                                                     value = userSearchQuery,
                                                     onValueChange = { userSearchQuery = it },
-                                                    label = { Text(if (currentLang == Language.RU) "Поиск игроков..." else "Search players...") },
+                                                    label = {
+                                                        val userSearchLabel = when (currentLang) {
+                                                            Language.RU -> "Поиск (по нику, UID, почте)..."
+                                                            Language.UA -> "Пошук (за ніком, UID, поштою)..."
+                                                            Language.KK -> "Іздеу (ник, UID, пошта бойынша)..."
+                                                            Language.DE -> "Suche (Name, UID, E-Mail)..."
+                                                            Language.ZH -> "搜索玩家（按昵称、UID 或邮箱）..."
+                                                            else -> "Search (name, UID, email)..."
+                                                        }
+                                                        Text(userSearchLabel)
+                                                    },
                                                     leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
                                                     singleLine = true,
                                                     shape = RoundedCornerShape(14.dp),
                                                     modifier = Modifier.fillMaxWidth()
                                                 )
 
-                                                val filteredUsers = remember(firebaseUsers, userSearchQuery) {
-                                                    if (userSearchQuery.isBlank()) firebaseUsers
-                                                    else firebaseUsers.filter {
-                                                        val pName = (it["player_name"] as? String) ?: ""
-                                                        val email = (it["email"] as? String) ?: ""
-                                                        pName.contains(userSearchQuery, ignoreCase = true) ||
-                                                        email.contains(userSearchQuery, ignoreCase = true)
+                                                // Filter Chips
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .horizontalScroll(rememberScrollState()),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    val filterLabels = listOf(
+                                                        "Все (${firebaseUsers.size})",
+                                                        "Онлайн (${firebaseUsers.count { (it["is_online"] as? Boolean) == true }})",
+                                                        "Вериф. (${firebaseUsers.count { (it["email_verified"] as? Boolean) == true }})",
+                                                        "Бан (${firebaseUsers.count { (it["is_banned"] as? Boolean) == true }})",
+                                                        "Богатые (${firebaseUsers.count { ((it["credits"] as? Number)?.toLong() ?: 0L) >= 50_000 }})"
+                                                    )
+                                                    filterLabels.forEachIndexed { index, label ->
+                                                        FilterChip(
+                                                            selected = selectedUserFilter == index,
+                                                            onClick = { selectedUserFilter = index },
+                                                            label = { Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) },
+                                                            shape = RoundedCornerShape(10.dp)
+                                                        )
                                                     }
                                                 }
 
-                                                Text(
-                                                    text = if (currentLang == Language.RU) "Всего игроков в базе: ${filteredUsers.size}" else "Total players in database: ${filteredUsers.size}",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
+                                                val filteredUsers = remember(firebaseUsers, userSearchQuery, selectedUserFilter) {
+                                                    var list = firebaseUsers
+                                                    if (userSearchQuery.isNotBlank()) {
+                                                        list = list.filter {
+                                                            val pName = (it["player_name"] as? String) ?: ""
+                                                            val email = (it["email"] as? String) ?: ""
+                                                            val uid = (it["uid"] as? String) ?: ""
+                                                            pName.contains(userSearchQuery, ignoreCase = true) ||
+                                                            email.contains(userSearchQuery, ignoreCase = true) ||
+                                                            uid.contains(userSearchQuery, ignoreCase = true)
+                                                        }
+                                                    }
+                                                    when (selectedUserFilter) {
+                                                        1 -> list.filter {
+                                                            val rawSynced = (it["last_synced_timestamp"] as? Number)?.toLong() ?: 0L
+                                                            (it["is_online"] as? Boolean) == true && (rawSynced == 0L || (System.currentTimeMillis() - rawSynced) < 120_000L)
+                                                        }
+                                                        2 -> list.filter { (it["email_verified"] as? Boolean) == true }
+                                                        3 -> list.filter { (it["is_banned"] as? Boolean) == true }
+                                                        4 -> list.filter { ((it["credits"] as? Number)?.toLong() ?: 0L) >= 50_000 }
+                                                        else -> list
+                                                    }
+                                                }
 
                                                 LazyColumn(
                                                     modifier = Modifier
                                                         .fillMaxSize()
                                                         .weight(1f),
-                                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(10.dp),
                                                     contentPadding = PaddingValues(bottom = 24.dp)
                                                 ) {
                                                     items(filteredUsers) { user ->
@@ -1251,13 +1838,27 @@ fun MainMenuScreen(
                                                         val uUid = (user["uid"] as? String) ?: ""
                                                         val uCredits = (user["credits"] as? Number)?.toLong() ?: 0L
                                                         val isBanned = (user["is_banned"] as? Boolean) == true
+                                                        val rawLastSynced = (user["last_synced_timestamp"] as? Number)?.toLong() ?: 0L
+                                                        val isRecentlyActive = (System.currentTimeMillis() - rawLastSynced) < 120_000L
+                                                        val isOnline = ((user["is_online"] as? Boolean) == true) && (rawLastSynced == 0L || isRecentlyActive)
                                                         val isEmailVerified = (user["email_verified"] as? Boolean) == true
+                                                        val uTier = (user["online_tier"] as? String) ?: "BRONZE"
+                                                        val uRating = (user["online_rating"] as? Number)?.toInt() ?: 1000
+                                                        val uHighScore = (user["stats_high_score"] as? Number)?.toInt() ?: 0
+                                                        val uLines = (user["stats_cleared_lines"] as? Number)?.toInt() ?: 0
+                                                        val uGames = (user["stats_games_played"] as? Number)?.toInt() ?: 0
+                                                        val uBonusXp = (user["bonus_xp"] as? Number)?.toInt() ?: 0
+                                                        val uCustomTag = (user["custom_tag"] as? String) ?: ""
+                                                        val uFrame = (user["equipped_avatar_frame"] as? String) ?: "standard"
+                                                        val uAvatarEmoji = (user["custom_avatar_emoji"] as? String) ?: (user["avatarEmoji"] as? String) ?: ""
+                                                        val uAvatarBgColor = (user["custom_avatar_bg_color"] as? String) ?: (user["avatarBgColor"] as? String) ?: ""
+                                                        val uAvatarBase64 = (user["custom_avatar_base64"] as? String) ?: ""
 
                                                         ElevatedCard(
                                                             modifier = Modifier.fillMaxWidth(),
-                                                            shape = RoundedCornerShape(18.dp),
+                                                            shape = RoundedCornerShape(20.dp),
                                                             colors = CardDefaults.elevatedCardColors(
-                                                                containerColor = if (isBanned) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                                                containerColor = if (isBanned) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
                                                                 else MaterialTheme.colorScheme.surfaceContainerHigh
                                                             )
                                                         ) {
@@ -1265,12 +1866,27 @@ fun MainMenuScreen(
                                                                 modifier = Modifier.padding(14.dp),
                                                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                                                             ) {
+                                                                // Header Row: Avatar + Name + Badges
                                                                 Row(
                                                                     modifier = Modifier.fillMaxWidth(),
                                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                                     verticalAlignment = Alignment.CenterVertically
                                                                 ) {
-                                                                    Column(modifier = Modifier.weight(1f)) {
+                                                                    Row(
+                                                                        verticalAlignment = Alignment.CenterVertically,
+                                                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                                    ) {
+                                                                        PlayerAvatarView(
+                                                                            playerName = uName,
+                                                                            avatarEmoji = uAvatarEmoji,
+                                                                            avatarBgColorHex = uAvatarBgColor,
+                                                                            avatarFrame = uFrame,
+                                                                            avatarBase64 = uAvatarBase64,
+                                                                            size = 40.dp,
+                                                                            showOnlineDot = true,
+                                                                            isOnline = isOnline
+                                                                        )
+
                                                                         Row(
                                                                             verticalAlignment = Alignment.CenterVertically,
                                                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1278,9 +1894,10 @@ fun MainMenuScreen(
                                                                             Text(
                                                                                 text = uName,
                                                                                 style = MaterialTheme.typography.titleMedium,
-                                                                                fontWeight = FontWeight.ExtraBold
+                                                                                fontWeight = FontWeight.Black
                                                                             )
-                                                                            if (uName == "FsFq") {
+
+                                                                            if (uName == "FsFq" || uUid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2") {
                                                                                 Surface(
                                                                                     shape = RoundedCornerShape(6.dp),
                                                                                     color = MaterialTheme.colorScheme.primaryContainer
@@ -1290,18 +1907,26 @@ fun MainMenuScreen(
                                                                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                                                                         fontWeight = FontWeight.Bold,
                                                                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                                                    )
+                                                                                }
+                                                                            }
+
+                                                                            if (uCustomTag.isNotBlank()) {
+                                                                                Surface(
+                                                                                    shape = RoundedCornerShape(6.dp),
+                                                                                    color = themeColor.copy(alpha = 0.2f)
+                                                                                ) {
+                                                                                    Text(
+                                                                                        text = "[$uCustomTag]",
+                                                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                                                        fontWeight = FontWeight.Bold,
+                                                                                        color = themeColor,
                                                                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                                                                     )
                                                                                 }
                                                                             }
                                                                         }
-                                                                        Text(
-                                                                            text = if (isEmailVerified) (if (currentLang == Language.RU) "Почта: Подтверждена ✅" else "Email: Verified ✅")
-                                                                                   else (if (currentLang == Language.RU) "Почта: Не подтверждена ⏳" else "Email: Pending ⏳"),
-                                                                            style = MaterialTheme.typography.bodySmall,
-                                                                            color = if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100),
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
                                                                     }
 
                                                                     Surface(
@@ -1317,71 +1942,185 @@ fun MainMenuScreen(
                                                                     }
                                                                 }
 
+                                                                // UID + Email Row (with copy UID button)
                                                                 Row(
                                                                     modifier = Modifier.fillMaxWidth(),
                                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                                     verticalAlignment = Alignment.CenterVertically
                                                                 ) {
-                                                                    Text(
-                                                                        text = "🪙 $uCredits",
-                                                                        style = MaterialTheme.typography.bodyMedium,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        color = Color(0xFFFFB300)
-                                                                    )
+                                                                    Row(
+                                                                        verticalAlignment = Alignment.CenterVertically,
+                                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                                    ) {
+                                                                        Text(
+                                                                            text = "UID: ${uUid.take(12)}...",
+                                                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                                        IconButton(
+                                                                            onClick = {
+                                                                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(uUid))
+                                                                                viewModel.triggerAudioFeedback("click")
+                                                                                adminToastMessage = "UID скопирован: $uUid"
+                                                                            },
+                                                                            modifier = Modifier.size(18.dp)
+                                                                        ) {
+                                                                            Icon(
+                                                                                imageVector = Icons.Default.ContentCopy,
+                                                                                contentDescription = "Copy UID",
+                                                                                modifier = Modifier.size(12.dp),
+                                                                                tint = themeColor
+                                                                            )
+                                                                        }
+                                                                    }
 
-                                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                                    Text(
+                                                                        text = uEmail,
+                                                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                    )
+                                                                }
+
+                                                                // Stats Grid: Credits, ELO/Tier, Score, Lines, Games
+                                                                Surface(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    shape = RoundedCornerShape(12.dp),
+                                                                    color = MaterialTheme.colorScheme.surfaceContainer
+                                                                ) {
+                                                                    Row(
+                                                                        modifier = Modifier
+                                                                            .fillMaxWidth()
+                                                                            .padding(8.dp),
+                                                                        horizontalArrangement = Arrangement.SpaceAround,
+                                                                        verticalAlignment = Alignment.CenterVertically
+                                                                    ) {
+                                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                            Text("🪙 $uCredits", fontWeight = FontWeight.Black, style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFB300))
+                                                                            Text("Монеты", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                        }
+                                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                            Text("$uTier ($uRating)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium, color = themeColor)
+                                                                            Text("Лига / ELO", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                        }
+                                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                            Text("$uHighScore", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                                                            Text("Рекорд", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                        }
+                                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                            Text("$uLines", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                                                            Text("Линии", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                        }
+                                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                            Text("$uGames", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                                                            Text("Игры", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                        }
+                                                                    }
+                                                                }
+
+                                                                // Action Buttons Row
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    // + Coins Quick Action Button
+                                                                    FilledTonalButton(
+                                                                        onClick = {
+                                                                            grantingCoinsUser = user
+                                                                            grantCoinsCustomAmount = ""
+                                                                            viewModel.triggerAudioFeedback("click")
+                                                                        },
+                                                                        shape = RoundedCornerShape(10.dp),
+                                                                        modifier = Modifier.weight(1f),
+                                                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                                                    ) {
+                                                                        Icon(imageVector = Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFFFFB300))
+                                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                                        Text("+ Монеты", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                                                    }
+
+                                                                    // Full Edit Button
+                                                                    OutlinedButton(
+                                                                        onClick = {
+                                                                            editingAdminUser = user
+                                                                            editUserCredits = uCredits.toString()
+                                                                            editUserHighScore = uHighScore.toString()
+                                                                            editUserLines = uLines.toString()
+                                                                            editUserGames = uGames.toString()
+                                                                            editUserXp = uBonusXp.toString()
+                                                                            editUserTier = uTier
+                                                                            editUserGradient = (user["has_nickname_gradient"] as? Boolean) == true
+                                                                            editUserTagUnlocked = (user["custom_tag_unlocked"] as? Boolean) == true
+                                                                            editUserTag = uCustomTag
+                                                                            viewModel.triggerAudioFeedback("click")
+                                                                        },
+                                                                        shape = RoundedCornerShape(10.dp),
+                                                                        modifier = Modifier.weight(1f),
+                                                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                                                    ) {
+                                                                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                                        val editBtnLabel = when (currentLang) {
+                                                                            Language.RU -> "Правка"
+                                                                            Language.UA -> "Редагувати"
+                                                                            Language.KK -> "Өңдеу"
+                                                                            Language.DE -> "Bearbeiten"
+                                                                            Language.ZH -> "编辑"
+                                                                            else -> "Edit"
+                                                                        }
+                                                                        Text(editBtnLabel, style = MaterialTheme.typography.labelSmall)
+                                                                    }
+
+                                                                    if (uName != "FsFq" && uUid != "ge9Lzx5EkCfbINDZEG6I8vYcJCd2") {
                                                                         OutlinedButton(
                                                                             onClick = {
-                                                                                editingAdminUser = user
-                                                                                editUserCredits = ((user["credits"] as? Number)?.toInt() ?: 0).toString()
-                                                                                editUserHighScore = ((user["stats_high_score"] as? Number)?.toInt() ?: 0).toString()
-                                                                                editUserLines = ((user["stats_cleared_lines"] as? Number)?.toInt() ?: 0).toString()
-                                                                                editUserGames = ((user["stats_games_played"] as? Number)?.toInt() ?: 0).toString()
-                                                                                editUserXp = ((user["bonus_xp"] as? Number)?.toInt() ?: 0).toString()
-                                                                                editUserTier = (user["online_tier"] as? String) ?: "BRONZE"
-                                                                                editUserGradient = (user["has_nickname_gradient"] as? Boolean) == true
-                                                                                editUserTagUnlocked = (user["custom_tag_unlocked"] as? Boolean) == true
-                                                                                editUserTag = (user["custom_tag"] as? String) ?: ""
+                                                                                viewModel.adminBanUser(uUid, !isBanned)
                                                                                 viewModel.triggerAudioFeedback("click")
+                                                                                adminToastMessage = if (!isBanned) "Игрок $uName забанен" else "Игрок $uName разбанен"
                                                                             },
-                                                                            shape = RoundedCornerShape(10.dp)
+                                                                            shape = RoundedCornerShape(10.dp),
+                                                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                                                                         ) {
-                                                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(14.dp))
-                                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                                            val banBtnLabel = if (isBanned) {
+                                                                                when (currentLang) {
+                                                                                    Language.RU -> "Разбан"
+                                                                                    Language.UA -> "Розбан"
+                                                                                    Language.KK -> "Бұғаттан шығару"
+                                                                                    Language.DE -> "Entbannen"
+                                                                                    Language.ZH -> "解封"
+                                                                                    else -> "Unban"
+                                                                                }
+                                                                            } else {
+                                                                                when (currentLang) {
+                                                                                    Language.RU -> "Бан"
+                                                                                    Language.UA -> "Бан"
+                                                                                    Language.KK -> "Бұғаттау"
+                                                                                    Language.DE -> "Bannen"
+                                                                                    Language.ZH -> "封禁"
+                                                                                    else -> "Ban"
+                                                                                }
+                                                                            }
                                                                             Text(
-                                                                                text = if (currentLang == Language.RU) "Изменить" else "Edit",
-                                                                                style = MaterialTheme.typography.labelSmall
+                                                                                text = banBtnLabel,
+                                                                                style = MaterialTheme.typography.labelSmall,
+                                                                                color = if (isBanned) Color(0xFF00E676) else MaterialTheme.colorScheme.error
                                                                             )
                                                                         }
 
-                                                                        if (uName != "FsFq") {
-                                                                            OutlinedButton(
-                                                                                onClick = {
-                                                                                    viewModel.adminBanUser(uUid, !isBanned)
-                                                                                    viewModel.triggerAudioFeedback("click")
-                                                                                },
-                                                                                shape = RoundedCornerShape(10.dp)
-                                                                            ) {
-                                                                                Text(
-                                                                                    text = if (isBanned) (if (currentLang == Language.RU) "Разбан" else "Unban")
-                                                                                    else (if (currentLang == Language.RU) "Бан" else "Ban"),
-                                                                                    style = MaterialTheme.typography.labelSmall
-                                                                                )
-                                                                            }
-
-                                                                            IconButton(
-                                                                                onClick = {
-                                                                                    viewModel.adminDeleteFirebaseUserDirect(uUid)
-                                                                                    viewModel.triggerAudioFeedback("gameover")
-                                                                                }
-                                                                            ) {
-                                                                                Icon(
-                                                                                    imageVector = Icons.Default.Delete,
-                                                                                    contentDescription = "Delete",
-                                                                                    tint = MaterialTheme.colorScheme.error,
-                                                                                    modifier = Modifier.size(20.dp)
-                                                                                )
-                                                                            }
+                                                                        IconButton(
+                                                                            onClick = {
+                                                                                viewModel.adminDeleteFirebaseUserDirect(uUid)
+                                                                                viewModel.triggerAudioFeedback("gameover")
+                                                                                adminToastMessage = "Аккаунт $uName удален из базы"
+                                                                            },
+                                                                            modifier = Modifier.size(32.dp)
+                                                                        ) {
+                                                                            Icon(
+                                                                                imageVector = Icons.Default.Delete,
+                                                                                contentDescription = "Delete",
+                                                                                tint = MaterialTheme.colorScheme.error,
+                                                                                modifier = Modifier.size(18.dp)
+                                                                            )
                                                                         }
                                                                     }
                                                                 }
@@ -1392,7 +2131,7 @@ fun MainMenuScreen(
                                             }
                                         }
                                         2 -> {
-                                            // GLOBAL BROADCAST ANNOUNCEMENTS
+                                            // TAB 2: GLOBAL BROADCAST ANNOUNCEMENTS
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxSize()
@@ -1412,24 +2151,97 @@ fun MainMenuScreen(
                                                         verticalArrangement = Arrangement.spacedBy(12.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "ОТПРАВКА СИСТЕМНОГО ОПОВЕЩЕНИЯ" else "GLOBAL SERVER BROADCAST",
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "ОТПРАВКА СИСТЕМНОГО ОПОВЕЩЕНИЯ 📢"
+                                                                Language.UA -> "ВІДПРАВКА СИСТЕМНОГО ОПОВІЩЕННЯ 📢"
+                                                                Language.KK -> "ЖҮЙЕЛІК ХАБАРЛАНДЫРУ ЖІБЕРУ 📢"
+                                                                Language.DE -> "SYSTEMWEITE BENACHRICHTIGUNG 📢"
+                                                                Language.ZH -> "发布全服系统公告 📢"
+                                                                else -> "GLOBAL SERVER BROADCAST 📢"
+                                                            },
                                                             style = MaterialTheme.typography.titleSmall,
                                                             fontWeight = FontWeight.ExtraBold,
                                                             color = themeColor
                                                         )
 
                                                         Text(
-                                                            text = if (currentLang == Language.RU)
-                                                                "Сообщение отобразится у всех онлайн-игроков в чате лобби и будет сохранено в базе данных."
-                                                                else "Message will be broadcast to all connected players in the multiplayer lobby chat and saved to global database.",
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "Сообщение отобразится у всех онлайн-игроков в чате лобби и будет сохранено в базе данных."
+                                                                Language.UA -> "Повідомлення відобразиться у всіх онлайн-гравців у чаті лобі та буде збережено в базі даних."
+                                                                Language.KK -> "Хабарлама лобби чатындағы барлық онлайн ойыншыларға көрсетіледі және дерекқорда сақталады."
+                                                                Language.DE -> "Die Nachricht wird allen Online-Spielern im Lobby-Chat angezeigt und in der Datenbank gespeichert."
+                                                                Language.ZH -> "公告将即时广播给所有在全服大厅聊天的在线玩家，并存入数据库记录。"
+                                                                else -> "Message will be broadcast to all connected players in the multiplayer lobby chat and saved to global database."
+                                                            },
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
 
+                                                        // Quick template buttons
+                                                        Text(
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "Быстрые шаблоны:"
+                                                                Language.UA -> "Швидкі шаблони:"
+                                                                Language.KK -> "Жылдам үлгілер:"
+                                                                Language.DE -> "Schnellvorlagen:"
+                                                                Language.ZH -> "快捷模板："
+                                                                else -> "Quick templates:"
+                                                            },
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .horizontalScroll(rememberScrollState()),
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            SuggestionChip(
+                                                                onClick = {
+                                                                    broadcastTitle = "🛠️ Технические работы"
+                                                                    broadcastText = "Серверные работы завершены. Все сетевые режимы работают штатно!"
+                                                                },
+                                                                label = { Text("Техработы", style = MaterialTheme.typography.labelSmall) }
+                                                            )
+                                                            SuggestionChip(
+                                                                onClick = {
+                                                                    broadcastTitle = "🎁 Бонусные награды"
+                                                                    broadcastText = "Администрация начислила бонусные монеты всем активным игрокам! Проверьте свой баланс."
+                                                                },
+                                                                label = { Text("Награды", style = MaterialTheme.typography.labelSmall) }
+                                                            )
+                                                            SuggestionChip(
+                                                                onClick = {
+                                                                    broadcastTitle = "🚀 Обновление 0.94.8"
+                                                                    broadcastText = "Вышло обновление клиента: улучшена стабильность мультиплеера и синхронизация монет!"
+                                                                },
+                                                                label = { Text("Обновление", style = MaterialTheme.typography.labelSmall) }
+                                                            )
+                                                            SuggestionChip(
+                                                                onClick = {
+                                                                    broadcastTitle = "🏆 Турнир начался"
+                                                                    broadcastText = "Запущен турнирный сезон! Играйте в сетевых дуэлях и занимайте топ в лидерборде."
+                                                                },
+                                                                label = { Text("Турнир", style = MaterialTheme.typography.labelSmall) }
+                                                            )
+                                                        }
+
                                                         OutlinedTextField(
                                                             value = broadcastTitle,
                                                             onValueChange = { broadcastTitle = it },
-                                                            label = { Text(if (currentLang == Language.RU) "Заголовок оповещения" else "Broadcast Title") },
+                                                            label = {
+                                                                val broadcastTitleLabel = when (currentLang) {
+                                                                    Language.RU -> "Заголовок оповещения"
+                                                                    Language.UA -> "Заголовок оповіщення"
+                                                                    Language.KK -> "Хабарландыру тақырыбы"
+                                                                    Language.DE -> "Titel der Nachricht"
+                                                                    Language.ZH -> "公告标题"
+                                                                    else -> "Broadcast Title"
+                                                                }
+                                                                Text(broadcastTitleLabel)
+                                                            },
                                                             singleLine = true,
                                                             shape = RoundedCornerShape(14.dp),
                                                             modifier = Modifier.fillMaxWidth()
@@ -1438,7 +2250,17 @@ fun MainMenuScreen(
                                                         OutlinedTextField(
                                                             value = broadcastText,
                                                             onValueChange = { broadcastText = it },
-                                                            label = { Text(if (currentLang == Language.RU) "Текст сообщения" else "Message Content") },
+                                                            label = {
+                                                                val broadcastContentLabel = when (currentLang) {
+                                                                    Language.RU -> "Текст сообщения"
+                                                                    Language.UA -> "Текст повідомлення"
+                                                                    Language.KK -> "Хабарлама мәтіні"
+                                                                    Language.DE -> "Nachrichteninhalt"
+                                                                    Language.ZH -> "公告正文"
+                                                                    else -> "Message Content"
+                                                                }
+                                                                Text(broadcastContentLabel)
+                                                            },
                                                             minLines = 3,
                                                             shape = RoundedCornerShape(14.dp),
                                                             modifier = Modifier.fillMaxWidth()
@@ -1449,7 +2271,14 @@ fun MainMenuScreen(
                                                                 if (broadcastText.isNotBlank()) {
                                                                     viewModel.adminSendGlobalBroadcast(broadcastTitle, broadcastText)
                                                                     viewModel.triggerAudioFeedback("success")
-                                                                    broadcastSentFeedback = if (currentLang == Language.RU) "Оповещение успешно отправлено!" else "Broadcast dispatched successfully!"
+                                                                    broadcastSentFeedback = when (currentLang) {
+                                                                        Language.RU -> "Оповещение успешно отправлено всем игрокам!"
+                                                                        Language.UA -> "Оповіщення успішно надіслано всім гравцям!"
+                                                                        Language.KK -> "Хабарландыру барлық ойыншыларға сәтті жіберілді!"
+                                                                        Language.DE -> "Benachrichtigung erfolgreich an alle Spieler gesendet!"
+                                                                        Language.ZH -> "全服系统公告已成功下发！"
+                                                                        else -> "Broadcast dispatched successfully!"
+                                                                    }
                                                                     broadcastTitle = ""
                                                                     broadcastText = ""
                                                                 }
@@ -1459,7 +2288,15 @@ fun MainMenuScreen(
                                                         ) {
                                                             Icon(imageVector = Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "ОТПРАВИТЬ ВСЕМ" else "BROADCAST TO ALL", fontWeight = FontWeight.Bold)
+                                                            val sendAllBtnLabel = when (currentLang) {
+                                                                    Language.RU -> "ОТПРАВИТЬ ВСЕМ"
+                                                                    Language.UA -> "НАДІСЛАТИ ВСІМ"
+                                                                    Language.KK -> "БАРЛЫҒЫНА ЖІБЕРУ"
+                                                                    Language.DE -> "AN ALLE SENDEN"
+                                                                    Language.ZH -> "全员下发"
+                                                                    else -> "BROADCAST TO ALL"
+                                                                }
+                                                                Text(sendAllBtnLabel, fontWeight = FontWeight.Bold)
                                                         }
 
                                                         broadcastSentFeedback?.let { msg ->
@@ -1475,7 +2312,7 @@ fun MainMenuScreen(
                                             }
                                         }
                                         3 -> {
-                                            // DATABASE & SYSTEM TOOLS
+                                            // TAB 3: DATABASE & SYSTEM TOOLS
                                             Column(
                                                 modifier = Modifier
                                                     .fillMaxSize()
@@ -1495,7 +2332,14 @@ fun MainMenuScreen(
                                                         verticalArrangement = Arrangement.spacedBy(12.dp)
                                                     ) {
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "УПРАВЛЕНИЕ БАЗОЙ ДАННЫХ" else "DATABASE MANAGEMENT",
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "ГЛОБАЛЬНАЯ ЭКОНОМИКА И НАГРАДЫ"
+                                                                Language.UA -> "ГЛОБАЛЬНА ЕКОНОМІКА ТА НАГОРОДИ"
+                                                                Language.KK -> "ЖАҺАНДЫҚ ЭКОНОМИКА ЖӘНЕ СЫЙЛЫҚТАР"
+                                                                Language.DE -> "GLOBALE WIRTSCHAFT & BELOHNUNGEN"
+                                                                Language.ZH -> "全服经济与奖励分配"
+                                                                else -> "GLOBAL ECONOMY & REWARDS"
+                                                            },
                                                             style = MaterialTheme.typography.titleSmall,
                                                             fontWeight = FontWeight.ExtraBold,
                                                             color = themeColor
@@ -1503,8 +2347,59 @@ fun MainMenuScreen(
 
                                                         Button(
                                                             onClick = {
+                                                                viewModel.adminGiveCreditsToAll(10_000)
+                                                                viewModel.triggerAudioFeedback("success")
+                                                                adminToastMessage = "Всем игрокам начислено по +10,000 🪙"
+                                                            },
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            shape = RoundedCornerShape(14.dp),
+                                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB300))
+                                                        ) {
+                                                            Icon(imageVector = Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Black)
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            val grantAll10kLabel = when (currentLang) {
+                                                                    Language.RU -> "ВЫДАТЬ ВСЕМ ИГРОКАМ ПО +10,000 🪙"
+                                                                    Language.UA -> "ВИДАТИ ВСІМ ГРАВЦЯМ ПО +10,000 🪙"
+                                                                    Language.KK -> "БАРЛЫҚ ОЙЫНШЫЛАРҒА +10,000 🪙 БЕРУ"
+                                                                    Language.DE -> "ALLEN SPIELERN +10.000 🪙 GEBEN"
+                                                                    Language.ZH -> "向全服所有玩家发放 +10,000 🪙"
+                                                                    else -> "GRANT +10,000 🪙 TO ALL USERS"
+                                                                }
+                                                                Text(grantAll10kLabel, color = Color.Black, fontWeight = FontWeight.Black)
+                                                        }
+                                                    }
+                                                }
+
+                                                ElevatedCard(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    colors = CardDefaults.elevatedCardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                                    )
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(18.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = when (currentLang) {
+                                                                Language.RU -> "УПРАВЛЕНИЕ БАЗОЙ ДАННЫХ"
+                                                                Language.UA -> "УПРАВЛІННЯ БАЗОЮ ДАНИХ"
+                                                                Language.KK -> "ДЕРЕКҚОРДЫ БАСҚАРУ"
+                                                                Language.DE -> "DATENBANK-VERWALTUNG"
+                                                                Language.ZH -> "数据库核心管理"
+                                                                else -> "DATABASE MANAGEMENT"
+                                                            },
+                                                            style = MaterialTheme.typography.titleSmall,
+                                                            fontWeight = FontWeight.ExtraBold,
+                                                            color = MaterialTheme.colorScheme.error
+                                                        )
+
+                                                        Button(
+                                                            onClick = {
                                                                 viewModel.adminClearAllScores()
                                                                 viewModel.triggerAudioFeedback("gameover")
+                                                                adminToastMessage = "Все рекорды в БД сброшены"
                                                             },
                                                             modifier = Modifier.fillMaxWidth(),
                                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -1512,13 +2407,22 @@ fun MainMenuScreen(
                                                         ) {
                                                             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "СБРОСИТЬ ВСЕ РЕКОРДЫ В БД" else "RESET ALL DATABASE SCORES", fontWeight = FontWeight.Bold)
+                                                            val resetScoresLabel = when (currentLang) {
+                                                                    Language.RU -> "СБРОСИТЬ ВСЕ РЕКОРДЫ В БД"
+                                                                    Language.UA -> "СКИНУТИ ВСІ РЕКОРДИ В БД"
+                                                                    Language.KK -> "ДЕРЕКҚОРДАҒЫ БАРЛЫҚ РЕКОРДТАРДЫ ҚАЛПЫНА КЕЛТІРУ"
+                                                                    Language.DE -> "ALLE HIGHSCORES IN DB ZURÜCKSETZEN"
+                                                                    Language.ZH -> "重置数据库所有历史最高得分"
+                                                                    else -> "RESET ALL DATABASE SCORES"
+                                                                }
+                                                                Text(resetScoresLabel, fontWeight = FontWeight.Bold)
                                                         }
 
                                                         Button(
                                                             onClick = {
                                                                 viewModel.adminClearAllNonAdminAccounts()
                                                                 viewModel.triggerAudioFeedback("gameover")
+                                                                adminToastMessage = "Все сторонние аккаунты удалены"
                                                             },
                                                             modifier = Modifier.fillMaxWidth(),
                                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -1526,7 +2430,15 @@ fun MainMenuScreen(
                                                         ) {
                                                             Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                                                             Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(if (currentLang == Language.RU) "УДАЛИТЬ ВСЕ АККАУНТЫ КРОМЕ АДМИНА" else "DELETE ALL NON-ADMIN USERS", fontWeight = FontWeight.Bold)
+                                                            val deleteUsersLabel = when (currentLang) {
+                                                                    Language.RU -> "УДАЛИТЬ ВСЕ АККАУНТЫ КРОМЕ АДМИНА"
+                                                                    Language.UA -> "ВИДАЛИТИ ВСІ АКАУНТИ КРІМ АДМІНА"
+                                                                    Language.KK -> "ӘКІМШІДЕН БАСҚА БАРЛЫҚ АККАУНТТАРДЫ ЖОЮ"
+                                                                    Language.DE -> "ALLE BENUTZER AUSSER ADMIN LÖSCHEN"
+                                                                    Language.ZH -> "清空所有非管理员注册账号"
+                                                                    else -> "DELETE ALL NON-ADMIN USERS"
+                                                                }
+                                                                Text(deleteUsersLabel, fontWeight = FontWeight.Bold)
                                                         }
                                                     }
                                                 }
@@ -1535,6 +2447,142 @@ fun MainMenuScreen(
                                     }
                                 }
 
+                                // Quick Coins Grant Modal for specific user
+                                if (grantingCoinsUser != null) {
+                                    val target = grantingCoinsUser!!
+                                    val tUid = (target["uid"] as? String) ?: ""
+                                    val tName = (target["player_name"] as? String) ?: "Player"
+                                    val tCurrentCoins = (target["credits"] as? Number)?.toLong() ?: 0L
+
+                                    AlertDialog(
+                                        onDismissRequest = { grantingCoinsUser = null },
+                                        title = {
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Выдача монет: $tName 🪙"
+                                                    Language.UA -> "Видача монет: $tName 🪙"
+                                                    Language.KK -> "Монета беру: $tName 🪙"
+                                                    Language.DE -> "Münzen vergeben: $tName 🪙"
+                                                    Language.ZH -> "发放代币：$tName 🪙"
+                                                    else -> "Grant Coins: $tName 🪙"
+                                                },
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        },
+                                        text = {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                Text(
+                                                    text = when (currentLang) {
+                                                        Language.RU -> "Текущий баланс: $tCurrentCoins 🪙"
+                                                        Language.UA -> "Поточний баланс: $tCurrentCoins 🪙"
+                                                        Language.KK -> "Ағымдағы баланс: $tCurrentCoins 🪙"
+                                                        Language.DE -> "Aktueller Stand: $tCurrentCoins 🪙"
+                                                        Language.ZH -> "当前持有余额：$tCurrentCoins 🪙"
+                                                        else -> "Current Balance: $tCurrentCoins 🪙"
+                                                    },
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFFFB300)
+                                                )
+
+                                                Text(
+                                                    text = when (currentLang) {
+                                                        Language.RU -> "Быстрое добавление:"
+                                                        Language.UA -> "Швидке додавання:"
+                                                        Language.KK -> "Жылдам қосу:"
+                                                        Language.DE -> "Schnellauswahl:"
+                                                        Language.ZH -> "快捷增发："
+                                                        else -> "Quick Add Presets:"
+                                                    },
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    listOf(5_000, 25_000, 100_000).forEach { amount ->
+                                                        FilledTonalButton(
+                                                            onClick = {
+                                                                viewModel.adminGiveCredits(uid = tUid, username = tName, amount = amount, isDelta = true)
+                                                                viewModel.triggerAudioFeedback("success")
+                                                                adminToastMessage = "+$amount 🪙 начислено пользователю $tName"
+                                                                grantingCoinsUser = null
+                                                            },
+                                                            modifier = Modifier.weight(1f),
+                                                            shape = RoundedCornerShape(10.dp)
+                                                        ) {
+                                                            Text("+${amount / 1000}k", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                                                        }
+                                                    }
+                                                }
+
+                                                OutlinedTextField(
+                                                    value = grantCoinsCustomAmount,
+                                                    onValueChange = { grantCoinsCustomAmount = it },
+                                                    label = {
+                                                        val customAmountLabel = when (currentLang) {
+                                                            Language.RU -> "Своя сумма (+)"
+                                                            Language.UA -> "Своя сума (+)"
+                                                            Language.KK -> "Өз сомасы (+)"
+                                                            Language.DE -> "Eigener Betrag (+)"
+                                                            Language.ZH -> "自定义充值数额 (+)"
+                                                            else -> "Custom amount (+)"
+                                                        }
+                                                        Text(customAmountLabel)
+                                                    },
+                                                    singleLine = true,
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+                                            }
+                                        },
+                                        confirmButton = {
+                                            Button(
+                                                onClick = {
+                                                    val delta = grantCoinsCustomAmount.toIntOrNull()
+                                                    if (delta != null && delta > 0) {
+                                                        viewModel.adminGiveCredits(uid = tUid, username = tName, amount = delta, isDelta = true)
+                                                        viewModel.triggerAudioFeedback("success")
+                                                        adminToastMessage = "+$delta 🪙 начислено пользователю $tName"
+                                                        grantingCoinsUser = null
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                val grantBtnLabel = when (currentLang) {
+                                                    Language.RU -> "НАЧИСЛИТЬ"
+                                                    Language.UA -> "НАРАХУВАТИ"
+                                                    Language.KK -> "ЕСЕПТЕУ"
+                                                    Language.DE -> "VERGEBEN"
+                                                    Language.ZH -> "确认充值"
+                                                    else -> "GRANT"
+                                                }
+                                                Text(grantBtnLabel, fontWeight = FontWeight.Bold)
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(onClick = { grantingCoinsUser = null }) {
+                                                val cancelBtnLabel = when (currentLang) {
+                                                    Language.RU -> "Отмена"
+                                                    Language.UA -> "Скасувати"
+                                                    Language.KK -> "Бас тарту"
+                                                    Language.DE -> "Abbrechen"
+                                                    Language.ZH -> "取消"
+                                                    else -> "Cancel"
+                                                }
+                                                Text(cancelBtnLabel)
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // Full Edit User Modal
                                 if (editingAdminUser != null) {
                                     val target = editingAdminUser!!
                                     val tUid = (target["uid"] as? String) ?: ""
@@ -1544,7 +2592,14 @@ fun MainMenuScreen(
                                         onDismissRequest = { editingAdminUser = null },
                                         title = {
                                             Text(
-                                                text = if (currentLang == Language.RU) "Редактирование: $tName" else "Edit Stats: $tName",
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Редактирование: $tName"
+                                                    Language.UA -> "Редагування: $tName"
+                                                    Language.KK -> "Өңдеу: $tName"
+                                                    Language.DE -> "Bearbeiten: $tName"
+                                                    Language.ZH -> "编辑玩家数据：$tName"
+                                                    else -> "Edit Stats: $tName"
+                                                },
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.ExtraBold
                                             )
@@ -1559,7 +2614,17 @@ fun MainMenuScreen(
                                                 OutlinedTextField(
                                                     value = editUserCredits,
                                                     onValueChange = { editUserCredits = it },
-                                                    label = { Text(if (currentLang == Language.RU) "Монеты 🪙" else "Credits 🪙") },
+                                                    label = {
+                                                    val creditsLabel = when (currentLang) {
+                                                        Language.RU -> "Монеты 🪙"
+                                                        Language.UA -> "Монети 🪙"
+                                                        Language.KK -> "Монеталар 🪙"
+                                                        Language.DE -> "Münzen 🪙"
+                                                        Language.ZH -> "代币 🪙"
+                                                        else -> "Credits 🪙"
+                                                    }
+                                                    Text(creditsLabel)
+                                                },
                                                     singleLine = true,
                                                     shape = RoundedCornerShape(12.dp),
                                                     modifier = Modifier.fillMaxWidth()
@@ -1568,7 +2633,17 @@ fun MainMenuScreen(
                                                     OutlinedTextField(
                                                         value = editUserHighScore,
                                                         onValueChange = { editUserHighScore = it },
-                                                        label = { Text(if (currentLang == Language.RU) "Рекорд 🏆" else "High Score 🏆") },
+                                                        label = {
+                                                        val highScoreLabel = when (currentLang) {
+                                                            Language.RU -> "Рекорд"
+                                                            Language.UA -> "Рекорд"
+                                                            Language.KK -> "Рекорд"
+                                                            Language.DE -> "Highscore"
+                                                            Language.ZH -> "最高分"
+                                                            else -> "High Score"
+                                                        }
+                                                        Text(highScoreLabel)
+                                                    },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier.weight(1f)
@@ -1576,7 +2651,17 @@ fun MainMenuScreen(
                                                     OutlinedTextField(
                                                         value = editUserLines,
                                                         onValueChange = { editUserLines = it },
-                                                        label = { Text(if (currentLang == Language.RU) "Линии 🧱" else "Lines 🧱") },
+                                                        label = {
+                                                        val linesLabel = when (currentLang) {
+                                                            Language.RU -> "Линии"
+                                                            Language.UA -> "Лінії"
+                                                            Language.KK -> "Жолдар"
+                                                            Language.DE -> "Linien"
+                                                            Language.ZH -> "消除行数"
+                                                            else -> "Lines"
+                                                        }
+                                                        Text(linesLabel)
+                                                    },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier.weight(1f)
@@ -1586,7 +2671,17 @@ fun MainMenuScreen(
                                                     OutlinedTextField(
                                                         value = editUserGames,
                                                         onValueChange = { editUserGames = it },
-                                                        label = { Text(if (currentLang == Language.RU) "Игры 🎮" else "Games 🎮") },
+                                                        label = {
+                                                        val gamesLabel = when (currentLang) {
+                                                            Language.RU -> "Игры"
+                                                            Language.UA -> "Ігри"
+                                                            Language.KK -> "Ойындар"
+                                                            Language.DE -> "Spiele"
+                                                            Language.ZH -> "对局总数"
+                                                            else -> "Games"
+                                                        }
+                                                        Text(gamesLabel)
+                                                    },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier.weight(1f)
@@ -1594,7 +2689,17 @@ fun MainMenuScreen(
                                                     OutlinedTextField(
                                                         value = editUserXp,
                                                         onValueChange = { editUserXp = it },
-                                                        label = { Text(if (currentLang == Language.RU) "Опыт ⭐" else "Bonus XP ⭐") },
+                                                        label = {
+                                                        val xpLabel = when (currentLang) {
+                                                            Language.RU -> "Опыт"
+                                                            Language.UA -> "Досвід"
+                                                            Language.KK -> "Тәжірибе"
+                                                            Language.DE -> "Bonus-XP"
+                                                            Language.ZH -> "经验值"
+                                                            else -> "Bonus XP"
+                                                        }
+                                                        Text(xpLabel)
+                                                    },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier.weight(1f)
@@ -1603,7 +2708,17 @@ fun MainMenuScreen(
                                                 OutlinedTextField(
                                                     value = editUserTier,
                                                     onValueChange = { editUserTier = it },
-                                                    label = { Text(if (currentLang == Language.RU) "Ранг (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)" else "Tier") },
+                                                    label = {
+                                                    val tierLabel = when (currentLang) {
+                                                        Language.RU -> "Ранг (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)"
+                                                        Language.UA -> "Ранг (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)"
+                                                        Language.KK -> "Дәреже (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)"
+                                                        Language.DE -> "Rang (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)"
+                                                        Language.ZH -> "段位 (BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, MASTER, GRANDMASTER)"
+                                                        else -> "Tier"
+                                                    }
+                                                    Text(tierLabel)
+                                                },
                                                     singleLine = true,
                                                     shape = RoundedCornerShape(12.dp),
                                                     modifier = Modifier.fillMaxWidth()
@@ -1613,7 +2728,15 @@ fun MainMenuScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(if (currentLang == Language.RU) "Градиент ника" else "Gradient Nickname", style = MaterialTheme.typography.bodyMedium)
+                                                    val gradientNickLabel = when (currentLang) {
+                                                        Language.RU -> "Градиент ника"
+                                                        Language.UA -> "Градієнт ніка"
+                                                        Language.KK -> "Бүркеншік ат градиенті"
+                                                        Language.DE -> "Farbverlauf-Name"
+                                                        Language.ZH -> "昵称渐变特效"
+                                                        else -> "Gradient Nickname"
+                                                    }
+                                                    Text(gradientNickLabel, style = MaterialTheme.typography.bodyMedium)
                                                     Switch(checked = editUserGradient, onCheckedChange = { editUserGradient = it })
                                                 }
                                                 Row(
@@ -1621,14 +2744,32 @@ fun MainMenuScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(if (currentLang == Language.RU) "Личный Тег разблокирован" else "Custom Tag Unlocked", style = MaterialTheme.typography.bodyMedium)
+                                                    val customTagUnlockedLabel = when (currentLang) {
+                                                        Language.RU -> "Личный Тег разблокирован"
+                                                        Language.UA -> "Особистий Тег розблоковано"
+                                                        Language.KK -> "Жеке тег ашылды"
+                                                        Language.DE -> "Individueller Tag freigeschaltet"
+                                                        Language.ZH -> "个性称号已解锁"
+                                                        else -> "Custom Tag Unlocked"
+                                                    }
+                                                    Text(customTagUnlockedLabel, style = MaterialTheme.typography.bodyMedium)
                                                     Switch(checked = editUserTagUnlocked, onCheckedChange = { editUserTagUnlocked = it })
                                                 }
                                                 if (editUserTagUnlocked) {
                                                     OutlinedTextField(
                                                         value = editUserTag,
                                                         onValueChange = { editUserTag = it },
-                                                        label = { Text(if (currentLang == Language.RU) "Текст личного тега" else "Custom Tag Text") },
+                                                        label = {
+                                                        val customTagTextLabel = when (currentLang) {
+                                                            Language.RU -> "Текст личного тега"
+                                                            Language.UA -> "Текст особистого тега"
+                                                            Language.KK -> "Жеке тег мәтіні"
+                                                            Language.DE -> "Tag-Text"
+                                                            Language.ZH -> "个性称号文本"
+                                                            else -> "Custom Tag Text"
+                                                        }
+                                                        Text(customTagTextLabel)
+                                                    },
                                                         singleLine = true,
                                                         shape = RoundedCornerShape(12.dp),
                                                         modifier = Modifier.fillMaxWidth()
@@ -1652,16 +2793,33 @@ fun MainMenuScreen(
                                                         customTag = editUserTag.trim()
                                                     )
                                                     viewModel.triggerAudioFeedback("success")
+                                                    adminToastMessage = "Данные $tName сохранены!"
                                                     editingAdminUser = null
                                                 },
                                                 shape = RoundedCornerShape(12.dp)
                                             ) {
-                                                Text(if (currentLang == Language.RU) "СОХРАНИТЬ" else "SAVE", fontWeight = FontWeight.Bold)
+                                                val saveUserBtnLabel = when (currentLang) {
+                                                    Language.RU -> "СОХРАНИТЬ"
+                                                    Language.UA -> "ЗБЕРЕГТИ"
+                                                    Language.KK -> "САҚТАУ"
+                                                    Language.DE -> "SPEICHERN"
+                                                    Language.ZH -> "保存修改"
+                                                    else -> "SAVE"
+                                                }
+                                                Text(saveUserBtnLabel, fontWeight = FontWeight.Bold)
                                             }
                                         },
                                         dismissButton = {
                                             TextButton(onClick = { editingAdminUser = null }) {
-                                                Text(if (currentLang == Language.RU) "Отмена" else "Cancel")
+                                                val cancelBtnLabel = when (currentLang) {
+                                                    Language.RU -> "Отмена"
+                                                    Language.UA -> "Скасувати"
+                                                    Language.KK -> "Бас тарту"
+                                                    Language.DE -> "Abbrechen"
+                                                    Language.ZH -> "取消"
+                                                    else -> "Cancel"
+                                                }
+                                                Text(cancelBtnLabel)
                                             }
                                         }
                                     )
@@ -1692,7 +2850,7 @@ fun MainMenuScreen(
                                 modifier = Modifier.padding(bottom = 16.dp)
                             ) {
                                 Text(
-                                    text = "TETRIS",
+                                    text = "FLOWTESS",
                                     style = MaterialTheme.typography.displayMedium,
                                     fontWeight = FontWeight.Black,
                                     letterSpacing = 6.sp,
@@ -1758,15 +2916,48 @@ fun MainMenuScreen(
                                 }
                             }
 
+                            val classicBtnText = when (currentLang) {
+                                Language.RU -> "КЛАССИЧЕСКИЙ РЕЖИМ"
+                                Language.UA -> "КЛАСИЧНИЙ РЕЖИМ"
+                                Language.KK -> "КЛАССИКАЛЫҚ РЕЖИМ"
+                                Language.DE -> "KLASSISCHER MODUS"
+                                Language.ZH -> "经典模式"
+                                else -> "CLASSIC MODE"
+                            }
+                            val gameModesBtnText = when (currentLang) {
+                                Language.RU -> "РЕЖИМЫ ИГРЫ"
+                                Language.UA -> "РЕЖИМИ ГРИ"
+                                Language.KK -> "ОЙЫН РЕЖИМДЕРІ"
+                                Language.DE -> "SPIELMODI"
+                                Language.ZH -> "游戏模式"
+                                else -> "GAME MODES"
+                            }
+                            val multiplayerBtnText = when (currentLang) {
+                                Language.RU -> "МУЛЬТИПЛЕЕР"
+                                Language.UA -> "МУЛЬТИПЛЕЄР"
+                                Language.KK -> "МУЛЬТИПЛЕЕР"
+                                Language.DE -> "MEHRSPIELER"
+                                Language.ZH -> "多人联机"
+                                else -> "MULTIPLAYER"
+                            }
+                            val friendsBtnText = when (currentLang) {
+                                Language.RU -> "ДРУЗЬЯ"
+                                Language.UA -> "ДРУЗІ"
+                                Language.KK -> "ДОСТАР"
+                                Language.DE -> "FREUNDE"
+                                Language.ZH -> "好友"
+                                else -> "FRIENDS"
+                            }
+
                             MenuButton(
-                                text = if (currentLang == Language.RU) "КЛАССИЧЕСКИЙ РЕЖИМ" else "CLASSIC MODE",
+                                text = classicBtnText,
                                 iconType = "play",
                                 themeColor = MaterialTheme.colorScheme.primary,
                                 onClick = { onPlayMode(com.example.game.GameMode.CLASSIC) }
                             )
 
                             MenuButton(
-                                text = if (currentLang == Language.RU) "РЕЖИМЫ ИГРЫ" else "CHOOSE Game Mode",
+                                text = gameModesBtnText,
                                 iconType = "upgrades",
                                 themeColor = MaterialTheme.colorScheme.primary,
                                 onClick = { onModeSelection() }
@@ -1780,7 +2971,7 @@ fun MainMenuScreen(
                             )
 
                             MenuButton(
-                                text = if (currentLang == Language.RU) "МУЛЬТИПЛЕЕР" else "MULTIPLAYER",
+                                text = multiplayerBtnText,
                                 iconType = "multiplayer",
                                 themeColor = MaterialTheme.colorScheme.primary,
                                 onClick = {
@@ -1795,7 +2986,7 @@ fun MainMenuScreen(
                             )
 
                             MenuButton(
-                                text = if (currentLang == Language.RU) "ДРУЗЬЯ" else "FRIENDS",
+                                text = friendsBtnText,
                                 iconType = "friends",
                                 themeColor = MaterialTheme.colorScheme.primary,
                                 onClick = {
@@ -1819,7 +3010,7 @@ fun MainMenuScreen(
                             modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
                         ) {
                             Text(
-                                text = "TETRIS",
+                                text = "FLOWTESS",
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 6.sp,
@@ -1876,15 +3067,48 @@ fun MainMenuScreen(
                             }
                         }
 
+                        val classicBtnText = when (currentLang) {
+                            Language.RU -> "КЛАССИЧЕСКИЙ РЕЖИМ"
+                            Language.UA -> "КЛАСИЧНИЙ РЕЖИМ"
+                            Language.KK -> "КЛАССИКАЛЫҚ РЕЖИМ"
+                            Language.DE -> "KLASSISCHER MODUS"
+                            Language.ZH -> "经典模式"
+                            else -> "CLASSIC MODE"
+                        }
+                        val gameModesBtnText = when (currentLang) {
+                            Language.RU -> "РЕЖИМЫ ИГРЫ"
+                            Language.UA -> "РЕЖИМИ ГРИ"
+                            Language.KK -> "ОЙЫН РЕЖИМДЕРІ"
+                            Language.DE -> "SPIELMODI"
+                            Language.ZH -> "游戏模式"
+                            else -> "GAME MODES"
+                        }
+                        val multiplayerBtnText = when (currentLang) {
+                            Language.RU -> "МУЛЬТИПЛЕЕР"
+                            Language.UA -> "МУЛЬТИПЛЕЄР"
+                            Language.KK -> "МУЛЬТИПЛЕЕР"
+                            Language.DE -> "MEHRSPIELER"
+                            Language.ZH -> "多人联机"
+                            else -> "MULTIPLAYER"
+                        }
+                        val friendsBtnText = when (currentLang) {
+                            Language.RU -> "ДРУЗЬЯ"
+                            Language.UA -> "ДРУЗІ"
+                            Language.KK -> "ДОСТАР"
+                            Language.DE -> "FREUNDE"
+                            Language.ZH -> "好友"
+                            else -> "FRIENDS"
+                        }
+
                         MenuButton(
-                            text = if (currentLang == Language.RU) "КЛАССИЧЕСКИЙ РЕЖИМ" else "CLASSIC MODE",
+                            text = classicBtnText,
                             iconType = "play",
                             themeColor = MaterialTheme.colorScheme.primary,
                             onClick = { onPlayMode(com.example.game.GameMode.CLASSIC) }
                         )
 
                         MenuButton(
-                            text = if (currentLang == Language.RU) "РЕЖИМЫ ИГРЫ" else "CHOOSE Game Mode",
+                            text = gameModesBtnText,
                             iconType = "upgrades",
                             themeColor = MaterialTheme.colorScheme.primary,
                             onClick = { onModeSelection() }
@@ -1893,7 +3117,7 @@ fun MainMenuScreen(
                         MenuButton(text = Translations.get("leaderboard", currentLang), iconType = "leaderboard", themeColor = MaterialTheme.colorScheme.primary, onClick = onLeaderboard)
 
                         MenuButton(
-                            text = if (currentLang == Language.RU) "МУЛЬТИПЛЕЕР" else "MULTIPLAYER",
+                            text = multiplayerBtnText,
                             iconType = "multiplayer",
                             themeColor = MaterialTheme.colorScheme.primary,
                             onClick = {
@@ -1908,7 +3132,7 @@ fun MainMenuScreen(
                         )
 
                         MenuButton(
-                            text = if (currentLang == Language.RU) "ДРУЗЬЯ" else "FRIENDS",
+                            text = friendsBtnText,
                             iconType = "friends",
                             themeColor = MaterialTheme.colorScheme.primary,
                             onClick = {
@@ -1932,8 +3156,9 @@ fun MenuButton(
     themeColor: Color,
     onClick: () -> Unit
 ) {
+    val debouncer = rememberClickDebouncer(1000L)
     Card(
-        onClick = { onClick() },
+        onClick = { debouncer.process { onClick() } },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
@@ -2262,8 +3487,16 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     containerColor = MaterialTheme.colorScheme.background
                 ),
                 title = {
+                    val leaderboardTitle = when (currentLang) {
+                        Language.RU -> "ТАБЛИЦА РЕКОРДОВ"
+                        Language.UA -> "ТАБЛИЦЯ РЕКОРДІВ"
+                        Language.KK -> "РЕКОРДТАР КЕСТЕСІ"
+                        Language.DE -> "BESTENLISTE"
+                        Language.ZH -> "排行榜"
+                        else -> "LEADERBOARD"
+                    }
                     Text(
-                        text = if (currentLang == Language.RU) "ТАБЛИЦА РЕКОРДОВ" else "LEADERBOARD",
+                        text = leaderboardTitle,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
@@ -2341,9 +3574,25 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             .background(themeColor)
                     )
 
+                    val localTabLabel = when (currentLang) {
+                        Language.RU -> "Локальные"
+                        Language.UA -> "Локальні"
+                        Language.KK -> "Жергілікті"
+                        Language.DE -> "Lokal"
+                        Language.ZH -> "本地记录"
+                        else -> "Local"
+                    }
+                    val globalTabLabel = when (currentLang) {
+                        Language.RU -> "Мировые"
+                        Language.UA -> "Світові"
+                        Language.KK -> "Әлемдік"
+                        Language.DE -> "Global"
+                        Language.ZH -> "全球对决"
+                        else -> "Global Arena"
+                    }
                     val tabs = listOf(
-                        Triple(0, if (currentLang == Language.RU) "Локальные" else "Local", Icons.Default.PhoneAndroid),
-                        Triple(1, if (currentLang == Language.RU) "Мировые" else "Global Arena", Icons.Default.Public)
+                        Triple(0, localTabLabel, Icons.Default.PhoneAndroid),
+                        Triple(1, globalTabLabel, Icons.Default.Public)
                     )
 
                     Row(
@@ -2411,17 +3660,87 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     if (currentTab == 1) {
                         val categories = remember(currentLang) {
                             listOf(
-                                "overall" to (if (currentLang == Language.RU) "Все режимы" else "All Modes"),
-                                "classic" to (if (currentLang == Language.RU) "Классический" else "Classic"),
-                                "extended" to (if (currentLang == Language.RU) "Расширенный" else "Extended"),
-                                "fast_run" to (if (currentLang == Language.RU) "Гипер-Режим" else "Hyper Rush"),
-                                "reverse" to (if (currentLang == Language.RU) "Хаос" else "Chaos"),
+                                "overall" to when (currentLang) {
+                                    Language.RU -> "Все режимы"
+                                    Language.UA -> "Всі режими"
+                                    Language.KK -> "Барлық режимдер"
+                                    Language.DE -> "Alle Modi"
+                                    Language.ZH -> "所有模式"
+                                    else -> "All Modes"
+                                },
+                                "classic" to when (currentLang) {
+                                    Language.RU -> "Классический"
+                                    Language.UA -> "Класичний"
+                                    Language.KK -> "Классикалық"
+                                    Language.DE -> "Klassisch"
+                                    Language.ZH -> "经典模式"
+                                    else -> "Classic"
+                                },
+                                "extended" to when (currentLang) {
+                                    Language.RU -> "Расширенный"
+                                    Language.UA -> "Розширений"
+                                    Language.KK -> "Кеңейтілген"
+                                    Language.DE -> "Erweitert"
+                                    Language.ZH -> "扩展模式"
+                                    else -> "Extended"
+                                },
+                                "fast_run" to when (currentLang) {
+                                    Language.RU -> "Гипер-Режим"
+                                    Language.UA -> "Гіпер-Режим"
+                                    Language.KK -> "Гипер-Режим"
+                                    Language.DE -> "Hyper-Modus"
+                                    Language.ZH -> "极限极速"
+                                    else -> "Hyper Rush"
+                                },
+                                "reverse" to when (currentLang) {
+                                    Language.RU -> "Хаос"
+                                    Language.UA -> "Хаос"
+                                    Language.KK -> "Хаос"
+                                    Language.DE -> "Chaos"
+                                    Language.ZH -> "混乱模式"
+                                    else -> "Chaos"
+                                },
                                 "block_blast" to "ZETA",
-                                "zen" to (if (currentLang == Language.RU) "Дзен" else "Zen"),
-                                "time_attack" to (if (currentLang == Language.RU) "Тайм-Атак" else "Time Attack"),
-                                "pulse_extreme" to (if (currentLang == Language.RU) "Вихрь" else "Vortex Pulse"),
-                                "mirror" to (if (currentLang == Language.RU) "Зеркальный" else "Mirror"),
-                                "penta" to (if (currentLang == Language.RU) "Пента-Хаос" else "Pentatris")
+                                "zen" to when (currentLang) {
+                                    Language.RU -> "Дзен"
+                                    Language.UA -> "Дзен"
+                                    Language.KK -> "Дзен"
+                                    Language.DE -> "Zen"
+                                    Language.ZH -> "禅模式"
+                                    else -> "Zen"
+                                },
+                                "time_attack" to when (currentLang) {
+                                    Language.RU -> "Тайм-Атак"
+                                    Language.UA -> "Тайм-Атак"
+                                    Language.KK -> "Тайм-Атак"
+                                    Language.DE -> "Zeitangriff"
+                                    Language.ZH -> "限时挑战"
+                                    else -> "Time Attack"
+                                },
+                                "pulse_extreme" to when (currentLang) {
+                                    Language.RU -> "Вихрь"
+                                    Language.UA -> "Вихор"
+                                    Language.KK -> "Құйын"
+                                    Language.DE -> "Wirbelsturm"
+                                    Language.ZH -> "脉冲极限"
+                                    else -> "Vortex Pulse"
+                                },
+                                "mirror" to when (currentLang) {
+                                    Language.RU -> "Зеркальный"
+                                    Language.UA -> "Дзеркальний"
+                                    Language.KK -> "Айналық"
+                                    Language.DE -> "Spiegelmodus"
+                                    Language.ZH -> "镜像模式"
+                                    else -> "Mirror"
+                                },
+                                "penta" to when (currentLang) {
+                                    Language.RU -> "Пента-Хаос"
+                                    Language.UA -> "Пента-Хаос"
+                                    Language.KK -> "Пента-Хаос"
+                                    Language.DE -> "Pentatris"
+                                    Language.ZH -> "五阶狂潮"
+                                    else -> "Pentatris"
+                                }
                             )
                         }
 
@@ -2462,6 +3781,22 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
                     // Scores Content
                     if (displayScores.isEmpty()) {
+                        val noRecordsTitle = when (currentLang) {
+                            Language.RU -> "Нет записей"
+                            Language.UA -> "Немає записів"
+                            Language.KK -> "Жазбалар жоқ"
+                            Language.DE -> "Keine Einträge"
+                            Language.ZH -> "暂无记录"
+                            else -> "No Records Yet"
+                        }
+                        val noRecordsDesc = when (currentLang) {
+                            Language.RU -> "Сыграйте партию и станьте первым в списке рекордов!"
+                            Language.UA -> "Зіграйте партію та станьте першим у списку рекордів!"
+                            Language.KK -> "Ойын ойнап, рекордтар тізімінде бірінші болыңыз!"
+                            Language.DE -> "Spiele eine Runde und sichere dir den ersten Platz!"
+                            Language.ZH -> "进行一局游戏，成为排行榜上的第一名！"
+                            else -> "Play a match and become the first on the leaderboard!"
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -2499,13 +3834,13 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                         }
                                     }
                                     Text(
-                                        text = if (currentLang == Language.RU) "Нет записей" else "No Records Yet",
+                                        text = noRecordsTitle,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = if (currentLang == Language.RU) "Сыграйте партию и станьте первым в списке рекордов!" else "Play a match and become the first on the leaderboard!",
+                                        text = noRecordsDesc,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center
@@ -2527,6 +3862,15 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                     val first = displayScores[0]
                                     val second = displayScores[1]
                                     val third = displayScores[2]
+
+                                    val championsPodiumTitle = when (currentLang) {
+                                        Language.RU -> "ТОП ЧЕМПИОНОВ"
+                                        Language.UA -> "ТОП ЧЕМПІОНІВ"
+                                        Language.KK -> "ЧЕМПИОНДАР ҮЗДІГІ"
+                                        Language.DE -> "CHAMPIONS-PODIUM"
+                                        Language.ZH -> "冠军领奖台"
+                                        else -> "CHAMPIONS PODIUM"
+                                    }
 
                                     ElevatedCard(
                                         modifier = Modifier.fillMaxWidth(),
@@ -2553,7 +3897,7 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                                     modifier = Modifier.size(20.dp)
                                                 )
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "ТОП ЧЕМПИОНОВ" else "CHAMPIONS PODIUM",
+                                                    text = championsPodiumTitle,
                                                     style = MaterialTheme.typography.labelMedium.copy(
                                                         fontWeight = FontWeight.ExtraBold,
                                                         letterSpacing = 0.5.sp
@@ -2661,8 +4005,11 @@ fun LeaderboardScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                                 avatarEmoji = score.avatarEmoji,
                                                 avatarBgColorHex = score.avatarBgColorHex,
                                                 avatarFrame = score.avatarFrame,
+                                                avatarBase64 = score.avatarBase64,
                                                 size = 40.dp,
-                                                themeColor = themeColor
+                                                themeColor = themeColor,
+                                                showOnlineDot = true,
+                                                isOnline = score.isOnline
                                             )
 
                                             // Player Info & Tags
@@ -2821,8 +4168,11 @@ private fun PodiumColumn(
                 avatarEmoji = score.avatarEmoji,
                 avatarBgColorHex = score.avatarBgColorHex,
                 avatarFrame = score.avatarFrame,
+                avatarBase64 = score.avatarBase64,
                 size = if (rank == 1) 48.dp else 40.dp,
-                themeColor = medalColor
+                themeColor = medalColor,
+                showOnlineDot = true,
+                isOnline = score.isOnline
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -2908,11 +4258,16 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            viewModel.triggerAudioFeedback("click")
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
@@ -2941,196 +4296,98 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
 
         val settingsContent = @Composable { category: Int ->
             when (category) {
-                    0 -> {
-                        // Color Palette Swatches Card (All Free & Unlocked, with Monet Gradient Circle)
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                AdaptiveText(
-                                    text = Translations.get("active_theme_accent", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
+                // ─────────────────────────────────────────────────────────────
+                // 0: ВИЗУАЛ / ВНЕШНИЙ ВИД (VISUALS & THEMES)
+                // ─────────────────────────────────────────────────────────────
+                0 -> {
+                    // Color Palette Swatches Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            AdaptiveText(
+                                text = Translations.get("active_theme_accent", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                val themes = listOf(
+                                    "monet" to null,
+                                    "indigo" to Color(0xFFD0BCFF),
+                                    "black" to Color(0xFF1B1B1F),
+                                    "red" to Color(0xFFFF5555),
+                                    "neon" to Color(0xFF00FFCC),
+                                    "emerald" to Color(0xFF10B981),
+                                    "amber" to Color(0xFFF59E0B),
+                                    "rose" to Color(0xFFF43F5E),
+                                    "sky" to Color(0xFF0EA5E9),
+                                    "orange" to Color(0xFFFF5722),
+                                    "cyber_pink" to Color(0xFFFF007F),
+                                    "toxic_green" to Color(0xFF39FF14),
+                                    "gold" to Color(0xFFFFD700)
                                 )
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    val themes = listOf(
-                                        "monet" to null,
-                                        "indigo" to Color(0xFFD0BCFF),
-                                        "black" to Color(0xFF1B1B1F),
-                                        "red" to Color(0xFFFF5555),
-                                        "neon" to Color(0xFF00FFCC),
-                                        "emerald" to Color(0xFF10B981),
-                                        "amber" to Color(0xFFF59E0B),
-                                        "rose" to Color(0xFFF43F5E),
-                                        "sky" to Color(0xFF0EA5E9),
-                                        "orange" to Color(0xFFFF5722),
-                                        "cyber_pink" to Color(0xFFFF007F),
-                                        "toxic_green" to Color(0xFF39FF14),
-                                        "gold" to Color(0xFFFFD700)
+                                val monetGradient = Brush.sweepGradient(
+                                    listOf(
+                                        Color(0xFF8C52FF),
+                                        Color(0xFF00E5FF),
+                                        Color(0xFF00E676),
+                                        Color(0xFFFFD600),
+                                        Color(0xFFFF5252),
+                                        Color(0xFF8C52FF)
                                     )
-                                    val monetGradient = Brush.sweepGradient(
-                                        listOf(
-                                            Color(0xFF8C52FF),
-                                            Color(0xFF00E5FF),
-                                            Color(0xFF00E676),
-                                            Color(0xFFFFD600),
-                                            Color(0xFFFF5252),
-                                            Color(0xFF8C52FF)
-                                        )
-                                    )
-                                    themes.chunked(5).forEach { rowThemes ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceEvenly,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            rowThemes.forEach { (name, color) ->
-                                                val selected = themeColor == name || (name == "monet" && themeColor == "dynamic")
-                                                Box(
-                                                    modifier = Modifier.size(44.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    val backgroundModifier = if (name == "monet") {
-                                                        Modifier.background(monetGradient)
-                                                    } else {
-                                                        Modifier.background(color ?: MaterialTheme.colorScheme.primary)
-                                                    }
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(38.dp)
-                                                            .clip(RoundedCornerShape(50))
-                                                            .then(backgroundModifier)
-                                                            .border(
-                                                                width = if (selected) 3.dp else (if (name == "black") 1.5.dp else 0.dp),
-                                                                color = if (selected) MaterialTheme.colorScheme.primary else (if (name == "black") Color(0xFF555555) else Color.Transparent),
-                                                                shape = RoundedCornerShape(50)
-                                                            )
-                                                            .clickable {
-                                                                viewModel.triggerAudioFeedback("click")
-                                                                viewModel.setThemeColor(name)
-                                                            }
-                                                    ) {
-                                                        if (selected) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Check,
-                                                                contentDescription = "Selected",
-                                                                tint = if (name == "gold" || name == "neon" || name == "emerald") Color.Black else Color.White,
-                                                                modifier = Modifier
-                                                                    .size(18.dp)
-                                                                    .align(Alignment.Center)
-                                                            )
-                                                        }
-                                                    }
+                                )
+                                themes.chunked(5).forEach { rowThemes ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        rowThemes.forEach { (name, color) ->
+                                            val selected = themeColor == name || (name == "monet" && themeColor == "dynamic")
+                                            Box(
+                                                modifier = Modifier.size(44.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                val backgroundModifier = if (name == "monet") {
+                                                    Modifier.background(monetGradient)
+                                                } else {
+                                                    Modifier.background(color ?: MaterialTheme.colorScheme.primary)
                                                 }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = if (currentLang == Language.RU) "Качество графики" else "Graphics Quality",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(14.dp))
-                                val graphicsQuality by viewModel.graphicsQuality.collectAsStateWithLifecycle()
-                                val qualityLevels = listOf(
-                                    "low" to (if (currentLang == Language.RU) "Низкая" else "Low"),
-                                    "medium" to (if (currentLang == Language.RU) "Средняя" else "Medium"),
-                                    "high" to (if (currentLang == Language.RU) "Высокая" else "High")
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    qualityLevels.forEach { (key, title) ->
-                                        val isSelected = graphicsQuality == key
-                                        FilledTonalButton(
-                                            onClick = { viewModel.setGraphicsQuality(key) },
-                                            modifier = Modifier.weight(1f),
-                                            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = ButtonDefaults.filledTonalButtonColors(
-                                                containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                        ) {
-                                            Text(
-                                                text = title,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                textAlign = TextAlign.Center,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = Translations.get("starting_level_selector", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                val levels = listOf(1, 3, 5, 8, 10, 15)
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    levels.chunked(3).forEach { levelRow ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            levelRow.forEach { lvl ->
-                                                val isSelected = customStartLevel == lvl
-                                                FilledTonalButton(
-                                                    onClick = { viewModel.setCustomStartLevel(lvl) },
-                                                    modifier = Modifier.weight(1f),
-                                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                                        containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                                    )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(38.dp)
+                                                        .clip(RoundedCornerShape(50))
+                                                        .then(backgroundModifier)
+                                                        .border(
+                                                            width = if (selected) 3.dp else (if (name == "black") 1.5.dp else 0.dp),
+                                                            color = if (selected) MaterialTheme.colorScheme.primary else (if (name == "black") Color(0xFF555555) else Color.Transparent),
+                                                            shape = RoundedCornerShape(50)
+                                                        )
+                                                        .clickable {
+                                                            viewModel.triggerAudioFeedback("click")
+                                                            viewModel.setThemeColor(name)
+                                                        }
                                                 ) {
-                                                    Text(
-                                                        text = "${Translations.get("level", currentLang)} $lvl",
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                                    )
+                                                    if (selected) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = "Selected",
+                                                            tint = if (name == "gold" || name == "neon" || name == "emerald") Color.Black else Color.White,
+                                                            modifier = Modifier
+                                                                .size(18.dp)
+                                                                .align(Alignment.Center)
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -3140,7 +4397,274 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         }
                     }
 
-                    1 -> {
+                    // Block Architecture 3D Style Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = Translations.get("block_architecture_style", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            val purchasedCubeSkinsSet = remember {
+                                val sharedPrefs = context.getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
+                                sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+                            }
+                            val styles = listOf(
+                                "neon" to Translations.getLocalizedCubeSkinTitle("neon", currentLang),
+                                "glass" to Translations.getLocalizedCubeSkinTitle("glass", currentLang),
+                                "retro" to Translations.getLocalizedCubeSkinTitle("retro", currentLang),
+                                "flat" to Translations.getLocalizedCubeSkinTitle("flat", currentLang),
+                                "material" to Translations.getLocalizedCubeSkinTitle("material", currentLang)
+                            )
+                            val purchaseStyleToast = when (currentLang) {
+                                Language.RU -> "Купите этот стиль в магазине!"
+                                Language.UA -> "Придбайте цей стиль у магазині!"
+                                Language.KK -> "Бұл стильді дүкеннен сатып алыңыз!"
+                                Language.DE -> "Kaufe diesen Stil im Shop!"
+                                Language.ZH -> "请在商店中购买此皮肤风格！"
+                                else -> "Purchase this style in the store!"
+                            }
+                            styles.forEach { (key, title) ->
+                                val isOwned = purchasedCubeSkinsSet.contains(key) || key == "neon"
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (isOwned) {
+                                                viewModel.setBlockStyle(key)
+                                            } else {
+                                                viewModel.triggerAudioFeedback("error")
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    purchaseStyleToast,
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = blockStyle == key,
+                                        onClick = {
+                                            if (isOwned) {
+                                                viewModel.setBlockStyle(key)
+                                            } else {
+                                                viewModel.triggerAudioFeedback("error")
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    purchaseStyleToast,
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        enabled = isOwned,
+                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    AdaptiveText(
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (isOwned) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                    if (!isOwned) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Locked",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Graphics Quality Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            val gfxQualityTitle = when (currentLang) {
+                                Language.RU -> "Качество графики"
+                                Language.UA -> "Якість графіки"
+                                Language.KK -> "Графика сапасы"
+                                Language.DE -> "Grafikqualität"
+                                Language.ZH -> "画面质量"
+                                else -> "Graphics Quality"
+                            }
+                            Text(
+                                text = gfxQualityTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            val graphicsQuality by viewModel.graphicsQuality.collectAsStateWithLifecycle()
+                            val qualityLevels = listOf(
+                                "low" to when (currentLang) {
+                                    Language.RU -> "Низкая"
+                                    Language.UA -> "Низька"
+                                    Language.KK -> "Төмен"
+                                    Language.DE -> "Niedrig"
+                                    Language.ZH -> "低画质"
+                                    else -> "Low"
+                                },
+                                "medium" to when (currentLang) {
+                                    Language.RU -> "Средняя"
+                                    Language.UA -> "Середня"
+                                    Language.KK -> "Орташа"
+                                    Language.DE -> "Mittel"
+                                    Language.ZH -> "中等画质"
+                                    else -> "Medium"
+                                },
+                                "high" to when (currentLang) {
+                                    Language.RU -> "Высокая"
+                                    Language.UA -> "Висока"
+                                    Language.KK -> "Жоғары"
+                                    Language.DE -> "Hoch"
+                                    Language.ZH -> "高画质"
+                                    else -> "High"
+                                }
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                qualityLevels.forEach { (key, title) ->
+                                    val isSelected = graphicsQuality == key
+                                    FilledTonalButton(
+                                        onClick = { viewModel.setGraphicsQuality(key) },
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    ) {
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Grid Line Density Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = Translations.get("grid_line_density", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val densities = listOf(
+                                "classic" to when (currentLang) {
+                                    Language.RU -> "Стандартная сетка"
+                                    Language.UA -> "Стандартна сітка"
+                                    Language.KK -> "Стандартты тор"
+                                    Language.DE -> "Standard-Gitter"
+                                    Language.ZH -> "标准网格线"
+                                    else -> "Classic Grid Lines"
+                                },
+                                "dashed" to when (currentLang) {
+                                    Language.RU -> "Пунктирный визуал"
+                                    Language.UA -> "Пунктирний візуал"
+                                    Language.KK -> "Үзік сызықты визуал"
+                                    Language.DE -> "Gestrichelte Matrix"
+                                    Language.ZH -> "虚线网格"
+                                    else -> "Dashed Matrix Wireframe"
+                                },
+                                "none" to when (currentLang) {
+                                    Language.RU -> "Без линий (Пространство)"
+                                    Language.UA -> "Без ліній (Простір)"
+                                    Language.KK -> "Сызықсыз (Кеңістік)"
+                                    Language.DE -> "Ohne Linien (Vakuum)"
+                                    Language.ZH -> "无网格线（纯净空间）"
+                                    else -> "Void (No Lines)"
+                                }
+                            )
+                            densities.forEach { (key, title) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { viewModel.setGridLineDensity(key) }
+                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = gridLineDensity == key,
+                                        onClick = { viewModel.setGridLineDensity(key) },
+                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
+                    }
+
+                    // Ghost Piece Visibility Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = Translations.get("show_ghost_target", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = ghostVisible,
+                                    onCheckedChange = { viewModel.setGhostVisible(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    if (ghostVisible) {
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(24.dp),
@@ -3149,126 +4673,742 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = Translations.get("block_architecture_style", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                val context = androidx.compose.ui.platform.LocalContext.current
-                                val purchasedCubeSkinsSet = remember {
-                                    val sharedPrefs = context.getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
-                                    sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+                            val ghostOutlineTitle = when (currentLang) {
+                                Language.RU -> "Только контур призрака"
+                                Language.UA -> "Лише контур примари"
+                                Language.KK -> "Тек елес сұлбасы"
+                                Language.DE -> "Nur Geist-Umriss"
+                                Language.ZH -> "仅显示虚影轮廓"
+                                else -> "Ghost outline only"
+                            }
+                            val ghostOutlineDesc = when (currentLang) {
+                                Language.RU -> "Чёткое очертание вместо текстур блоков"
+                                Language.UA -> "Чіткий контур замість текстур блоків"
+                                Language.KK -> "Блок текстураларының орнына айқын сұлба"
+                                Language.DE -> "Klare Kontur statt Blocktextur"
+                                Language.ZH -> "使用清晰轮廓替代方块纹理"
+                                else -> "Clear outline without block textures"
+                            }
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = ghostOutlineTitle,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = ghostOutlineDesc,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = ghostOutlineOnly,
+                                        onCheckedChange = { viewModel.setGhostOutlineOnly(it) }
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
+                        }
+                    }
+
+                    // Screen Shake Intensity Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            val shakeTitle = when (currentLang) {
+                                Language.RU -> "Интенсивность тряски экрана"
+                                Language.UA -> "Інтенсивність тремтіння екрана"
+                                Language.KK -> "Экран сілкінісінің қарқындылығы"
+                                Language.DE -> "Bildschirm-Wackeln Intensität"
+                                Language.ZH -> "屏幕震动强度"
+                                else -> "Screen Shake Intensity"
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = shakeTitle,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = String.format("%.2f", screenShakeIntensity),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = themeColorVal,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
-                                val styles = listOf(
-                                    "neon" to (if (currentLang == Language.RU) "Гипер Неон" else "Hyper Neon"),
-                                    "glass" to (if (currentLang == Language.RU) "Глассморфизм" else "Glassmorphism"),
-                                    "retro" to (if (currentLang == Language.RU) "Ретро-Концентрик" else "Retro Concentric"),
-                                    "flat" to (if (currentLang == Language.RU) "Простой Плоский" else "Minimal Flat"),
-                                    "material" to (if (currentLang == Language.RU) "Material 3" else "Android Material 3")
+                            }
+                            Slider(
+                                value = screenShakeIntensity,
+                                onValueChange = { viewModel.setScreenShakeIntensity(it) },
+                                valueRange = 0f..2f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = themeColorVal,
+                                    activeTrackColor = themeColorVal
                                 )
-                                styles.forEach { (key, title) ->
-                                    val isOwned = purchasedCubeSkinsSet.contains(key) || key == "neon"
+                            )
+                        }
+                    }
+
+                    // CRT Scanlines Filter Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        val scanlinesTitle = when (currentLang) {
+                            Language.RU -> "Эффект сканирования (CRT Scanlines)"
+                            Language.UA -> "Ефект сканування (CRT Scanlines)"
+                            Language.KK -> "Сканерлеу әсері (CRT Scanlines)"
+                            Language.DE -> "CRT-Scanlines-Filter"
+                            Language.ZH -> "复古CRT扫描线滤镜"
+                            else -> "Retro CRT Scanlines Filter"
+                        }
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = scanlinesTitle,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = scanlinesFilter,
+                                    onCheckedChange = { viewModel.setScanlinesFilter(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────
+                // 1: ГЕЙМПЛЕЙ И ФИЗИКА (GAMEPLAY & PHYSICS)
+                // ─────────────────────────────────────────────────────────────
+                1 -> {
+                    // Starting Level Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = Translations.get("starting_level_selector", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val levels = listOf(1, 3, 5, 8, 10, 15)
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                levels.chunked(3).forEach { levelRow ->
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable {
-                                                if (isOwned) {
-                                                    viewModel.setBlockStyle(key)
-                                                } else {
-                                                    viewModel.triggerAudioFeedback("error")
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (currentLang == Language.RU) "Купите этот стиль в магазине!" else "Purchase this style in the store!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        RadioButton(
-                                            selected = blockStyle == key,
-                                            onClick = {
-                                                if (isOwned) {
-                                                    viewModel.setBlockStyle(key)
-                                                } else {
-                                                    viewModel.triggerAudioFeedback("error")
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (currentLang == Language.RU) "Купите этот стиль в магазине!" else "Purchase this style in the store!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            },
-                                            enabled = isOwned,
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        AdaptiveText(
-                                            text = title,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = if (isOwned) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                        )
-                                        if (!isOwned) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                            Icon(
-                                                imageVector = Icons.Default.Lock,
-                                                contentDescription = "Locked",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                modifier = Modifier.size(16.dp)
-                                            )
+                                        levelRow.forEach { lvl ->
+                                            val isSelected = customStartLevel == lvl
+                                            FilledTonalButton(
+                                                onClick = { viewModel.setCustomStartLevel(lvl) },
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            ) {
+                                                Text(
+                                                    text = "${Translations.get("level", currentLang)} $lvl",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                    }
 
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = Translations.get("grid_line_density", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                val densities = listOf(
-                                    "classic" to (if (currentLang == Language.RU) "Стандартная сетка" else "Classic Grid Lines"),
-                                    "dashed" to (if (currentLang == Language.RU) "Пунктирный визуал" else "Dashed Matrix Wireframe"),
-                                    "none" to (if (currentLang == Language.RU) "Без линий (Пространство)" else "Void (No Lines)")
-                                )
-                                densities.forEach { (key, title) ->
+                    // Game Speed Multiplier Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            AdaptiveText(
+                                text = Translations.get("game_speed_multiplier", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val speedOptions = listOf(
+                                0.75f to when (currentLang) {
+                                    Language.RU -> "Легкая (0.75x)"
+                                    Language.UA -> "Легка (0.75x)"
+                                    Language.KK -> "Жеңіл (0.75x)"
+                                    Language.DE -> "Leicht (0.75x)"
+                                    Language.ZH -> "慢速 (0.75x)"
+                                    else -> "Easy (0.75x)"
+                                },
+                                1.0f to when (currentLang) {
+                                    Language.RU -> "Норма (1.0x)"
+                                    Language.UA -> "Норма (1.0x)"
+                                    Language.KK -> "Қалыпты (1.0x)"
+                                    Language.DE -> "Normal (1.0x)"
+                                    Language.ZH -> "标准 (1.0x)"
+                                    else -> "Normal (1.0x)"
+                                },
+                                1.25f to when (currentLang) {
+                                    Language.RU -> "Высокая (1.25x)"
+                                    Language.UA -> "Висока (1.25x)"
+                                    Language.KK -> "Жоғары (1.25x)"
+                                    Language.DE -> "Schnell (1.25x)"
+                                    Language.ZH -> "快速 (1.25x)"
+                                    else -> "Hard (1.25x)"
+                                },
+                                1.5f to when (currentLang) {
+                                    Language.RU -> "Экстрим (1.5x)"
+                                    Language.UA -> "Екстрим (1.5x)"
+                                    Language.KK -> "Экстрим (1.5x)"
+                                    Language.DE -> "Extrem (1.5x)"
+                                    Language.ZH -> "极速挑战 (1.5x)"
+                                    else -> "Extreme (1.5x)"
+                                }
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                speedOptions.chunked(2).forEach { speedRow ->
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { viewModel.setGridLineDensity(key) }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        RadioButton(
-                                            selected = gridLineDensity == key,
-                                            onClick = { viewModel.setGridLineDensity(key) },
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                                        speedRow.forEach { (speedVal, label) ->
+                                            val isSelected = Math.abs(gameSpeedMultiplier - speedVal) < 0.05f
+                                            FilledTonalButton(
+                                                onClick = { viewModel.setGameSpeedMultiplier(speedVal) },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
 
+                    // Next Pieces Preview Queue Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            val nextCountTitle = when (currentLang) {
+                                Language.RU -> "Очередь следующих фигур"
+                                Language.UA -> "Черга наступних фігур"
+                                Language.KK -> "Келесі фигуралар кезегі"
+                                Language.DE -> "Vorschau nächster Steine"
+                                Language.ZH -> "下一方块预览数量"
+                                else -> "Next Pieces Preview Queue"
+                            }
+                            AdaptiveText(
+                                text = nextCountTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val nextOptions = listOf(1, 2, 3, 4, 5, 6)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                nextOptions.forEach { count ->
+                                    val isSelected = nextCount == count
+                                    FilledTonalButton(
+                                        onClick = { viewModel.setNextCount(count) },
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "$count",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Extra Smooth Falling Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = Translations.get("extra_smooth_falling", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = smoothFallingEnabled,
+                                    onCheckedChange = { viewModel.setSmoothFallingEnabled(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    // Fast Drop Lock Speed Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = Translations.get("fast_drop_lock_speed", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            supportingContent = {
+                                AdaptiveText(
+                                    text = Translations.get("fast_drop_lock_speed_desc", currentLang),
+                                    maxLines = 3
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = fastDropLockSpeed,
+                                    onCheckedChange = { viewModel.setFastDropLockSpeed(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    // Line Clear Challenge Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = Translations.get("line_clear_challenge", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            supportingContent = {
+                                AdaptiveText(
+                                    text = Translations.get("line_clear_challenge_desc", currentLang),
+                                    maxLines = 3
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = lineClearChallenge,
+                                    onCheckedChange = { viewModel.setLineClearChallenge(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────
+                // 2: УПРАВЛЕНИЕ (CONTROLS)
+                // ─────────────────────────────────────────────────────────────
+                2 -> {
+                    // Customize Controls Layout Editor Navigation Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        onClick = onCustomizeControls
+                    ) {
+                        val customizeControlsTitle = when (currentLang) {
+                            Language.RU -> "Кастомизация управления"
+                            Language.UA -> "Кастомізація керування"
+                            Language.KK -> "Басқаруды теңшеу"
+                            Language.DE -> "Steuerung anpassen"
+                            Language.ZH -> "自定义按键布局"
+                            else -> "Customize Controls Layout"
+                        }
+                        val customizeControlsDesc = when (currentLang) {
+                            Language.RU -> "Настроить размер, прозрачность, тип и позицию кнопок"
+                            Language.UA -> "Налаштувати розмір, прозорість, тип та позицію кнопок"
+                            Language.KK -> "Батырмалардың өлшемін, мөлдірлігін, түрін және орнын баптау"
+                            Language.DE -> "Größe, Deckkraft, Stil und Position der Tasten konfigurieren"
+                            Language.ZH -> "调整按键大小、透明度、样式和屏幕位置"
+                            else -> "Configure scale, opacity, style and position of controls"
+                        }
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = customizeControlsTitle,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = customizeControlsDesc
+                                )
+                            },
+                            trailingContent = {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    // Control Buttons Layout Preset Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = Translations.get("control_buttons_layout", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val layouts = listOf(
+                                "classic" to when (currentLang) {
+                                    Language.RU -> "Сетка по центру"
+                                    Language.UA -> "Сітка по центру"
+                                    Language.KK -> "Орталық тор"
+                                    Language.DE -> "Taktisches Gitter mittig"
+                                    Language.ZH -> "居中战术按键"
+                                    else -> "Tactical Grid Centered"
+                                },
+                                "split" to when (currentLang) {
+                                    Language.RU -> "Разделенное по краям"
+                                    Language.UA -> "Розділене по краях"
+                                    Language.KK -> "Шеттері бойынша бөлінген"
+                                    Language.DE -> "Geteilte Randsteuerung"
+                                    Language.ZH -> "两侧分列控制"
+                                    else -> "Divided Fingertip Split"
+                                },
+                                "arcade" to when (currentLang) {
+                                    Language.RU -> "Аркадный стиль"
+                                    Language.UA -> "Аркадний стиль"
+                                    Language.KK -> "Аркадалық стиль"
+                                    Language.DE -> "Arcade-Controller-Stil"
+                                    Language.ZH -> "经典街机手柄"
+                                    else -> "Arcade Controller style"
+                                }
+                            )
+                            layouts.forEach { (key, title) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { viewModel.setControlStyle(key) }
+                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = controlStyle == key,
+                                        onClick = { viewModel.setControlStyle(key) },
+                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
+                    }
+
+                    // Control Button Visual Style Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = Translations.get("control_button_style", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val btnStyles = listOf(
+                                "neon" to Translations.getLocalizedButtonTitle("neon", currentLang),
+                                "glass" to Translations.getLocalizedButtonTitle("glass", currentLang),
+                                "classic" to Translations.getLocalizedButtonTitle("classic", currentLang)
+                            )
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            val purchaseBtnStyleToast = when (currentLang) {
+                                Language.RU -> "Купите этот стиль кнопок в магазине!"
+                                Language.UA -> "Придбайте цей стиль кнопок у магазині!"
+                                Language.KK -> "Бұл батырма стилін дүкеннен сатып алыңыз!"
+                                Language.DE -> "Kaufe diesen Tastenstil im Shop!"
+                                Language.ZH -> "请在商店中购买此按键风格！"
+                                else -> "Purchase this button style in the store!"
+                            }
+                            btnStyles.forEach { (key, title) ->
+                                val isOwned = key == "classic" || key == "neon" || purchasedControlButtonStyles.contains(key)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (isOwned) {
+                                                viewModel.setControlButtonStyle(key)
+                                            } else {
+                                                viewModel.triggerAudioFeedback("error")
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    purchaseBtnStyleToast,
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = controlButtonStyle == key,
+                                        onClick = {
+                                            if (isOwned) {
+                                                viewModel.setControlButtonStyle(key)
+                                            } else {
+                                                viewModel.triggerAudioFeedback("error")
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    purchaseBtnStyleToast,
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        enabled = isOwned,
+                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    AdaptiveText(
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (isOwned) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                    if (!isOwned) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Locked",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Tactical Controller Vertical Position Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            val verticalPosTitle = when (currentLang) {
+                                Language.RU -> "Вертикальная позиция управления"
+                                Language.UA -> "Вертикальна позиція керування"
+                                Language.KK -> "Басқарудың тік орны"
+                                Language.DE -> "Vertikale Tastenposition"
+                                Language.ZH -> "控制器垂直位置"
+                                else -> "Tactical Controller Vertical position"
+                            }
+                            Text(
+                                text = verticalPosTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            val positions = listOf(
+                                "bottom" to when (currentLang) {
+                                    Language.RU -> "Нижнее положение"
+                                    Language.UA -> "Нижнє положення"
+                                    Language.KK -> "Төменгі орын"
+                                    Language.DE -> "Unten platziert"
+                                    Language.ZH -> "靠底位置"
+                                    else -> "Lower Edge bottom position"
+                                },
+                                "middle" to when (currentLang) {
+                                    Language.RU -> "Центральное положение"
+                                    Language.UA -> "Центральне положення"
+                                    Language.KK -> "Орталық орын"
+                                    Language.DE -> "Mittlere Höhe"
+                                    Language.ZH -> "适中居中"
+                                    else -> "Comfort Middle height position"
+                                },
+                                "top" to when (currentLang) {
+                                    Language.RU -> "Верхнее положение"
+                                    Language.UA -> "Верхнє положення"
+                                    Language.KK -> "Жоғарғы орын"
+                                    Language.DE -> "Oben platziert"
+                                    Language.ZH -> "靠上位置"
+                                    else -> "Elevated Top reach position"
+                                }
+                            )
+                            positions.forEach { (key, title) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { viewModel.setControlVerticalPosition(key) }
+                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = controlVerticalPosition == key,
+                                        onClick = { viewModel.setControlVerticalPosition(key) },
+                                        colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
+                    }
+
+                    // Left Handed Controls Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = Translations.get("left_handed_controls", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = leftHandedControls,
+                                    onCheckedChange = { viewModel.setLeftHandedControls(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────
+                // 3: ЗВУК И ВИБРАЦИЯ (AUDIO & HAPTICS)
+                // ─────────────────────────────────────────────────────────────
+                3 -> {
+                    // Sound Effects Toggle Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = Translations.get("sound_effects", currentLang),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = soundEnabled,
+                                    onCheckedChange = { viewModel.setSoundEnabled(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    // Sound Effects Volume Slider Card
+                    if (soundEnabled) {
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(24.dp),
@@ -3278,19 +5418,27 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
+                                val soundVolTitle = when (currentLang) {
+                                    Language.RU -> "Громкость звуковых эффектов"
+                                    Language.UA -> "Гучність звукових ефектів"
+                                    Language.KK -> "Дыбыс әсерлерінің дауысы"
+                                    Language.DE -> "Lautstärke der Soundeffekte"
+                                    Language.ZH -> "音效音量"
+                                    else -> "Sound Effects Volume"
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "Интенсивность тряски экрана" else "Screen Shake Intensity",
+                                    Column {
+                                        AdaptiveText(
+                                            text = soundVolTitle,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Bold
                                         )
-                                        Text(
-                                            text = String.format("%.2f", screenShakeIntensity),
+                                        AdaptiveText(
+                                            text = "${(soundVolume * 100).toInt()}%",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = themeColorVal,
                                             fontWeight = FontWeight.Bold
@@ -3298,9 +5446,9 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                                     }
                                 }
                                 Slider(
-                                    value = screenShakeIntensity,
-                                    onValueChange = { viewModel.setScreenShakeIntensity(it) },
-                                    valueRange = 0f..2f,
+                                    value = soundVolume,
+                                    onValueChange = { viewModel.setSoundVolume(it) },
+                                    valueRange = 0f..1f,
                                     colors = SliderDefaults.colors(
                                         thumbColor = themeColorVal,
                                         activeTrackColor = themeColorVal
@@ -3308,7 +5456,44 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                                 )
                             }
                         }
+                    }
 
+                    // Lobby Music Toggle Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        val lobbyMusicTitle = when (currentLang) {
+                            Language.RU -> "Фоновая музыка в лобби"
+                            Language.UA -> "Фонова музика в лобі"
+                            Language.KK -> "Лоббидегі фондық музыка"
+                            Language.DE -> "Hintergrundmusik in Lobby"
+                            Language.ZH -> "大厅背景音乐"
+                            else -> "Lobby Background Music"
+                        }
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = lobbyMusicTitle,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = lobbyMusicEnabled,
+                                    onCheckedChange = { viewModel.setLobbyMusicEnabled(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
+                    // Lobby Music Volume Slider Card
+                    if (lobbyMusicEnabled) {
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(24.dp),
@@ -3317,704 +5502,200 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = Translations.get("show_ghost_target", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = ghostVisible,
-                                        onCheckedChange = { viewModel.setGhostVisible(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        if (ghostVisible) {
-                            ElevatedCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                ListItem(
-                                    headlineContent = {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "Только контур призрака" else "Ghost outline only",
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                val lobbyMusicVolTitle = when (currentLang) {
+                                    Language.RU -> "Громкость музыки"
+                                    Language.UA -> "Гучність музики"
+                                    Language.KK -> "Музыка дауысы"
+                                    Language.DE -> "Musiklautstärke"
+                                    Language.ZH -> "音乐音量"
+                                    else -> "Lobby Music Volume"
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        AdaptiveText(
+                                            text = lobbyMusicVolTitle,
+                                            style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Bold
                                         )
-                                    },
-                                    supportingContent = {
-                                        Text(
-                                            text = if (currentLang == Language.RU) "Чёткое очертание вместо текстур блоков" else "Clear outline without block textures",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    },
-                                    trailingContent = {
-                                        Switch(
-                                            checked = ghostOutlineOnly,
-                                            onCheckedChange = { viewModel.setGhostOutlineOnly(it) }
-                                        )
-                                    },
-                                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                                )
-                            }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "Эффект сканирования (CRT Scanlines)" else "Retro CRT Scanlines Filter",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = scanlinesFilter,
-                                        onCheckedChange = { viewModel.setScanlinesFilter(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-                    }
-
-                    2 -> {
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = Translations.get("control_buttons_layout", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                val layouts = listOf(
-                                    "classic" to (if (currentLang == Language.RU) "Сетка по центру" else "Tactical Grid Centered"),
-                                    "split" to (if (currentLang == Language.RU) "Разделенное по краям" else "Divided Fingertip Split"),
-                                    "arcade" to (if (currentLang == Language.RU) "Аркадный стиль" else "Arcade Controller style")
-                                )
-                                layouts.forEach { (key, title) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { viewModel.setControlStyle(key) }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = controlStyle == key,
-                                            onClick = { viewModel.setControlStyle(key) },
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-                                    }
-                                }
-                            }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Text(
-                                    text = Translations.get("control_button_style", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                val btnStyles = listOf(
-                                    "neon" to (if (currentLang == Language.RU) "Неоновая рамка" else "Glowing Neon Border"),
-                                    "glass" to (if (currentLang == Language.RU) "Матовое стекло" else "Semi-Transparent Glass"),
-                                    "classic" to (if (currentLang == Language.RU) "Классический сплошной" else "Classic Material Solid")
-                                )
-                                val context = androidx.compose.ui.platform.LocalContext.current
-                                btnStyles.forEach { (key, title) ->
-                                    val isOwned = key == "classic" || key == "neon" || purchasedControlButtonStyles.contains(key)
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable {
-                                                if (isOwned) {
-                                                    viewModel.setControlButtonStyle(key)
-                                                } else {
-                                                    viewModel.triggerAudioFeedback("error")
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (currentLang == Language.RU) "Купите этот стиль кнопок в магазине!" else "Purchase this button style in the store!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = controlButtonStyle == key,
-                                            onClick = {
-                                                if (isOwned) {
-                                                    viewModel.setControlButtonStyle(key)
-                                                } else {
-                                                    viewModel.triggerAudioFeedback("error")
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (currentLang == Language.RU) "Купите этот стиль кнопок в магазине!" else "Purchase this button style in the store!",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            },
-                                            enabled = isOwned,
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
                                         AdaptiveText(
-                                            text = title,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = if (isOwned) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                            text = "${(lobbyMusicVolume * 100).toInt()}%",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = themeColorVal,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                        if (!isOwned) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                            Icon(
-                                                imageVector = Icons.Default.Lock,
-                                                contentDescription = "Locked",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
                                     }
                                 }
+                                Slider(
+                                    value = lobbyMusicVolume,
+                                    onValueChange = { viewModel.setLobbyMusicVolume(it) },
+                                    valueRange = 0f..1f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = themeColorVal,
+                                        activeTrackColor = themeColorVal
+                                    )
+                                )
                             }
                         }
+                    }
 
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
+                    // Vibration / Haptics Toggle Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = {
                                 AdaptiveText(
-                                    text = Translations.get("game_speed_multiplier", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
+                                    text = Translations.get("vibration", currentLang),
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                val speedOptions = listOf(
-                                    0.75f to (if (currentLang == Language.RU) "Легкая (0.75x)" else "Easy (0.75x)"),
-                                    1.0f to (if (currentLang == Language.RU) "Норма (1.0x)" else "Normal (1.0x)"),
-                                    1.25f to (if (currentLang == Language.RU) "Высокая (1.25x)" else "Hard (1.25x)"),
-                                    1.5f to (if (currentLang == Language.RU) "Экстрим (1.5x)" else "Extreme (1.5x)")
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = vibrationEnabled,
+                                    onCheckedChange = { viewModel.setVibrationEnabled(it) }
                                 )
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    speedOptions.chunked(2).forEach { speedRow ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            speedRow.forEach { (speedVal, label) ->
-                                                val isSelected = Math.abs(gameSpeedMultiplier - speedVal) < 0.05f
-                                                FilledTonalButton(
-                                                    onClick = { viewModel.setGameSpeedMultiplier(speedVal) },
-                                                    modifier = Modifier.weight(1f),
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                                        containerColor = if (isSelected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                                    )
-                                                ) {
-                                                    Text(
-                                                        text = label,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                        textAlign = TextAlign.Center
-                                                    )
-                                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────
+                // 4: ЯЗЫК И СИСТЕМА (LANGUAGE & SYSTEM)
+                // ─────────────────────────────────────────────────────────────
+                4 -> {
+                    // Language Selection Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            AdaptiveText(
+                                text = Translations.get("change_language", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColorVal
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Language.values().toList().chunked(3).forEach { langRow ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        langRow.forEach { lang ->
+                                            val selected = currentLang == lang
+                                            FilledTonalButton(
+                                                onClick = {
+                                                    viewModel.triggerAudioFeedback("click")
+                                                    viewModel.setLanguage(lang)
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = if (selected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            ) {
+                                                Text(
+                                                    text = lang.displayName,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    softWrap = false
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("left_handed_controls", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = leftHandedControls,
-                                        onCheckedChange = { viewModel.setLeftHandedControls(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("extra_smooth_falling", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = smoothFallingEnabled,
-                                        onCheckedChange = { viewModel.setSmoothFallingEnabled(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("fast_drop_lock_speed", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                supportingContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("fast_drop_lock_speed_desc", currentLang),
-                                        maxLines = 3
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = fastDropLockSpeed,
-                                        onCheckedChange = { viewModel.setFastDropLockSpeed(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("line_clear_challenge", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                supportingContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("line_clear_challenge_desc", currentLang),
-                                        maxLines = 3
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = lineClearChallenge,
-                                        onCheckedChange = { viewModel.setLineClearChallenge(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
                     }
 
-                    3 -> {
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    // Reset All Settings Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("sound_effects", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = soundEnabled,
-                                        onCheckedChange = { viewModel.setSoundEnabled(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        if (soundEnabled) {
-                            ElevatedCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(20.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            AdaptiveText(
-                                                text = if (currentLang == Language.RU) "Громкость звуковых эффектов" else "Sound Effects Volume",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            AdaptiveText(
-                                                text = "${(soundVolume * 100).toInt()}%",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = themeColorVal,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                    Slider(
-                                        value = soundVolume,
-                                        onValueChange = { viewModel.setSoundVolume(it) },
-                                        valueRange = 0f..1f,
-                                        colors = SliderDefaults.colors(
-                                            thumbColor = themeColorVal,
-                                            activeTrackColor = themeColorVal
-                                        )
-                                    )
-                                }
+                            val resetAllTitle = when (currentLang) {
+                                Language.RU -> "СБРОСИТЬ ВСЕ НАСТРОЙКИ"
+                                Language.UA -> "СКИДАННЯ ВСІХ НАЛАШТУВАНЬ"
+                                Language.KK -> "БАРЛЫҚ БАПТАУЛАРДЫ ҚАЛПЫНА КЕЛТІРУ"
+                                Language.DE -> "ALLE EINSTELLUNGEN ZURÜCKSETZEN"
+                                Language.ZH -> "重置所有设置"
+                                else -> "RESET ALL SETTINGS"
                             }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = if (currentLang == Language.RU) "Фоновая музыка в лобби" else "Lobby Background Music",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = lobbyMusicEnabled,
-                                        onCheckedChange = { viewModel.setLobbyMusicEnabled(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-
-                        if (lobbyMusicEnabled) {
-                            ElevatedCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(20.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            AdaptiveText(
-                                                text = if (currentLang == Language.RU) "Громкость музыки" else "Lobby Music Volume",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            AdaptiveText(
-                                                text = "${(lobbyMusicVolume * 100).toInt()}%",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = themeColorVal,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                    Slider(
-                                        value = lobbyMusicVolume,
-                                        onValueChange = { viewModel.setLobbyMusicVolume(it) },
-                                        valueRange = 0f..1f,
-                                        colors = SliderDefaults.colors(
-                                            thumbColor = themeColorVal,
-                                            activeTrackColor = themeColorVal
-                                        )
-                                    )
-                                }
+                            val resetAllDesc = when (currentLang) {
+                                Language.RU -> "Восстановит все параметры приложения по умолчанию"
+                                Language.UA -> "Відновить усі параметри програми за замовчуванням"
+                                Language.KK -> "Қолданбаның барлық параметрлерін әдепкі күйіне қайтарады"
+                                Language.DE -> "Stellt alle Einstellungen auf Werkseinstellungen zurück"
+                                Language.ZH -> "将应用和游戏的所有设置恢复为出厂默认值"
+                                else -> "Restores all game configurations to factory defaults"
                             }
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    AdaptiveText(
-                                        text = Translations.get("vibration", currentLang),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = vibrationEnabled,
-                                        onCheckedChange = { viewModel.setVibrationEnabled(it) }
-                                    )
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            val resetBtnLabel = when (currentLang) {
+                                Language.RU -> "СБРОСИТЬ"
+                                Language.UA -> "СКИНУТИ"
+                                Language.KK -> "ҚАЛПЫНА КЕЛТІРУ"
+                                Language.DE -> "ZURÜCKSETZEN"
+                                Language.ZH -> "立即重置"
+                                else -> "RESET DEFAULTS"
+                            }
+                            AdaptiveText(
+                                text = resetAllTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.error
                             )
-                        }
-
-                    }
-
-                    4 -> {
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            onClick = onCustomizeControls
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "Кастомизация управления" else "Customize Controls Layout",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                supportingContent = {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "Настроить размер, прозрачность, тип и позицию кнопок" else "Configure scale, opacity, style and position of controls"
-                                    )
-                                },
-                                trailingContent = {
-                                    Icon(Icons.Default.Edit, contentDescription = "Edit")
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            AdaptiveText(
+                                text = resetAllDesc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
-                        }
-
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("success")
+                                    viewModel.resetSettingsToDefault()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
                                 Text(
-                                    text = if (currentLang == Language.RU) "Вертикальная позиция управления" else "Tactical Controller Vertical position",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
+                                    text = resetBtnLabel,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                val positions = listOf(
-                                    "bottom" to (if (currentLang == Language.RU) "Нижнее положение" else "Lower Edge bottom position"),
-                                    "middle" to (if (currentLang == Language.RU) "Центральное положение" else "Comfort Middle height position"),
-                                    "top" to (if (currentLang == Language.RU) "Верхнее положение" else "Elevated Top reach position")
-                                )
-                                positions.forEach { (key, title) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable { viewModel.setControlVerticalPosition(key) }
-                                            .padding(vertical = 6.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = controlVerticalPosition == key,
-                                            onClick = { viewModel.setControlVerticalPosition(key) },
-                                            colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-                                    }
-                                }
                             }
                         }
                     }
-
-
-                                    5 -> {
-                        // Language Selection
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                AdaptiveText(
-                                    text = Translations.get("change_language", currentLang),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Language.values().toList().chunked(3).forEach { langRow ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            langRow.forEach { lang ->
-                                                val selected = currentLang == lang
-                                                FilledTonalButton(
-                                                    onClick = {
-                                                        viewModel.triggerAudioFeedback("click")
-                                                        viewModel.setLanguage(lang)
-                                                    },
-                                                    modifier = Modifier.weight(1f),
-                                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                                        containerColor = if (selected) themeColorVal else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                                        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                                    )
-                                                ) {
-                                                    Text(
-                                                        text = lang.displayName,
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        maxLines = 1,
-                                                        softWrap = false
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Single Reset Settings Card
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "СБРОСИТЬ ВСЕ НАСТРОЙКИ" else "RESET ALL SETTINGS",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                AdaptiveText(
-                                    text = if (currentLang == Language.RU) "Восстановит все параметры приложения по умолчанию" else "Restores all game configurations to factory defaults",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Button(
-                                    onClick = {
-                                        viewModel.triggerAudioFeedback("success")
-                                        viewModel.resetSettingsToDefault()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "СБРОСИТЬ" else "RESET DEFAULTS",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
+                }
             }
         }
 
@@ -4024,10 +5705,51 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                 .fillMaxSize()
         ) {
             val isWideScreen = maxWidth >= 600.dp
-            val categoryTitles = when (currentLang) {
-                Language.RU -> listOf("ОСНОВНЫЕ", "ВИЗУАЛ", "ГЕЙМПЛЕЙ", "ЗВУК И ВИБРАЦИЯ", "ИНТЕРФЕЙС", "СИСТЕМА")
-                Language.DE -> listOf("ALLGEMEIN", "VISUELL", "GAMEPLAY", "AUDIO & VIBRATION", "INTERFACE", "SYSTEM")
-                else -> listOf("GENERAL", "VISUALS", "TACTICAL", "AUDIO & VIBRATION", "INTERFACE", "SYSTEM")
+            data class CategoryMeta(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+
+            val categories = when (currentLang) {
+                Language.RU -> listOf(
+                    CategoryMeta("ВИЗУАЛ", Icons.Default.Palette),
+                    CategoryMeta("ГЕЙМПЛЕЙ", Icons.Default.SportsEsports),
+                    CategoryMeta("УПРАВЛЕНИЕ", Icons.Default.Gamepad),
+                    CategoryMeta("ЗВУК", Icons.Default.VolumeUp),
+                    CategoryMeta("СИСТЕМА", Icons.Default.Language)
+                )
+                Language.UA -> listOf(
+                    CategoryMeta("ВІЗУАЛ", Icons.Default.Palette),
+                    CategoryMeta("ГЕЙМПЛЕЙ", Icons.Default.SportsEsports),
+                    CategoryMeta("КЕРУВАННЯ", Icons.Default.Gamepad),
+                    CategoryMeta("ЗВУК", Icons.Default.VolumeUp),
+                    CategoryMeta("СИСТЕМА", Icons.Default.Language)
+                )
+                Language.KK -> listOf(
+                    CategoryMeta("ВИЗУАЛ", Icons.Default.Palette),
+                    CategoryMeta("ГЕЙМПЛЕЙ", Icons.Default.SportsEsports),
+                    CategoryMeta("БАСҚАРУ", Icons.Default.Gamepad),
+                    CategoryMeta("ДЫБЫС", Icons.Default.VolumeUp),
+                    CategoryMeta("ЖҮЙЕ", Icons.Default.Language)
+                )
+                Language.DE -> listOf(
+                    CategoryMeta("VISUELL", Icons.Default.Palette),
+                    CategoryMeta("GAMEPLAY", Icons.Default.SportsEsports),
+                    CategoryMeta("STEUERUNG", Icons.Default.Gamepad),
+                    CategoryMeta("AUDIO", Icons.Default.VolumeUp),
+                    CategoryMeta("SYSTEM", Icons.Default.Language)
+                )
+                Language.ZH -> listOf(
+                    CategoryMeta("画面视觉", Icons.Default.Palette),
+                    CategoryMeta("战术玩法", Icons.Default.SportsEsports),
+                    CategoryMeta("操作控制", Icons.Default.Gamepad),
+                    CategoryMeta("音频震动", Icons.Default.VolumeUp),
+                    CategoryMeta("系统设置", Icons.Default.Language)
+                )
+                else -> listOf(
+                    CategoryMeta("VISUALS", Icons.Default.Palette),
+                    CategoryMeta("GAMEPLAY", Icons.Default.SportsEsports),
+                    CategoryMeta("CONTROLS", Icons.Default.Gamepad),
+                    CategoryMeta("AUDIO", Icons.Default.VolumeUp),
+                    CategoryMeta("SYSTEM", Icons.Default.Language)
+                )
             }
 
             if (isWideScreen) {
@@ -4044,18 +5766,22 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        categoryTitles.forEachIndexed { index, title ->
+                        categories.forEachIndexed { index, cat ->
                             val selected = activeCategory == index
                             NavigationDrawerItem(
+                                icon = { Icon(cat.icon, contentDescription = cat.title) },
                                 label = {
                                     AdaptiveText(
-                                        text = title,
+                                        text = cat.title,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold
                                     )
                                 },
                                 selected = selected,
-                                onClick = { activeCategory = index },
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    activeCategory = index
+                                },
                                 colors = NavigationDrawerItemDefaults.colors(
                                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                     unselectedContainerColor = Color.Transparent,
@@ -4092,14 +5818,18 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         edgePadding = 0.dp,
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
-                        categoryTitles.forEachIndexed { index, title ->
+                        categories.forEachIndexed { index, cat ->
                             Tab(
                                 selected = activeCategory == index,
-                                onClick = { activeCategory = index },
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    activeCategory = index
+                                },
+                                icon = { Icon(cat.icon, contentDescription = cat.title, modifier = Modifier.size(18.dp)) },
                                 text = {
                                     AdaptiveText(
-                                        text = title,
-                                        style = MaterialTheme.typography.labelLarge,
+                                        text = cat.title,
+                                        style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -4161,8 +5891,16 @@ fun AboutAppDialog(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
+                        val aboutAppTitle = when (currentLang) {
+                            Language.RU -> "О ПРИЛОЖЕНИИ"
+                            Language.UA -> "ПРО ДОДАТОК"
+                            Language.KK -> "ҚОЛДАНБА ТУРАЛЫ"
+                            Language.DE -> "ÜBER DIE APP"
+                            Language.ZH -> "关于应用"
+                            else -> "ABOUT APP"
+                        }
                         Text(
-                            text = if (currentLang == Language.RU) "О ПРИЛОЖЕНИИ" else "ABOUT APP",
+                            text = aboutAppTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 0.5.sp
@@ -4194,10 +5932,34 @@ fun AboutAppDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Segmented Tab Selector
+                val tabAbout = when (currentLang) {
+                    Language.RU -> "Проект"
+                    Language.UA -> "Проєкт"
+                    Language.KK -> "Жоба"
+                    Language.DE -> "Projekt"
+                    Language.ZH -> "项目概况"
+                    else -> "About"
+                }
+                val tabSponsors = when (currentLang) {
+                    Language.RU -> "Спонсоры"
+                    Language.UA -> "Спонсори"
+                    Language.KK -> "Демеушілер"
+                    Language.DE -> "Sponsoren"
+                    Language.ZH -> "赞助鸣谢"
+                    else -> "Sponsors"
+                }
+                val tabTeam = when (currentLang) {
+                    Language.RU -> "Команда"
+                    Language.UA -> "Команда"
+                    Language.KK -> "Команда"
+                    Language.DE -> "Team"
+                    Language.ZH -> "制作团队"
+                    else -> "Team"
+                }
                 val tabs = listOf(
-                    Triple(0, if (currentLang == Language.RU) "Проект" else "About", Icons.Default.Info),
-                    Triple(1, if (currentLang == Language.RU) "Спонсоры" else "Sponsors", Icons.Default.Star),
-                    Triple(2, if (currentLang == Language.RU) "Команда" else "Team", Icons.Default.People)
+                    Triple(0, tabAbout, Icons.Default.Info),
+                    Triple(1, tabSponsors, Icons.Default.Star),
+                    Triple(2, tabTeam, Icons.Default.People)
                 )
 
                 Surface(
@@ -4312,13 +6074,13 @@ fun AboutAppDialog(
 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        text = "FsFq Tetris",
+                                        text = "FlowTess",
                                         style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Black,
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
                                     Text(
-                                        text = "0.93.3 Alpha",
+                                        text = "0.94.8 Alpha",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -4335,16 +6097,30 @@ fun AboutAppDialog(
                                         modifier = Modifier.padding(18.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
+                                        val aboutProjectHeader = when (currentLang) {
+                                            Language.RU -> "О ПРОЕКТЕ"
+                                            Language.UA -> "ПРО ПРОЄКТ"
+                                            Language.KK -> "ЖОБА ТУРАЛЫ"
+                                            Language.DE -> "ÜBER DAS PROJEKT"
+                                            Language.ZH -> "关于项目"
+                                            else -> "ABOUT PROJECT"
+                                        }
+                                        val aboutProjectDesc = when (currentLang) {
+                                            Language.RU -> "Современная кросс-режимная реализация легендарной классики с онлайн-мультиплеером, кейсами, богатой кастомизацией и системой престижа."
+                                            Language.UA -> "Сучасна крос-режимна реалізація легендарної класики з онлайн-мультиплеєром, кейсами, багатою кастомізацією та системою престижу."
+                                            Language.KK -> "Онлайн-мультиплеері, кейстері, бай кастомизациясы және бедел жүйесі бар аңызға айналған классиканың заманауи кросс-режимдік нұсқасы."
+                                            Language.DE -> "Moderne Multi-Modus-Implementierung des legendären Klassikers mit Echtzeit-Mehrspieler, Beutekisten, tiefgreifender Anpassung und Prestige-Fortschritt."
+                                            Language.ZH -> "传奇经典方块游戏的现代化多模式实现，包含实时多人对战、战利品箱、深度个性化定制及荣誉威望系统。"
+                                            else -> "Modern multi-mode implementation of the legendary classic featuring real-time multiplayer, loot crates, deep cosmetics customization, and prestige progression."
+                                        }
                                         Text(
-                                            text = if (currentLang == Language.RU) "О ПРОЕКТЕ" else "ABOUT PROJECT",
+                                            text = aboutProjectHeader,
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            text = if (currentLang == Language.RU)
-                                                "Современная кросс-режимная реализация легендарной классики с онлайн-мультиплеером, кейсами, богатой кастомизацией и системой престижа."
-                                                else "Modern multi-mode implementation of the legendary classic featuring real-time multiplayer, loot crates, deep cosmetics customization, and prestige progression.",
+                                            text = aboutProjectDesc,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -4416,12 +6192,29 @@ fun AboutAppDialog(
                                                 color = Color(0xFFFF4081)
                                             )
 
+                                            val mainSponsorLabel = when (currentLang) {
+                                                Language.RU -> "ГЕНЕРАЛЬНЫЙ СПОНСОР"
+                                                Language.UA -> "ГЕНЕРАЛЬНИЙ СПОНСОР"
+                                                Language.KK -> "БАС ДЕМЕУШІ"
+                                                Language.DE -> "HAUPTSPONSOR"
+                                                Language.ZH -> "首席赞助者"
+                                                else -> "MAIN SPONSOR"
+                                            }
+                                            val mainSponsorDesc = when (currentLang) {
+                                                Language.RU -> "Особая благодарность и признательность за неоценимую поддержку развития проекта! ❤️"
+                                                Language.UA -> "Особлива подяка та вдячність за неоціненну підтримку розвитку проєкту! ❤️"
+                                                Language.KK -> "Жобаның дамуына баға жетпес қолдау көрсеткені үшін ерекше алғыс пен ризашылық! ❤️"
+                                                Language.DE -> "Besonderer Dank und herzliche Anerkennung für die unschätzbare Unterstützung dieses Projekts! ❤️"
+                                                Language.ZH -> "特别感谢对本项目开发与持续改进做出的无价支持与贡献！❤️"
+                                                else -> "Special gratitude and heartfelt thanks for invaluable support of the project! ❤️"
+                                            }
+
                                             Surface(
                                                 shape = RoundedCornerShape(8.dp),
                                                 color = Color(0xFFFF4081).copy(alpha = 0.2f)
                                             ) {
                                                 Text(
-                                                    text = if (currentLang == Language.RU) "ГЕНЕРАЛЬНЫЙ СПОНСОР" else "MAIN SPONSOR",
+                                                    text = mainSponsorLabel,
                                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                                     fontWeight = FontWeight.ExtraBold,
                                                     color = Color(0xFFFF4081),
@@ -4430,9 +6223,7 @@ fun AboutAppDialog(
                                             }
 
                                             Text(
-                                                text = if (currentLang == Language.RU)
-                                                    "Особая благодарность и признательность за неоценимую поддержку развития проекта! ❤️"
-                                                    else "Special gratitude and heartfelt thanks for invaluable support of the project! ❤️",
+                                                text = mainSponsorDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -4474,12 +6265,20 @@ fun AboutAppDialog(
                                             fontWeight = FontWeight.Black,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
+                                        val authorDevLabel = when (currentLang) {
+                                            Language.RU -> "АВТОР И РАЗРАБОТЧИК"
+                                            Language.UA -> "АВТОР ТА РОЗРОБНИК"
+                                            Language.KK -> "АВТОР ЖӘНЕ ӘЗІРЛЕУШІ"
+                                            Language.DE -> "AUTOR & ENTWICKLER"
+                                            Language.ZH -> "作者与主开发者"
+                                            else -> "AUTHOR & DEVELOPER"
+                                        }
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
                                             color = MaterialTheme.colorScheme.primary
                                         ) {
                                             Text(
-                                                text = if (currentLang == Language.RU) "АВТОР И РАЗРАБОТЧИК" else "AUTHOR & DEVELOPER",
+                                                text = authorDevLabel,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -4504,8 +6303,16 @@ fun AboutAppDialog(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
+                                        val testersHeader = when (currentLang) {
+                                            Language.RU -> "ТЕСТИРОВЩИКИ"
+                                            Language.UA -> "ТЕСТУВАЛЬНИКИ"
+                                            Language.KK -> "ТЕСТЕРЛЕР"
+                                            Language.DE -> "TESTER / QA"
+                                            Language.ZH -> "测试人员 / QA"
+                                            else -> "TESTERS / QA"
+                                        }
                                         Text(
-                                            text = if (currentLang == Language.RU) "ТЕСТИРОВЩИКИ" else "TESTERS / QA",
+                                            text = testersHeader,
                                             style = MaterialTheme.typography.labelLarge,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -4560,1017 +6367,6 @@ fun MultiplayerScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     onBack()
 }
 
-@Suppress("UNUSED_PARAMETER", "UNUSED_VARIABLE")
-fun unusedMultiplayerScreen() {
-    /*
-    val currentLang by viewModel.language.collectAsStateWithLifecycle()
-    val onlineTier by viewModel.onlineTier.collectAsStateWithLifecycle()
-    val onlineRegion by viewModel.onlineRegion.collectAsStateWithLifecycle()
-    val themeColorStr by viewModel.themeColor.collectAsStateWithLifecycle()
-    val localName by viewModel.playerName.collectAsStateWithLifecycle()
-    
-    val themeColorVal = when(themeColorStr) {
-        "CYAN", "neon" -> Color(0xFF00ADB5)
-        "RED", "rose" -> Color(0xFFE94560)
-        "VIOLET", "indigo" -> Color(0xFF8C52FF)
-        "GOLD", "amber" -> Color(0xFFFFCC00)
-        "GREEN", "emerald" -> Color(0xFF00E676)
-        else -> Color(0xFF00ADB5)
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-    var matchState by remember { mutableStateOf<MultiplayerState>(MultiplayerState.IDLE) }
-    var matchRunningTime by remember { mutableStateOf(0) }
-    
-    var roomCodeInput by remember { mutableStateOf("") }
-    var regionalPing by remember { mutableStateOf(14) }
-    var playerScore by remember { mutableStateOf(0) }
-    var playerCombo by remember { mutableStateOf(0) }
-    
-    var playerGrid by remember { mutableStateOf(List(12) { IntArray(10) }) }
-    
-    var opponentGridState by remember { mutableStateOf(List(12) { IntArray(10) }) }
-    var opponentScoreState by remember { mutableStateOf(0) }
-    var opponentGameOver by remember { mutableStateOf(false) }
-    
-    var connectionLogs by remember { mutableStateOf(listOf<String>()) }
-    var systemMessages by remember { mutableStateOf(listOf<String>()) }
-    var chatInput by remember { mutableStateOf("") }
-    
-    var isChatOpen by remember { mutableStateOf(false) }
-    var opponentName by remember { mutableStateOf("Volt_Apex_88") }
-    var opponentPing by remember { mutableStateOf(20) }
-    var countdownValue by remember { mutableStateOf(3) }
-
-    // Fluctuating Regional Ping effect
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1500)
-            regionalPing = (12..25).random()
-            opponentPing = (15..32).random()
-        }
-    }
-
-    fun appendLog(msg: String) {
-        connectionLogs = connectionLogs + msg
-    }
-
-    // Instanciate our robust, live P2PConnectionManager
-    val connectionManager = remember {
-        P2PConnectionManager(
-            onAttackReceived = { linesCount ->
-                viewModel.triggerAudioFeedback("gameover")
-                val newGrid = playerGrid.map { it.clone() }.toMutableList()
-                for (i in 0 until linesCount) {
-                    if (newGrid.isNotEmpty()) {
-                        newGrid.removeAt(0) // drop top row
-                    }
-                    val garbageRow = IntArray(10) { 1 }
-                    garbageRow[(0..9).random()] = 0 // insert hole
-                    newGrid.add(garbageRow)
-                }
-                playerGrid = newGrid
-                systemMessages = systemMessages + (
-                    if (currentLang == Language.RU) "Оппонент отправил тебе $linesCount линий мусора!"
-                    else "Opponent sent $linesCount garbage line(s) to you!"
-                )
-            },
-            onOpponentStateReceived = { grid, score, isGameOver ->
-                opponentGridState = grid
-                opponentScoreState = score
-                opponentGameOver = isGameOver
-                if (isGameOver) {
-                    systemMessages = systemMessages + (
-                        if (currentLang == Language.RU) "Оппонент выбыл! Ты на высоте!"
-                        else "Opponent's grid is full! You dominate!"
-                    )
-                }
-            },
-            onStatusChanged = { status ->
-                // Handled in sub checks
-            },
-            onChatReceived = { sender, text ->
-                systemMessages = systemMessages + "$sender: $text"
-            },
-            onDisconnected = {
-                matchState = MultiplayerState.IDLE
-            }
-        )
-    }
-
-    // Capture lifecycle connections cleanly
-    val managerStatus by connectionManager.status.collectAsStateWithLifecycle()
-    val managerRoomId by connectionManager.roomId.collectAsStateWithLifecycle()
-    val managerOpponentName by connectionManager.opponentName.collectAsStateWithLifecycle()
-
-    DisposableEffect(Unit) {
-        onDispose {
-            connectionManager.disconnect()
-        }
-    }
-
-    // Drive local Game Timer and countdown when connected
-    LaunchedEffect(managerStatus) {
-        if (managerStatus == P2PStatus.CONNECTED) {
-            matchState = MultiplayerState.CONNECTED
-            countdownValue = 3
-            systemMessages = systemMessages + (
-                if (currentLang == Language.RU) "[Коннект] P2P тоннель установлен с $managerOpponentName! (Пинг: ${opponentPing}ms)"
-                else "[Connect] P2P tunnel secured with $managerOpponentName! (Ping: ${opponentPing}ms)"
-            )
-            viewModel.triggerAudioFeedback("start")
-            while (countdownValue > 0) {
-                delay(1000)
-                countdownValue--
-            }
-            
-            playerScore = 0
-            playerCombo = 0
-            playerGrid = List(12) { IntArray(10) }
-            opponentGridState = List(12) { IntArray(10) }
-            opponentScoreState = 0
-            opponentGameOver = false
-            matchRunningTime = 0
-            
-            matchState = MultiplayerState.PLAYING
-            systemMessages = systemMessages + (
-                if (currentLang == Language.RU) "БИТВА НАЧАЛАСЬ! Кликни на сетку, чтобы бросать блоки!"
-                else "MATCH STARTED! Click columns on the board to drop blocks!"
-            )
-        } else if (managerStatus == P2PStatus.DISCONNECTED) {
-            matchState = MultiplayerState.IDLE
-        } else if (managerStatus == P2PStatus.ERROR) {
-            matchState = MultiplayerState.IDLE
-            systemMessages = systemMessages + "Connection error! Dropped back to lobby."
-        }
-    }
-
-    // Match Timeline and bot action logic
-    LaunchedEffect(matchState) {
-        if (matchState == MultiplayerState.GAME_OVER) {
-            val playerWins = playerScore >= opponentScoreState && !playerGrid[0].any { it > 0 }
-            viewModel.awardMultiplayerCredits(playerScore, opponentScoreState, playerWins)
-        }
-        if (matchState == MultiplayerState.PLAYING) {
-            while (matchState == MultiplayerState.PLAYING) {
-                delay(1000)
-                matchRunningTime++
-                
-                // Keep network sync'd
-                connectionManager.sendStateUpdate(playerGrid, playerScore, false)
-                
-                // Emulate occasional action if opponent is an AI Bot
-                if (managerOpponentName.contains("Bot") || managerOpponentName.contains("Alpha")) {
-                    if ((1..100).random() < 22) {
-                        val tempOpGrid = opponentGridState.map { it.clone() }.toMutableList()
-                        val randomCol = (0..9).random()
-                        var lowest = -1
-                        for (r in 11 downTo 0) {
-                            if (tempOpGrid[r][randomCol] == 0) {
-                                lowest = r
-                                break
-                            }
-                        }
-                        if (lowest != -1) {
-                            tempOpGrid[lowest][randomCol] = (1..3).random()
-                            opponentGridState = tempOpGrid
-                            opponentScoreState += (20..50).random()
-                        }
-                    }
-                }
-                
-                if (matchRunningTime >= 95) {
-                    matchState = MultiplayerState.GAME_OVER
-                }
-            }
-        }
-    }
-
-    // Interactive drop logic
-    fun dropBlockInColumn(col: Int) {
-        if (matchState != MultiplayerState.PLAYING) return
-        val newGrid = playerGrid.map { it.clone() }.toMutableList()
-        // Find the lowest empty row (value == 0) in this column
-        var lowestRow = -1
-        for (r in 11 downTo 0) {
-            if (newGrid[r][col] == 0) {
-                lowestRow = r
-                break
-            }
-        }
-        if (lowestRow != -1) {
-            val blockColor = (1..3).random()
-            newGrid[lowestRow][col] = blockColor
-            
-            // Check for completed rows
-            val rowsToRemove = mutableListOf<Int>()
-            for (r in 0..11) {
-                if (newGrid[r].all { it > 0 }) {
-                    rowsToRemove.add(r)
-                }
-            }
-            
-            if (rowsToRemove.isNotEmpty()) {
-                // Remove rows and shift down
-                for (r in rowsToRemove) {
-                    newGrid.removeAt(r)
-                    newGrid.add(0, IntArray(10) { 0 })
-                }
-                playerScore += 160 * rowsToRemove.size
-                playerCombo++
-                viewModel.triggerAudioFeedback("clear")
-                connectionManager.sendAttackTrigger(rowsToRemove.size)
-                systemMessages = systemMessages + (
-                    if (currentLang == Language.RU) "Очистка! Ты срезал ряд! (+${160 * rowsToRemove.size})"
-                    else "Hit! Row cleared! (+${160 * rowsToRemove.size})"
-                )
-            } else {
-                viewModel.triggerAudioFeedback("move")
-            }
-            
-            playerGrid = newGrid
-            connectionManager.sendStateUpdate(playerGrid, playerScore, false)
-        } else {
-            // Grid full -> Local Game Over!
-            viewModel.triggerAudioFeedback("gameover")
-            systemMessages = systemMessages + (
-                if (currentLang == Language.RU) "Сетка переполнена! ИГРА ОКОНЧЕНА!"
-                else "Grid full! GAME OVER!"
-            )
-            matchState = MultiplayerState.GAME_OVER
-            connectionManager.sendStateUpdate(playerGrid, playerScore, true)
-        }
-    }
-
-    val multiplayerGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0C090F),
-            Color(0xFF13111A),
-            themeColorVal.copy(alpha = 0.08f),
-            Color(0xFF0B090C)
-        )
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(multiplayerGradient)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .safeDrawingPadding()
-        ) {
-            // TOP HEADBAR WITH BACK TOGGLE
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        connectionManager.disconnect()
-                        onBack()
-                    },
-                    modifier = Modifier.background(Color(0xFF181922), RoundedCornerShape(12.dp))
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = themeColorVal
-                    )
-                }
-                
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = if (currentLang == Language.RU) "ПИНГ РЕГИОНА" else "REGIONAL PING",
-                        fontSize = 9.sp,
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "$regionalPing ms ($onlineRegion)",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (regionalPing < 20) Color(0xFF00FFCC) else themeColorVal
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // CONSOLE STATUS / MAIN CARD
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, themeColorVal, RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF181922).copy(alpha = 0.9f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (managerStatus == P2PStatus.CONNECTED) Color.Green else Color.Red)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (currentLang == Language.RU) {
-                            "СОКЕТ СТАТУС: ${managerStatus.name}"
-                        } else {
-                            "SOCKET STATUS: ${managerStatus.name}"
-                        },
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.White
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-
-            when (matchState) {
-                MultiplayerState.IDLE -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = if (currentLang == Language.RU) "ЛИГА МУЛЬТИПЛЕЕРА" else "CONCENSUS BATTLEGROUND",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (currentLang == Language.RU) "Реальные игры с игроками по всему миру" else "Pure WebSocket-driven global matches",
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Spacer(modifier = Modifier.height(30.dp))
-                        
-                        // HOST GAME UNIT
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.2.dp, Brush.horizontalGradient(
-                                    colors = listOf(themeColorVal, themeColorVal.copy(alpha = 0.3f), themeColorVal)
-                                ), RoundedCornerShape(16.dp)),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF110E22)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = if (currentLang == Language.RU) "1. СОЗДАТЬ СВОЕ ЛОББИ" else "OPTION A: HOST NEW GAME",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = if (currentLang == Language.RU) "Создайте комнату и сообщите друг-код вашему оппоненту." else "Spin up a live room and share code with a friend.",
-                                    fontSize = 10.sp,
-                                    color = Color.White.copy(alpha = 0.7f)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Button(
-                                    onClick = {
-                                        connectionManager.hostRoom(localName)
-                                        matchState = MultiplayerState.SEARCHING
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = themeColorVal),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ОТКРЫТЬ КАНАЛ ВЕЩАНИЯ" else "OPEN TRANSMISSION CHANNEL",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        color = Color.Black
-                                    )
-                                }
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // JOIN GAME UNIT
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.2.dp, Brush.horizontalGradient(
-                                    colors = listOf(themeColorVal.copy(alpha = 0.3f), themeColorVal, themeColorVal.copy(alpha = 0.3f))
-                                ), RoundedCornerShape(16.dp)),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF110E22)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = if (currentLang == Language.RU) "2. ПОДКЛЮЧИТЬСЯ К ДРУГУ" else "OPTION B: JOIN EXISTING CHANNEL",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp,
-                                    color = themeColorVal
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                
-                                OutlinedTextField(
-                                    value = roomCodeInput,
-                                    onValueChange = { roomCodeInput = it.uppercase() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    label = { Text(if (currentLang == Language.RU) "Введите Room код (ROOM-XXXX)" else "Target Room Code (ROOM-XXXX)", fontSize = 11.sp) },
-                                    textStyle = TextStyle(color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold),
-                                    shape = RoundedCornerShape(12.dp),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = themeColorVal,
-                                        unfocusedBorderColor = Color.Gray
-                                    )
-                                )
-                                
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Button(
-                                    onClick = {
-                                        if (roomCodeInput.isNotBlank()) {
-                                            connectionManager.joinRoom(roomCodeInput, localName)
-                                            matchState = MultiplayerState.SEARCHING
-                                        }
-                                    },
-                                    enabled = roomCodeInput.isNotBlank(),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = themeColorVal,
-                                        disabledContainerColor = themeColorVal.copy(alpha = 0.3f)
-                                    ),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ВНЕДРИТЬСЯ В КАНАЛ" else "INJECT INTO CHANNEL",
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (roomCodeInput.isNotBlank()) Color.Black else Color.White.copy(alpha = 0.5f),
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                    
-                    MultiplayerState.SEARCHING -> {
-                        // Diagnostic network console for P2P connection
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "CONNECTING WEBSOCKET/P2P REAL-TIME TERMINAL",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = themeColorVal
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.Black),
-                                shape = RoundedCornerShape(10.dp),
-                                border = BorderStroke(1.dp, themeColorVal)
-                            ) {
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .fillMaxSize()
-                                ) {
-                                    items(connectionLogs) { log ->
-                                        Text(
-                                            text = log,
-                                            fontSize = 11.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = if (log.contains("DATA CHANNEL")) Color.Green else Color.Cyan,
-                                            modifier = Modifier.padding(vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(color = themeColorVal, modifier = Modifier.size(24.dp))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = if (currentLang == Language.RU) "СИНХРОНИЗАЦИЯ С УЗЛОМ PEERJS..." else "ESTABLISHING ICE CONNECTIVITY...",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                    
-                    MultiplayerState.CONNECTED -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = if (currentLang == Language.RU) "P2P СОКЕТ УСТАНОВЛЕН!" else "WebRTC P2P PIPELINE IS GO!",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Black,
-                                color = themeColorVal
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(themeColorVal.copy(alpha = 0.2f))
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.VideogameAsset,
-                                            contentDescription = null,
-                                            tint = themeColorVal,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(if (currentLang == Language.RU) "ТЫ" else "YOU", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    Text(onlineTier, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                                }
-                                
-                                Text("P2P", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.outline)
-                                
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.1f))
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Computer,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(opponentName, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    Text("PEER CHALLENGER", fontSize = 9.sp, color = themeColorVal)
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(30.dp))
-                            
-                            Text(
-                                text = countdownValue.toString(),
-                                fontSize = 54.sp,
-                                fontWeight = FontWeight.Black,
-                                color = themeColorVal
-                            )
-                        }
-                    }
-                    
-                    MultiplayerState.PLAYING, MultiplayerState.GAME_OVER -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(RoundedCornerShape(50))
-                                            .background(if (matchState == MultiplayerState.PLAYING) Color.Green else Color.Red)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ОНЛАЙН СХВАТКА" else "LIVE SOCKET FIGHT",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                
-                                Button(
-                                    onClick = { isChatOpen = !isChatOpen },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isChatOpen) themeColorVal else Color(0xFF1F202D)
-                                    ),
-                                    modifier = Modifier.height(28.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ЧАТ" else "CHAT",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isChatOpen) Color.Black else Color.White
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
-                            // Interactive guidance hint
-                            if (matchState == MultiplayerState.PLAYING) {
-                                Text(
-                                    text = if (currentLang == Language.RU) "НАЖИМАЙТЕ НА КОЛОНКИ СЕТКИ, ЧТОБЫ БРОСАТЬ БЛОКИ!" else "TAP MINIBOARD COLUMNS TO DROP STACK BLOCKS!",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = themeColorVal.copy(alpha = 0.8f),
-                                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 6.dp)
-                                )
-                            }
-                            
-                            // Dual Stacking boards side by side
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                MiniBoard(
-                                    grid = playerGrid,
-                                    title = if (currentLang == Language.RU) "ТЫ ($localName)" else "YOU ($localName)",
-                                    score = playerScore,
-                                    combo = playerCombo,
-                                    onColumnClick = { colIndex ->
-                                        if (matchState == MultiplayerState.PLAYING) {
-                                            // Handle block drop
-                                            val currentGrid = playerGrid.map { it.clone() }.toMutableList()
-                                            var placedRow = -1
-                                            for (r in 11 downTo 0) {
-                                                if (currentGrid[r][colIndex] == 0) {
-                                                    currentGrid[r][colIndex] = (1..3).random()
-                                                    placedRow = r
-                                                    break
-                                                }
-                                            }
-                                            
-                                            if (placedRow != -1) {
-                                                playerGrid = currentGrid
-                                                viewModel.triggerAudioFeedback("tap")
-                                                
-                                                // Check for row completion
-                                                var linesCleared = 0
-                                                val finalGrid = mutableListOf<IntArray>()
-                                                for (r in 0..11) {
-                                                    val row = currentGrid[r]
-                                                    val isFull = row.all { it > 0 }
-                                                    if (isFull) {
-                                                        linesCleared++
-                                                    } else {
-                                                        finalGrid.add(row.clone())
-                                                    }
-                                                }
-                                                while (finalGrid.size < 12) {
-                                                    finalGrid.add(0, IntArray(10))
-                                                }
-                                                
-                                                if (linesCleared > 0) {
-                                                    playerScore += linesCleared * 100
-                                                    playerCombo += linesCleared
-                                                    viewModel.triggerAudioFeedback("clear")
-                                                    playerGrid = finalGrid
-                                                    // Trigger attack send to the opponent
-                                                    connectionManager.sendAttackTrigger(linesCleared)
-                                                    systemMessages = systemMessages + (
-                                                        if (currentLang == Language.RU) "Очистка! Ты отправил $linesCleared линий мусора!"
-                                                        else "Row match! Sent $linesCleared lines of garbage!"
-                                                    )
-                                                } else {
-                                                    playerGrid = finalGrid
-                                                }
-                                                
-                                                // Broadcast update
-                                                connectionManager.sendStateUpdate(playerGrid, playerScore, false)
-                                            } else {
-                                                // Overflow checking
-                                                viewModel.triggerAudioFeedback("gameover")
-                                                matchState = MultiplayerState.GAME_OVER
-                                                connectionManager.sendStateUpdate(playerGrid, playerScore, true)
-                                                systemMessages = systemMessages + (
-                                                    if (currentLang == Language.RU) "Сетка переполнена! Игра Окончена!"
-                                                    else "Stack overflow! Game Over!"
-                                                )
-                                            }
-                                        }
-                                    }
-                                )
-                                
-                                MiniBoard(
-                                    grid = opponentGridState,
-                                    title = managerOpponentName.ifBlank { opponentName },
-                                    score = opponentScoreState,
-                                    combo = 0,
-                                    onColumnClick = null
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(10.dp))
-                            
-                            // Realtime actions / manual garbage cheat helper
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Button(
-                                    onClick = {
-                                        if (matchState == MultiplayerState.PLAYING) {
-                                            viewModel.triggerAudioFeedback("clear")
-                                            // Send random line attack to verify socket
-                                            connectionManager.sendAttackTrigger(1)
-                                            systemMessages = systemMessages + (
-                                                if (currentLang == Language.RU) "Ручная атака: отправлена линия мусора!"
-                                                else "Manual action: sent garbage line to opponent!"
-                                            )
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F202D)),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(end = 4.dp),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "ПОДБРОСИТЬ МУСОР" else "MANUAL Attack",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = themeColorVal
-                                    )
-                                }
-                                
-                                Button(
-                                    onClick = {
-                                        if (matchState == MultiplayerState.PLAYING) {
-                                            // Escape match or simulated self-hit to trigger fallbacks
-                                            viewModel.triggerAudioFeedback("gameover")
-                                            matchState = MultiplayerState.GAME_OVER
-                                            connectionManager.sendStateUpdate(playerGrid, playerScore, true)
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF291E23)),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 4.dp),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text(
-                                        text = if (currentLang == Language.RU) "СДАТЬСЯ" else "SURRENDER战",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFE94560)
-                                    )
-                                }
-                            }
-                            
-                            if (matchState == MultiplayerState.GAME_OVER) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = themeColorVal.copy(alpha = 0.12f)),
-                                    border = BorderStroke(1.dp, themeColorVal)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(10.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        val playerWins = playerScore >= opponentScoreState && !playerGrid[0].any { it > 0 }
-                                        val textWins = if (currentLang == Language.RU) {
-                                            if (playerWins) "ПОБЕДА! ВЫ ОПЕРЕДИЛИ ОППОНЕНТА!" else "ИГРА ЗАВЕРШЕНА"
-                                        } else {
-                                            if (playerWins) "TRIUMPH! YOU DOMINATE THE DUEL!" else "COMBAT COMPLETED"
-                                        }
-                                        Text(textWins, fontWeight = FontWeight.Black, fontSize = 13.sp, color = themeColorVal)
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text("YOUR: $playerScore VS Opposition: $opponentScoreState", fontSize = 10.sp, color = Color.White)
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Button(
-                                            onClick = {
-                                                matchState = MultiplayerState.IDLE
-                                                connectionManager.disconnect()
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = themeColorVal),
-                                            modifier = Modifier.height(28.dp),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                                        ) {
-                                            Text("GO TO LOBBY HUB", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // FLOATING OVERLAY CHAT DRAWER ACCESSIBLE VIA BUTTON
-                if ((matchState == MultiplayerState.PLAYING || matchState == MultiplayerState.GAME_OVER) && isChatOpen) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .padding(vertical = 8.dp)
-                            .imePadding()
-                            .border(1.dp, themeColorVal.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
-                        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.92f)),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "LIVE WebRTC CHANNEL CHAT",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = themeColorVal
-                                )
-                                IconButton(onClick = { isChatOpen = false }) {
-                                    Text("✕", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Black)
-                                }
-                            }
-                            
-                            LazyColumn(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
-                                reverseLayout = true
-                            ) {
-                                items(systemMessages.reversed()) { msg ->
-                                    Text(
-                                        text = msg,
-                                        modifier = Modifier.padding(vertical = 2.dp),
-                                        fontSize = 11.sp,
-                                        fontWeight = if (msg.startsWith("[")) FontWeight.Bold else FontWeight.Normal,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = if (msg.contains("Ты") || msg.contains("You") || msg.contains("Ты очистил") || msg.contains("РАУНД НАЧАЛСЯ")) themeColorVal else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedTextField(
-                                    value = chatInput, 
-                                    onValueChange = { chatInput = it }, 
-                                    modifier = Modifier.weight(1f),
-                                    placeholder = { Text("Type message...", fontSize = 11.sp) },
-                                    textStyle = TextStyle(fontSize = 11.sp),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Button(
-                                    onClick = {
-                                        if (chatInput.isNotBlank()) {
-                                            systemMessages = systemMessages + "You: $chatInput"
-                                            chatInput = ""
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = themeColorVal),
-                                    contentPadding = PaddingValues(horizontal = 12.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.height(38.dp)
-                                ) {
-                                    Text("SEND", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    */
-}
-
-// Visual mini board grid helper with complete 20-row full height and color palette support
-@Composable
-fun MiniBoard(
-    grid: List<IntArray>,
-    title: String,
-    score: Int,
-    combo: Int,
-    lines: Int = 0,
-    onColumnClick: ((Int) -> Unit)? = null
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(1.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF08080C)),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = title.uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.error,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(3.dp))
-            // Complete 10x20 full-height matrix representation with all pieces and colors
-            Column(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF0F0F16))
-                    .padding(2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                grid.forEach { row ->
-                    Row {
-                        row.forEachIndexed { cellIndex, cell ->
-                            val color = when {
-                                cell in 1 until com.example.game.Colors.size -> com.example.game.Colors[cell]
-                                cell > 0 -> Color(0xFFB0BEC5)
-                                else -> Color(0xFF161620)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(6.4.dp)
-                                    .padding(0.4.dp)
-                                    .background(color, RoundedCornerShape(1.dp))
-                                    .clickable(enabled = onColumnClick != null) {
-                                        onColumnClick?.invoke(cellIndex)
-                                    }
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$score 🪙",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                if (lines > 0) {
-                    Text(
-                        text = "$lines ⚡",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                } else if (combo > 0) {
-                    Text(
-                        text = "x$combo 🔥",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFFFB300)
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ── Full-Screen Mode Selection Screen ──
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -5601,83 +6397,314 @@ fun ModeSelectionScreen(
         val categoryTag: String // "FREE", "PAID", "HARD", "FUN"
     )
 
-    val modes = listOf(
+val modes = listOf(
         ModeInfo(
             com.example.game.GameMode.CLASSIC, "classic",
-            if (currentLang == Language.RU) "Классический" else "Classic",
-            if (currentLang == Language.RU) "Оригинальный режим с нарастающей сложностью." else "The original experience with increasing speed.",
-            if (currentLang == Language.RU) "Укладывайте фигурки и заполняйте горизонтальные линии. Каждые 10 очищенных линий повышают уровень и скорость игры." else "Fit falling blocks to clear horizontal lines. Every 10 cleared lines increases game level and falling speed.",
+            when (currentLang) {
+                Language.RU -> "Классический"
+                Language.UA -> "Класичний"
+                Language.KK -> "Классикалық"
+                Language.DE -> "Klassisch"
+                Language.ZH -> "经典模式"
+                else -> "Classic"
+            },
+            when (currentLang) {
+                Language.RU -> "Оригинальный режим с нарастающей сложностью."
+                Language.UA -> "Оригінальний режим із наростаючою складністю."
+                Language.KK -> "Өсіп келе жатқан қиындығы бар түпнұсқа режим."
+                Language.DE -> "Das originale Erlebnis mit steigender Geschwindigkeit."
+                Language.ZH -> "速度逐渐递增的经典原始模式。"
+                else -> "The original experience with increasing speed."
+            },
+            when (currentLang) {
+                Language.RU -> "Укладывайте фигурки и заполняйте горизонтальные линии. Каждые 10 очищенных линий повышают уровень и скорость игры."
+                Language.UA -> "Укладайте фігурки та заповнюйте горизонтальні лінії. Кожні 10 очищених ліній підвищують рівень і швидкість гри."
+                Language.KK -> "Фигураларды орналастырып, көлденең сызықтарды толтырыңыз. Әрбір 10 тазартылған сызық ойын деңгейі мен жылдамдығын арттырады."
+                Language.DE -> "Platziere herabfallende Blöcke, um Linien zu vervollständigen. Alle 10 Linien steigen Level und Tempo."
+                Language.ZH -> "旋转摆放掉落的方块以消除整行。每消除10行即可提升等级与下落速度。"
+                else -> "Fit falling blocks to clear horizontal lines. Every 10 cleared lines increases game level and falling speed."
+            },
             0, Icons.Default.VideogameAsset, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.TIME_ATTACK, "time_attack",
-            if (currentLang == Language.RU) "Тайм-Атак" else "Time Attack",
-            if (currentLang == Language.RU) "Режим с ограничением времени: старт с 60 секунд." else "Time-limited mode: starts at 60 seconds.",
-            if (currentLang == Language.RU) "Игра начинается с 60 секундами на таймере. Очищайте линии, чтобы прибавлять по 10 секунд за каждую линию. Время стремительно иссекает!" else "Starts with 60s on the clock. Clear lines to gain +10 seconds per line. Score as much as possible before time runs out!",
-            0, Icons.Default.Schedule, "FREE"
+            when (currentLang) {
+                Language.RU -> "Тайм-Атак"
+                Language.UA -> "Тайм-Атак"
+                Language.KK -> "Тайм-Атак"
+                Language.DE -> "Zeitangriff"
+                Language.ZH -> "限时挑战"
+                else -> "Time Attack"
+            },
+            when (currentLang) {
+                Language.RU -> "Режим с ограничением времени: старт с 60 секунд."
+                Language.UA -> "Режим з обмеженням часу: старт із 60 секунд."
+                Language.KK -> "Уақыт шектеуі бар режим: 60 секундтан басталады."
+                Language.DE -> "Zeitbegrenzter Modus: Startet bei 60 Sekunden."
+                Language.ZH -> "限时竞速模式：从60秒倒计时开始。"
+                else -> "Time-limited mode: starts at 60 seconds."
+            },
+            when (currentLang) {
+                Language.RU -> "Игра начинается с 60 секундами на таймере. Очищайте линии, чтобы прибавлять по 10 секунд за каждую линию. Время стремительно иссекает!"
+                Language.UA -> "Гра починається з 60 секундами на таймері. Очищайте лінії, щоб додавати по 10 секунд за кожну лінію. Час стрімко спливає!"
+                Language.KK -> "Ойын таймерде 60 секундпен басталады. Әр сызық үшін 10 секунд қосу мақсатында сызықтарды тазартыңыз. Уақыт тез таусылады!"
+                Language.DE -> "Startet mit 60s auf der Uhr. Jede gelöschte Zeile bringt +10s. Sammle Punkte, bevor die Zeit abläuft!"
+                Language.ZH -> "初始计时器为60秒。每消除一行增加10秒时间奖励，在时间耗尽前尽可能斩获高分！"
+                else -> "Starts with 60s on the clock. Clear lines to gain +10 seconds per line. Score as much as possible before time runs out!"
+            },
+            ShopPrices.getModeCost("time_attack"), Icons.Default.Schedule, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.EXTENDED, "extended",
-            if (currentLang == Language.RU) "Пентатрис" else "Pentatris",
-            if (currentLang == Language.RU) "Игра фигурами из пяти блоков для повышенной сложности." else "Gameplay using five-block pieces for an extra challenge.",
-            if (currentLang == Language.RU) "Режим классического тетриса, но с использованием 5-блочных фигур (пентамино). Заполняйте линии в условиях высокой плотности фигур." else "Classic tetris rules, but played with 5-block pentamino pieces. Fill rows with complex shapes.",
-            250, Icons.Default.Star, "HARD"
+            when (currentLang) {
+                Language.RU -> "Пентатрис"
+                Language.UA -> "Пентатріс"
+                Language.KK -> "Пентатрис"
+                Language.DE -> "Pentatris"
+                Language.ZH -> "五阶方块"
+                else -> "Pentatris"
+            },
+            when (currentLang) {
+                Language.RU -> "Игра фигурами из пяти блоков для повышенной сложности."
+                Language.UA -> "Гра фігурами з п'яти блоків для підвищеної складності."
+                Language.KK -> "Жоғары қиындық үшін бес блоктан тұратын фигуралармен ойнау."
+                Language.DE -> "Gameplay mit 5-Block-Steinen für zusätzliche Herausforderung."
+                Language.ZH -> "使用五格骨牌方块提升挑战难度。"
+                else -> "Gameplay using five-block pieces for an extra challenge."
+            },
+            when (currentLang) {
+                Language.RU -> "Режим классического тетриса, но с использованием 5-блочных фигур (пентамино). Заполняйте линии в условиях высокой плотности фигур."
+                Language.UA -> "Режим класичного тетрісу, але з використанням 5-блокових фігур (пентаміно). Заповнюйте лінії в умовах високої щільності фігур."
+                Language.KK -> "Классикалық тетрис режимі, бірақ 5 блокты фигураларды (пентамино) қолданумен. Тығыз фигуралар жағдайында сызықтарды толтырыңыз."
+                Language.DE -> "Klassische Tetris-Regeln mit 5-Block-Pentaminos. Fülle Reihen mit komplexen Formen."
+                Language.ZH -> "经典下落消除玩法，但使用复杂的五联块（Pentamino）。在复杂的方块几何中考验空间规划。"
+                else -> "Classic tetris rules, but played with 5-block pentamino pieces. Fill rows with complex shapes."
+            },
+            ShopPrices.getModeCost("extended"), Icons.Default.Star, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.FAST_RUN, "fast_run",
-            if (currentLang == Language.RU) "Быстрый старт" else "Fast Start",
-            if (currentLang == Language.RU) "Начало игры с 10-го уровня сложности." else "Starts the game at Level 10 difficulty.",
-            if (currentLang == Language.RU) "Игра сразу начинается на 10 уровне скорости! Требует молниеносной реакции и быстрого принятия решений." else "Game starts immediately at speed level 10! Requires lightning reflexes and fast placement decisions.",
-            400, Icons.Default.FlashOn, "HARD"
+            when (currentLang) {
+                Language.RU -> "Быстрый старт"
+                Language.UA -> "Швидкий старт"
+                Language.KK -> "Жылдам бастау"
+                Language.DE -> "Schnellstart"
+                Language.ZH -> "极速冲刺"
+                else -> "Fast Start"
+            },
+            when (currentLang) {
+                Language.RU -> "Начало игры с 10-го уровня сложности."
+                Language.UA -> "Початок гри з 10-го рівня складності."
+                Language.KK -> "Ойынды 10-деңгейдегі қиындықтан бастау."
+                Language.DE -> "Startet direkt bei Schwierigkeitsgrad Level 10."
+                Language.ZH -> "从难度等级10直接开始极速挑战。"
+                else -> "Starts the game at Level 10 difficulty."
+            },
+            when (currentLang) {
+                Language.RU -> "Игра сразу начинается на 10 уровне скорости! Требует молниеносной реакции и быстрого принятия решений."
+                Language.UA -> "Гра одразу починається на 10 рівні швидкості! Вимагає блискавичної реакції та швидкого прийняття рішень."
+                Language.KK -> "Ойын бірден 10 жылдамдық деңгейінде басталады! Жылдам реакция мен жылдам шешім қабылдауды талап етеді."
+                Language.DE -> "Startet direkt auf Geschwindigkeitsstufe 10! Erfordert blitzschnelle Reflexe."
+                Language.ZH -> "直接以极高下落速度开始！极度考验临场反应与瞬间决策能力。"
+                else -> "Game starts immediately at speed level 10! Requires lightning reflexes and fast placement decisions."
+            },
+            ShopPrices.getModeCost("fast_run"), Icons.Default.FlashOn, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.ZEN_FLOW, "zen",
-            if (currentLang == Language.RU) "Дзен" else "Zen Cosmic Flow",
-            if (currentLang == Language.RU) "Бесконечный режим: очистка при переполнении, без проигрыша." else "Endless game mode: clears board on overflow, no defeat.",
-            if (currentLang == Language.RU) "Режим без проигрыша и спешки. При достижении верха поля нижние линии автоматически очищаются." else "Endless mode with no loss. When reaching the top, bottom lines auto-clear, allowing calm and endless relaxation.",
-            400, Icons.Default.Spa, "FUN"
+            when (currentLang) {
+                Language.RU -> "Дзен"
+                Language.UA -> "Дзен"
+                Language.KK -> "Дзен"
+                Language.DE -> "Zen"
+                Language.ZH -> "禅意心流"
+                else -> "Zen Cosmic Flow"
+            },
+            when (currentLang) {
+                Language.RU -> "Бесконечный режим: очистка при переполнении, без проигрыша."
+                Language.UA -> "Нескінченний режим: очищення при переповненні, без програшу."
+                Language.KK -> "Шексіз режим: толып кеткенде тазарту, жеңіліссіз."
+                Language.DE -> "Endlos-Modus: Leerung bei Überlauf, keine Niederlage."
+                Language.ZH -> "无尽放松模式：满屏自动清理，永不失败。"
+                else -> "Endless game mode: clears board on overflow, no defeat."
+            },
+            when (currentLang) {
+                Language.RU -> "Режим без проигрыша и спешки. При достижении верха поля нижние линии автоматически очищаются."
+                Language.UA -> "Режим без програшу та поспіху. При досягненні верху поля нижні лінії автоматично очищаються."
+                Language.KK -> "Асықпайтын және жеңілмейтін режим. Өрістің жоғарғы жағына жеткенде, төменгі сызықтар автоматты түрде тазартылады."
+                Language.DE -> "Entspannter Modus ohne Zeitdruck. Bei oberer Kante werden untere Zeilen automatisch bereinigt."
+                Language.ZH -> "无时间压力、无死亡压力的静心模式。当方块触顶时底层自动清空，享受纯粹的堆叠乐趣。"
+                else -> "Endless mode with no loss. When reaching the top, bottom lines auto-clear, allowing calm and endless relaxation."
+            },
+            ShopPrices.getModeCost("zen"), Icons.Default.Spa, "FUN"
         ),
         ModeInfo(
             com.example.game.GameMode.REVERSE_CONTROLS, "reverse",
-            if (currentLang == Language.RU) "Инверсия" else "Inverted Controls",
-            if (currentLang == Language.RU) "Классический режим с инвертированным управлением." else "Classic gameplay with inverted directional controls.",
-            if (currentLang == Language.RU) "Кнопки Влево и Вправо поменяны местами! Попробуйте перестроить привычки мышления во время игры." else "Left and Right control buttons are inverted! Test your muscle memory and brain adaptability under pressure.",
-            500, Icons.Default.Visibility, "FUN"
+            when (currentLang) {
+                Language.RU -> "Инверсия"
+                Language.UA -> "Інверсія"
+                Language.KK -> "Инверсия"
+                Language.DE -> "Inversion"
+                Language.ZH -> "反转操控"
+                else -> "Inverted Controls"
+            },
+            when (currentLang) {
+                Language.RU -> "Классический режим с инвертированным управлением."
+                Language.UA -> "Класичний режим з інвертованим керуванням."
+                Language.KK -> "Инверттелген басқаруы бар классикалық режим."
+                Language.DE -> "Klassisches Gameplay mit umgekehrter Richtungssteuerung."
+                Language.ZH -> "方向左右反转的经典挑战模式。"
+                else -> "Classic gameplay with inverted directional controls."
+            },
+            when (currentLang) {
+                Language.RU -> "Кнопки Влево и Вправо поменяны местами! Попробуйте перестроить привычки мышления во время игры."
+                Language.UA -> "Кнопки Вліво та Вправо поміняні місцями! Спробуйте перебудувати звички мислення під час гри."
+                Language.KK -> "Солға және Оңға батырмалары орындарын ауыстырған! Ойын барысында ойлау дағдыларыңызды өзгертіп көріңіз."
+                Language.DE -> "Links- und Rechts-Tasten sind vertauscht! Trainiere deine Anpassungsfähigkeit unter Druck."
+                Language.ZH -> "左移和右移按键完全对调！重塑肌肉记忆并考验逆向思维反应。"
+                else -> "Left and Right control buttons are inverted! Test your muscle memory and brain adaptability under pressure."
+            },
+            ShopPrices.getModeCost("reverse"), Icons.Default.Visibility, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.BLOCK_BLAST, "block_blast",
-            if (currentLang == Language.RU) "Головоломка ZETA" else "ZETA Puzzle",
-            if (currentLang == Language.RU) "Свободное размещение фигурок на игровом поле." else "Free placement of polyominos on the board.",
-            if (currentLang == Language.RU) "Перетаскивайте и ставьте процедурно сгенерированные блоки в любую свободную область поля для сбора линий." else "Drag and place procedurally generated blocks anywhere on the grid to clear rows and columns.",
-            600, Icons.Default.Computer, "FUN"
+            when (currentLang) {
+                Language.RU -> "Головоломка ZETA"
+                Language.UA -> "Головоломка ZETA"
+                Language.KK -> "ZETA Басқатырғышы"
+                Language.DE -> "ZETA-Puzzle"
+                Language.ZH -> "ZETA 拼图"
+                else -> "ZETA Puzzle"
+            },
+            when (currentLang) {
+                Language.RU -> "Свободное размещение фигурок на игровом поле."
+                Language.UA -> "Вільне розміщення фігурок на ігровому полі."
+                Language.KK -> "Ойын алаңында фигураларды еркін орналастыру."
+                Language.DE -> "Freies Platzieren von Blöcken auf dem Spielfeld."
+                Language.ZH -> "在网格中自由拖拽摆放方块。"
+                else -> "Free placement of polyominos on the board."
+            },
+            when (currentLang) {
+                Language.RU -> "Перетаскивайте и ставьте процедурно сгенерированные блоки в любую свободную область поля для сбора линий."
+                Language.UA -> "Перетягуйте та ставте процедурно згенеровані блоки в будь-яку вільну область поля для збору ліній."
+                Language.KK -> "Сызықтарды жинау үшін процедуралық түрде жасалған блоктарды өрістің кез келген бос аймағына сүйреп апарыңыз."
+                Language.DE -> "Platziere zufällig generierte Blöcke auf dem Gitter, um Zeilen und Spalten zu leeren."
+                Language.ZH -> "将随机生成的方块组合拖放至棋盘任意空位，填满整行或整列进行消除并获取连击积分。"
+                else -> "Drag and place procedurally generated blocks anywhere on the grid to clear rows and columns."
+            },
+            ShopPrices.getModeCost("block_blast"), Icons.Default.Computer, "FREE"
         ),
         ModeInfo(
             com.example.game.GameMode.PULSE_EXTREME, "pulse_extreme",
-            if (currentLang == Language.RU) "Импульсный Вихрь" else "Vortex Pulse",
-            if (currentLang == Language.RU) "Каждые 4 фигуры снизу поднимается новая мусорная линия." else "Garbage line is added at bottom every 4 placed pieces.",
-            if (currentLang == Language.RU) "Экстремальный режим! Каждые 4 установленных блока снизу поля выталкивается неполная мусорная линия." else "Extreme challenge! Every 4 dropped blocks forces a random garbage line to emerge from the bottom.",
-            800, Icons.Default.Bolt, "HARD"
+            when (currentLang) {
+                Language.RU -> "Импульсный Вихрь"
+                Language.UA -> "Імпульсний Вихор"
+                Language.KK -> "Импульстік Құйын"
+                Language.DE -> "Vortex-Puls"
+                Language.ZH -> "脉冲漩涡"
+                else -> "Vortex Pulse"
+            },
+            when (currentLang) {
+                Language.RU -> "Каждые 4 фигуры снизу поднимается новая мусорная линия."
+                Language.UA -> "Кожні 4 фігури знизу піднімається нова сміттєва лінія."
+                Language.KK -> "Әрбір 4 фигура сайын төменнен жаңа қоқыс сызығы көтеріледі."
+                Language.DE -> "Alle 4 platzierten Steine steigt eine Müllzeile auf."
+                Language.ZH -> "每放置4个方块，底部涌升一条垃圾行。"
+                else -> "Garbage line is added at bottom every 4 placed pieces."
+            },
+            when (currentLang) {
+                Language.RU -> "Экстремальный режим! Каждые 4 установленных блока снизу поля выталкивается неполная мусорная линия."
+                Language.UA -> "Екстремальний режим! Кожні 4 встановлені блоки знизу поля виштовхується неповна сміттєва лінія."
+                Language.KK -> "Экстремалды режим! Әрбір 4 орнатылған блок сайын өрістің төменгі жағынан толық емес қоқыс сызығы шығады."
+                Language.DE -> "Extremer Modus! Alle 4 Steine drückt eine unvollständige Störzeile von unten nach oben."
+                Language.ZH -> "极限危机！每下落放置4个方块，底部便会顶升一层带有缺口的干扰垃圾行。"
+                else -> "Extreme challenge! Every 4 dropped blocks forces a random garbage line to emerge from the bottom."
+            },
+            ShopPrices.getModeCost("pulse_extreme"), Icons.Default.Bolt, "HARD"
         ),
         ModeInfo(
             com.example.game.GameMode.MIRROR_DIMENSION, "mirror",
-            if (currentLang == Language.RU) "Зеркальный Мир" else "Mirror Dimension",
-            if (currentLang == Language.RU) "Поле отражается по горизонтали во время игры." else "The game field is mirrored horizontally during gameplay.",
-            if (currentLang == Language.RU) "Игровое поле и падающие блоки периодически отражаются зеркально по горизонтали!" else "The board periodically flips horizontally, challenging your spatial orientation.",
-            1000, Icons.Default.SwapHoriz, "FUN"
+            when (currentLang) {
+                Language.RU -> "Зеркальный Мир"
+                Language.UA -> "Дзеркальний Світ"
+                Language.KK -> "Айналық Әлем"
+                Language.DE -> "Spiegeldimension"
+                Language.ZH -> "镜像维度"
+                else -> "Mirror Dimension"
+            },
+            when (currentLang) {
+                Language.RU -> "Поле отражается по горизонтали во время игры."
+                Language.UA -> "Поле відображається по горизонталі під час гри."
+                Language.KK -> "Ойын барысында алаң көлденеңінен шағылысады."
+                Language.DE -> "Das Spielfeld spiegelt sich horizontal im Spiel."
+                Language.ZH -> "游戏过程中棋盘会周期性水平翻转镜像。"
+                else -> "The game field is mirrored horizontally during gameplay."
+            },
+            when (currentLang) {
+                Language.RU -> "Игровое поле и падающие блоки периодически отражаются зеркально по горизонтали!"
+                Language.UA -> "Ігрове поле та падаючі блоки періодично відображаються дзеркально по горизонталі!"
+                Language.KK -> "Ойын алаңы мен құлаған блоктар мезгіл-мезгіл көлденеңінен айнадай шағылысады!"
+                Language.DE -> "Das Spielfeld dreht sich periodisch horizontal um und fordert dein räumliches Denken heraus."
+                Language.ZH -> "整个棋盘和下落方块会突然水平镜面翻转，颠覆你的空间知觉与操控直觉！"
+                else -> "The board periodically flips horizontally, challenging your spatial orientation."
+            },
+            ShopPrices.getModeCost("mirror"), Icons.Default.SwapHoriz, "FUN"
         ),
         ModeInfo(
             com.example.game.GameMode.PENTARY_CHAOS, "penta",
-            if (currentLang == Language.RU) "Пента-Хаос" else "Pentary Chaos",
-            if (currentLang == Language.RU) "Все падающие фигуры состоят из пяти блоков." else "All falling pieces consist of five blocks.",
-            if (currentLang == Language.RU) "Максимальная сложность! Все фигуры представляют собой сложные пентамино (5 блоков)." else "Ultimate difficulty! Every falling piece is a complex pentamino (5 blocks), requiring strategic grid planning.",
-            1200, Icons.Default.AutoAwesome, "HARD"
+            when (currentLang) {
+                Language.RU -> "Пента-Хаос"
+                Language.UA -> "Пента-Хаос"
+                Language.KK -> "Пента-Хаос"
+                Language.DE -> "Pentarisches Chaos"
+                Language.ZH -> "五阶混沌"
+                else -> "Pentary Chaos"
+            },
+            when (currentLang) {
+                Language.RU -> "Все падающие фигуры состоят из пяти блоков."
+                Language.UA -> "Усі падаючі фігури складаються з п'яти блоків."
+                Language.KK -> "Барлық құлайтын фигуралар бес блоктан тұрады."
+                Language.DE -> "Alle fallenden Steine bestehen aus fünf Blöcken."
+                Language.ZH -> "所有掉落的方块均由5个单块构成。"
+                else -> "All falling pieces consist of five blocks."
+            },
+            when (currentLang) {
+                Language.RU -> "Максимальная сложность! Все фигуры представляют собой сложные пентамино (5 блоков)."
+                Language.UA -> "Максимальна складність! Усі фігури є складними пентаміно (5 блоків)."
+                Language.KK -> "Ең жоғары қиындық! Барлық фигуралар күрделі пентамино (5 блок)."
+                Language.DE -> "Maximale Schwierigkeit! Jeder fallende Stein ist ein komplexes Pentamino (5 Blöcke)."
+                Language.ZH -> "终极难度！全部下落方块均为高难度5格多联骨牌，需要精确严密的棋盘规划。"
+                else -> "Ultimate difficulty! Every falling piece is a complex pentamino (5 blocks), requiring strategic grid planning."
+            },
+            ShopPrices.getModeCost("penta"), Icons.Default.AutoAwesome, "HARD"
         ),
         ModeInfo(
             com.example.game.GameMode.RELAX, "relax",
-            if (currentLang == Language.RU) "Релакс-Песочница" else "Relax Sandbox",
-            if (currentLang == Language.RU) "Настраиваемый режим с выбором блоков и скоростей." else "Customizable sandbox: select blocks and speed.",
-            if (currentLang == Language.RU) "Песочница с гибкой настройкой параметров игры под ваше настроение." else "A sandbox mode allowing full customization of gameplay rules to match your preference.",
-            0, Icons.Default.Spa, "FREE"
+            when (currentLang) {
+                Language.RU -> "Релакс-Песочница"
+                Language.UA -> "Релакс-Пісочниця"
+                Language.KK -> "Релакс-Құмсалғыш"
+                Language.DE -> "Entspannungs-Sandbox"
+                Language.ZH -> "休闲沙盒"
+                else -> "Relax Sandbox"
+            },
+            when (currentLang) {
+                Language.RU -> "Настраиваемый режим с выбором блоков и скоростей."
+                Language.UA -> "Налаштовуваний режим з вибором блоків і швидкостей."
+                Language.KK -> "Блоктар мен жылдамдықтарды таңдау мүмкіндігі бар бапталатын режим."
+                Language.DE -> "Anpassbare Sandbox: Wähle Steine und Geschwindigkeit."
+                Language.ZH -> "自由配置方块与速度的自定义沙盒。"
+                else -> "Customizable sandbox: select blocks and speed."
+            },
+            when (currentLang) {
+                Language.RU -> "Песочница с гибкой настройкой параметров игры под ваше настроение."
+                Language.UA -> "Пісочниця з гнучким налаштуванням параметрів гри під ваш настрій."
+                Language.KK -> "Көңіл-күйіңізге сай ойын параметрлерін еркін реттейтін құмсалғыш."
+                Language.DE -> "Ein Sandbox-Modus für vollkommen individuelle Spielregeln nach Lust und Laune."
+                Language.ZH -> "完全自由定义的沙盒模式，随心定制专属游戏规则和方块类型。"
+                else -> "A sandbox mode allowing full customization of gameplay rules to match your preference."
+            },
+            ShopPrices.getModeCost("relax"), Icons.Default.Spa, "FREE"
         )
     )
 
@@ -5685,11 +6712,46 @@ fun ModeSelectionScreen(
     var selectedInfoMode by remember { mutableStateOf<ModeInfo?>(null) }
 
     val filterChips = listOf(
-        "ALL" to (if (currentLang == Language.RU) "Все" else "All"),
-        "FREE" to (if (currentLang == Language.RU) "Бесплатные" else "Free"),
-        "PAID" to (if (currentLang == Language.RU) "Платные" else "Paid"),
-        "HARD" to (if (currentLang == Language.RU) "Сложные" else "Hard"),
-        "FUN" to (if (currentLang == Language.RU) "Развлечение" else "Casual / Fun")
+        "ALL" to when (currentLang) {
+            Language.RU -> "Все"
+            Language.UA -> "Всі"
+            Language.KK -> "Барлығы"
+            Language.DE -> "Alle"
+            Language.ZH -> "全部"
+            else -> "All"
+        },
+        "FREE" to when (currentLang) {
+            Language.RU -> "Бесплатные"
+            Language.UA -> "Безкоштовні"
+            Language.KK -> "Тегін"
+            Language.DE -> "Kostenlos"
+            Language.ZH -> "免费"
+            else -> "Free"
+        },
+        "PAID" to when (currentLang) {
+            Language.RU -> "Платные"
+            Language.UA -> "Платні"
+            Language.KK -> "Ақылы"
+            Language.DE -> "Kaufbar"
+            Language.ZH -> "付费"
+            else -> "Paid"
+        },
+        "HARD" to when (currentLang) {
+            Language.RU -> "Сложные"
+            Language.UA -> "Складні"
+            Language.KK -> "Күрделі"
+            Language.DE -> "Schwer"
+            Language.ZH -> "高难"
+            else -> "Hard"
+        },
+        "FUN" to when (currentLang) {
+            Language.RU -> "Развлечение"
+            Language.UA -> "Розваги"
+            Language.KK -> "Көңілді"
+            Language.DE -> "Casual / Spaß"
+            Language.ZH -> "休闲趣味"
+            else -> "Casual / Fun"
+        }
     )
 
     Scaffold(
@@ -5697,8 +6759,16 @@ fun ModeSelectionScreen(
             CenterAlignedTopAppBar(
                 windowInsets = WindowInsets(top = 8.dp),
                 title = {
+                    val selectModeTitle = when (currentLang) {
+                        Language.RU -> "РЕЖИМЫ"
+                        Language.UA -> "РЕЖИМИ"
+                        Language.KK -> "РЕЖИМДЕР"
+                        Language.DE -> "MODI"
+                        Language.ZH -> "游戏模式"
+                        else -> "MODES"
+                    }
                     AdaptiveText(
-                        text = if (currentLang == Language.RU) "ВЫБОР РЕЖИМА" else "SELECT MODE",
+                        text = selectModeTitle,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.sp
@@ -5757,100 +6827,95 @@ fun ModeSelectionScreen(
     ) { padding ->
         val themeColorVal = MaterialTheme.colorScheme.primary
 
-        val filteredModes = remember(selectedCategoryFilter, modes, purchasedModesSet) {
-            when (selectedCategoryFilter) {
-                "FREE" -> modes.filter { it.cost == 0 }
-                "PAID" -> modes.filter { it.cost > 0 }
-                "HARD" -> modes.filter { it.categoryTag == "HARD" }
-                "FUN" -> modes.filter { it.categoryTag == "FUN" || it.categoryTag == "SPECIAL" }
-                else -> modes
-            }
-        }
-
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
+                .fillMaxSize()
         ) {
-            // Category Filter Chips bar
+            // Category Filter Chips
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filterChips) { (tag, label) ->
-                    val isSelected = selectedCategoryFilter == tag
+                items(filterChips) { (key, label) ->
+                    val isSelected = selectedCategoryFilter == key
                     FilterChip(
                         selected = isSelected,
                         onClick = {
                             viewModel.triggerAudioFeedback("click")
-                            selectedCategoryFilter = tag
+                            selectedCategoryFilter = key
                         },
                         label = {
-                            Text(
+                            AdaptiveText(
                                 text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Normal
                             )
                         },
                         shape = RoundedCornerShape(16.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = themeColorVal,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            labelColor = MaterialTheme.colorScheme.onSurface
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                         )
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Cards list with animated filter transitions
             AnimatedContent(
                 targetState = selectedCategoryFilter,
                 transitionSpec = {
-                    (fadeIn(animationSpec = tween(260)) +
-                        slideInVertically(animationSpec = tween(300)) { it / 12 })
-                        .togetherWith(fadeOut(animationSpec = tween(200)))
+                    fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
+                        .togetherWith(fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)))
                 },
-                label = "modeFilterTransition"
+                label = "modesAnimatedFilter",
+                modifier = Modifier.fillMaxSize()
             ) { currentFilter ->
-                val animFilteredModes = remember(currentFilter, modes, purchasedModesSet) {
+                val animFilteredModes = remember(currentFilter, modes) {
                     when (currentFilter) {
                         "FREE" -> modes.filter { it.cost == 0 }
                         "PAID" -> modes.filter { it.cost > 0 }
                         "HARD" -> modes.filter { it.categoryTag == "HARD" }
-                        "FUN" -> modes.filter { it.categoryTag == "FUN" || it.categoryTag == "SPECIAL" }
+                        "FUN" -> modes.filter { it.categoryTag == "FUN" }
                         else -> modes
                     }
                 }
 
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     if (animFilteredModes.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (currentLang == Language.RU) "Нет режимов в этой категории" else "No modes found in this category",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        item {
+                            val emptyCategoryMsg = when (currentLang) {
+                                Language.RU -> "Нет режимов в этой категории"
+                                Language.UA -> "Немає режимів у цій категорії"
+                                Language.KK -> "Бұл санатта режимдер жоқ"
+                                Language.DE -> "Keine Modi in dieser Kategorie"
+                                Language.ZH -> "该分类下暂无游戏模式"
+                                else -> "No modes found in this category"
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = emptyCategoryMsg,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
-                    animFilteredModes.forEachIndexed { index, modeInfo ->
+                    items(animFilteredModes.size) { index ->
+                        val modeInfo = animFilteredModes[index]
                         val isPurchased = purchasedModesSet.contains(modeInfo.modeId)
                         val isPlayable = isPurchased || modeInfo.cost == 0
 
@@ -5872,6 +6937,23 @@ fun ModeSelectionScreen(
                             label = "cardOffset_$index"
                         )
 
+                        val modeAcquiredToast = when (currentLang) {
+                            Language.RU -> "Режим разблокирован!"
+                            Language.UA -> "Режим розблоковано!"
+                            Language.KK -> "Режим ашылды!"
+                            Language.DE -> "Spielmodus freigeschaltet!"
+                            Language.ZH -> "模式解锁成功！"
+                            else -> "Game Mode acquired!"
+                        }
+                        val insufficientCreditsToast = when (currentLang) {
+                            Language.RU -> "Недостаточно кредитов!"
+                            Language.UA -> "Недостатньо кредитів!"
+                            Language.KK -> "Кредит жеткіліксіз!"
+                            Language.DE -> "Nicht genügend Credits!"
+                            Language.ZH -> "金币余额不足！"
+                            else -> "Insufficient credits!"
+                        }
+
                         ElevatedCard(
                             onClick = {
                                 if (isPlayable) {
@@ -5885,10 +6967,10 @@ fun ModeSelectionScreen(
                                             .getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
                                         sharedPrefs.edit().putStringSet("purchased_modes", updated).apply()
                                         viewModel.triggerAudioFeedback("buy")
-                                        lockedModeWarning = if (currentLang == Language.RU) "Режим разблокирован!" else "Game Mode acquired!"
+                                        lockedModeWarning = modeAcquiredToast
                                     } else {
                                         viewModel.triggerAudioFeedback("error")
-                                        lockedModeWarning = if (currentLang == Language.RU) "Недостаточно кредитов!" else "Insufficient credits!"
+                                        lockedModeWarning = insufficientCreditsToast
                                     }
                                 }
                             },
@@ -5906,185 +6988,251 @@ fun ModeSelectionScreen(
                             elevation = CardDefaults.elevatedCardElevation(
                                 defaultElevation = if (isPlayable) 3.dp else 1.dp
                             )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(18.dp)
                             ) {
-                                // Mode Icon Avatar
-                                Surface(
-                                    modifier = Modifier.size(56.dp),
-                                    shape = RoundedCornerShape(18.dp),
-                                    color = if (isPlayable) themeColorVal.copy(alpha = 0.15f)
-                                            else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    tonalElevation = 1.dp
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
+                                    // Mode Icon Avatar
+                                    Surface(
+                                        modifier = Modifier.size(56.dp),
+                                        shape = RoundedCornerShape(18.dp),
+                                        color = if (isPlayable) themeColorVal.copy(alpha = 0.15f)
+                                                else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        tonalElevation = 1.dp
                                     ) {
-                                        if (isPlayable) {
-                                            Icon(
-                                                imageVector = modeInfo.icon,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(28.dp),
-                                                tint = themeColorVal
-                                            )
-                                        } else {
-                                            Icon(
-                                                imageVector = Icons.Default.Lock,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(24.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Title & 2nd line tags
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    AdaptiveText(
-                                        text = modeInfo.title,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = if (isPlayable) MaterialTheme.colorScheme.onSurface
-                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-
-                                    // Second line tags chips for all modes
-                                    val modeTags = remember(modeInfo, isPurchased, currentLang) {
-                                        val list = mutableListOf<Pair<String, Color>>()
-                                        if (modeInfo.cost == 0) {
-                                            list.add((if (currentLang == Language.RU) "БЕСПЛАТНО" else "FREE") to themeColorVal)
-                                        } else if (isPurchased) {
-                                            list.add((if (currentLang == Language.RU) "КУПЛЕНО" else "OWNED") to Color(0xFF4CAF50))
-                                        } else {
-                                            list.add("${modeInfo.cost} " + (if (currentLang == Language.RU) "КР." else "CR") to Color(0xFFFFB300))
-                                        }
-
-                                        when (modeInfo.categoryTag) {
-                                            "HARD" -> list.add((if (currentLang == Language.RU) "СЛОЖНЫЙ" else "HARD") to Color(0xFFFF5252))
-                                            "FUN" -> list.add((if (currentLang == Language.RU) "ФАН" else "CASUAL") to Color(0xFF00E5FF))
-                                            else -> list.add((if (currentLang == Language.RU) "СТАНДАРТ" else "STANDARD") to themeColorVal)
-                                        }
-                                        list
-                                    }
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        modeTags.forEach { (tagText, tagColor) ->
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = tagColor.copy(alpha = 0.14f)
-                                            ) {
-                                                Text(
-                                                    text = tagText,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    color = tagColor,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            if (isPlayable) {
+                                                Icon(
+                                                    imageVector = modeInfo.icon,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(28.dp),
+                                                    tint = themeColorVal
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.Lock,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(24.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                                 )
                                             }
                                         }
                                     }
-                                }
 
-                                // Info "i" button without grey border/background
-                                IconButton(
-                                    onClick = {
-                                        viewModel.triggerAudioFeedback("click")
-                                        selectedInfoMode = modeInfo
-                                    },
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = "Mode Info",
-                                        tint = themeColorVal,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
+                                    // Title & 2nd line tags
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        AdaptiveText(
+                                            text = modeInfo.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (isPlayable) MaterialTheme.colorScheme.onSurface
+                                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                                        // Second line tags chips for all modes
+                                        val modeTags = remember(modeInfo, isPurchased, currentLang) {
+                                            val list = mutableListOf<Pair<String, Color>>()
+                                            val freeTag = when (currentLang) {
+                                                Language.RU -> "БЕСПЛАТНО"
+                                                Language.UA -> "БЕЗКОШТОВНО"
+                                                Language.KK -> "ТЕГІН"
+                                                Language.DE -> "GRATIS"
+                                                Language.ZH -> "免费"
+                                                else -> "FREE"
+                                            }
+                                            val ownedTag = when (currentLang) {
+                                                Language.RU -> "КУПЛЕНО"
+                                                Language.UA -> "КУПЛЕНО"
+                                                Language.KK -> "САТЫП АЛЫНДЫ"
+                                                Language.DE -> "GEKAUFT"
+                                                Language.ZH -> "已拥有"
+                                                else -> "OWNED"
+                                            }
+                                            val crSuffix = when (currentLang) {
+                                                Language.RU -> "КР."
+                                                Language.UA -> "КР."
+                                                Language.KK -> "КР."
+                                                Language.DE -> "CR"
+                                                Language.ZH -> "代币"
+                                                else -> "CR"
+                                            }
+                                            val hardTag = when (currentLang) {
+                                                Language.RU -> "СЛОЖНЫЙ"
+                                                Language.UA -> "СКЛАДНИЙ"
+                                                Language.KK -> "КҮРДЕЛІ"
+                                                Language.DE -> "SCHWER"
+                                                Language.ZH -> "困难"
+                                                else -> "HARD"
+                                            }
+                                            val casualTag = when (currentLang) {
+                                                Language.RU -> "ФАН"
+                                                Language.UA -> "ФАН"
+                                                Language.KK -> "КӨҢІЛДІ"
+                                                Language.DE -> "CASUAL"
+                                                Language.ZH -> "休闲"
+                                                else -> "CASUAL"
+                                            }
+                                            val standardTag = when (currentLang) {
+                                                Language.RU -> "СТАНДАРТ"
+                                                Language.UA -> "СТАНДАРТ"
+                                                Language.KK -> "СТАНДАРТ"
+                                                Language.DE -> "STANDARD"
+                                                Language.ZH -> "标准"
+                                                else -> "STANDARD"
+                                            }
 
-                            // Bottom action bar inside card
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (isPlayable) {
-                                    Button(
+                                            if (modeInfo.cost == 0) {
+                                                list.add(freeTag to themeColorVal)
+                                            } else if (isPurchased) {
+                                                list.add(ownedTag to Color(0xFF4CAF50))
+                                            } else {
+                                                list.add("${modeInfo.cost} $crSuffix" to Color(0xFFFFB300))
+                                            }
+
+                                            when (modeInfo.categoryTag) {
+                                                "HARD" -> list.add(hardTag to Color(0xFFFF5252))
+                                                "FUN" -> list.add(casualTag to Color(0xFF00E5FF))
+                                                else -> list.add(standardTag to themeColorVal)
+                                            }
+                                            list
+                                        }
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            modeTags.forEach { (tagText, tagColor) ->
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = tagColor.copy(alpha = 0.14f)
+                                                ) {
+                                                    Text(
+                                                        text = tagText,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = tagColor,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Info "i" button without grey border/background
+                                    IconButton(
                                         onClick = {
                                             viewModel.triggerAudioFeedback("click")
-                                            onPlayMode(modeInfo.mode)
+                                            selectedInfoMode = modeInfo
                                         },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = themeColorVal,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary
-                                        ),
-                                        shape = RoundedCornerShape(16.dp),
-                                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+                                        modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        AdaptiveText(
-                                            text = if (currentLang == Language.RU) "ИГРАТЬ" else "PLAY",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.ExtraBold
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = "Mode Info",
+                                            tint = themeColorVal,
+                                            modifier = Modifier.size(22.dp)
                                         )
                                     }
-                                } else {
-                                    FilledTonalButton(
-                                        onClick = {
-                                            if (credits >= modeInfo.cost) {
-                                                val updated = purchasedModesSet.toMutableSet().apply { add(modeInfo.modeId) }
-                                                viewModel.spendCredits(modeInfo.cost)
-                                                val sharedPrefs = viewModel.getApplication<android.app.Application>()
-                                                    .getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
-                                                sharedPrefs.edit().putStringSet("purchased_modes", updated).apply()
-                                                viewModel.triggerAudioFeedback("buy")
-                                                lockedModeWarning = if (currentLang == Language.RU) "Режим разблокирован!" else "Game Mode acquired!"
-                                            } else {
-                                                viewModel.triggerAudioFeedback("error")
-                                                lockedModeWarning = if (currentLang == Language.RU) "Недостаточно кредитов!" else "Insufficient credits!"
-                                            }
-                                        },
-                                        colors = ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = Color(0xFFFFB300).copy(alpha = 0.18f),
-                                            contentColor = Color(0xFFFF8F00)
-                                        ),
-                                        shape = RoundedCornerShape(16.dp),
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.ShoppingCart,
-                                            contentDescription = null,
-                                            tint = Color(0xFFFF8F00),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        AdaptiveText(
-                                            text = "${if (currentLang == Language.RU) "ОТКРЫТЬ ЗА" else "UNLOCK FOR"} ${modeInfo.cost} 🪙",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                // Bottom action bar inside card
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (isPlayable) {
+                                        val playLabel = when (currentLang) {
+                                            Language.RU -> "ИГРАТЬ"
+                                            Language.UA -> "ГРАТИ"
+                                            Language.KK -> "ОЙНАУ"
+                                            Language.DE -> "SPIELEN"
+                                            Language.ZH -> "开始游戏"
+                                            else -> "PLAY"
+                                        }
+                                        Button(
+                                            onClick = {
+                                                viewModel.triggerAudioFeedback("click")
+                                                onPlayMode(modeInfo.mode)
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = themeColorVal,
+                                                contentColor = MaterialTheme.colorScheme.onPrimary
+                                            ),
+                                            shape = RoundedCornerShape(16.dp),
+                                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            AdaptiveText(
+                                                text = playLabel,
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    } else {
+                                        val unlockPrefix = when (currentLang) {
+                                            Language.RU -> "ОТКРЫТЬ ЗА"
+                                            Language.UA -> "ВІДКРИТИ ЗА"
+                                            Language.KK -> "МЫНАҒАН АШУ"
+                                            Language.DE -> "KAUFEN FÜR"
+                                            Language.ZH -> "解锁花费"
+                                            else -> "UNLOCK FOR"
+                                        }
+                                        FilledTonalButton(
+                                            onClick = {
+                                                if (credits >= modeInfo.cost) {
+                                                    val updated = purchasedModesSet.toMutableSet().apply { add(modeInfo.modeId) }
+                                                    viewModel.spendCredits(modeInfo.cost)
+                                                    val sharedPrefs = viewModel.getApplication<android.app.Application>()
+                                                        .getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
+                                                    sharedPrefs.edit().putStringSet("purchased_modes", updated).apply()
+                                                    viewModel.triggerAudioFeedback("buy")
+                                                    lockedModeWarning = modeAcquiredToast
+                                                } else {
+                                                    viewModel.triggerAudioFeedback("error")
+                                                    lockedModeWarning = insufficientCreditsToast
+                                                }
+                                            },
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = Color(0xFFFFB300).copy(alpha = 0.18f),
+                                                contentColor = Color(0xFFFF8F00)
+                                            ),
+                                            shape = RoundedCornerShape(16.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ShoppingCart,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFF8F00),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            AdaptiveText(
+                                                text = "$unlockPrefix ${modeInfo.cost} 🪙",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -6094,12 +7242,35 @@ fun ModeSelectionScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
-            }
         }
     }
 
     // Info Dialog showing detailed rules/explanation for the selected mode
     selectedInfoMode?.let { info ->
+        val freeModeLabel = when (currentLang) {
+            Language.RU -> "Бесплатный режим"
+            Language.UA -> "Безкоштовний режим"
+            Language.KK -> "Тегін режим"
+            Language.DE -> "Kostenloser Modus"
+            Language.ZH -> "免费模式"
+            else -> "Free Mode"
+        }
+        val costPrefix = when (currentLang) {
+            Language.RU -> "Стоимость:"
+            Language.UA -> "Вартість:"
+            Language.KK -> "Құны:"
+            Language.DE -> "Kosten:"
+            Language.ZH -> "价格："
+            else -> "Cost:"
+        }
+        val gotItLabel = when (currentLang) {
+            Language.RU -> "ПОНЯТНО"
+            Language.UA -> "ЗРОЗУМІЛО"
+            Language.KK -> "ТҮСІНІКТІ"
+            Language.DE -> "VERSTANDEN"
+            Language.ZH -> "我知道了"
+            else -> "GOT IT"
+        }
         AlertDialog(
             onDismissRequest = { selectedInfoMode = null },
             icon = {
@@ -6130,11 +7301,7 @@ fun ModeSelectionScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (info.cost == 0) {
-                                    if (currentLang == Language.RU) "Бесплатный режим" else "Free Mode"
-                                } else {
-                                    "${if (currentLang == Language.RU) "Стоимость:" else "Cost:"} ${info.cost} 🪙"
-                                },
+                                text = if (info.cost == 0) freeModeLabel else "$costPrefix ${info.cost} 🪙",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (info.cost == 0) MaterialTheme.colorScheme.primary else Color(0xFFFF8F00)
@@ -6150,20 +7317,36 @@ fun ModeSelectionScreen(
                 }
             },
             confirmButton = {
+                val gotItLabel = when (currentLang) {
+                    Language.RU -> "ПОНЯТНО"
+                    Language.UA -> "ЗРОЗУМІЛО"
+                    Language.KK -> "ТҮСІНІКТІ"
+                    Language.DE -> "VERSTANDEN"
+                    Language.ZH -> "我知道了"
+                    else -> "GOT IT"
+                }
                 Button(
                     onClick = { selectedInfoMode = null },
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(if (currentLang == Language.RU) "ПОНЯТНО" else "GOT IT")
+                    Text(gotItLabel)
                 }
             }
         )
     }
 
     if (lockedModeWarning != null) {
+        val systemAlertTitle = when (currentLang) {
+            Language.RU -> "Внимание"
+            Language.UA -> "Увага"
+            Language.KK -> "Назар аударыңыз"
+            Language.DE -> "Hinweis"
+            Language.ZH -> "系统提示"
+            else -> "System Alert"
+        }
         AlertDialog(
             onDismissRequest = { lockedModeWarning = null },
-            title = { AdaptiveText(if (currentLang == Language.RU) "Внимание" else "System Alert") },
+            title = { AdaptiveText(systemAlertTitle) },
             text = { AdaptiveText(lockedModeWarning ?: "", maxLines = 3) },
             confirmButton = {
                 TextButton(onClick = { lockedModeWarning = null }) {
@@ -6223,8 +7406,16 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
+                    val customControlsHeader = when (currentLang) {
+                        Language.RU -> "КАСТОМИЗАЦИЯ УПРАВЛЕНИЯ"
+                        Language.UA -> "КАСТОМІЗАЦІЯ КЕРУВАННЯ"
+                        Language.KK -> "БАСҚАРУДЫ ТЕҢШЕУ"
+                        Language.DE -> "STEUERUNG ANPASSEN"
+                        Language.ZH -> "自定义按键布局"
+                        else -> "CUSTOMIZE CONTROLS"
+                    }
                     Text(
-                        text = if (currentLang == Language.RU) "КАСТОМИЗАЦИЯ УПРАВЛЕНИЯ" else "CUSTOMIZE CONTROLS",
+                        text = customControlsHeader,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -6261,8 +7452,16 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            val buttonSizeLabel = when (currentLang) {
+                                Language.RU -> "Размер кнопок"
+                                Language.UA -> "Розмір кнопок"
+                                Language.KK -> "Батырмалар өлшемі"
+                                Language.DE -> "Tastengröße"
+                                Language.ZH -> "按键大小"
+                                else -> "Button Size"
+                            }
                             Text(
-                                text = if (currentLang == Language.RU) "Размер кнопок" else "Button Size",
+                                text = buttonSizeLabel,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -6287,8 +7486,16 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            val buttonTransparencyLabel = when (currentLang) {
+                                Language.RU -> "Прозрачность кнопок"
+                                Language.UA -> "Прозорість кнопок"
+                                Language.KK -> "Батырмалардың мөлдірлігі"
+                                Language.DE -> "Tastendeckkraft"
+                                Language.ZH -> "按键透明度"
+                                else -> "Button Transparency"
+                            }
                             Text(
-                                text = if (currentLang == Language.RU) "Прозрачность кнопок" else "Button Transparency",
+                                text = buttonTransparencyLabel,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -6312,6 +7519,14 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val leftHandBtnLabel = when (currentLang) {
+                            Language.RU -> "ЛЕВША"
+                            Language.UA -> "ШУЛЬГА"
+                            Language.KK -> "СОЛАҚАЙ"
+                            Language.DE -> "LINKSHÄNDER"
+                            Language.ZH -> "左手模式"
+                            else -> "LEFT HAND"
+                        }
                         Button(
                             onClick = {
                                 viewModel.triggerAudioFeedback("click")
@@ -6324,7 +7539,7 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             )
                         ) {
                             Text(
-                                text = if (currentLang == Language.RU) "ЛЕВША" else "LEFT HAND",
+                                text = leftHandBtnLabel,
                                 fontWeight = FontWeight.Bold,
                                 color = if (leftHandedControls) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -6493,6 +7708,7 @@ fun PlayerAvatarView(
     avatarBgColorHex: String = "",
     avatarFrame: String = "standard",
     customBitmap: androidx.compose.ui.graphics.ImageBitmap? = null,
+    avatarBase64: String? = null,
     size: androidx.compose.ui.unit.Dp = 40.dp,
     themeColor: Color = MaterialTheme.colorScheme.primary,
     secondaryColor: Color = MaterialTheme.colorScheme.secondary,
@@ -6501,6 +7717,7 @@ fun PlayerAvatarView(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "AvatarFrameAnim")
     val rotationAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -6521,24 +7738,70 @@ fun PlayerAvatarView(
         label = "framePulse"
     )
 
-    val frameBrush = remember(avatarFrame, themeColor, secondaryColor) {
-        when (avatarFrame) {
-            "neon_ae" -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFF00FFCC), Color(0xFF0077FF), Color(0xFFFF0077), Color(0xFF00FFCC)))
-            "gold_ma" -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFE4B5), Color(0xFFFFD700)))
-            "chrono_gl" -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFFFF0055), Color(0xFFFF5252), Color(0xFFFF7A00), Color(0xFFFF0055)))
-            "omega_ti" -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFF00F0FF), Color(0xFFFF0055), Color(0xFFFFD700), Color(0xFF00F0FF)))
-            "matrix_gl" -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFF00FF66), Color(0xFF003300), Color(0xFF33FF33), Color(0xFF00FF66)))
-            else -> androidx.compose.ui.graphics.Brush.sweepGradient(listOf(themeColor.copy(alpha = 0.6f), secondaryColor.copy(alpha = 0.6f), themeColor.copy(alpha = 0.6f)))
+    val parsedBgColor = remember(avatarBgColorHex, playerName) {
+        parsePlayerColor(avatarBgColorHex, playerName, themeColor)
+    }
+
+    val hasAnimatedFrame = avatarFrame != "standard" && avatarFrame != "none" && avatarFrame.isNotBlank()
+
+    val frameBrush = remember(parsedBgColor, secondaryColor) {
+        val isMetallic = (parsedBgColor.red < 0.22f && parsedBgColor.green < 0.22f && parsedBgColor.blue < 0.22f) ||
+                (parsedBgColor.red > 0.80f && parsedBgColor.green > 0.80f && parsedBgColor.blue > 0.80f)
+
+        if (isMetallic) {
+            androidx.compose.ui.graphics.Brush.sweepGradient(
+                listOf(
+                    Color(0xFFFFFFFF),
+                    Color(0xFFA0A5B5),
+                    Color(0xFFE8EDF8),
+                    Color(0xFF656A7A),
+                    Color(0xFFFFFFFF)
+                )
+            )
+        } else {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(
+                android.graphics.Color.argb(255, (parsedBgColor.red * 255).toInt(), (parsedBgColor.green * 255).toInt(), (parsedBgColor.blue * 255).toInt()),
+                hsv
+            )
+            val baseHue = hsv[0]
+            val sat = hsv[1].coerceIn(0.70f, 0.98f)
+            val value = hsv[2].coerceIn(0.85f, 1f)
+
+            val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+            val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+            val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+            val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+            val c5 = c1
+
+            androidx.compose.ui.graphics.Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
         }
     }
 
-    val hasAnimatedFrame = avatarFrame in listOf("neon_ae", "gold_ma", "chrono_gl", "omega_ti", "matrix_gl")
-    val parsedBgColor = remember(avatarBgColorHex) {
-        try {
-            if (avatarBgColorHex.isNotBlank()) Color(android.graphics.Color.parseColor(if (avatarBgColorHex.startsWith("#")) avatarBgColorHex else "#$avatarBgColorHex"))
-            else Color(0xFF2C2D35)
-        } catch (e: Exception) {
-            Color(0xFF2C2D35)
+    val resolvedBitmap: androidx.compose.ui.graphics.ImageBitmap? = remember(customBitmap, avatarBase64, playerName) {
+        if (customBitmap != null) {
+            customBitmap
+        } else if (!avatarBase64.isNullOrBlank()) {
+            try {
+                val clean = avatarBase64.substringAfter("base64,")
+                val bytes = android.util.Base64.decode(clean, android.util.Base64.NO_WRAP)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else if (playerName.isNotBlank()) {
+            try {
+                val file = java.io.File(context.filesDir, "custom_avatar_${playerName}.jpg")
+                if (file.exists() && file.length() > 0) {
+                    android.graphics.BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
         }
     }
 
@@ -6600,9 +7863,9 @@ fun PlayerAvatarView(
                     shape = CircleShape
                 )
         ) {
-            if (customBitmap != null) {
+            if (resolvedBitmap != null) {
                 androidx.compose.foundation.Image(
-                    bitmap = customBitmap,
+                    bitmap = resolvedBitmap,
                     contentDescription = "Avatar",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
@@ -6611,18 +7874,19 @@ fun PlayerAvatarView(
                 Text(
                     text = avatarEmoji,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = (size.value * 0.42f).sp
+                        fontSize = (size.value * 0.45f).sp
                     ),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             } else {
+                val initial = if (playerName.isNotBlank()) playerName.take(1).uppercase() else "?"
                 Text(
-                    text = playerName.take(1).uppercase(),
+                    text = initial,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = (size.value * 0.42f).sp,
+                        fontSize = (size.value * 0.45f).sp,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
                     ),
-                    color = if (parsedBgColor != Color(0xFF2C2D35)) Color.White else themeColor,
+                    color = Color.White,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
@@ -6692,12 +7956,20 @@ fun OtherUserProfileDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val otherProfileTitle = when (currentLang) {
+                            Language.RU -> "ПРОФИЛЬ ИГРОКА"
+                            Language.UA -> "ПРОФІЛЬ ГРАВЦЯ"
+                            Language.KK -> "ОЙЫНШЫ ПРОФИЛІ"
+                            Language.DE -> "SPIELERPROFIL"
+                            Language.ZH -> "玩家个人资料"
+                            else -> "PLAYER PROFILE"
+                        }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = themeColor.copy(alpha = 0.15f)
                         ) {
                             Text(
-                                text = if (currentLang == Language.RU) "ПРОФИЛЬ ИГРОКА" else "PLAYER PROFILE",
+                                text = otherProfileTitle,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 1.sp
@@ -6725,8 +7997,11 @@ fun OtherUserProfileDialog(
                         avatarEmoji = profile.avatarEmoji,
                         avatarBgColorHex = profile.avatarBgColor,
                         avatarFrame = profile.avatarFrame,
+                        avatarBase64 = profile.avatarBase64,
                         size = 80.dp,
-                        themeColor = themeColor
+                        themeColor = themeColor,
+                        showOnlineDot = true,
+                        isOnline = profile.isOnline
                     )
 
                     Column(
@@ -6756,7 +8031,7 @@ fun OtherUserProfileDialog(
                                 color = MaterialTheme.colorScheme.tertiaryContainer
                             ) {
                                 Text(
-                                    text = profile.title.uppercase(),
+                                    text = Translations.getLocalizedTitle(profile.title, currentLang).uppercase(),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 10.sp
@@ -6769,7 +8044,7 @@ fun OtherUserProfileDialog(
                     }
 
                     // Tier & League Badge
-                    val tierColor = when (profile.onlineTier.uppercase()) {
+                    val tierColor = when (profile.onlineTier.ifBlank { "BRONZE" }.uppercase()) {
                         "BRONZE" -> Color(0xFFCD7F32)
                         "SILVER" -> Color(0xFFC0C0C0)
                         "GOLD" -> Color(0xFFFFD700)
@@ -6781,31 +8056,93 @@ fun OtherUserProfileDialog(
                         else -> themeColor
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = tierColor.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, tierColor.copy(alpha = 0.5f))
+                    // Badges (Rank, ELO, Win Streak)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = tierColor.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, tierColor.copy(alpha = 0.5f))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.MilitaryTech,
-                                contentDescription = null,
-                                tint = tierColor,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MilitaryTech,
+                                    contentDescription = null,
+                                    tint = tierColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = Translations.getLocalizedRank(profile.onlineTier.ifBlank { "BRONZE" }, currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = tierColor
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFFFFD700).copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                        ) {
                             Text(
-                                text = "ЛИГА: ${profile.onlineTier.uppercase()}",
+                                text = "ELO ${profile.rating}",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = tierColor
+                                color = Color(0xFFFFD700),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
+                        }
+
+                        if (profile.winStreak > 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFFF5722).copy(alpha = 0.15f),
+                                border = BorderStroke(1.dp, Color(0xFFFF5722).copy(alpha = 0.5f))
+                            ) {
+                                Text(
+                                    text = "x${profile.winStreak}",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                    color = Color(0xFFFF5722),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                )
+                            }
                         }
                     }
 
                     // Stats Grid
+                    val highScoreLabel = when (currentLang) {
+                        Language.RU -> "Рекорд"
+                        Language.UA -> "Рекорд"
+                        Language.KK -> "Рекорд"
+                        Language.DE -> "Rekord"
+                        Language.ZH -> "最高分"
+                        else -> "High Score"
+                    }
+                    val levelLabel = when (currentLang) {
+                        Language.RU -> "Уровень"
+                        Language.UA -> "Рівень"
+                        Language.KK -> "Деңгей"
+                        Language.DE -> "Level"
+                        Language.ZH -> "等级"
+                        else -> "Level"
+                    }
+                    val creditsLabel = when (currentLang) {
+                        Language.RU -> "Монеты"
+                        Language.UA -> "Монети"
+                        Language.KK -> "Тиындар"
+                        Language.DE -> "Münzen"
+                        Language.ZH -> "金币"
+                        else -> "Credits"
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -6816,17 +8153,17 @@ fun OtherUserProfileDialog(
                             color = MaterialTheme.colorScheme.surfaceContainerHighest
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = if (currentLang == Language.RU) "Рекорд" else "High Score",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = highScoreLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = String.format(Locale.getDefault(), "%,d", profile.highScore),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
                                     color = themeColor
                                 )
                             }
@@ -6838,24 +8175,70 @@ fun OtherUserProfileDialog(
                             color = MaterialTheme.colorScheme.surfaceContainerHighest
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = if (currentLang == Language.RU) "Уровень" else "Mastery Level",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = levelLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = "LVL ${profile.userLevel}",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
                                     color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = creditsLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%,d", profile.credits),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black, fontSize = 14.sp),
+                                    color = Color(0xFFFFD700)
                                 )
                             }
                         }
                     }
 
                     // Action Buttons
+                    val requestSentText = when (currentLang) {
+                        Language.RU -> "Запрос отправлен"
+                        Language.UA -> "Запит надіслано"
+                        Language.KK -> "Сұраныс жіберілді"
+                        Language.DE -> "Anfrage gesendet"
+                        Language.ZH -> "已发送申请"
+                        else -> "Request Sent"
+                    }
+                    val addFriendText = when (currentLang) {
+                        Language.RU -> "В друзья"
+                        Language.UA -> "У друзі"
+                        Language.KK -> "Дос қосу"
+                        Language.DE -> "Freund hinzufügen"
+                        Language.ZH -> "加为好友"
+                        else -> "Add Friend"
+                    }
+                    val duelBtnText = when (currentLang) {
+                        Language.RU -> "В дуэль"
+                        Language.UA -> "У дуель"
+                        Language.KK -> "Дуэльге"
+                        Language.DE -> "Duell 1v1"
+                        Language.ZH -> "发起对战"
+                        else -> "Duel 1v1"
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -6885,11 +8268,7 @@ fun OtherUserProfileDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = if (friendAddedState) {
-                                        if (currentLang == Language.RU) "Запрос отправлен" else "Request Sent"
-                                    } else {
-                                        if (currentLang == Language.RU) "В друзья" else "Add Friend"
-                                    },
+                                    text = if (friendAddedState) requestSentText else addFriendText,
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -6912,7 +8291,7 @@ fun OtherUserProfileDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = if (currentLang == Language.RU) "В дуэль" else "Duel 1v1",
+                                    text = duelBtnText,
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -6968,6 +8347,14 @@ fun FriendsDialog(
                     .padding(16.dp)
             ) {
                 // Top App Bar
+                val friendsDialogTitle = when (currentLang) {
+                    Language.RU -> "ДРУЗЬЯ И СОЮЗНИКИ"
+                    Language.UA -> "ДРУЗІ ТА СОЮЗНИКИ"
+                    Language.KK -> "ДОСТАР ЖӘНЕ ОДАҚТАСТАР"
+                    Language.DE -> "FREUNDE & VERBÜNDETE"
+                    Language.ZH -> "好友与盟友"
+                    else -> "FRIENDS & ALLIES"
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -6982,7 +8369,7 @@ fun FriendsDialog(
                     }
 
                     Text(
-                        text = if (currentLang == Language.RU) "ДРУЗЬЯ И СОЮЗНИКИ" else "FRIENDS & ALLIES",
+                        text = friendsDialogTitle,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.sp
@@ -6996,10 +8383,34 @@ fun FriendsDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Sliding Pill Tabs
+                val tabFriendsLabel = when (currentLang) {
+                    Language.RU -> "Друзья"
+                    Language.UA -> "Друзі"
+                    Language.KK -> "Достар"
+                    Language.DE -> "Freunde"
+                    Language.ZH -> "好友"
+                    else -> "Friends"
+                }
+                val tabRequestsLabel = when (currentLang) {
+                    Language.RU -> "Запросы"
+                    Language.UA -> "Запити"
+                    Language.KK -> "Сұраныстар"
+                    Language.DE -> "Anfragen"
+                    Language.ZH -> "好友申请"
+                    else -> "Requests"
+                }
+                val tabSearchLabel = when (currentLang) {
+                    Language.RU -> "Поиск"
+                    Language.UA -> "Пошук"
+                    Language.KK -> "Іздеу"
+                    Language.DE -> "Suche"
+                    Language.ZH -> "搜索"
+                    else -> "Search"
+                }
                 val tabs = listOf(
-                    Triple(0, if (currentLang == Language.RU) "Друзья (${friendsList.size})" else "Friends (${friendsList.size})", Icons.Default.People),
-                    Triple(1, if (currentLang == Language.RU) "Запросы (${friendRequests.size})" else "Requests (${friendRequests.size})", Icons.Default.Mail),
-                    Triple(2, if (currentLang == Language.RU) "Поиск" else "Search", Icons.Default.Search)
+                    Triple(0, "$tabFriendsLabel (${friendsList.size})", Icons.Default.People),
+                    Triple(1, "$tabRequestsLabel (${friendRequests.size})", Icons.Default.Mail),
+                    Triple(2, tabSearchLabel, Icons.Default.Search)
                 )
 
                 Surface(
@@ -7118,6 +8529,22 @@ fun FriendsDialog(
                         0 -> {
                             // My Friends List
                             if (friendsList.isEmpty()) {
+                                val emptyFriendsText = when (currentLang) {
+                                    Language.RU -> "У вас пока нет добавленных друзей"
+                                    Language.UA -> "У вас ще немає доданих друзів"
+                                    Language.KK -> "Сізде әзірше достар жоқ"
+                                    Language.DE -> "Noch keine Freunde hinzugefügt"
+                                    Language.ZH -> "暂无好友"
+                                    else -> "No friends added yet"
+                                }
+                                val findPlayersBtnText = when (currentLang) {
+                                    Language.RU -> "Найти игроков"
+                                    Language.UA -> "Знайти гравців"
+                                    Language.KK -> "Ойыншыларды табу"
+                                    Language.DE -> "Spieler suchen"
+                                    Language.ZH -> "寻找玩家"
+                                    else -> "Find Players"
+                                }
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
@@ -7133,7 +8560,7 @@ fun FriendsDialog(
                                             modifier = Modifier.size(54.dp)
                                         )
                                         Text(
-                                            text = if (currentLang == Language.RU) "У вас пока нет добавленных друзей" else "No friends added yet",
+                                            text = emptyFriendsText,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -7141,7 +8568,7 @@ fun FriendsDialog(
                                             onClick = { activeTab = 2 },
                                             shape = RoundedCornerShape(14.dp)
                                         ) {
-                                            Text(if (currentLang == Language.RU) "Найти игроков" else "Find Players")
+                                            Text(findPlayersBtnText)
                                         }
                                     }
                                 }
@@ -7179,6 +8606,7 @@ fun FriendsDialog(
                                                         avatarEmoji = friend.avatarEmoji,
                                                         avatarBgColorHex = friend.avatarBgColor,
                                                         avatarFrame = friend.avatarFrame,
+                                                        avatarBase64 = friend.avatarBase64,
                                                         showOnlineDot = true,
                                                         isOnline = friend.isOnline,
                                                         size = 46.dp,
@@ -7204,8 +8632,16 @@ fun FriendsDialog(
                                                             maxLines = 1,
                                                             overflow = TextOverflow.Ellipsis
                                                         )
+                                                        val tierWord = when (currentLang) {
+                                                            Language.RU -> "Лига"
+                                                            Language.UA -> "Ліга"
+                                                            Language.KK -> "Лига"
+                                                            Language.DE -> "Liga"
+                                                            Language.ZH -> "段位"
+                                                            else -> "Tier"
+                                                        }
                                                         Text(
-                                                            text = "Лига: ${friend.onlineTier}",
+                                                            text = "🪙 ${String.format(Locale.getDefault(), "%,d", friend.credits)} • $tierWord: ${Translations.getLocalizedRank(friend.onlineTier, currentLang)}",
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
@@ -7224,6 +8660,22 @@ fun FriendsDialog(
                                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
                                                     if (friend.isOnline && currentRoom != null && currentRoom!!.status == "waiting") {
+                                                        val inviteBtnText = when (currentLang) {
+                                                            Language.RU -> "Позвать"
+                                                            Language.UA -> "Запросити"
+                                                            Language.KK -> "Шақыру"
+                                                            Language.DE -> "Einladen"
+                                                            Language.ZH -> "邀请"
+                                                            else -> "Invite"
+                                                        }
+                                                        val inviteSentToastText = when (currentLang) {
+                                                            Language.RU -> "Приглашение отправлено!"
+                                                            Language.UA -> "Запрошення надіслано!"
+                                                            Language.KK -> "Шақыру жіберілді!"
+                                                            Language.DE -> "Einladung gesendet!"
+                                                            Language.ZH -> "邀请已发送！"
+                                                            else -> "Invite sent!"
+                                                        }
                                                         FilledTonalButton(
                                                             onClick = {
                                                                 viewModel.triggerAudioFeedback("click")
@@ -7235,17 +8687,16 @@ fun FriendsDialog(
                                                                     avatarEmoji = customAvatarEmoji,
                                                                     avatarBgColor = customAvatarBgColor,
                                                                     avatarFrame = equippedAvatarFrame,
-                                                                    hostTier = localTier,
-                                                                    betAmount = currentRoom!!.betAmount
+                                                                    hostTier = localTier
                                                                 )
-                                                                actionToast = if (currentLang == Language.RU) "Приглашение отправлено!" else "Invite sent!"
+                                                                actionToast = inviteSentToastText
                                                             },
                                                             shape = RoundedCornerShape(12.dp),
                                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                                         ) {
                                                             Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(13.dp))
                                                             Spacer(modifier = Modifier.width(4.dp))
-                                                            Text(if (currentLang == Language.RU) "Позвать" else "Invite", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                                            Text(inviteBtnText, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                                                         }
                                                     } else {
                                                         IconButton(
@@ -7267,7 +8718,14 @@ fun FriendsDialog(
                                                         onClick = {
                                                             viewModel.removeFriend(friend) { ok ->
                                                                 if (ok) {
-                                                                    actionToast = if (currentLang == Language.RU) "Друг удален" else "Friend removed"
+                                                                    actionToast = when (currentLang) {
+                                                                        Language.RU -> "Друг удален"
+                                                                        Language.UA -> "Друга видалено"
+                                                                        Language.KK -> "Дос өшірілді"
+                                                                        Language.DE -> "Freund entfernt"
+                                                                        Language.ZH -> "已删除好友"
+                                                                        else -> "Friend removed"
+                                                                    }
                                                                 }
                                                             }
                                                         },
@@ -7287,20 +8745,53 @@ fun FriendsDialog(
                                 }
                             }
                         }
+
+                        // Tab 1: Friend Requests
                         1 -> {
-                            // Friend Requests List
                             if (friendRequests.isEmpty()) {
+                                val emptyReqText = when (currentLang) {
+                                    Language.RU -> "Входящих запросов в друзья нет"
+                                    Language.UA -> "Вхідних запитів у друзі немає"
+                                    Language.KK -> "Кіріс дос сұраныстары жоқ"
+                                    Language.DE -> "Keine eingehenden Freundschaftsanfragen"
+                                    Language.ZH -> "暂无好友申请"
+                                    else -> "No incoming friend requests"
+                                }
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (currentLang == Language.RU) "Входящих запросов в друзья нет" else "No incoming friend requests",
+                                        text = emptyReqText,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             } else {
+                                val wantsToBeFriendsText = when (currentLang) {
+                                    Language.RU -> "Хочет добавить вас в друзья"
+                                    Language.UA -> "Хоче додати вас у друзі"
+                                    Language.KK -> "Сізді дос ретінде қосқысы келеді"
+                                    Language.DE -> "Möchte dein Freund sein"
+                                    Language.ZH -> "申请添加你为好友"
+                                    else -> "Wants to be friends"
+                                }
+                                val reqAcceptedText = when (currentLang) {
+                                    Language.RU -> "Запрос принят!"
+                                    Language.UA -> "Запит прийнято!"
+                                    Language.KK -> "Сұраныс қабылданды!"
+                                    Language.DE -> "Anfrage angenommen!"
+                                    Language.ZH -> "已同意申请！"
+                                    else -> "Request accepted!"
+                                }
+                                val reqDeclinedText = when (currentLang) {
+                                    Language.RU -> "Запрос отклонен"
+                                    Language.UA -> "Запит відхилено"
+                                    Language.KK -> "Сұраныс қабылданбады"
+                                    Language.DE -> "Anfrage abgelehnt"
+                                    Language.ZH -> "已拒绝申请"
+                                    else -> "Request declined"
+                                }
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -7341,7 +8832,7 @@ fun FriendsDialog(
                                                             color = MaterialTheme.colorScheme.onSurface
                                                         )
                                                         Text(
-                                                            text = if (currentLang == Language.RU) "Хочет добавить вас в друзья" else "Wants to be friends",
+                                                            text = wantsToBeFriendsText,
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
@@ -7356,7 +8847,7 @@ fun FriendsDialog(
                                                         onClick = {
                                                             viewModel.acceptFriendRequest(req) { ok ->
                                                                 if (ok) {
-                                                                    actionToast = if (currentLang == Language.RU) "Запрос принят!" else "Request accepted!"
+                                                                    actionToast = reqAcceptedText
                                                                 }
                                                             }
                                                         },
@@ -7373,7 +8864,7 @@ fun FriendsDialog(
                                                         onClick = {
                                                             viewModel.declineFriendRequest(req) { ok ->
                                                                 if (ok) {
-                                                                    actionToast = if (currentLang == Language.RU) "Запрос отклонен" else "Request declined"
+                                                                    actionToast = reqDeclinedText
                                                                 }
                                                             }
                                                         },
@@ -7394,6 +8885,38 @@ fun FriendsDialog(
                         }
                         2 -> {
                             // Player Search
+                            val searchPlaceholder = when (currentLang) {
+                                Language.RU -> "Введите никнейм игрока..."
+                                Language.UA -> "Введіть нікнейм гравця..."
+                                Language.KK -> "Ойыншының никнеймін енгізіңіз..."
+                                Language.DE -> "Spielernamen eingeben..."
+                                Language.ZH -> "输入玩家昵称搜索..."
+                                else -> "Search player by nickname..."
+                            }
+                            val noPlayersFoundText = when (currentLang) {
+                                Language.RU -> "Игроки не найдены"
+                                Language.UA -> "Гравців не знайдено"
+                                Language.KK -> "Ойыншылар табылмады"
+                                Language.DE -> "Keine Spieler gefunden"
+                                Language.ZH -> "未找到玩家"
+                                else -> "No players found"
+                            }
+                            val addBtnText = when (currentLang) {
+                                Language.RU -> "Добавить"
+                                Language.UA -> "Додати"
+                                Language.KK -> "Қосу"
+                                Language.DE -> "Hinzufügen"
+                                Language.ZH -> "添加"
+                                else -> "Add"
+                            }
+                            val tierLabel = when (currentLang) {
+                                Language.RU -> "Лига"
+                                Language.UA -> "Ліга"
+                                Language.KK -> "Лига"
+                                Language.DE -> "Liga"
+                                Language.ZH -> "段位"
+                                else -> "Tier"
+                            }
                             Column(
                                 modifier = Modifier.fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -7413,7 +8936,7 @@ fun FriendsDialog(
                                         }
                                     },
                                     placeholder = {
-                                        Text(if (currentLang == Language.RU) "Введите никнейм игрока..." else "Search player by nickname...")
+                                        Text(searchPlaceholder)
                                     },
                                     leadingIcon = {
                                         Icon(Icons.Default.Search, contentDescription = null, tint = themeColor)
@@ -7450,7 +8973,7 @@ fun FriendsDialog(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = if (currentLang == Language.RU) "Игроки не найдены" else "No players found",
+                                            text = noPlayersFoundText,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -7496,7 +9019,7 @@ fun FriendsDialog(
                                                                 color = MaterialTheme.colorScheme.onSurface
                                                             )
                                                             Text(
-                                                                text = "Лига: ${user.onlineTier}",
+                                                                text = "$tierLabel: ${Translations.getLocalizedRank(user.onlineTier, currentLang)}",
                                                                 style = MaterialTheme.typography.labelSmall,
                                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                                             )
@@ -7517,7 +9040,7 @@ fun FriendsDialog(
                                                     ) {
                                                         Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                                                         Spacer(modifier = Modifier.width(4.dp))
-                                                        Text(if (currentLang == Language.RU) "Добавить" else "Add", fontSize = 12.sp)
+                                                        Text(addBtnText, fontSize = 12.sp)
                                                     }
                                                 }
                                             }
