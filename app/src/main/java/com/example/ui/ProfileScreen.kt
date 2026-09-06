@@ -5568,6 +5568,8 @@ private fun NewTabContent(
     currentLang: Language,
     themeColor: Color
 ) {
+    val appVersionName = rememberAppVersionName()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -5643,7 +5645,7 @@ private fun NewTabContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = "0.95.1 Alpha",
+                        text = appVersionName,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = themeColor
@@ -5695,15 +5697,15 @@ private fun NewTabContent(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Version 0.95.1 Alpha Card Content
+                // Current Version Card Content
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     val v20Header = when (currentLang) {
-                        Language.RU -> "Версия 0.95.1 Alpha (Текущая)"
-                        Language.UA -> "Версія 0.95.1 Alpha (Поточна)"
-                        Language.KK -> "Нұсқа 0.95.1 Alpha (Ағымдағы)"
-                        Language.DE -> "Version 0.95.1 Alpha (Aktuell)"
-                        Language.ZH -> "版本 0.95.1 Alpha (当前)"
-                        else -> "Version 0.95.1 Alpha (Current)"
+                        Language.RU -> "Версия $appVersionName (Текущая)"
+                        Language.UA -> "Версія $appVersionName (Поточна)"
+                        Language.KK -> "Нұсқа $appVersionName (Ағымдағы)"
+                        Language.DE -> "Version $appVersionName (Aktuell)"
+                        Language.ZH -> "版本 $appVersionName (当前)"
+                        else -> "Version $appVersionName (Current)"
                     }
                     Text(
                         text = v20Header,
