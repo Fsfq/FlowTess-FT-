@@ -58,12 +58,13 @@ import androidx.compose.material.icons.filled.Email
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Check
@@ -71,7 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Extension
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.MilitaryTech
@@ -286,7 +287,9 @@ fun ProfileScreen(
         listOf(
             ControlButtonStyleStoreData("classic", ShopPrices.getButtonCost("classic"), Translations.getLocalizedButtonTitle("classic", currentLang), Translations.getLocalizedButtonDesc("classic", currentLang)),
             ControlButtonStyleStoreData("neon", ShopPrices.getButtonCost("neon"), Translations.getLocalizedButtonTitle("neon", currentLang), Translations.getLocalizedButtonDesc("neon", currentLang)),
-            ControlButtonStyleStoreData("glass", ShopPrices.getButtonCost("glass"), Translations.getLocalizedButtonTitle("glass", currentLang), Translations.getLocalizedButtonDesc("glass", currentLang))
+            ControlButtonStyleStoreData("glass", ShopPrices.getButtonCost("glass"), Translations.getLocalizedButtonTitle("glass", currentLang), Translations.getLocalizedButtonDesc("glass", currentLang)),
+            ControlButtonStyleStoreData("gold_legendary", ShopPrices.getButtonCost("gold_legendary"), Translations.getLocalizedButtonTitle("gold_legendary", currentLang), Translations.getLocalizedButtonDesc("gold_legendary", currentLang)),
+            ControlButtonStyleStoreData("plasma_legendary", ShopPrices.getButtonCost("plasma_legendary"), Translations.getLocalizedButtonTitle("plasma_legendary", currentLang), Translations.getLocalizedButtonDesc("plasma_legendary", currentLang))
         )
     }
 
@@ -379,6 +382,32 @@ fun ProfileScreen(
         bgBitmap = bmp
     }
 
+    var cardBannerPreset by remember(playerName) {
+        mutableStateOf(sharedPrefs.getString("profile_card_banner_preset_${playerName}", sharedPrefs.getString("profile_card_banner_preset", "default") ?: "default") ?: "default")
+    }
+
+    fun getBannerBrush(preset: String): Brush? {
+        return when (preset) {
+            "cyberpunk" -> Brush.horizontalGradient(listOf(Color(0xFFFF007F), Color(0xFF7928CA), Color(0xFF00F0FF)))
+            "space" -> Brush.horizontalGradient(listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)))
+            "sunset" -> Brush.horizontalGradient(listOf(Color(0xFFFF512F), Color(0xFFDD2476)))
+            "matrix" -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF003B00), Color(0xFF00FF66)))
+            "gold" -> Brush.horizontalGradient(listOf(Color(0xFFBF953F), Color(0xFFFCF6BA), Color(0xFFB38728), Color(0xFFFBF5B7), Color(0xFFAA771C)))
+            "glacier" -> Brush.horizontalGradient(listOf(Color(0xFF00C6FF), Color(0xFF0072FF)))
+            "blood_moon" -> Brush.horizontalGradient(listOf(Color(0xFF4A0000), Color(0xFF8B0000), Color(0xFFE50914), Color(0xFF1F0000)))
+            else -> null
+        }
+    }
+
+    fun setCardBannerPreset(preset: String) {
+        cardBannerPreset = preset
+        sharedPrefs.edit()
+            .putString("profile_card_banner_preset_${playerName}", preset)
+            .putString("profile_card_banner_preset", preset)
+            .apply()
+        viewModel.saveCurrentProfileToDb()
+    }
+
     fun saveCustomImage(ctx: Context, uri: Uri, type: String) {
         try {
             val inputStream = ctx.contentResolver.openInputStream(uri) ?: return
@@ -431,37 +460,134 @@ fun ProfileScreen(
 
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val avatarFrameBorderBrush = remember(equippedAvatarFrame, themeColor, secondaryColor) {
-        val isMonochrome = (themeColor.red < 0.22f && themeColor.green < 0.22f && themeColor.blue < 0.22f) ||
-                (themeColor.red > 0.80f && themeColor.green > 0.80f && themeColor.blue > 0.80f)
-
-        if (equippedAvatarFrame != "standard") {
-            if (isMonochrome) {
-                Brush.sweepGradient(listOf(Color(0xFFFFFFFF), Color(0xFFA0A5B5), Color(0xFFE8EDF8), Color(0xFF656A7A), Color(0xFFFFFFFF)))
-            } else {
-                val hsv = FloatArray(3)
-                android.graphics.Color.colorToHSV(
-                    android.graphics.Color.argb(
-                        (themeColor.alpha * 255).toInt(),
-                        (themeColor.red * 255).toInt(),
-                        (themeColor.green * 255).toInt(),
-                        (themeColor.blue * 255).toInt()
-                    ),
-                    hsv
+        when (equippedAvatarFrame) {
+            "neon_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFF00FFCC),
+                        Color(0xFF00E5FF),
+                        Color(0xFF1DE9B6),
+                        Color(0xFF00B0FF),
+                        Color(0xFF00FFCC)
+                    )
                 )
-                val baseHue = hsv[0]
-                val sat = hsv[1].coerceIn(0.70f, 0.98f)
-                val value = hsv[2].coerceIn(0.85f, 1f)
-
-                val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
-                val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-                val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
-                val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-                val c5 = c1
-
-                Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
             }
-        } else {
-            Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
+            "gold_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFFFD700),
+                        Color(0xFFFFA000),
+                        Color(0xFFFFE082),
+                        Color(0xFFFF8F00),
+                        Color(0xFFFFD700)
+                    )
+                )
+            }
+            "cyber_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFE040FB),
+                        Color(0xFF7C4DFF),
+                        Color(0xFF536DFE),
+                        Color(0xFFFF4081),
+                        Color(0xFFE040FB)
+                    )
+                )
+            }
+            "fire_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFFF1744),
+                        Color(0xFFFF5722),
+                        Color(0xFFFF9100),
+                        Color(0xFFFFD600),
+                        Color(0xFFFF3D00),
+                        Color(0xFFFF1744)
+                    )
+                )
+            }
+            "ice_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFF00E5FF),
+                        Color(0xFF80D8FF),
+                        Color(0xFFE0F7FA),
+                        Color(0xFF00B0FF),
+                        Color(0xFF0091EA),
+                        Color(0xFF00E5FF)
+                    )
+                )
+            }
+            "matrix_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFF00FF66),
+                        Color(0xFF00E676),
+                        Color(0xFF69F0AE),
+                        Color(0xFF00BFA5),
+                        Color(0xFF00C853),
+                        Color(0xFF00FF66)
+                    )
+                )
+            }
+            "galaxy_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFF7C4DFF),
+                        Color(0xFF651FFF),
+                        Color(0xFFD500F9),
+                        Color(0xFFFF4081),
+                        Color(0xFF3D5AFE),
+                        Color(0xFF7C4DFF)
+                    )
+                )
+            }
+            "rainbow_frame" -> {
+                Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFFF0055),
+                        Color(0xFFFF7700),
+                        Color(0xFFFFDD00),
+                        Color(0xFF00DD77),
+                        Color(0xFF0099FF),
+                        Color(0xFF8800FF),
+                        Color(0xFFFF0055)
+                    )
+                )
+            }
+            "standard" -> {
+                Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
+            }
+            else -> {
+                val isMonochrome = (themeColor.red < 0.22f && themeColor.green < 0.22f && themeColor.blue < 0.22f) ||
+                        (themeColor.red > 0.80f && themeColor.green > 0.80f && themeColor.blue > 0.80f)
+
+                if (isMonochrome) {
+                    Brush.sweepGradient(listOf(Color(0xFFFFFFFF), Color(0xFFA0A5B5), Color(0xFFE8EDF8), Color(0xFF656A7A), Color(0xFFFFFFFF)))
+                } else {
+                    val hsv = FloatArray(3)
+                    android.graphics.Color.colorToHSV(
+                        android.graphics.Color.argb(
+                            (themeColor.alpha * 255).toInt(),
+                            (themeColor.red * 255).toInt(),
+                            (themeColor.green * 255).toInt(),
+                            (themeColor.blue * 255).toInt()
+                        ),
+                        hsv
+                    )
+                    val baseHue = hsv[0]
+                    val sat = hsv[1].coerceIn(0.70f, 0.98f)
+                    val value = hsv[2].coerceIn(0.85f, 1f)
+
+                    val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+                    val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                    val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+                    val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                    val c5 = c1
+
+                    Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
+                }
+            }
         }
     }
     val avatarFrameThickness = if (equippedAvatarFrame != "standard") 3.5.dp else 2.dp
@@ -537,16 +663,22 @@ fun ProfileScreen(
 
     val premiumModesList = remember(currentLang) {
         listOf(
-            GameModeStoreData("zen", ShopPrices.getModeCost("zen"), Translations.getLobbyModeTitle("zen", currentLang), Translations.getLobbyModeDesc("zen", currentLang), ""),
-            GameModeStoreData("pulse_extreme", ShopPrices.getModeCost("pulse_extreme"), Translations.getLobbyModeTitle("pulse_extreme", currentLang), Translations.getLobbyModeDesc("pulse_extreme", currentLang), ""),
+            GameModeStoreData("time_attack", ShopPrices.getModeCost("time_attack"), Translations.getLobbyModeTitle("time_attack", currentLang), Translations.getLobbyModeDesc("time_attack", currentLang), ""),
+            GameModeStoreData("fast_run", ShopPrices.getModeCost("fast_run"), Translations.getLobbyModeTitle("fast_run", currentLang), Translations.getLobbyModeDesc("fast_run", currentLang), ""),
+            GameModeStoreData("relax", ShopPrices.getModeCost("relax"), Translations.getLobbyModeTitle("relax", currentLang), Translations.getLobbyModeDesc("relax", currentLang), ""),
             GameModeStoreData("mirror", ShopPrices.getModeCost("mirror"), Translations.getLobbyModeTitle("mirror", currentLang), Translations.getLobbyModeDesc("mirror", currentLang), ""),
-            GameModeStoreData("penta", ShopPrices.getModeCost("penta"), Translations.getLobbyModeTitle("penta", currentLang), Translations.getLobbyModeDesc("penta", currentLang), "")
+            GameModeStoreData("extended", ShopPrices.getModeCost("extended"), Translations.getLobbyModeTitle("extended", currentLang), Translations.getLobbyModeDesc("extended", currentLang), ""),
+            GameModeStoreData("reverse", ShopPrices.getModeCost("reverse"), Translations.getLobbyModeTitle("reverse", currentLang), Translations.getLobbyModeDesc("reverse", currentLang), ""),
+            GameModeStoreData("block_blast", ShopPrices.getModeCost("block_blast"), Translations.getLobbyModeTitle("block_blast", currentLang), Translations.getLobbyModeDesc("block_blast", currentLang), ""),
+            GameModeStoreData("pattern", ShopPrices.getModeCost("pattern"), Translations.getLobbyModeTitle("pattern", currentLang), Translations.getLobbyModeDesc("pattern", currentLang), ""),
+            GameModeStoreData("sculptor", ShopPrices.getModeCost("sculptor"), Translations.getLobbyModeTitle("sculptor", currentLang), Translations.getLobbyModeDesc("sculptor", currentLang), ""),
+            GameModeStoreData("perfectionist", ShopPrices.getModeCost("perfectionist"), Translations.getLobbyModeTitle("perfectionist", currentLang), Translations.getLobbyModeDesc("perfectionist", currentLang), "")
         )
     }
 
     val purchasedModesSet = remember(credits) {
-        sharedPrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast")) 
-            ?: setOf("classic", "extended", "fast_run", "reverse", "block_blast")
+        sharedPrefs.getStringSet("purchased_modes", setOf("classic")) 
+            ?: setOf("classic")
     }
 
     fun purchaseMode(modeId: String, cost: Int) {
@@ -566,6 +698,7 @@ fun ProfileScreen(
             val updated = purchasedModesSet.toMutableSet().apply { add(modeId) }
             sharedPrefs.edit().putStringSet("purchased_modes", updated).apply()
             viewModel.spendCredits(cost)
+            viewModel.saveCurrentProfileToDb()
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("buy")
             val msg = when (currentLang) {
@@ -911,6 +1044,13 @@ fun ProfileScreen(
                         ) {
                             // Primary Currency (Credits / Coins)
                             Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        viewModel.triggerAudioFeedback("click")
+                                        viewModel.openRewardedAdDialog()
+                                    }
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
@@ -927,6 +1067,12 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.onSurface,
                                         letterSpacing = 0.5.sp
                                     )
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Free Coins",
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
 
@@ -970,23 +1116,8 @@ fun ProfileScreen(
                         }
                     }
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            viewModel.triggerAudioFeedback("click")
-                            onBack()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                actions = {
-                    Spacer(modifier = Modifier.size(48.dp))
-                },
+                navigationIcon = {},
+                actions = {},
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -1734,6 +1865,27 @@ fun ProfileScreen(
                                                         )
                                                     )
                                             )
+                                        } else {
+                                            val bannerBrush = remember(cardBannerPreset) { getBannerBrush(cardBannerPreset) }
+                                            if (bannerBrush != null) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .matchParentSize()
+                                                        .background(bannerBrush)
+                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .matchParentSize()
+                                                        .background(
+                                                            Brush.verticalGradient(
+                                                                colors = listOf(
+                                                                    Color.Black.copy(alpha = 0.25f),
+                                                                    Color.Black.copy(alpha = 0.65f)
+                                                                )
+                                                            )
+                                                        )
+                                                )
+                                            }
                                         }
 
                                         Column(
@@ -2580,7 +2732,7 @@ fun ProfileScreen(
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
-                                                        imageVector = Icons.Default.ExitToApp,
+                                                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                                         contentDescription = null,
                                                         tint = MaterialTheme.colorScheme.onErrorContainer,
                                                         modifier = Modifier.size(24.dp)
@@ -2654,7 +2806,7 @@ fun ProfileScreen(
                                     shape = RoundedCornerShape(18.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.ExitToApp,
+                                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -2680,10 +2832,52 @@ fun ProfileScreen(
                         Color.Gray
                     ),
                     AvatarFrameStoreData(
-                        "chrono_gl", ShopPrices.getAvatarFrameCost("chrono_gl"),
-                        Translations.getLocalizedAvatarFrameTitle("chrono_gl", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("chrono_gl", currentLang),
-                        Color(0xFFFF0077)
+                        "neon_frame", ShopPrices.getAvatarFrameCost("neon_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("neon_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("neon_frame", currentLang),
+                        Color(0xFF00FFCC)
+                    ),
+                    AvatarFrameStoreData(
+                        "gold_frame", ShopPrices.getAvatarFrameCost("gold_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("gold_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("gold_frame", currentLang),
+                        Color(0xFFFFD700)
+                    ),
+                    AvatarFrameStoreData(
+                        "cyber_frame", ShopPrices.getAvatarFrameCost("cyber_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("cyber_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("cyber_frame", currentLang),
+                        Color(0xFFE040FB)
+                    ),
+                    AvatarFrameStoreData(
+                        "fire_frame", ShopPrices.getAvatarFrameCost("fire_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("fire_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("fire_frame", currentLang),
+                        Color(0xFFFF5722)
+                    ),
+                    AvatarFrameStoreData(
+                        "ice_frame", ShopPrices.getAvatarFrameCost("ice_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("ice_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("ice_frame", currentLang),
+                        Color(0xFF00E5FF)
+                    ),
+                    AvatarFrameStoreData(
+                        "matrix_frame", ShopPrices.getAvatarFrameCost("matrix_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("matrix_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("matrix_frame", currentLang),
+                        Color(0xFF00FF66)
+                    ),
+                    AvatarFrameStoreData(
+                        "galaxy_frame", ShopPrices.getAvatarFrameCost("galaxy_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("galaxy_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("galaxy_frame", currentLang),
+                        Color(0xFF7C4DFF)
+                    ),
+                    AvatarFrameStoreData(
+                        "rainbow_frame", ShopPrices.getAvatarFrameCost("rainbow_frame"),
+                        Translations.getLocalizedAvatarFrameTitle("rainbow_frame", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("rainbow_frame", currentLang),
+                        Color(0xFFFF0055)
                     )
                 )
             }
@@ -2870,6 +3064,7 @@ fun ProfileScreen(
                                         cost = rank.cost,
                                         currentLang = currentLang,
                                         isLocked = isLocked,
+                                        rarity = ShopPrices.getCosmeticRarity("RANK", rank.id),
                                         onAction = {
                                             if (isCurrent) {
                                                 viewModel.setOnlineTier("BRONZE")
@@ -2952,6 +3147,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = skin.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("SKIN", skin.id),
                                         onAction = {
                                             if (isEquipped) {
                                                 viewModel.setBoardColorSkin("cyberpunk")
@@ -3023,6 +3219,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = cSkin.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("CUBE", cSkin.id),
                                         onAction = {
                                             if (isEquipped) {
                                                 viewModel.setBlockStyle("glass")
@@ -3093,6 +3290,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = pMode.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("MODE", pMode.id),
                                         onAction = { purchaseMode(pMode.id, pMode.cost) }
                                     )
                                 }
@@ -3149,6 +3347,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = frame.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("FRAME", frame.id),
                                         onAction = {
                                             if (isEquipped) {
                                                 viewModel.setEquippedAvatarFrame("standard")
@@ -3220,6 +3419,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = title.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("TITLE", title.id),
                                         onAction = {
                                             if (isEquipped) {
                                                 viewModel.setEquippedTitle("none")
@@ -3291,6 +3491,7 @@ fun ProfileScreen(
                                         isOwned = isOwned,
                                         cost = btnStyle.cost,
                                         currentLang = currentLang,
+                                        rarity = ShopPrices.getCosmeticRarity("BUTTON", btnStyle.id),
                                         onAction = {
                                             if (isEquipped) {
                                                 viewModel.setControlButtonStyle("classic")
@@ -3390,6 +3591,7 @@ fun ProfileScreen(
                             isOwned = isP1Active,
                             cost = ShopPrices.PRESTIGE_I_REQUIREMENT,
                             currentLang = currentLang,
+                            rarity = DropRarity.EPIC,
                             onAction = {
                                 if (isP1Active) {
                                     val activeMsg = when (currentLang) {
@@ -3461,6 +3663,7 @@ fun ProfileScreen(
                             isOwned = isP2Active,
                             cost = ShopPrices.PRESTIGE_II_REQUIREMENT,
                             currentLang = currentLang,
+                            rarity = DropRarity.LEGENDARY,
                             onAction = {
                                 if (isP2Active) {
                                     val activeMsg = when (currentLang) {
@@ -3543,6 +3746,7 @@ fun ProfileScreen(
                             isOwned = isP3Active,
                             cost = ShopPrices.PRESTIGE_III_REQUIREMENT,
                             currentLang = currentLang,
+                            rarity = DropRarity.RED,
                             onAction = {
                                 if (isP3Active) {
                                     val activeMsg = when (currentLang) {
@@ -3712,319 +3916,414 @@ fun ProfileScreen(
             },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
+            var profileDialogTab by remember { mutableIntStateOf(0) }
+
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     val profileSettingsTitle = when (currentLang) {
-                        Language.RU -> "НАСТРОЙКИ ПРОФИЛЯ"
-                        Language.UA -> "НАЛАШТУВАННЯ ПРОФІЛЮ"
-                        Language.KK -> "ПРОФИЛЬ БАПТАУЛАРЫ"
-                        Language.DE -> "PROFIL-EINSTELLUNGEN"
+                        Language.RU -> "Настройки профиля"
+                        Language.UA -> "Налаштування профілю"
+                        Language.KK -> "Профиль баптаулары"
+                        Language.DE -> "Profil-Einstellungen"
                         Language.ZH -> "个人资料设置"
-                        else -> "PROFILE SETTINGS"
+                        else -> "Profile Settings"
                     }
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Text(
-                                text = profileSettingsTitle,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { 
-                                showAvatarDialog = false 
-                                viewModel.clearUpdateMessages()
-                            }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = MaterialTheme.colorScheme.onBackground
+                    val tabGeneralTitle = when (currentLang) {
+                        Language.RU -> "Настройки"
+                        Language.UA -> "Налаштування"
+                        Language.KK -> "Баптаулар"
+                        Language.DE -> "Optionen"
+                        Language.ZH -> "基础设置"
+                        else -> "Settings"
+                    }
+                    val tabUnlockedTitle = when (currentLang) {
+                        Language.RU -> "Коллекция"
+                        Language.UA -> "Колекція"
+                        Language.KK -> "Жинақ"
+                        Language.DE -> "Sammlung"
+                        Language.ZH -> "已解锁"
+                        else -> "Collection"
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        CenterAlignedTopAppBar(
+                            title = {
+                                Text(
+                                    text = profileSettingsTitle,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.3.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
-                            }
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = { 
+                                    showAvatarDialog = false 
+                                    viewModel.clearUpdateMessages()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
                         )
-                    )
+
+                        // MD3 PrimaryTabRow for Switching Dialog Tabs
+                        PrimaryTabRow(
+                            selectedTabIndex = profileDialogTab,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            divider = {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            }
+                        ) {
+                            Tab(
+                                selected = profileDialogTab == 0,
+                                onClick = {
+                                    profileDialogTab = 0
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                text = {
+                                    Text(
+                                        text = tabGeneralTitle,
+                                        fontWeight = if (profileDialogTab == 0) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                            Tab(
+                                selected = profileDialogTab == 1,
+                                onClick = {
+                                    profileDialogTab = 1
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                text = {
+                                    Text(
+                                        text = tabUnlockedTitle,
+                                        fontWeight = if (profileDialogTab == 1) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             ) { dialogPadding ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(dialogPadding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // 1. Avatar & Background Card
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                if (profileDialogTab == 0) {
+                    // TAB 1: GENERAL PROFILE SETTINGS (Clean, Compact, Minimalist MD3)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(dialogPadding)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        // 1. Avatar & Custom Photo Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                         ) {
-                            val avatarAndBgTitle = when (currentLang) {
-                                Language.RU -> "АВАТАР И ФОН"
-                                Language.UA -> "АВАТАР ТА ФОН"
-                                Language.KK -> "АВАТАР ЖӘНЕ ФОН"
-                                Language.DE -> "AVATAR & HINTERGRUND"
-                                Language.ZH -> "头像与背景"
-                                else -> "AVATAR & BACKGROUND"
-                            }
-                            Text(
-                                text = avatarAndBgTitle,
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            // Live Avatar Preview
-                            PlayerAvatarView(
-                                playerName = playerName,
-                                avatarEmoji = customAvatarEmoji,
-                                avatarBgColorHex = customAvatarBgColor,
-                                avatarFrame = equippedAvatarFrame,
-                                customBitmap = customAvatarBitmap,
-                                size = 100.dp,
-                                themeColor = themeColor,
-                                secondaryColor = secondaryColor,
-                                showOnlineDot = true,
-                                isOnline = true
-                            )
-
-                            // Photo Picker Buttons
-                            val pickPhotoBtnText = when (currentLang) {
-                                Language.RU -> "Выбрать фото"
-                                Language.UA -> "Обрати фото"
-                                Language.KK -> "Фото таңдау"
-                                Language.DE -> "Foto wählen"
-                                Language.ZH -> "选择头像"
-                                else -> "Pick Photo"
-                            }
-                            val pickBgBtnText = when (currentLang) {
-                                Language.RU -> "Фон карты"
-                                Language.UA -> "Фон карти"
-                                Language.KK -> "Карта фоны"
-                                Language.DE -> "Karten-Hintergrund"
-                                Language.ZH -> "卡片背景"
-                                else -> "Pick BG"
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                FilledTonalButton(
-                                    onClick = { avatarPickerLauncher.launch("image/*") },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = pickPhotoBtnText,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    )
-                                }
+                                // Live Avatar Preview
+                                PlayerAvatarView(
+                                    playerName = playerName,
+                                    avatarEmoji = customAvatarEmoji,
+                                    avatarBgColorHex = customAvatarBgColor,
+                                    avatarFrame = equippedAvatarFrame,
+                                    customBitmap = customAvatarBitmap,
+                                    size = 90.dp,
+                                    themeColor = themeColor,
+                                    secondaryColor = secondaryColor,
+                                    showOnlineDot = true,
+                                    isOnline = true
+                                )
 
-                                FilledTonalButton(
-                                    onClick = { bgPickerLauncher.launch("image/*") },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = pickBgBtnText,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    )
+                                // Photo & Background picker actions
+                                val pickPhotoBtnText = when (currentLang) {
+                                    Language.RU -> "Сменить фото"
+                                    Language.UA -> "Змінити фото"
+                                    Language.KK -> "Фото өзгерту"
+                                    Language.DE -> "Foto wählen"
+                                    Language.ZH -> "更换头像"
+                                    else -> "Change Photo"
                                 }
-                            }
-
-                            val hasCustomAvatar = remember(playerName, avatarChangeCounter) {
-                                sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)
-                            }
-                            val hasCustomBg = remember(playerName, bgChangeCounter) {
-                                sharedPrefs.getBoolean("has_custom_background_${playerName}", false)
-                            }
-
-                            if (hasCustomAvatar || hasCustomBg) {
-                                val resetPhotoText = when (currentLang) {
-                                    Language.RU -> "Сбросить фото"
-                                    Language.UA -> "Скинути фото"
-                                    Language.KK -> "Фотоны қалпына келтіру"
-                                    Language.DE -> "Foto zurücksetzen"
-                                    Language.ZH -> "重置头像"
-                                    else -> "Reset Photo"
-                                }
-                                val resetBgText = when (currentLang) {
-                                    Language.RU -> "Сбросить фон"
-                                    Language.UA -> "Скинути фон"
-                                    Language.KK -> "Фонды қалпына келтіру"
-                                    Language.DE -> "Hintergrund zurücksetzen"
-                                    Language.ZH -> "重置背景"
-                                    else -> "Reset BG"
+                                val pickBgBtnText = when (currentLang) {
+                                    Language.RU -> "Фон карточки"
+                                    Language.UA -> "Фон картки"
+                                    Language.KK -> "Карта фоны"
+                                    Language.DE -> "Hintergrund"
+                                    Language.ZH -> "卡片背景"
+                                    else -> "Card BG"
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    if (hasCustomAvatar) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
-                                                if (file.exists()) file.delete()
-                                                sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", false).apply()
-                                                avatarChangeCounter++
-                                                viewModel.saveCurrentProfileToDb()
-                                                viewModel.triggerAudioFeedback("click")
-                                            },
-                                            shape = RoundedCornerShape(14.dp),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(resetPhotoText, fontSize = 11.sp)
-                                        }
+                                    FilledTonalButton(
+                                        onClick = { avatarPickerLauncher.launch("image/*") },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(vertical = 10.dp)
+                                    ) {
+                                        Icon(Icons.Default.Portrait, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(pickPhotoBtnText, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                                     }
-                                    if (hasCustomBg) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                val file = File(context.filesDir, "custom_background_${playerName}.jpg")
-                                                if (file.exists()) file.delete()
-                                                sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", false).apply()
-                                                bgChangeCounter++
-                                                viewModel.saveCurrentProfileToDb()
-                                                viewModel.triggerAudioFeedback("click")
-                                            },
-                                            shape = RoundedCornerShape(14.dp),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(resetBgText, fontSize = 11.sp)
-                                        }
+
+                                    FilledTonalButton(
+                                        onClick = { bgPickerLauncher.launch("image/*") },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(vertical = 10.dp)
+                                    ) {
+                                        Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(pickBgBtnText, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                                     }
                                 }
-                            }
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                val hasCustomAvatar = remember(playerName, avatarChangeCounter) {
+                                    sharedPrefs.getBoolean("has_custom_avatar_${playerName}", false)
+                                }
+                                val hasCustomBg = remember(playerName, bgChangeCounter) {
+                                    sharedPrefs.getBoolean("has_custom_background_${playerName}", false)
+                                }
 
-                            // Emoji Avatar Picker
-                            val chooseEmojiTitle = when (currentLang) {
-                                Language.RU -> "ВЫБЕРИТЕ СМАЙЛИК / ИКОНКУ"
-                                Language.UA -> "ОБЕРІТЬ СМАЙЛИК / ІКОНКУ"
-                                Language.KK -> "СМАЙЛИК / БЕЛГІШЕНІ ТАҢДАҢЫЗ"
-                                Language.DE -> "EMOJI / SYMBOL WÄHLEN"
-                                Language.ZH -> "选择表情 / 图标"
-                                else -> "CHOOSE EMOJI / ICON"
-                            }
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = chooseEmojiTitle,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                val emojiPresets = listOf(
-                                    "🤖", "🐱", "👑", "🔥", "⚡", "👾", "💎", "🌟",
-                                    "🚀", "🛡️", "🎯", "🎮", "🦊", "🐯", "🦁", "🐉",
-                                    "💀", "🏆", "😎", "👻", "⭐", "🍕", "🦄", "🔮"
-                                )
-
-                                androidx.compose.foundation.lazy.LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
-                                ) {
-                                    items(emojiPresets) { emoji ->
-                                        val isSelected = customAvatarEmoji == emoji
-                                        Surface(
-                                            onClick = {
-                                                viewModel.setCustomAvatarEmoji(emoji)
-                                                viewModel.triggerAudioFeedback("click")
-                                            },
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = if (isSelected) themeColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            border = if (isSelected) BorderStroke(2.dp, themeColor) else null,
-                                            modifier = Modifier.size(44.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text(text = emoji, fontSize = 20.sp)
+                                if (hasCustomAvatar || hasCustomBg) {
+                                    val resetPhotoText = when (currentLang) {
+                                        Language.RU -> "Сбросить фото"
+                                        Language.UA -> "Скинути фото"
+                                        Language.KK -> "Фотоны қайтару"
+                                        Language.DE -> "Foto reset"
+                                        Language.ZH -> "重置头像"
+                                        else -> "Reset Photo"
+                                    }
+                                    val resetBgText = when (currentLang) {
+                                        Language.RU -> "Сбросить фон"
+                                        Language.UA -> "Скинути фон"
+                                        Language.KK -> "Фонды қайтару"
+                                        Language.DE -> "BG reset"
+                                        Language.ZH -> "重置背景"
+                                        else -> "Reset BG"
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (hasCustomAvatar) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    val file = File(context.filesDir, "custom_avatar_${playerName}.jpg")
+                                                    if (file.exists()) file.delete()
+                                                    sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", false).apply()
+                                                    avatarChangeCounter++
+                                                    viewModel.saveCurrentProfileToDb()
+                                                    viewModel.triggerAudioFeedback("click")
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(vertical = 8.dp)
+                                            ) {
+                                                Text(resetPhotoText, fontSize = 11.sp)
+                                            }
+                                        }
+                                        if (hasCustomBg) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    val file = File(context.filesDir, "custom_background_${playerName}.jpg")
+                                                    if (file.exists()) file.delete()
+                                                    sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", false).apply()
+                                                    bgChangeCounter++
+                                                    viewModel.saveCurrentProfileToDb()
+                                                    viewModel.triggerAudioFeedback("click")
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(vertical = 8.dp)
+                                            ) {
+                                                Text(resetBgText, fontSize = 11.sp)
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            // Avatar Background Color Swatches
-                            val avatarBgColorTitle = when (currentLang) {
-                                Language.RU -> "ЦВЕТ ФОНА АВАТАРА"
-                                Language.UA -> "КОЛІР ФОНУ АВАТАРА"
-                                Language.KK -> "АВАТАР ФОНЫНЫҢ ТҮСІ"
-                                Language.DE -> "AVATAR-HINTERGRUNDFARBE"
-                                Language.ZH -> "头像背景颜色"
-                                else -> "AVATAR BACKGROUND COLOR"
-                            }
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = avatarBgColorTitle,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
 
-                                val colorSwatches = listOf(
-                                    "3A3C44", "6C63FF", "00B4D8", "06D6A0", "FFB703", "FB5607",
-                                    "FF006E", "8338EC", "3A86FF", "2EC4B6", "E71D36", "1A1A24",
-                                    "2D3748", "D97706", "059669"
-                                )
+                                // Avatar Frames Selector
+                                val framesSectionTitle = when (currentLang) {
+                                    Language.RU -> "РАМКА АВАТАРА"
+                                    Language.UA -> "РАМКА АВАТАРА"
+                                    Language.KK -> "АВАТАР ЖАҚТАУЫ"
+                                    Language.DE -> "AVATAR-RAHMEN"
+                                    Language.ZH -> "头像框"
+                                    else -> "AVATAR FRAME"
+                                }
+                                val allFramesList = remember {
+                                    listOf("standard", "neon_frame", "gold_frame", "cyber_frame", "fire_frame", "ice_frame", "matrix_frame", "galaxy_frame", "rainbow_frame", "chrono_gl")
+                                }
+                                val availableFrames = remember(purchasedAvatarFrames) {
+                                    allFramesList.filter { it == "standard" || purchasedAvatarFrames.contains(it) }
+                                }
 
-                                androidx.compose.foundation.lazy.LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    items(colorSwatches) { hex ->
-                                        val swatchColor = try {
-                                            Color(android.graphics.Color.parseColor("#$hex"))
-                                        } catch (e: Exception) {
-                                            themeColor
+                                    Text(
+                                        text = framesSectionTitle,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
+                                    ) {
+                                        items(availableFrames) { frameId ->
+                                            val isEquipped = equippedAvatarFrame == frameId
+                                            val frameTitle = Translations.getLocalizedAvatarFrameTitle(frameId, currentLang)
+                                            Surface(
+                                                onClick = {
+                                                    viewModel.setEquippedAvatarFrame(frameId)
+                                                    viewModel.triggerAudioFeedback("equip")
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = if (isEquipped) themeColor.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                border = if (isEquipped) BorderStroke(1.5.dp, themeColor) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                                ) {
+                                                    if (isEquipped) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = null,
+                                                            tint = themeColor,
+                                                            modifier = Modifier.size(13.dp)
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = frameTitle,
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+                                                        color = if (isEquipped) themeColor else MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                            }
                                         }
-                                        val isSelected = customAvatarBgColor.equals(hex, ignoreCase = true)
-                                        Surface(
-                                            onClick = {
-                                                viewModel.setCustomAvatarBgColor(hex)
-                                                viewModel.triggerAudioFeedback("click")
-                                            },
-                                            shape = CircleShape,
-                                            color = swatchColor,
-                                            border = if (isSelected) BorderStroke(3.dp, Color.White) else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                                            modifier = Modifier.size(38.dp)
-                                        ) {
-                                            if (isSelected) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(18.dp)
+                                    }
+                                }
+
+                                // Player Titles Quick Selector
+                                val titlesSectionTitle = when (currentLang) {
+                                    Language.RU -> "АКТИВНЫЙ ТИТУЛ"
+                                    Language.UA -> "АКТИВНИЙ ТИТУЛ"
+                                    Language.KK -> "БЕЛСЕНДІ АТАҚ"
+                                    Language.DE -> "AKTIVER TITEL"
+                                    Language.ZH -> "当前称号"
+                                    else -> "ACTIVE TITLE"
+                                }
+                                val allTitlesList = remember {
+                                    listOf("none", "node", "lord", "cosmic_overlord", "ai_consensus")
+                                }
+                                val availableTitles = remember(purchasedTitles) {
+                                    allTitlesList.filter { it == "none" || purchasedTitles.contains(it) }
+                                }
+
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = titlesSectionTitle,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
+                                    ) {
+                                        items(availableTitles) { titleId ->
+                                            val isEquipped = equippedTitle == titleId
+                                            val titleDisplay = if (titleId == "none") {
+                                                when (currentLang) {
+                                                    Language.RU -> "Без титула"
+                                                    Language.UA -> "Без титулу"
+                                                    Language.KK -> "Атақсыз"
+                                                    Language.DE -> "Kein Titel"
+                                                    Language.ZH -> "无称号"
+                                                    else -> "No Title"
+                                                }
+                                            } else {
+                                                Translations.getLocalizedTitle(titleId, currentLang)
+                                            }
+                                            Surface(
+                                                onClick = {
+                                                    viewModel.setEquippedTitle(titleId)
+                                                    viewModel.triggerAudioFeedback("equip")
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = if (isEquipped) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                border = if (isEquipped) BorderStroke(1.5.dp, MaterialTheme.colorScheme.secondary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                                ) {
+                                                    if (isEquipped) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = null,
+                                                            tint = MaterialTheme.colorScheme.secondary,
+                                                            modifier = Modifier.size(13.dp)
+                                                        )
+                                                    }
+                                                    Text(
+                                                        text = titleDisplay,
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+                                                        color = if (isEquipped) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
                                                     )
                                                 }
                                             }
@@ -4033,302 +4332,662 @@ fun ProfileScreen(
                                 }
                             }
                         }
-                    }
 
-                    // 2. Nickname Card
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        // 2. Nickname Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
                         ) {
-                            val changeNickTitle = when (currentLang) {
-                                Language.RU -> "СМЕНИТЬ НИКНЕЙМ"
-                                Language.UA -> "ЗМІНИТИ НІКНЕЙМ"
-                                Language.KK -> "НИКНЕЙМДІ ӨЗГЕРТУ"
-                                Language.DE -> "BENUTZERNAME ÄNDERN"
-                                Language.ZH -> "更改昵称"
-                                else -> "CHANGE NICKNAME"
-                            }
-                            val newNickLabel = when (currentLang) {
-                                Language.RU -> "Новый никнейм"
-                                Language.UA -> "Новий нікнейм"
-                                Language.KK -> "Жаңа никнейм"
-                                Language.DE -> "Neuer Benutzername"
-                                Language.ZH -> "新昵称"
-                                else -> "New Nickname"
-                            }
-                            val saveNickBtn = when (currentLang) {
-                                Language.RU -> "Сохранить ник"
-                                Language.UA -> "Зберегти нік"
-                                Language.KK -> "Никті сақтау"
-                                Language.DE -> "Name speichern"
-                                Language.ZH -> "保存昵称"
-                                else -> "Save Nickname"
-                            }
-                            Text(
-                                text = changeNickTitle,
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            var editNickNameInput by remember { mutableStateOf(playerName) }
-
-                            OutlinedTextField(
-                                value = editNickNameInput,
-                                onValueChange = { editNickNameInput = it },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                label = { Text(newNickLabel) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            nicknameUpdateError?.let { err ->
-                                Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            }
-                            nicknameUpdateSuccess?.let { msg ->
-                                Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                            }
-
-                            Button(
-                                onClick = {
-                                    viewModel.updateNickname(editNickNameInput)
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.align(Alignment.End)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Text(saveNickBtn, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    // 3. Email Card
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        val currentUser = FirebaseAuth.getInstance().currentUser
-                        val currentEmail = currentUser?.email ?: ""
-                        var editEmailInput by remember(currentEmail) { mutableStateOf(currentEmail) }
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            val emailCardTitle = if (currentEmail.isEmpty()) {
-                                when (currentLang) {
-                                    Language.RU -> "ПРИВЯЗАТЬ ПОЧТУ"
-                                    Language.UA -> "ПРИВ'ЯЗАТИ ПОШТУ"
-                                    Language.KK -> "ПОШТАНЫ БАЙЛАНЫСТЫРУ"
-                                    Language.DE -> "E-MAIL VERKNÜPFEN"
-                                    Language.ZH -> "绑定邮箱"
-                                    else -> "BIND EMAIL"
+                                val changeNickTitle = when (currentLang) {
+                                    Language.RU -> "НИКНЕЙМ"
+                                    Language.UA -> "НІКНЕЙМ"
+                                    Language.KK -> "НИКНЕЙМ"
+                                    Language.DE -> "BENUTZERNAME"
+                                    Language.ZH -> "昵称设置"
+                                    else -> "NICKNAME"
                                 }
-                            } else {
-                                when (currentLang) {
-                                    Language.RU -> "ИЗМЕНИТЬ ПОЧТУ"
-                                    Language.UA -> "ЗМІНИТИ ПОШТУ"
-                                    Language.KK -> "ПОШТАНЫ ӨЗГЕРТУ"
-                                    Language.DE -> "E-MAIL ÄNDERN"
-                                    Language.ZH -> "更改邮箱"
-                                    else -> "CHANGE EMAIL"
+                                val newNickLabel = when (currentLang) {
+                                    Language.RU -> "Новый никнейм"
+                                    Language.UA -> "Новий нікнейм"
+                                    Language.KK -> "Жаңа никнейм"
+                                    Language.DE -> "Neuer Benutzername"
+                                    Language.ZH -> "新昵称"
+                                    else -> "New Nickname"
                                 }
-                            }
-                            val emailInputLabel = when (currentLang) {
-                                Language.RU -> "Электронная почта"
-                                Language.UA -> "Електронна пошта"
-                                Language.KK -> "Электрондық пошта"
-                                Language.DE -> "E-Mail-Adresse"
-                                Language.ZH -> "电子邮箱"
-                                else -> "Email Address"
-                            }
-                            val emailActionBtn = if (currentEmail.isEmpty()) {
-                                when (currentLang) {
-                                    Language.RU -> "Привязать"
-                                    Language.UA -> "Прив'язати"
-                                    Language.KK -> "Байланыстыру"
-                                    Language.DE -> "Verknüpfen"
-                                    Language.ZH -> "绑定"
-                                    else -> "Bind Email"
+                                val saveNickBtn = when (currentLang) {
+                                    Language.RU -> "Сохранить"
+                                    Language.UA -> "Зберегти"
+                                    Language.KK -> "Сақтау"
+                                    Language.DE -> "Speichern"
+                                    Language.ZH -> "保存"
+                                    else -> "Save"
                                 }
-                            } else {
-                                when (currentLang) {
-                                    Language.RU -> "Обновить"
-                                    Language.UA -> "Оновити"
-                                    Language.KK -> "Жаңарту"
-                                    Language.DE -> "Aktualisieren"
-                                    Language.ZH -> "更新"
-                                    else -> "Update Email"
-                                }
-                            }
-                            Text(
-                                text = emailCardTitle,
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                                Text(
+                                    text = changeNickTitle,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
 
-                            OutlinedTextField(
-                                value = editEmailInput,
-                                onValueChange = { editEmailInput = it },
-                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                                label = { Text(emailInputLabel) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                var editNickNameInput by remember { mutableStateOf(playerName) }
 
-                            emailUpdateError?.let { err ->
-                                Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            }
-                            emailUpdateSuccess?.let { msg ->
-                                Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                            }
-
-                            Button(
-                                onClick = {
-                                    viewModel.updateEmail(editEmailInput)
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
-                                Text(emailActionBtn, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    // 4. Custom Leaderboard Tag Card
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            val customTagCardTitle = when (currentLang) {
-                                Language.RU -> "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ"
-                                Language.UA -> "ТЕГ У ТАБЛИЦІ РЕКОРДІВ"
-                                Language.KK -> "РЕКОРДТАР КЕСТЕСІНДЕГІ ТЕГ"
-                                Language.DE -> "BESTENLISTEN-TAG"
-                                Language.ZH -> "排行榜专属标签"
-                                else -> "LEADERBOARD CUSTOM TAG"
-                            }
-                            Text(
-                                text = customTagCardTitle,
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            val customTagUnlocked by viewModel.customTagUnlocked.collectAsStateWithLifecycle()
-                            val customTagVal by viewModel.customTag.collectAsStateWithLifecycle()
-                            
-                            var editTagInput by remember(customTagVal) { mutableStateOf(customTagVal) }
-
-                            if (!customTagUnlocked) {
-                                val tagLockedMsg = when (currentLang) {
-                                    Language.RU -> "Функция заблокирована. Приобретите «Личный Тег» в магазине."
-                                    Language.UA -> "Функція заблокована. Придбайте «Особистий Тег» у магазині."
-                                    Language.KK -> "Функция бұғатталған. Дүкеннен «Жеке Тег» сатып алыңыз."
-                                    Language.DE -> "Funktion gesperrt. Kaufe «Persönlicher Tag» im Shop."
-                                    Language.ZH -> "功能已锁定。请在商店中购买「专属标签」。"
-                                    else -> "Feature locked. Purchase «Leaderboard Tag» in the store."
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(14.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Lock,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Text(
-                                            text = tagLockedMsg,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
-                            } else {
-                                val customTagInputLabel = when (currentLang) {
-                                    Language.RU -> "Кастомный тег (макс. 6 симв.)"
-                                    Language.UA -> "Кастомний тег (макс. 6 симв.)"
-                                    Language.KK -> "Арнайы тег (макс. 6 таңба)"
-                                    Language.DE -> "Eigener Tag (max. 6 Zeichen)"
-                                    Language.ZH -> "自定义标签（最多6个字符）"
-                                    else -> "Custom Tag (max 6 chars)"
-                                }
-                                val saveTagBtnText = when (currentLang) {
-                                    Language.RU -> "Сохранить тег"
-                                    Language.UA -> "Зберегти тег"
-                                    Language.KK -> "Тегті сақтау"
-                                    Language.DE -> "Tag speichern"
-                                    Language.ZH -> "保存标签"
-                                    else -> "Save Tag"
-                                }
                                 OutlinedTextField(
-                                    value = editTagInput,
-                                    onValueChange = { if (it.length <= 6) editTagInput = it },
-                                    leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
-                                    label = { Text(customTagInputLabel) },
+                                    value = editNickNameInput,
+                                    onValueChange = { editNickNameInput = it },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                    label = { Text(newNickLabel) },
                                     singleLine = true,
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 )
 
+                                nicknameUpdateError?.let { err ->
+                                    Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                }
+                                nicknameUpdateSuccess?.let { msg ->
+                                    Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+
                                 Button(
                                     onClick = {
-                                        viewModel.setCustomTag(editTagInput)
-                                        viewModel.triggerAudioFeedback("success")
+                                        viewModel.updateNickname(editNickNameInput)
                                     },
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.align(Alignment.End)
                                 ) {
-                                    Text(saveTagBtnText, fontWeight = FontWeight.Bold)
+                                    Text(saveNickBtn, fontWeight = FontWeight.Bold)
+                                }
+
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+
+                                val isNickGradientUnlocked = remember(hasNicknameGradient) {
+                                    sharedPrefs.getBoolean("has_nickname_gradient_unlocked", false) || hasNicknameGradient
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (isNickGradientUnlocked) {
+                                                val next = !hasNicknameGradient
+                                                viewModel.setHasNicknameGradient(next)
+                                                viewModel.triggerAudioFeedback("click")
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            } else {
+                                                val lockedMsg = when (currentLang) {
+                                                    Language.RU -> "Доступно только в кейсах! (Реликт)"
+                                                    Language.UA -> "Доступно тільки в кейсах! (Релікт)"
+                                                    Language.KK -> "Тек кейстерде қолжетімді! (Реликт)"
+                                                    Language.DE -> "Nur in Kisten verfügbar! (Relikt)"
+                                                    Language.ZH -> "仅在宝箱中可获得！（遗物级）"
+                                                    else -> "Available only in Cases! (Relic)"
+                                                }
+                                                triggerMessage(lockedMsg, isError = true)
+                                                viewModel.triggerAudioFeedback("error")
+                                            }
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        val nickGradTitle = when (currentLang) {
+                                            Language.RU -> "Градиент никнейма"
+                                            Language.UA -> "Градієнт нікнейму"
+                                            Language.KK -> "Ник градиенті"
+                                            Language.DE -> "Farbverlauf-Name"
+                                            Language.ZH -> "炫彩渐变昵称"
+                                            else -> "Nickname Gradient"
+                                        }
+                                        val nickGradSub = if (isNickGradientUnlocked) {
+                                            when (currentLang) {
+                                                Language.RU -> "Анимированный неоновый перелив"
+                                                Language.UA -> "Анімований неоновий перелив"
+                                                Language.KK -> "Анимацияланған жарқырау"
+                                                Language.DE -> "Animierter Neon-Farbverlauf"
+                                                Language.ZH -> "动态炫彩流光效果"
+                                                else -> "Animated neon rainbow flow"
+                                            }
+                                        } else {
+                                            when (currentLang) {
+                                                Language.RU -> "🔒 Откройте в кейсах (Реликт)"
+                                                Language.UA -> "🔒 Відкрийте у кейсах (Релікт)"
+                                                Language.KK -> "🔒 Кейстерде ашыңыз (Реликт)"
+                                                Language.DE -> "🔒 In Kisten freischalten (Relikt)"
+                                                Language.ZH -> "🔒 在宝箱中解锁（遗物级）"
+                                                else -> "🔒 Unlock in Cases (Relic)"
+                                            }
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = nickGradTitle,
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                color = DropRarity.RED.color.copy(alpha = 0.18f),
+                                                shape = RoundedCornerShape(6.dp),
+                                                border = BorderStroke(1.dp, DropRarity.RED.color.copy(alpha = 0.6f))
+                                            ) {
+                                                Text(
+                                                    text = DropRarity.RED.getLocalizedName(currentLang).uppercase(),
+                                                    color = DropRarity.RED.color,
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Black
+                                                    ),
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = nickGradSub,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (isNickGradientUnlocked) MaterialTheme.colorScheme.onSurfaceVariant else DropRarity.RED.color
+                                        )
+                                    }
+                                    Switch(
+                                        checked = hasNicknameGradient && isNickGradientUnlocked,
+                                        enabled = isNickGradientUnlocked,
+                                        onCheckedChange = { checked ->
+                                            if (isNickGradientUnlocked) {
+                                                viewModel.setHasNicknameGradient(checked)
+                                                viewModel.triggerAudioFeedback("click")
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        // 3. Email Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                        ) {
+                            val currentUser = FirebaseAuth.getInstance().currentUser
+                            val currentEmail = currentUser?.email ?: ""
+                            var editEmailInput by remember(currentEmail) { mutableStateOf(currentEmail) }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                val emailCardTitle = if (currentEmail.isEmpty()) {
+                                    when (currentLang) {
+                                        Language.RU -> "ПРИВЯЗАТЬ ПОЧТУ"
+                                        Language.UA -> "ПРИВ'ЯЗАТИ ПОШТУ"
+                                        Language.KK -> "ПОШТАНЫ БАЙЛАНЫСТЫРУ"
+                                        Language.DE -> "E-MAIL VERKNÜPFEN"
+                                        Language.ZH -> "绑定邮箱"
+                                        else -> "BIND EMAIL"
+                                    }
+                                } else {
+                                    when (currentLang) {
+                                        Language.RU -> "ИЗМЕНИТЬ ПОЧТУ"
+                                        Language.UA -> "ЗМІНИТИ ПОШТУ"
+                                        Language.KK -> "ПОШТАНЫ ӨЗГЕРТУ"
+                                        Language.DE -> "E-MAIL ÄNDERN"
+                                        Language.ZH -> "更改邮箱"
+                                        else -> "CHANGE EMAIL"
+                                    }
+                                }
+                                val emailInputLabel = when (currentLang) {
+                                    Language.RU -> "Электронная почта"
+                                    Language.UA -> "Електронна пошта"
+                                    Language.KK -> "Электрондық пошта"
+                                    Language.DE -> "E-Mail-Adresse"
+                                    Language.ZH -> "电子邮箱"
+                                    else -> "Email Address"
+                                }
+                                val emailActionBtn = if (currentEmail.isEmpty()) {
+                                    when (currentLang) {
+                                        Language.RU -> "Привязать"
+                                        Language.UA -> "Прив'язати"
+                                        Language.KK -> "Байланыстыру"
+                                        Language.DE -> "Verknüpfen"
+                                        Language.ZH -> "绑定"
+                                        else -> "Bind Email"
+                                    }
+                                } else {
+                                    when (currentLang) {
+                                        Language.RU -> "Обновить"
+                                        Language.UA -> "Оновити"
+                                        Language.KK -> "Жаңарту"
+                                        Language.DE -> "Aktualisieren"
+                                        Language.ZH -> "更新"
+                                        else -> "Update Email"
+                                    }
+                                }
+                                Text(
+                                    text = emailCardTitle,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                OutlinedTextField(
+                                    value = editEmailInput,
+                                    onValueChange = { editEmailInput = it },
+                                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                                    label = { Text(emailInputLabel) },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                emailUpdateError?.let { err ->
+                                    Text(text = err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                }
+                                emailUpdateSuccess?.let { msg ->
+                                    Text(text = msg, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        viewModel.updateEmail(editEmailInput)
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text(emailActionBtn, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        // 4. Custom Leaderboard Tag Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                val customTagCardTitle = when (currentLang) {
+                                    Language.RU -> "ТЕГ В ТАБЛИЦЕ РЕКОРДОВ"
+                                    Language.UA -> "ТЕГ У ТАБЛИЦІ РЕКОРДІВ"
+                                    Language.KK -> "РЕКОРДТАР КЕСТЕСІНДЕГІ ТЕГ"
+                                    Language.DE -> "BESTENLISTEN-TAG"
+                                    Language.ZH -> "排行榜专属标签"
+                                    else -> "LEADERBOARD CUSTOM TAG"
+                                }
+                                Text(
+                                    text = customTagCardTitle,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                val isCustomTagUnlocked by viewModel.customTagUnlocked.collectAsStateWithLifecycle()
+                                val customTagVal by viewModel.customTag.collectAsStateWithLifecycle()
+                                
+                                var editTagInput by remember(customTagVal) { mutableStateOf(customTagVal) }
+
+                                if (!isCustomTagUnlocked) {
+                                    val tagLockedMsg = when (currentLang) {
+                                        Language.RU -> "Функция заблокирована. Доступна в магазине или через Престиж III."
+                                        Language.UA -> "Функція заблокована. Доступна у магазині або через Престиж III."
+                                        Language.KK -> "Функция бұғатталған. Дүкенде немесе Престиж III арқылы қолжетімді."
+                                        Language.DE -> "Gesperrt. Erhältlich im Shop oder durch Prestige III."
+                                        Language.ZH -> "功能已锁定。可在商店中购买或通过声望 III 解锁。"
+                                        else -> "Feature locked. Available in the Store or via Prestige III."
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = tagLockedMsg,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val customTagInputLabel = when (currentLang) {
+                                        Language.RU -> "Кастомный тег (макс. 6 симв.)"
+                                        Language.UA -> "Кастомний тег (макс. 6 симв.)"
+                                        Language.KK -> "Арнайы тег (макс. 6 таңба)"
+                                        Language.DE -> "Eigener Tag (max. 6 Zeichen)"
+                                        Language.ZH -> "自定义标签（最多6个字符）"
+                                        else -> "Custom Tag (max 6 chars)"
+                                    }
+                                    val saveTagBtnText = when (currentLang) {
+                                        Language.RU -> "Сохранить"
+                                        Language.UA -> "Зберегти"
+                                        Language.KK -> "Сақтау"
+                                        Language.DE -> "Speichern"
+                                        Language.ZH -> "保存"
+                                        else -> "Save"
+                                    }
+                                    OutlinedTextField(
+                                        value = editTagInput,
+                                        onValueChange = { if (it.length <= 6) editTagInput = it },
+                                        leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
+                                        label = { Text(customTagInputLabel) },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            viewModel.setCustomTag(editTagInput)
+                                            viewModel.triggerAudioFeedback("success")
+                                        },
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.align(Alignment.End)
+                                    ) {
+                                        Text(saveTagBtnText, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                } else {
+                    // TAB 2: UNLOCKED ITEMS TRACKER (MD3 Clean, Structured, Grouped)
+                    val prestigeLvl by viewModel.prestigeLevel.collectAsStateWithLifecycle()
+                    val isTagUnlocked by viewModel.customTagUnlocked.collectAsStateWithLifecycle()
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(dialogPadding),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Section: Game Modes
+                        item {
+                            val modesHeaderTitle = when (currentLang) {
+                                Language.RU -> "Игровые режимы"
+                                Language.UA -> "Ігрові режими"
+                                Language.KK -> "Ойын режимдері"
+                                Language.DE -> "Spielmodi"
+                                Language.ZH -> "游戏模式"
+                                else -> "Game Modes"
+                            }
+                            ProfileUnlockedCategoryCard(
+                                title = modesHeaderTitle,
+                                icon = Icons.Default.PlayCircleOutline,
+                                items = listOf(
+                                    UnlockedItemInfo("classic", "Классический / Classic", true, true, ShopPrices.getCosmeticRarity("MODE", "classic")),
+                                    UnlockedItemInfo("time_attack", Translations.getLobbyModeTitle("time_attack", currentLang), purchasedModesSet.contains("time_attack"), rarity = ShopPrices.getCosmeticRarity("MODE", "time_attack")),
+                                    UnlockedItemInfo("fast_run", Translations.getLobbyModeTitle("fast_run", currentLang), purchasedModesSet.contains("fast_run"), rarity = ShopPrices.getCosmeticRarity("MODE", "fast_run")),
+                                    UnlockedItemInfo("relax", Translations.getLobbyModeTitle("relax", currentLang), purchasedModesSet.contains("relax"), rarity = ShopPrices.getCosmeticRarity("MODE", "relax")),
+                                    UnlockedItemInfo("mirror", Translations.getLobbyModeTitle("mirror", currentLang), purchasedModesSet.contains("mirror"), rarity = ShopPrices.getCosmeticRarity("MODE", "mirror")),
+                                    UnlockedItemInfo("extended", Translations.getLobbyModeTitle("extended", currentLang), purchasedModesSet.contains("extended"), rarity = ShopPrices.getCosmeticRarity("MODE", "extended")),
+                                    UnlockedItemInfo("reverse", Translations.getLobbyModeTitle("reverse", currentLang), purchasedModesSet.contains("reverse"), rarity = ShopPrices.getCosmeticRarity("MODE", "reverse")),
+                                    UnlockedItemInfo("block_blast", Translations.getLobbyModeTitle("block_blast", currentLang), purchasedModesSet.contains("block_blast"), rarity = ShopPrices.getCosmeticRarity("MODE", "block_blast")),
+                                    UnlockedItemInfo("pattern", Translations.getLobbyModeTitle("pattern", currentLang), purchasedModesSet.contains("pattern"), rarity = ShopPrices.getCosmeticRarity("MODE", "pattern")),
+                                    UnlockedItemInfo("sculptor", Translations.getLobbyModeTitle("sculptor", currentLang), purchasedModesSet.contains("sculptor"), rarity = ShopPrices.getCosmeticRarity("MODE", "sculptor")),
+                                    UnlockedItemInfo("perfectionist", Translations.getLobbyModeTitle("perfectionist", currentLang), purchasedModesSet.contains("perfectionist"), rarity = ShopPrices.getCosmeticRarity("MODE", "perfectionist"))
+                                ),
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Avatar Frames
+                        item {
+                            val framesHeaderTitle = when (currentLang) {
+                                Language.RU -> "Рамки аватара"
+                                Language.UA -> "Рамки аватара"
+                                Language.KK -> "Аватар жақтаулары"
+                                Language.DE -> "Avatar-Rahmen"
+                                Language.ZH -> "头像框"
+                                else -> "Avatar Frames"
+                            }
+                            val allFrames = listOf("standard", "neon_frame", "gold_frame", "cyber_frame", "fire_frame", "ice_frame", "matrix_frame", "galaxy_frame", "rainbow_frame", "chrono_gl")
+                            ProfileUnlockedCategoryCard(
+                                title = framesHeaderTitle,
+                                icon = Icons.Default.Portrait,
+                                items = allFrames.map { frameId ->
+                                    val isUnlocked = frameId == "standard" || purchasedAvatarFrames.contains(frameId)
+                                    val isEquipped = equippedAvatarFrame == frameId
+                                    UnlockedItemInfo(
+                                        id = frameId,
+                                        title = Translations.getLocalizedAvatarFrameTitle(frameId, currentLang),
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        rarity = ShopPrices.getCosmeticRarity("FRAME", frameId)
+                                    )
+                                },
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Player Titles
+                        item {
+                            val titlesHeaderTitle = when (currentLang) {
+                                Language.RU -> "Титулы игрока"
+                                Language.UA -> "Титули гравця"
+                                Language.KK -> "Ойыншы атақтары"
+                                Language.DE -> "Spielertitel"
+                                Language.ZH -> "玩家称号"
+                                else -> "Player Titles"
+                            }
+                            val allTitles = listOf("none", "node", "lord", "cosmic_overlord", "ai_consensus")
+                            ProfileUnlockedCategoryCard(
+                                title = titlesHeaderTitle,
+                                icon = Icons.Default.WorkspacePremium,
+                                items = allTitles.map { titleId ->
+                                    val isUnlocked = titleId == "none" || purchasedTitles.contains(titleId)
+                                    val isEquipped = equippedTitle == titleId
+                                    val titleText = if (titleId == "none") {
+                                        when (currentLang) {
+                                            Language.RU -> "Без титула"
+                                            Language.UA -> "Без титулу"
+                                            Language.KK -> "Атақсыз"
+                                            Language.DE -> "Kein Titel"
+                                            Language.ZH -> "无称号"
+                                            else -> "No Title"
+                                        }
+                                    } else {
+                                        Translations.getLocalizedTitle(titleId, currentLang)
+                                    }
+                                    UnlockedItemInfo(
+                                        id = titleId,
+                                        title = titleText,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        rarity = ShopPrices.getCosmeticRarity("TITLE", titleId)
+                                    )
+                                },
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Board Skins
+                        item {
+                            val skinsHeaderTitle = when (currentLang) {
+                                Language.RU -> "Темы игрового поля"
+                                Language.UA -> "Теми ігрового поля"
+                                Language.KK -> "Ойын өрісінің тақырыптары"
+                                Language.DE -> "Spielfeld-Designs"
+                                Language.ZH -> "棋盘皮肤"
+                                else -> "Board Themes"
+                            }
+                            ProfileUnlockedCategoryCard(
+                                title = skinsHeaderTitle,
+                                icon = Icons.Default.ColorLens,
+                                items = skinsList.map { skin ->
+                                    val isUnlocked = skin.id == "cyberpunk" || purchasedSkinsSet.contains(skin.id)
+                                    val isEquipped = boardSkin == skin.id
+                                    UnlockedItemInfo(
+                                        id = skin.id,
+                                        title = skin.displayName,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        rarity = ShopPrices.getCosmeticRarity("SKIN", skin.id)
+                                    )
+                                },
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Cube / Block Styles
+                        item {
+                            val blocksHeaderTitle = when (currentLang) {
+                                Language.RU -> "Стили блоков"
+                                Language.UA -> "Стилі блоків"
+                                Language.KK -> "Блок стильдері"
+                                Language.DE -> "Block-Stile"
+                                Language.ZH -> "方块样式"
+                                else -> "Cube Styles"
+                            }
+                            val storeCubeItems = cubeSkinsList.map { cSkin ->
+                                val isUnlocked = cSkin.id == "neon" || cSkin.id == "glass" || purchasedCubeSkinsSet.contains(cSkin.id)
+                                val isEquipped = blockStyle == cSkin.id
+                                UnlockedItemInfo(
+                                    id = cSkin.id,
+                                    title = cSkin.displayName,
+                                    isUnlocked = isUnlocked,
+                                    isEquipped = isEquipped,
+                                    rarity = ShopPrices.getCosmeticRarity("CUBE", cSkin.id)
+                                )
+                            }
+                            val caseGradientCubes = listOf(
+                                "red_gradient" to Translations.getLocalizedCubeSkinTitle("red_gradient", currentLang),
+                                "green_gradient" to Translations.getLocalizedCubeSkinTitle("green_gradient", currentLang),
+                                "blue_gradient" to Translations.getLocalizedCubeSkinTitle("blue_gradient", currentLang),
+                                "purple_gradient" to Translations.getLocalizedCubeSkinTitle("purple_gradient", currentLang)
+                            ).map { (cubeId, cubeTitle) ->
+                                val isUnlocked = purchasedCubeSkinsSet.contains(cubeId)
+                                val isEquipped = blockStyle == cubeId
+                                UnlockedItemInfo(
+                                    id = cubeId,
+                                    title = cubeTitle,
+                                    isUnlocked = isUnlocked,
+                                    isEquipped = isEquipped,
+                                    rarity = DropRarity.RED
+                                )
+                            }
+                            ProfileUnlockedCategoryCard(
+                                title = blocksHeaderTitle,
+                                icon = Icons.Default.Category,
+                                items = storeCubeItems + caseGradientCubes,
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Control Button Styles
+                        item {
+                            val buttonStylesHeaderTitle = when (currentLang) {
+                                Language.RU -> "Стили кнопок управления"
+                                Language.UA -> "Стилі кнопок керування"
+                                Language.KK -> "Басқару батырмаларының стильдері"
+                                Language.DE -> "Tasten-Designs"
+                                Language.ZH -> "按键样式"
+                                else -> "Control Button Styles"
+                            }
+                            ProfileUnlockedCategoryCard(
+                                title = buttonStylesHeaderTitle,
+                                icon = Icons.Default.Extension,
+                                items = controlButtonStylesList.map { bStyle ->
+                                    val isUnlocked = bStyle.id == "classic" || bStyle.id == "neon" || purchasedControlButtonStyles.contains(bStyle.id)
+                                    val isEquipped = controlButtonStyle == bStyle.id
+                                    UnlockedItemInfo(
+                                        id = bStyle.id,
+                                        title = bStyle.displayName,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        rarity = ShopPrices.getCosmeticRarity("BUTTON", bStyle.id)
+                                    )
+                                },
+                                currentLang = currentLang
+                            )
+                        }
+
+                        // Section: Prestige & Special Features
+                        item {
+                            val specialsHeaderTitle = when (currentLang) {
+                                Language.RU -> "Престиж и особые функции"
+                                Language.UA -> "Престиж та особливі функції"
+                                Language.KK -> "Престиж және ерекше функциялар"
+                                Language.DE -> "Prestige & Spezialfunktionen"
+                                Language.ZH -> "声望与特权功能"
+                                else -> "Prestige & Special Features"
+                            }
+                            val nickGradTitle = when (currentLang) {
+                                Language.RU -> "Градиент никнейма"
+                                Language.UA -> "Градієнт нікнейму"
+                                Language.KK -> "Ник градиенті"
+                                Language.DE -> "Farbverlauf-Name"
+                                Language.ZH -> "炫彩渐变昵称"
+                                else -> "Nickname Gradient"
+                            }
+                            val isNickUnlocked = sharedPrefs.getBoolean("has_nickname_gradient_unlocked", false) || hasNicknameGradient
+
+                            ProfileUnlockedCategoryCard(
+                                title = specialsHeaderTitle,
+                                icon = Icons.Default.AutoAwesome,
+                                items = listOf(
+                                    UnlockedItemInfo("prestige_1", "Престиж I (x2)", prestigeLvl >= 1, prestigeLvl >= 1, DropRarity.EPIC),
+                                    UnlockedItemInfo("prestige_2", "Престиж II (x4)", prestigeLvl >= 2, prestigeLvl >= 2, DropRarity.LEGENDARY),
+                                    UnlockedItemInfo("prestige_3", "Престиж III (x8)", prestigeLvl >= 3, prestigeLvl >= 3, DropRarity.RED),
+                                    UnlockedItemInfo("nick_gradient", nickGradTitle, isNickUnlocked, hasNicknameGradient && isNickUnlocked, DropRarity.RED),
+                                    UnlockedItemInfo("custom_tag", when (currentLang) {
+                                        Language.RU -> "Личный тег таблицы"
+                                        Language.UA -> "Особистий тег таблиці"
+                                        Language.KK -> "Кесте жеке тегі"
+                                        Language.DE -> "Bestenlisten-Tag"
+                                        Language.ZH -> "排行榜专属标签"
+                                        else -> "Custom Tag"
+                                    }, isTagUnlocked, isTagUnlocked && customTag.isNotEmpty(), DropRarity.RED)
+                                ),
+                                currentLang = currentLang
+                            )
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
                 }
             }
         }
@@ -4411,28 +5070,34 @@ private fun StoreItemCard(
     cost: Int,
     currentLang: Language,
     isLocked: Boolean = false,
+    rarity: DropRarity? = null,
     onAction: () -> Unit
 ) {
-    val rarityText = Translations.getStoreRarity(cost, currentLang)
-
-    val rarityColor = when {
-        cost <= 0 -> Color(0xFF9E9E9E)
-        cost <= 400 -> Color(0xFF2196F3)
-        cost <= 800 -> Color(0xFF9C27B0)
-        else -> Color(0xFFFF9800)
+    val effectiveRarity = rarity ?: when {
+        cost <= 0 -> DropRarity.COMMON
+        cost <= 400 -> DropRarity.UNCOMMON
+        cost <= 800 -> DropRarity.RARE
+        cost <= 2000 -> DropRarity.EPIC
+        else -> DropRarity.LEGENDARY
     }
+    val rarityText = effectiveRarity.getLocalizedName(currentLang).uppercase()
+    val rarityColor = effectiveRarity.color
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isActive) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
+                else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
+            )
             .clickable(enabled = !isLocked) { onAction() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest
+            containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                              else MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = if (isActive) 3.dp else 1.dp
+            defaultElevation = if (isActive) 4.dp else 1.dp
         )
     ) {
         Column(
@@ -4450,8 +5115,9 @@ private fun StoreItemCard(
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                             else rarityColor.copy(alpha = 0.12f),
+                    border = if (isActive) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) else null,
                     tonalElevation = 1.dp
                 ) {
                     Box(
@@ -4467,20 +5133,41 @@ private fun StoreItemCard(
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = rarityColor.copy(alpha = 0.14f)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    AdaptiveText(
-                        text = rarityText,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.2.sp
-                        ),
-                        color = rarityColor,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                    if (isActive) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Active",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .padding(2.dp)
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = rarityColor.copy(alpha = 0.14f)
+                    ) {
+                        AdaptiveText(
+                            text = rarityText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.2.sp
+                            ),
+                            color = rarityColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 
@@ -4504,83 +5191,43 @@ private fun StoreItemCard(
                 )
             }
 
-            // Bottom: Action Button
+            // Bottom: Purchase Button (Only shown if NOT owned / NOT active)
             val isRank = category.equals("Rank", ignoreCase = true) || 
                          category.equals("Ранг", ignoreCase = true) ||
                          category.equals("Rang", ignoreCase = true) ||
                          category.equals("段位", ignoreCase = true)
-            if (!(isRank && isOwned)) {
+
+            if (!isOwned && !isActive && !(isRank && isOwned)) {
                 val buttonEnabled = when {
                     isRank -> !isOwned
                     else -> !isLocked
                 }
-                if (isOwned || isActive) {
-                    val onOffText = if (isActive) {
-                        when (currentLang) {
-                            Language.RU -> "ВКЛ"
-                            Language.UA -> "УВІМК"
-                            Language.KK -> "ҚОС"
-                            Language.DE -> "EIN"
-                            Language.ZH -> "已开启"
-                            else -> "ON"
-                        }
-                    } else {
-                        when (currentLang) {
-                            Language.RU -> "ВЫКЛ"
-                            Language.UA -> "ВИМК"
-                            Language.KK -> "ӨШІР"
-                            Language.DE -> "AUS"
-                            Language.ZH -> "已关闭"
-                            else -> "OFF"
-                        }
-                    }
-                    FilledTonalButton(
-                        onClick = onAction,
-                        enabled = buttonEnabled,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(34.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = if (isActive) MaterialTheme.colorScheme.primary
-                                             else MaterialTheme.colorScheme.surfaceContainerHighest,
-                            contentColor = if (isActive) MaterialTheme.colorScheme.onPrimary
-                                           else MaterialTheme.colorScheme.onSurface
-                        )
-                    ) {
-                        Text(
-                            text = onOffText,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                } else {
-                    val lockBtnText = when (currentLang) {
-                        Language.RU -> "БЛОК"
-                        Language.UA -> "БЛОК"
-                        Language.KK -> "ҚҰЛЫП"
-                        Language.DE -> "GESPERRT"
-                        Language.ZH -> "未解锁"
-                        else -> "LOCKED"
-                    }
-                    Button(
-                        onClick = onAction,
-                        enabled = buttonEnabled,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(34.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainerHighest
-                                             else MaterialTheme.colorScheme.primary,
-                            contentColor = if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                           else MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(
-                            text = if (isLocked) lockBtnText else "$cost 🪙",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
+                val lockBtnText = when (currentLang) {
+                    Language.RU -> "БЛОК"
+                    Language.UA -> "БЛОК"
+                    Language.KK -> "ҚҰЛЫП"
+                    Language.DE -> "GESPERRT"
+                    Language.ZH -> "未解锁"
+                    else -> "LOCKED"
+                }
+                Button(
+                    onClick = onAction,
+                    enabled = buttonEnabled,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainerHighest
+                                         else MaterialTheme.colorScheme.primary,
+                        contentColor = if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                       else MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(
+                        text = if (isLocked) lockBtnText else "$cost 🪙",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
         }
@@ -4801,7 +5448,7 @@ private fun AchievementsTabContent(
                                                     "crown" -> Icons.Default.Shield
                                                     "speed" -> Icons.Default.Settings
                                                     "blast" -> Icons.Default.Extension
-                                                    "combo" -> Icons.Default.VolumeUp
+                                                    "combo" -> Icons.AutoMirrored.Filled.VolumeUp
                                                     else -> Icons.Default.EmojiEvents
                                                 },
                                                 contentDescription = null,
@@ -4996,7 +5643,7 @@ private fun NewTabContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = "2.0",
+                        text = "0.95.1 Alpha",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = themeColor
@@ -5048,15 +5695,15 @@ private fun NewTabContent(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Version 2.0 Card Content
+                // Version 0.95.1 Alpha Card Content
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     val v20Header = when (currentLang) {
-                        Language.RU -> "Версия 2.0 (Текущая)"
-                        Language.UA -> "Версія 2.0 (Поточна)"
-                        Language.KK -> "Нұсқа 2.0 (Ағымдағы)"
-                        Language.DE -> "Version 2.0 (Aktuell)"
-                        Language.ZH -> "版本 2.0 (当前)"
-                        else -> "Version 2.0 (Current)"
+                        Language.RU -> "Версия 0.95.1 Alpha (Текущая)"
+                        Language.UA -> "Версія 0.95.1 Alpha (Поточна)"
+                        Language.KK -> "Нұсқа 0.95.1 Alpha (Ағымдағы)"
+                        Language.DE -> "Version 0.95.1 Alpha (Aktuell)"
+                        Language.ZH -> "版本 0.95.1 Alpha (当前)"
+                        else -> "Version 0.95.1 Alpha (Current)"
                     }
                     Text(
                         text = v20Header,
@@ -5184,3 +5831,215 @@ data class ThemeStoreData(val id: String, val cost: Int, val displayName: String
 data class FontStoreData(val id: String, val cost: Int, val displayName: String, val description: String)
 data class ControlButtonStyleStoreData(val id: String, val cost: Int, val displayName: String, val description: String)
 
+data class UnlockedItemInfo(
+    val id: String,
+    val title: String,
+    val isUnlocked: Boolean,
+    val isEquipped: Boolean = false,
+    val rarity: DropRarity? = null
+)
+
+@Composable
+fun ProfileUnlockedCategoryCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    items: List<UnlockedItemInfo>,
+    currentLang: Language
+) {
+    val unlockedCount = items.count { it.isUnlocked }
+    val totalCount = items.size
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header Row with count badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (unlockedCount == totalCount) {
+                        Color(0xFF2E7D32).copy(alpha = 0.15f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    }
+                ) {
+                    Text(
+                        text = "$unlockedCount / $totalCount",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = if (unlockedCount == totalCount) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // Compact Progress bar
+            LinearProgressIndicator(
+                progress = { if (totalCount > 0) unlockedCount.toFloat() / totalCount.toFloat() else 0f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = if (unlockedCount == totalCount) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 2.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+            )
+
+            // Items List
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val unlockedBadgeText = when (currentLang) {
+                    Language.RU -> "Открыто"
+                    Language.UA -> "Відкрито"
+                    Language.KK -> "Ашық"
+                    Language.DE -> "Freigeschaltet"
+                    Language.ZH -> "已解锁"
+                    else -> "Unlocked"
+                }
+                val lockedBadgeText = when (currentLang) {
+                    Language.RU -> "Закрыто"
+                    Language.UA -> "Закрито"
+                    Language.KK -> "Жабық"
+                    Language.DE -> "Gesperrt"
+                    Language.ZH -> "未解锁"
+                    else -> "Locked"
+                }
+                val equippedBadgeText = when (currentLang) {
+                    Language.RU -> "Надето"
+                    Language.UA -> "Одягнено"
+                    Language.KK -> "Киілген"
+                    Language.DE -> "Aktiv"
+                    Language.ZH -> "使用中"
+                    else -> "Equipped"
+                }
+
+                items.forEach { item ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (item.isEquipped) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                        } else if (item.isUnlocked) {
+                            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.25f)
+                        },
+                        border = if (item.isEquipped) {
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                        } else null,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = if (item.isUnlocked) Icons.Default.Check else Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = if (item.isUnlocked) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = item.title,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = if (item.isEquipped) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (item.isUnlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (item.rarity != null) {
+                                    Surface(
+                                        color = item.rarity.color.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(5.dp),
+                                        border = BorderStroke(0.8.dp, item.rarity.color.copy(alpha = 0.5f))
+                                    ) {
+                                        Text(
+                                            text = item.rarity.getLocalizedName(currentLang).uppercase(),
+                                            color = item.rarity.color,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (item.isEquipped) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                ) {
+                                    Text(
+                                        text = equippedBadgeText,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            } else {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (item.isUnlocked) Color(0xFF2E7D32).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = if (item.isUnlocked) unlockedBadgeText else lockedBadgeText,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, fontSize = 10.sp),
+                                        color = if (item.isUnlocked) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

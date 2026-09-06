@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -104,7 +106,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     }
 
-    var saveStatusMessage by remember { mutableStateOf<String?>(null) }
+    BackHandler(enabled = isPlaying && !gameState.isGameOver) {
+        viewModel.pauseGame()
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -112,14 +116,37 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(saveStatusMessage) {
-        if (saveStatusMessage != null) {
-            delay(2000)
-            saveStatusMessage = null
-        }
-    }
+    val newGameUiEnabled by viewModel.newGameUiEnabled.collectAsStateWithLifecycle()
 
-    Scaffold(
+    if (newGameUiEnabled) {
+        ModernGameLayout(
+            viewModel = viewModel,
+            gameState = gameState,
+            isPlaying = isPlaying,
+            currentLang = currentLang,
+            themeColor = themeColor,
+            statsHighScore = statsHighScore,
+            shakeX = shakeX,
+            shakeY = shakeY,
+            blockStyle = blockStyle,
+            ghostVisible = ghostVisible,
+            ghostOutlineOnly = ghostOutlineOnly,
+            nextCount = nextCount,
+            controlStyle = controlStyle,
+            smoothFallingEnabled = smoothFallingEnabled,
+            gridOpacity = gridOpacity,
+            leftHandedControls = leftHandedControls,
+            controlButtonScale = controlButtonScale,
+            controlButtonStyle = controlButtonStyle,
+            gridLineDensity = gridLineDensity,
+            controlVerticalPosition = controlVerticalPosition,
+            scanlinesFilter = scanlinesFilter,
+            boardColorSkin = boardColorSkin,
+            graphicsQuality = graphicsQuality,
+            onBack = onBack
+        )
+    } else {
+        Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 windowInsets = WindowInsets.statusBars,
@@ -187,14 +214,14 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     ) {
                         IconButton(
                             onClick = {
+                                viewModel.triggerAudioFeedback("click")
                                 viewModel.pauseGame()
-                                onBack()
                             },
                             modifier = Modifier.size(38.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = Translations.get("menu", currentLang),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -221,9 +248,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Tune,
-                                        contentDescription = "Relax Mode Settings",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                                        contentDescription = "Settings",
+                                        tint = themeColor,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -239,7 +266,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         if (!gameState.isGameOver && gameState.currentPiece != null) {
                             Surface(
                                 shape = CircleShape,
-                                color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primary
+                                color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary
                             ) {
                                 IconButton(
                                     onClick = {
@@ -261,26 +288,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 }
                             }
                         }
-
-                        FilledTonalButton(
-                            onClick = {
-                                val success = viewModel.saveCurrentGame()
-                                saveStatusMessage = if (success) {
-                                    Translations.get("save_success", currentLang)
-                                } else {
-                                    Translations.get("save_fail", currentLang)
-                                }
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(38.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SaveAlt,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp)
-                            )
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -301,24 +308,127 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-            AnimatedVisibility(visible = saveStatusMessage != null) {
-                Box(
+
+            if (gameState.gameMode == com.example.game.GameMode.PATTERN_PUZZLE) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(vertical = 6.dp),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth(0.92f)
+                        .padding(vertical = 4.dp)
                 ) {
-                    AdaptiveText(
-                        text = saveStatusMessage ?: "",
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp))
+                        Text(
+                            text = "ШАБЛОН: ${gameState.puzzleGoalDescription} (УР. ${gameState.puzzleLevel})",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "${gameState.puzzleFilledCount}/${gameState.puzzleTargetCount}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            } else if (gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            if (gameState.memoryCountdownSeconds > 0) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null,
+                            tint = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = if (gameState.memoryCountdownSeconds > 0) {
+                                when (currentLang) {
+                                    Language.RU -> "ЗАПОМНИТЕ: ${gameState.memoryCountdownSeconds} сек!"
+                                    Language.UA -> "ЗАПАМ'ЯТАЙТЕ: ${gameState.memoryCountdownSeconds} сек!"
+                                    Language.KK -> "ЕСТЕ САҚТАҢЫЗ: ${gameState.memoryCountdownSeconds} сек!"
+                                    Language.DE -> "MERKEN: ${gameState.memoryCountdownSeconds}s!"
+                                    Language.ZH -> "记忆倒计时：${gameState.memoryCountdownSeconds}秒！"
+                                    else -> "MEMORIZE: ${gameState.memoryCountdownSeconds}s!"
+                                }
+                            } else {
+                                when (currentLang) {
+                                    Language.RU -> "ПАМЯТЬ: ШАБЛОН СКРЫТ"
+                                    Language.UA -> "ПАМ'ЯТЬ: ШАБЛОН ПРИХОВАНО"
+                                    Language.KK -> "ЖАДЫ: ҮЛГІ ЖАСЫРЫЛДЫ"
+                                    Language.DE -> "GEDÄCHTNIS: MUSTER VERSTECKT"
+                                    Language.ZH -> "记忆模式：图案已隐藏"
+                                    else -> "MEMORY: PATTERN HIDDEN"
+                                }
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "${gameState.puzzleFilledCount}/${gameState.puzzleTargetCount}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            } else if (gameState.gameMode == com.example.game.GameMode.SCULPTOR) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Build, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Text(
+                            text = "СКУЛЬПТОР • ${gameState.puzzleGoalDescription} (ХОДОВ: ${gameState.sculptorRemainingPieces})",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        FilledTonalButton(
+                            onClick = { viewModel.gameEngine.restartSculptorLevel() },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ПОВТОР", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier
@@ -363,16 +473,12 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(
-                                if (isHoldRecommended) {
-                                    Modifier.border(2.dp, Color(0xFFFFD700).copy(alpha = holdPulseAlpha), RoundedCornerShape(20.dp))
-                                } else Modifier
-                            ),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(20.dp)),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.elevatedCardColors(
-                            containerColor = if (isHoldRecommended) Color(0xFFFFD700).copy(alpha = 0.12f * holdPulseAlpha) else MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = if (isHoldRecommended) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (isHoldRecommended) 6.dp else 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -387,22 +493,22 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 Icon(
                                     imageVector = if (isHoldRecommended) Icons.Default.AutoAwesome else Icons.Default.SaveAlt,
                                     contentDescription = null,
-                                    tint = if (isHoldRecommended) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
+                                    tint = if (isHoldRecommended) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Spacer(modifier = Modifier.width(3.dp))
                                 AdaptiveText(
                                     text = if (isHoldRecommended) {
                                         when (currentLang) {
-                                            Language.RU -> "💡 ХОЛД!"
-                                            Language.UA -> "💡 ХОЛД!"
-                                            Language.KK -> "💡 ХОЛД!"
-                                            Language.DE -> "💡 HALTEN"
-                                            Language.ZH -> "💡 建议暂存"
-                                            else -> "💡 HOLD!"
+                                            Language.RU -> "ХОЛД!"
+                                            Language.UA -> "ХОЛД!"
+                                            Language.KK -> "ХОЛД!"
+                                            Language.DE -> "HALTEN"
+                                            Language.ZH -> "建议暂存"
+                                            else -> "HOLD!"
                                         }
                                     } else Translations.get("hold", currentLang).uppercase(),
-                                    color = if (isHoldRecommended) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
+                                    color = if (isHoldRecommended) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                     fontWeight = FontWeight.Black,
                                     letterSpacing = 0.5.sp
@@ -412,8 +518,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             Surface(
                                 modifier = Modifier.size(64.dp),
                                 shape = RoundedCornerShape(14.dp),
-                                color = if (isHoldRecommended) Color(0xFFFFD700).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest,
-                                border = if (isHoldRecommended) BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.6f)) else null
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                             ) {
                                 Box(
                                     modifier = Modifier.fillMaxSize().padding(4.dp),
@@ -425,9 +531,41 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         }
                     }
 
+                    if (isPerfectionistMode && perfectionistHint?.actionLabel?.isNotEmpty() == true) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 5.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = perfectionistHint.actionLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Black,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                    }
+
                     // LINES STAT CARD
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -470,7 +608,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
                     if (gameState.gameMode == com.example.game.GameMode.TIME_ATTACK) {
                         ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
                             shape = RoundedCornerShape(18.dp),
                             colors = CardDefaults.elevatedCardColors(
                                 containerColor = if (gameState.timeRemainingSeconds <= 15) {
@@ -483,8 +623,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Row(
@@ -546,10 +686,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         .background(Color(0xFF0A0A0E).copy(alpha = gridOpacity.coerceAtLeast(0.85f)))
                         .border(
                             BorderStroke(
-                                2.dp, 
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    listOf(themeColor.copy(alpha = 0.8f), themeColor.copy(alpha = 0.2f))
-                                )
+                                1.5.dp, 
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                             ), 
                             RoundedCornerShape(18.dp)
                         )
@@ -592,7 +730,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 ) {
                     // NEXT BOX
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(20.dp)),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -628,7 +768,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHighest
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -654,7 +795,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
                     // SCORE CARD
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -761,6 +904,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     }
 }
 }
+    }
 
     // ═══════════════════════════════════════════════════
     // PAUSE OVERLAY (Zeta / Modern MD3 Full-Width Style)
@@ -803,6 +947,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Pause Icon & Title Header
+                    // Menu Icon & Title Header
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primaryContainer,
@@ -810,7 +955,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.Pause,
+                                imageVector = Icons.Default.Menu,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(30.dp)
@@ -818,8 +963,16 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         }
                     }
 
+                    val pauseMenuTitle = when (currentLang) {
+                        Language.RU -> "МЕНЮ ИГРЫ"
+                        Language.UA -> "МЕНЮ ГРИ"
+                        Language.KK -> "ОЙЫН МӘЗІРІ"
+                        Language.DE -> "SPIELMENÜ"
+                        Language.ZH -> "游戏菜单"
+                        else -> "GAME MENU"
+                    }
                     Text(
-                        text = Translations.get("game_paused", currentLang),
+                        text = pauseMenuTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -948,8 +1101,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         OutlinedButton(
                             onClick = {
                                 viewModel.triggerAudioFeedback("click")
-                                viewModel.pauseGame()
-                                onBack()
+                                viewModel.exitGameToMenu(onBack)
                             },
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
@@ -1204,6 +1356,628 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODERN GAME SCREEN LAYOUT (CYBER-ARCADE REDESIGN)
+// ═══════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun ModernGameLayout(
+    viewModel: MainViewModel,
+    gameState: GameState,
+    isPlaying: Boolean,
+    currentLang: Language,
+    themeColor: Color,
+    statsHighScore: Int,
+    shakeX: androidx.compose.ui.unit.Dp,
+    shakeY: androidx.compose.ui.unit.Dp,
+    blockStyle: String,
+    ghostVisible: Boolean,
+    ghostOutlineOnly: Boolean,
+    nextCount: Int,
+    controlStyle: String,
+    smoothFallingEnabled: Boolean,
+    gridOpacity: Float,
+    leftHandedControls: Boolean,
+    controlButtonScale: Float,
+    controlButtonStyle: String,
+    gridLineDensity: String,
+    controlVerticalPosition: String,
+    scanlinesFilter: Boolean,
+    boardColorSkin: String,
+    graphicsQuality: String,
+    onBack: () -> Unit
+) {
+    val controlBottomPadding by viewModel.controlBottomPadding.collectAsStateWithLifecycle()
+    val isDangerCeiling = remember(gameState.grid) {
+        gameState.grid.take(5).any { row -> row.any { it != 0 } }
+    }
+
+    Scaffold(
+        topBar = {
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(26.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Menu Button
+                        FilledTonalIconButton(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.pauseGame()
+                            },
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = Translations.get("menu", currentLang),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Center: Score & Level Info
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "${gameState.score}",
+                                style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Black),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer
+                                ) {
+                                    Text(
+                                        text = "${Translations.get("level", currentLang).uppercase()} ${gameState.level}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                    )
+                                }
+                                if (statsHighScore > 0) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.tertiaryContainer
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.EmojiEvents,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                modifier = Modifier.size(10.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(
+                                                text = "$statsHighScore",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Actions: Settings, Save & Pause
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (gameState.gameMode == com.example.game.GameMode.RELAX) {
+                                var showRelaxDialog by remember { mutableStateOf(false) }
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        viewModel.triggerAudioFeedback("click")
+                                        showRelaxDialog = true
+                                    },
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = Translations.get("settings", currentLang),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                if (showRelaxDialog) {
+                                    RelaxSettingsDialog(viewModel = viewModel, onDismiss = { showRelaxDialog = false })
+                                }
+                            }
+
+                            if (!gameState.isGameOver && gameState.currentPiece != null) {
+                                FilledIconButton(
+                                    onClick = {
+                                        viewModel.triggerAudioFeedback("click")
+                                        if (isPlaying) viewModel.pauseGame() else viewModel.resumeGame()
+                                    },
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
+                                        contentColor = if (isPlaying) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = Translations.get(if (isPlaying) "pause" else "resume", currentLang),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .navigationBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Sculptor or Pattern Puzzle Banners
+                if (gameState.gameMode == com.example.game.GameMode.PATTERN_PUZZLE) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Extension,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${Translations.get("puzzle_stencil", currentLang)}: ${gameState.puzzleGoalDescription}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest
+                            ) {
+                                Text(
+                                    text = "${gameState.puzzleFilledCount}/${gameState.puzzleTargetCount}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                } else if (gameState.gameMode == com.example.game.GameMode.SCULPTOR) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Build,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${Translations.get("sculptor", currentLang)} • ${gameState.sculptorRemainingPieces} ${Translations.get("moves", currentLang)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            FilledTonalIconButton(
+                                onClick = { viewModel.gameEngine.restartSculptorLevel() },
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                ),
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Replay,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // ─────────────────────────────────────────────────────────────
+                // PLAYFIELD ROW: LEFT WING (HOLD) + CENTER BOARD + RIGHT WING (NEXT)
+                // ─────────────────────────────────────────────────────────────
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // LEFT WING (HOLD & STATS) - 66dp
+                    Column(
+                        modifier = Modifier.width(66.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
+                        val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
+                            if (isPerfectionistMode && gameState.currentPiece != null) {
+                                viewModel.gameEngine.calculateOptimalPlacement(
+                                    grid = gameState.grid,
+                                    piece = gameState.currentPiece!!,
+                                    holdPiece = gameState.holdPiece,
+                                    nextPiece = gameState.nextPieces.firstOrNull(),
+                                    canHold = !gameState.hasHeldThisTurn
+                                )
+                            } else null
+                        }
+                        val isHoldRecommended = isPerfectionistMode && perfectionistHint?.shouldHold == true && !gameState.hasHeldThisTurn
+
+                        // MD3 Expressive HOLD Card
+                        val holdBorder = when {
+                            isHoldRecommended -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                            gameState.hasHeldThisTurn -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = holdBorder,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.gameEngine.hold()
+                                }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = Translations.get("hold", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = if (gameState.hasHeldThisTurn) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (gameState.holdPiece != null) {
+                                        PreviewNextPiece(gameState.holdPiece!!, blockStyle, graphicsQuality = graphicsQuality)
+                                    } else {
+                                        Text(
+                                            text = Translations.get("tap", currentLang),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Lines Cleared Chip
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = Translations.get("lines", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${gameState.lines}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Pieces Placed Chip
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = Translations.get("pieces", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${gameState.piecesPlaced}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // ── CENTRAL BOARD MATRIX ──
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .offset(x = shakeX, y = shakeY)
+                            .aspectRatio(10f / 20f)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                            .border(
+                                BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                RoundedCornerShape(22.dp)
+                            )
+                            .padding(2.dp)
+                    ) {
+                        GameBoardView(
+                            gameState = gameState,
+                            blockStyle = blockStyle,
+                            ghostVisible = ghostVisible,
+                            ghostOutlineOnly = ghostOutlineOnly,
+                            smoothFallingEnabled = smoothFallingEnabled,
+                            gridLineDensity = gridLineDensity,
+                            boardColorSkin = boardColorSkin,
+                            graphicsQuality = graphicsQuality,
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Danger Ceiling Alert
+                        if (isDangerCeiling) {
+                            val hazardTransition = rememberInfiniteTransition(label = "HazardPulse")
+                            val hazardAlpha by hazardTransition.animateFloat(
+                                initialValue = 0.35f,
+                                targetValue = 0.95f,
+                                animationSpec = infiniteRepeatable(tween(450, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                                label = "HazardAlpha"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = hazardAlpha))
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // RIGHT WING (NEXT QUEUE & TIMER/BADGES) - 66dp
+                    Column(
+                        modifier = Modifier.width(66.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // MD3 Expressive NEXT Queue Card
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = Translations.get("next", currentLang).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                // Primary next piece
+                                val firstNext = gameState.nextPieces.firstOrNull()
+                                Box(
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (firstNext != null) {
+                                        PreviewNextPiece(firstNext, blockStyle, graphicsQuality = graphicsQuality)
+                                    }
+                                }
+                                // Subsequent queue mini previews
+                                val subsequent = gameState.nextPieces.drop(1).take(minOf(2, nextCount - 1))
+                                if (subsequent.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    subsequent.forEach { piece ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .padding(vertical = 1.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            PreviewNextPiece(piece, blockStyle, graphicsQuality = graphicsQuality)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Time Attack Countdown or Tetrises Cleared Badge
+                        if (gameState.gameMode == com.example.game.GameMode.TIME_ATTACK) {
+                            val isUrgent = gameState.timeRemainingSeconds <= 15
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    val minutes = gameState.timeRemainingSeconds / 60
+                                    val seconds = gameState.timeRemainingSeconds % 60
+                                    val minStr = if (minutes < 10) "0$minutes" else "$minutes"
+                                    val secStr = if (seconds < 10) "0$seconds" else "$seconds"
+                                    Text(
+                                        text = "$minStr:$secStr",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        } else if (gameState.tetrisesCleared > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.FlashOn,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        "x${gameState.tetrisesCleared}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // ─────────────────────────────────────────────────────────────
+                // CONTROLS SECTION (Standard configurable controls)
+                // ─────────────────────────────────────────────────────────────
+                if (!gameState.isGameOver) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = if (controlVerticalPosition == "middle") 60.dp else (controlBottomPadding.coerceAtLeast(6)).dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        GameControlsSection(
+                            viewModel = viewModel,
+                            gameState = gameState,
+                            controlStyle = controlStyle,
+                            leftHandedControls = leftHandedControls,
+                            controlVerticalPosition = controlVerticalPosition,
+                            controlButtonScale = controlButtonScale,
+                            controlButtonStyle = controlButtonStyle,
+                            onLeftPress = { viewModel.gameEngine.moveLeft() },
+                            onRightPress = { viewModel.gameEngine.moveRight() },
+                            onDownPress = { viewModel.gameEngine.softDrop() },
+                            onRotatePress = { viewModel.gameEngine.rotate() },
+                            onHardDropPress = { viewModel.gameEngine.hardDrop() },
+                            onHoldPress = { viewModel.gameEngine.hold() }
+                        )
                     }
                 }
             }
@@ -1626,6 +2400,42 @@ fun GameBoardView(
                 }
             }
         }
+        // Режим «Шаблон» и «Память»: трафарет целевой фигуры
+        val showStencil = when (gameState.gameMode) {
+            com.example.game.GameMode.PATTERN_PUZZLE -> true
+            com.example.game.GameMode.MEMORY_PUZZLE -> !gameState.isMemoryHidden
+            else -> false
+        }
+        if (showStencil && gameState.patternTargets.isNotEmpty()) {
+            gameState.patternTargets.forEach { target ->
+                val tx = target.x
+                val ty = target.y - 2
+                if (ty >= 0 && tx in 0 until cols) {
+                    val drawTx = if (isMirror) cols - 1 - tx else tx
+                    val isFilled = target.y in 0 until gameState.grid.size && 
+                                   tx in 0 until gameState.grid[target.y].size && 
+                                   gameState.grid[target.y][tx] != 0
+
+                    val stencilFill = if (isFilled) Color(0xFFFFD700).copy(alpha = 0.25f) else Color.Gray.copy(alpha = 0.08f)
+                    drawRoundRect(
+                        color = stencilFill,
+                        topLeft = Offset(drawTx * cellSize + 2f, ty * cellSize + 2f),
+                        size = Size(cellSize - 4f, cellSize - 4f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                    )
+                    drawRoundRect(
+                        color = Color.Gray.copy(alpha = if (isFilled) 0.60f else 0.35f),
+                        topLeft = Offset(drawTx * cellSize + 2f, ty * cellSize + 2f),
+                        size = Size(cellSize - 4f, cellSize - 4f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx()),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 0.8.dp.toPx()
+                        )
+                    )
+                }
+            }
+        }
+
         // AI Perfect Placement Guide for Perfectionist Mode
         if (gameState.gameMode == com.example.game.GameMode.PERFECTIONIST && viewModel != null) {
             gameState.currentPiece?.let { piece ->
@@ -1638,34 +2448,31 @@ fun GameBoardView(
                 )
                 hint?.let { optimal ->
                     val isHoldAdvised = optimal.shouldHold && !gameState.hasHeldThisTurn
-                    val guideColor = if (isHoldAdvised) Color(0xFFFF9100) else Color(0xFFFFD700)
+                    val guideColor = when {
+                        isHoldAdvised -> Color(0xFFFF9100)
+                        optimal.actionLabel == "ТЕТРИС!" -> Color(0xFF00E676)
+                        optimal.actionLabel == "T-SPIN" -> Color(0xFFE040FB)
+                        else -> Color(0xFFFFD700)
+                    }
                     optimal.shape.forEach { p ->
                         val hx = optimal.targetPos.x + p.x
                         val hy = optimal.targetPos.y + p.y - 2
                         if (hy >= 0 && hx in 0 until cols) {
                             val drawHx = if (isMirror) cols - 1 - hx else hx
-                            // 1. Holographic Fill
+                            // 1. Subtle Fill
                             drawRoundRect(
-                                color = guideColor.copy(alpha = if (isHoldAdvised) 0.16f else 0.22f),
+                                color = guideColor.copy(alpha = if (isHoldAdvised) 0.14f else 0.20f),
                                 topLeft = Offset(drawHx * cellSize + 1.5f, hy * cellSize + 1.5f),
                                 size = Size(cellSize - 3f, cellSize - 3f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
                             )
-                            // 2. Bright Glowing Border
+                            // 2. Crisp Border (thin, semi-transparent gray, no center dot)
                             drawRoundRect(
-                                color = guideColor.copy(alpha = 0.90f),
+                                color = Color.Gray.copy(alpha = 0.40f),
                                 topLeft = Offset(drawHx * cellSize + 1.5f, hy * cellSize + 1.5f),
                                 size = Size(cellSize - 3f, cellSize - 3f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx()),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.2.dp.toPx())
-                            )
-                            // 3. Center Target Indicator
-                            val centerX = drawHx * cellSize + cellSize / 2f
-                            val centerY = hy * cellSize + cellSize / 2f
-                            drawCircle(
-                                color = guideColor,
-                                radius = cellSize * 0.12f,
-                                center = Offset(centerX, centerY)
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.8.dp.toPx())
                             )
                         }
                     }
@@ -1685,13 +2492,13 @@ fun GameBoardView(
                     if (ny >= 0) {
                         val drawNx = if (isMirror) cols - 1 - nx else nx
                         if (ghostOutlineOnly) {
-                            val ghostColor = Colors.getOrElse(piece.colorIndex) { Color.White }.copy(alpha = 0.60f)
+                            val ghostColor = Color.Gray.copy(alpha = 0.35f)
                             drawRoundRect(
                                 color = ghostColor,
                                 topLeft = Offset(drawNx * cellSize + 1.2f, ny * cellSize + 1.2f),
                                 size = Size(cellSize - 2.4f, cellSize - 2.4f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()),
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx())
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.8.dp.toPx())
                             )
                         } else {
                             drawBlock(
@@ -1796,8 +2603,8 @@ private fun DrawScope.drawBlock(
     val pad = 1f
     val bSize = size - pad * 2
 
-    when (style) {
-        "flat" -> {
+    when {
+        style == "flat" -> {
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
@@ -1812,7 +2619,7 @@ private fun DrawScope.drawBlock(
                 style = Stroke(width = 1f)
             )
         }
-        "glass" -> {
+        style == "glass" -> {
             drawRoundRect(
                 color = color.copy(alpha = 0.8f),
                 topLeft = Offset(x + pad, y + pad),
@@ -1833,12 +2640,12 @@ private fun DrawScope.drawBlock(
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f)
             )
         }
-        "retro" -> {
+        style == "retro" -> {
             drawRect(color = color, topLeft = Offset(x, y), size = Size(size, size))
             drawRect(color = Color.White.copy(alpha = 0.45f), topLeft = Offset(x + 2f, y + 2f), size = Size(size - 4f, size - 4f), style = Stroke(width = 1.5f))
             drawRect(color = Color.Black.copy(alpha = 0.45f), topLeft = Offset(x + 5f, y + 5f), size = Size(size - 10f, size - 10f))
         }
-        "material" -> {
+        style == "material" -> {
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
@@ -1853,7 +2660,7 @@ private fun DrawScope.drawBlock(
                 style = Stroke(width = 1f)
             )
         }
-        "glowing_jewel" -> {
+        style == "glowing_jewel" -> {
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
@@ -1868,7 +2675,7 @@ private fun DrawScope.drawBlock(
                 style = Stroke(width = 1.5f)
             )
         }
-        "steampunk" -> {
+        style == "steampunk" -> {
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
@@ -1881,6 +2688,144 @@ private fun DrawScope.drawBlock(
                 size = Size(bSize - 2f, bSize - 2f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
                 style = Stroke(width = 1.5f)
+            )
+        }
+        style == "red_gradient" -> {
+            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(Color(0xFFFF1744), Color(0xFFFF5252), Color(0xFFB71C1C)),
+                start = Offset(x + pad, y + pad),
+                end = Offset(x + pad + bSize, y + pad + bSize)
+            )
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+            )
+            drawRoundRect(
+                color = Color(0xFFFF8A80).copy(alpha = 0.85f),
+                topLeft = Offset(x + pad + 1f, y + pad + 1f),
+                size = Size(bSize - 2f, bSize - 2f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.45f),
+                topLeft = Offset(x + pad + 2f, y + pad + 2f),
+                size = Size(bSize / 2.8f, bSize / 2.8f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+            )
+        }
+        style == "green_gradient" -> {
+            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(Color(0xFF00E676), Color(0xFF69F0AE), Color(0xFF1B5E20)),
+                start = Offset(x + pad, y + pad),
+                end = Offset(x + pad + bSize, y + pad + bSize)
+            )
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+            )
+            drawRoundRect(
+                color = Color(0xFFB9F6CA).copy(alpha = 0.85f),
+                topLeft = Offset(x + pad + 1f, y + pad + 1f),
+                size = Size(bSize - 2f, bSize - 2f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.45f),
+                topLeft = Offset(x + pad + 2f, y + pad + 2f),
+                size = Size(bSize / 2.8f, bSize / 2.8f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+            )
+        }
+        style == "blue_gradient" -> {
+            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(Color(0xFF00B0FF), Color(0xFF40C4FF), Color(0xFF0D47A1)),
+                start = Offset(x + pad, y + pad),
+                end = Offset(x + pad + bSize, y + pad + bSize)
+            )
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+            )
+            drawRoundRect(
+                color = Color(0xFF80D8FF).copy(alpha = 0.85f),
+                topLeft = Offset(x + pad + 1f, y + pad + 1f),
+                size = Size(bSize - 2f, bSize - 2f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.45f),
+                topLeft = Offset(x + pad + 2f, y + pad + 2f),
+                size = Size(bSize / 2.8f, bSize / 2.8f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+            )
+        }
+        style == "purple_gradient" -> {
+            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(Color(0xFFD500F9), Color(0xFFE040FB), Color(0xFF4A148C)),
+                start = Offset(x + pad, y + pad),
+                end = Offset(x + pad + bSize, y + pad + bSize)
+            )
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+            )
+            drawRoundRect(
+                color = Color(0xFFEA80FC).copy(alpha = 0.85f),
+                topLeft = Offset(x + pad + 1f, y + pad + 1f),
+                size = Size(bSize - 2f, bSize - 2f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.45f),
+                topLeft = Offset(x + pad + 2f, y + pad + 2f),
+                size = Size(bSize / 2.8f, bSize / 2.8f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+            )
+        }
+        style.contains("gradient") -> {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(
+                android.graphics.Color.argb(255, (color.red * 255).toInt(), (color.green * 255).toInt(), (color.blue * 255).toInt()),
+                hsv
+            )
+            val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], (hsv[1] * 0.7f).coerceIn(0.2f, 1f), 1f)))
+            val c2 = color
+            val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], 1f, (hsv[2] * 0.6f).coerceIn(0.15f, 1f))))
+            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(c1, c2, c3),
+                start = Offset(x + pad, y + pad),
+                end = Offset(x + pad + bSize, y + pad + bSize)
+            )
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+            )
+            drawRoundRect(
+                color = c1.copy(alpha = 0.85f),
+                topLeft = Offset(x + pad + 1f, y + pad + 1f),
+                size = Size(bSize - 2f, bSize - 2f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.45f),
+                topLeft = Offset(x + pad + 2f, y + pad + 2f),
+                size = Size(bSize / 2.8f, bSize / 2.8f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
             )
         }
         else -> { // "neon" / default
@@ -1958,6 +2903,24 @@ fun ControlButton(
     val buttonCorner = (28 * scale).dp
 
     val backgroundBrush = when (buttonStyle) {
+        "gold_legendary", "gold" -> {
+            androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = if (isPressed) {
+                    listOf(Color(0xFFFFB300), Color(0xFFFF8F00))
+                } else {
+                    listOf(Color(0xFFFFD54F).copy(alpha = 0.55f), Color(0xFFFF8F00).copy(alpha = 0.35f))
+                }
+            )
+        }
+        "plasma_legendary", "plasma" -> {
+            androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = if (isPressed) {
+                    listOf(Color(0xFF7C4DFF).copy(alpha = 0.65f), Color(0xFF00E5FF).copy(alpha = 0.55f))
+                } else {
+                    listOf(Color(0xFF7C4DFF).copy(alpha = 0.35f), Color(0xFF00E5FF).copy(alpha = 0.25f))
+                }
+            )
+        }
         "glass" -> {
             androidx.compose.ui.graphics.Brush.verticalGradient(
                 colors = listOf(
@@ -1988,6 +2951,18 @@ fun ControlButton(
     }
 
     val borderStroke = when (buttonStyle) {
+        "gold_legendary", "gold" -> {
+            androidx.compose.foundation.BorderStroke(
+                width = if (isPressed) 2.5.dp else 1.8.dp,
+                brush = androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFF9C4), Color(0xFFFFA000), Color(0xFFFFD700)))
+            )
+        }
+        "plasma_legendary", "plasma" -> {
+            androidx.compose.foundation.BorderStroke(
+                width = if (isPressed) 2.5.dp else 1.8.dp,
+                brush = androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFF00E5FF), Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00E5FF)))
+            )
+        }
         "glass" -> {
             androidx.compose.foundation.BorderStroke(
                 width = 1.2.dp,
@@ -2030,10 +3005,11 @@ fun ControlButton(
                 }
             }
     ) {
-        val iconColor = if (buttonStyle == "classic" && isPrimary) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.primary
+        val iconColor = when (buttonStyle) {
+            "gold_legendary", "gold" -> Color(0xFFFFD700)
+            "plasma_legendary", "plasma" -> Color(0xFF00E5FF)
+            "classic" -> if (isPrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.primary
         }
 
         when (actionType) {
@@ -2267,7 +3243,7 @@ fun RelaxSettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                             Language.KK -> "Бірқалыпты ағын"
                             Language.DE -> "Sanfter Fluss"
                             Language.ZH -> "平缓禅意流速"
-                            else -> "Zen Flow (Normal)"
+                            else -> "Smooth Flow (Normal)"
                         }
                     )
                     speedOptions.forEach { (key, label) ->

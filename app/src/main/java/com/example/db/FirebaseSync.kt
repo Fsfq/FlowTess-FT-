@@ -89,7 +89,8 @@ object FirebaseSync {
             "credits" to tetrisPrefs.getInt("credits", 750),
             "purchased_cube_skins" to (profilePrefs.getStringSet("purchased_cube_skins", setOf("neon"))?.toList() ?: listOf("neon")),
             "case_inventory" to (profilePrefs.getStringSet("case_inventory", emptySet())?.toList() ?: emptyList()),
-            "purchased_modes" to (profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast"))?.toList() ?: listOf("classic", "extended")),
+            "purchased_modes" to (profilePrefs.getStringSet("purchased_modes", setOf("classic"))?.toList() ?: listOf("classic")),
+            "purchased_ranks" to (profilePrefs.getStringSet("purchased_ranks", setOf("BRONZE"))?.toList() ?: listOf("BRONZE")),
             "board_color_skin" to (tetrisPrefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk"),
             "block_style" to (tetrisPrefs.getString("block_style", "glass") ?: "glass"),
             "has_nickname_gradient" to profilePrefs.getBoolean("has_nickname_gradient", false),
@@ -148,17 +149,26 @@ object FirebaseSync {
             "stats_tetrises_count" to tetrisPrefs.getInt("stats_tetrises_count", 0),
             "block_blast_high_score" to tetrisPrefs.getInt("block_blast_high_score", 0),
             "stats_avatar_changes" to tetrisPrefs.getInt("stats_avatar_changes", 0),
-            "multiplayer_launches" to tetrisPrefs.getInt("multiplayer_launches", 0)
+            "multiplayer_launches" to tetrisPrefs.getInt("multiplayer_launches", 0),
+            "stats_pattern_level" to tetrisPrefs.getInt("stats_pattern_level", 1),
+            "stats_pattern_score" to tetrisPrefs.getInt("stats_pattern_score", 0),
+            "stats_sculptor_level" to tetrisPrefs.getInt("stats_sculptor_level", 1),
+            "stats_sculptor_score" to tetrisPrefs.getInt("stats_sculptor_score", 0)
         )
 
         data["custom_avatar_base64"] = avatarBase64 ?: ""
         data["custom_background_base64"] = bgBase64 ?: ""
+        if (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || user.email == "ezik02021@gmail.com" || user.email == "eziko04@gmail.com" || playerName == "FsFq") {
+            data["is_admin"] = true
+        }
 
         firestore.collection("users").document(user.uid).set(data, SetOptions.merge())
             .addOnSuccessListener {
+                android.util.Log.d("FirebaseSync", "pushUserData SUCCESS for ${user.uid}, credits: ${data["credits"]}")
                 continuation.resume(true)
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
+                android.util.Log.e("FirebaseSync", "pushUserData FAILED for ${user.uid}: ${e.message}", e)
                 continuation.resume(false)
             }
     }
@@ -249,7 +259,7 @@ object FirebaseSync {
                     editorTetris.putString("online_tier", it)
                 }
 
-                val cloudCredits = (data["credits"] as? Long)?.toInt()
+                val cloudCredits = (data["credits"] as? Number)?.toInt()
                 if (cloudCredits != null) {
                     editorTetris.putInt("credits", cloudCredits)
                 }
@@ -262,9 +272,13 @@ object FirebaseSync {
                 val cloudInventory = (data["case_inventory"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
                 editorProfile.putStringSet("case_inventory", localInventory + cloudInventory)
 
-                val localModes = profilePrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast")) ?: setOf("classic", "extended")
+                val localModes = profilePrefs.getStringSet("purchased_modes", setOf("classic")) ?: setOf("classic")
                 val cloudModes = (data["purchased_modes"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
                 editorProfile.putStringSet("purchased_modes", localModes + cloudModes)
+
+                val localRanks = profilePrefs.getStringSet("purchased_ranks", setOf("BRONZE")) ?: setOf("BRONZE")
+                val cloudRanks = (data["purchased_ranks"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
+                editorProfile.putStringSet("purchased_ranks", localRanks + cloudRanks)
 
                 (data["board_color_skin"] as? String)?.let { editorTetris.putString("board_color_skin", it) }
                 (data["block_style"] as? String)?.let { editorTetris.putString("block_style", it) }
@@ -272,11 +286,11 @@ object FirebaseSync {
                 val hasGradLocal = profilePrefs.getBoolean("has_nickname_gradient", false)
                 editorProfile.putBoolean("has_nickname_gradient", hasGradCloud || hasGradLocal)
 
-                val cloudXp = (data["bonus_xp"] as? Long)?.toInt()
+                val cloudXp = (data["bonus_xp"] as? Number)?.toInt()
                 if (cloudXp != null) {
                     editorProfile.putInt("bonus_xp", cloudXp)
                 }
-                val cloudPrestige = (data["prestige_level"] as? Long)?.toInt()
+                val cloudPrestige = (data["prestige_level"] as? Number)?.toInt()
                 if (cloudPrestige != null) {
                     editorProfile.putInt("prestige_level", cloudPrestige)
                 }
@@ -302,26 +316,26 @@ object FirebaseSync {
                 // Настройки с облака
                 (data["setting_lang_code"] as? String)?.let { editorTetris.putString("lang_code", it) }
                 (data["setting_theme_color"] as? String)?.let { editorTetris.putString("theme_color", it) }
-                (data["setting_next_count"] as? Long)?.let { editorTetris.putInt("next_count", it.toInt()) }
+                (data["setting_next_count"] as? Number)?.let { editorTetris.putInt("next_count", it.toInt()) }
                 (data["setting_ghost_visible"] as? Boolean)?.let { editorTetris.putBoolean("ghost_visible", it) }
                 (data["setting_control_style"] as? String)?.let { editorTetris.putString("control_style", it) }
                 (data["setting_sound_enabled"] as? Boolean)?.let { editorTetris.putBoolean("sound_enabled", it) }
                 (data["setting_vibration_enabled"] as? Boolean)?.let { editorTetris.putBoolean("vibration_enabled", it) }
                 (data["setting_smooth_falling_enabled"] as? Boolean)?.let { editorTetris.putBoolean("smooth_falling_enabled", it) }
-                (data["setting_grid_opacity"] as? Double)?.let { editorTetris.putFloat("grid_opacity", it.toFloat()) }
-                (data["setting_custom_start_level"] as? Long)?.let { editorTetris.putInt("custom_start_level", it.toInt()) }
-                (data["setting_game_speed_multiplier"] as? Double)?.let { editorTetris.putFloat("game_speed_multiplier", it.toFloat()) }
-                (data["setting_control_button_scale"] as? Double)?.let { editorTetris.putFloat("control_button_scale", it.toFloat()) }
-                (data["setting_control_button_alpha"] as? Double)?.let { editorTetris.putFloat("control_button_alpha", it.toFloat()) }
+                (data["setting_grid_opacity"] as? Number)?.let { editorTetris.putFloat("grid_opacity", it.toFloat()) }
+                (data["setting_custom_start_level"] as? Number)?.let { editorTetris.putInt("custom_start_level", it.toInt()) }
+                (data["setting_game_speed_multiplier"] as? Number)?.let { editorTetris.putFloat("game_speed_multiplier", it.toFloat()) }
+                (data["setting_control_button_scale"] as? Number)?.let { editorTetris.putFloat("control_button_scale", it.toFloat()) }
+                (data["setting_control_button_alpha"] as? Number)?.let { editorTetris.putFloat("control_button_alpha", it.toFloat()) }
                 (data["setting_control_button_style"] as? String)?.let { editorTetris.putString("control_button_style", it) }
                 (data["setting_custom_font_key"] as? String)?.let { editorTetris.putString("custom_font_key", it) }
                 (data["setting_grid_line_density"] as? String)?.let { editorTetris.putString("grid_line_density", it) }
                 (data["setting_control_vertical_position"] as? String)?.let { editorTetris.putString("control_vertical_position", it) }
-                (data["setting_screen_shake_intensity"] as? Double)?.let { editorTetris.putFloat("screen_shake_intensity", it.toFloat()) }
+                (data["setting_screen_shake_intensity"] as? Number)?.let { editorTetris.putFloat("screen_shake_intensity", it.toFloat()) }
                 (data["setting_scanlines_filter"] as? Boolean)?.let { editorTetris.putBoolean("scanlines_filter", it) }
                 (data["setting_graphics_quality"] as? String)?.let { editorTetris.putString("graphics_quality", it) }
-                (data["setting_sound_volume"] as? Double)?.let { editorTetris.putFloat("sound_volume", it.toFloat()) }
-                (data["setting_lobby_music_volume"] as? Double)?.let { editorTetris.putFloat("lobby_music_volume", it.toFloat()) }
+                (data["setting_sound_volume"] as? Number)?.let { editorTetris.putFloat("sound_volume", it.toFloat()) }
+                (data["setting_lobby_music_volume"] as? Number)?.let { editorTetris.putFloat("lobby_music_volume", it.toFloat()) }
                 (data["setting_lobby_music_enabled"] as? Boolean)?.let { editorTetris.putBoolean("lobby_music_enabled", it) }
                 (data["setting_relax_immortal"] as? Boolean)?.let { editorTetris.putBoolean("relax_immortal", it) }
                 (data["setting_relax_speed"] as? String)?.let { editorTetris.putString("relax_speed", it) }
@@ -330,40 +344,56 @@ object FirebaseSync {
 
                 // Статистика с облака (smart max merge)
                 val localGames = tetrisPrefs.getInt("stats_games_played", 0)
-                val cloudGames = (data["stats_games_played"] as? Long)?.toInt() ?: localGames
+                val cloudGames = (data["stats_games_played"] as? Number)?.toInt() ?: localGames
                 editorTetris.putInt("stats_games_played", maxOf(localGames, cloudGames))
 
                 val localSpent = tetrisPrefs.getInt("stats_spent_credits", 0)
-                val cloudSpent = (data["stats_spent_credits"] as? Long)?.toInt() ?: localSpent
+                val cloudSpent = (data["stats_spent_credits"] as? Number)?.toInt() ?: localSpent
                 editorTetris.putInt("stats_spent_credits", maxOf(localSpent, cloudSpent))
 
                 val localLines = tetrisPrefs.getInt("stats_cleared_lines", 0)
-                val cloudLines = (data["stats_cleared_lines"] as? Long)?.toInt() ?: localLines
+                val cloudLines = (data["stats_cleared_lines"] as? Number)?.toInt() ?: localLines
                 editorTetris.putInt("stats_cleared_lines", maxOf(localLines, cloudLines))
 
                 val localHigh = tetrisPrefs.getInt("stats_high_score", 0)
-                val cloudHigh = (data["stats_high_score"] as? Long)?.toInt() ?: localHigh
+                val cloudHigh = (data["stats_high_score"] as? Number)?.toInt() ?: localHigh
                 editorTetris.putInt("stats_high_score", maxOf(localHigh, cloudHigh))
 
                 val localSpeed = tetrisPrefs.getInt("stats_max_speed_reached", 0)
-                val cloudSpeed = (data["stats_max_speed_reached"] as? Long)?.toInt() ?: localSpeed
+                val cloudSpeed = (data["stats_max_speed_reached"] as? Number)?.toInt() ?: localSpeed
                 editorTetris.putInt("stats_max_speed_reached", maxOf(localSpeed, cloudSpeed))
 
                 val localTetrises = tetrisPrefs.getInt("stats_tetrises_count", 0)
-                val cloudTetrises = (data["stats_tetrises_count"] as? Long)?.toInt() ?: localTetrises
+                val cloudTetrises = (data["stats_tetrises_count"] as? Number)?.toInt() ?: localTetrises
                 editorTetris.putInt("stats_tetrises_count", maxOf(localTetrises, cloudTetrises))
 
                 val localBlockBlast = tetrisPrefs.getInt("block_blast_high_score", 0)
-                val cloudBlockBlast = (data["block_blast_high_score"] as? Long)?.toInt() ?: localBlockBlast
+                val cloudBlockBlast = (data["block_blast_high_score"] as? Number)?.toInt() ?: localBlockBlast
                 editorTetris.putInt("block_blast_high_score", maxOf(localBlockBlast, cloudBlockBlast))
 
                 val localAvatarChanges = tetrisPrefs.getInt("stats_avatar_changes", 0)
-                val cloudAvatarChanges = (data["stats_avatar_changes"] as? Long)?.toInt() ?: localAvatarChanges
+                val cloudAvatarChanges = (data["stats_avatar_changes"] as? Number)?.toInt() ?: localAvatarChanges
                 editorTetris.putInt("stats_avatar_changes", maxOf(localAvatarChanges, cloudAvatarChanges))
 
                 val localMp = tetrisPrefs.getInt("multiplayer_launches", 0)
-                val cloudMp = (data["multiplayer_launches"] as? Long)?.toInt() ?: localMp
+                val cloudMp = (data["multiplayer_launches"] as? Number)?.toInt() ?: localMp
                 editorTetris.putInt("multiplayer_launches", maxOf(localMp, cloudMp))
+
+                val localPatternLevel = tetrisPrefs.getInt("stats_pattern_level", 1)
+                val cloudPatternLevel = (data["stats_pattern_level"] as? Number)?.toInt() ?: localPatternLevel
+                editorTetris.putInt("stats_pattern_level", maxOf(localPatternLevel, cloudPatternLevel))
+
+                val localPatternScore = tetrisPrefs.getInt("stats_pattern_score", 0)
+                val cloudPatternScore = (data["stats_pattern_score"] as? Number)?.toInt() ?: localPatternScore
+                editorTetris.putInt("stats_pattern_score", maxOf(localPatternScore, cloudPatternScore))
+
+                val localSculptorLevel = tetrisPrefs.getInt("stats_sculptor_level", 1)
+                val cloudSculptorLevel = (data["stats_sculptor_level"] as? Number)?.toInt() ?: localSculptorLevel
+                editorTetris.putInt("stats_sculptor_level", maxOf(localSculptorLevel, cloudSculptorLevel))
+
+                val localSculptorScore = tetrisPrefs.getInt("stats_sculptor_score", 0)
+                val cloudSculptorScore = (data["stats_sculptor_score"] as? Number)?.toInt() ?: localSculptorScore
+                editorTetris.putInt("stats_sculptor_score", maxOf(localSculptorScore, cloudSculptorScore))
 
                 editorProfile.apply()
                 editorTetris.apply()
@@ -384,9 +414,11 @@ object FirebaseSync {
         firestore.collection("users").document(user.uid)
             .update("credits", com.google.firebase.firestore.FieldValue.increment(delta))
             .addOnSuccessListener {
+                android.util.Log.d("FirebaseSync", "adjustCloudCredits SUCCESS delta: $delta")
                 continuation.resume(true)
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
+                android.util.Log.e("FirebaseSync", "adjustCloudCredits FAILED delta: $delta: ${e.message}", e)
                 continuation.resume(false)
             }
     }

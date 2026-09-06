@@ -1,0 +1,32 @@
+apply plugin: 'com.android.application'
+apply from: "build_common.gradle"
+
+android {
+	defaultConfig {
+		externalNativeBuild {
+			cmake {
+				arguments "-DANDROID_STL=c++_shared"
+			}
+		}
+	}
+
+	externalNativeBuild {
+		cmake {
+			path "src/main/cpp/CMakeLists.txt"
+			version "3.22.1"
+		}
+	}
+}
+
+dependencies {
+	implementation files('../../../../SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar')
+}
+
+tasks.register('unzipEosAar', Copy) {
+	from zipTree(file('../../../../SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar'))
+	into file("${buildDir}/unpacked/eossdk-StaticSTDC-release")
+}
+
+tasks.named("preBuild") {
+	dependsOn { 'unzipEosAar' }
+}

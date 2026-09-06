@@ -229,6 +229,14 @@ fun getLocalizedItemTypeName(type: String, lang: Language): String = when (type)
         Language.ZH -> "音效包"
         else -> "Sound Pack"
     }
+    "button_skin" -> when (lang) {
+        Language.RU -> "Стиль кнопок"
+        Language.UA -> "Стиль кнопок"
+        Language.KK -> "Батырмалар стилі"
+        Language.DE -> "Tasten-Stil"
+        Language.ZH -> "按键样式"
+        else -> "Button Skin"
+    }
     "nick_gradient" -> when (lang) {
         Language.RU -> "Градиент никнейма"
         Language.UA -> "Градієнт нікнейма"
@@ -374,20 +382,23 @@ val allLootItems = listOf(
     LootItem("blue_gradient", "cube_skin", "Cobalt Pulse", "Кобальтовый Пульс", DropRarity.RED),
     LootItem("purple_gradient", "cube_skin", "Void Pulse", "Пульс Бездны", DropRarity.RED),
 
-    // Avatar Frame
+    // Avatar Frames
+    LootItem("neon_frame", "avatar_frame", "Turquoise", "Бирюза", DropRarity.RARE),
+    LootItem("gold_frame", "avatar_frame", "Gold", "Золото", DropRarity.EPIC),
+    LootItem("cyber_frame", "avatar_frame", "Violet", "Фиолет", DropRarity.EPIC),
+    LootItem("fire_frame", "avatar_frame", "Flame", "Пламя", DropRarity.EPIC),
+    LootItem("ice_frame", "avatar_frame", "Frost", "Мороз", DropRarity.EPIC),
+    LootItem("matrix_frame", "avatar_frame", "Matrix", "Матрица", DropRarity.EPIC),
+    LootItem("galaxy_frame", "avatar_frame", "Galaxy", "Галактика", DropRarity.LEGENDARY),
+    LootItem("rainbow_frame", "avatar_frame", "Rainbow", "Радуга", DropRarity.LEGENDARY),
     LootItem("chrono_gl", "avatar_frame", "OVERDRIVE FRAME", "Градиентная Рамка", DropRarity.RED),
 
-    // Credit Drops
-    LootItem("credits_50", "credits", "+50 🪙", "+50 🪙", DropRarity.COMMON, 50),
-    LootItem("credits_100", "credits", "+100 🪙", "+100 🪙", DropRarity.COMMON, 100),
-    LootItem("credits_250", "credits", "+250 🪙", "+250 🪙", DropRarity.UNCOMMON, 250),
-    LootItem("credits_500", "credits", "+500 🪙", "+500 🪙", DropRarity.RARE, 500),
-    LootItem("credits_1000", "credits", "+1000 🪙", "+1000 🪙", DropRarity.EPIC, 1000),
-    LootItem("credits_2500", "credits", "+2500 🪙", "+2500 🪙", DropRarity.LEGENDARY, 2500),
+    // Control Buttons
+    LootItem("gold_legendary", "button_skin", "Gold Buttons", "Золотые Кнопки", DropRarity.LEGENDARY),
+    LootItem("plasma_legendary", "button_skin", "Plasma Buttons", "Плазменные Кнопки", DropRarity.LEGENDARY),
 
     // Special
-    LootItem("nick_gradient", "nick_gradient", "OVERDRIVE NICK", "Градиент Ника", DropRarity.RED),
-    LootItem("bonus_xp_5000", "bonus_xp", "+5000 XP BEACON", "+5000 XP Опыта", DropRarity.RED, 5000)
+    LootItem("nick_gradient", "nick_gradient", "OVERDRIVE NICK", "Градиент Ника", DropRarity.RED)
 )
 
 // ── 8 Exact Crates (Strict original IDs, names & prices) ──
@@ -397,9 +408,9 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("wooden"), accentColor = Color(0xFF8D6E63), secondaryColor = Color(0xFFA1887F),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
-            DropRarity.COMMON to 70f,
-            DropRarity.UNCOMMON to 22f,
-            DropRarity.RARE to 8f
+            DropRarity.COMMON to 88f,
+            DropRarity.UNCOMMON to 11f,
+            DropRarity.RARE to 1f
         )
     ),
     LootCrate(
@@ -407,10 +418,10 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("iron"), accentColor = Color(0xFF78909C), secondaryColor = Color(0xFF90A4AE),
         icon = Icons.Default.Inventory2,
         dropChances = mapOf(
-            DropRarity.COMMON to 40f,
-            DropRarity.UNCOMMON to 32f,
-            DropRarity.RARE to 20f,
-            DropRarity.EPIC to 8f
+            DropRarity.COMMON to 68f,
+            DropRarity.UNCOMMON to 24f,
+            DropRarity.RARE to 7f,
+            DropRarity.EPIC to 1f
         )
     ),
     LootCrate(
@@ -418,11 +429,11 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("golden"), accentColor = Color(0xFFFFB300), secondaryColor = Color(0xFFFFD54F),
         icon = Icons.Default.CardGiftcard,
         dropChances = mapOf(
-            DropRarity.COMMON to 20f,
-            DropRarity.UNCOMMON to 30f,
-            DropRarity.RARE to 28f,
-            DropRarity.EPIC to 17f,
-            DropRarity.LEGENDARY to 5f
+            DropRarity.COMMON to 52f,
+            DropRarity.UNCOMMON to 34f,
+            DropRarity.RARE to 10f,
+            DropRarity.EPIC to 3.2f,
+            DropRarity.LEGENDARY to 0.8f
         )
     ),
     LootCrate(
@@ -430,11 +441,11 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("platinum"), accentColor = Color(0xFF7E57C2), secondaryColor = Color(0xFFB39DDB),
         icon = Icons.Default.AutoAwesome,
         dropChances = mapOf(
-            DropRarity.COMMON to 8f,
-            DropRarity.UNCOMMON to 17f,
-            DropRarity.RARE to 30f,
-            DropRarity.EPIC to 32f,
-            DropRarity.LEGENDARY to 13f
+            DropRarity.COMMON to 42f,
+            DropRarity.UNCOMMON to 38f,
+            DropRarity.RARE to 13.5f,
+            DropRarity.EPIC to 5f,
+            DropRarity.LEGENDARY to 1.5f
         )
     ),
     LootCrate(
@@ -442,11 +453,11 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("legendary"), accentColor = Color(0xFFFF6F00), secondaryColor = Color(0xFFFFAB40),
         icon = Icons.Default.EmojiEvents,
         dropChances = mapOf(
-            DropRarity.COMMON to 2f,
-            DropRarity.UNCOMMON to 8f,
-            DropRarity.RARE to 20f,
-            DropRarity.EPIC to 40f,
-            DropRarity.LEGENDARY to 30f
+            DropRarity.COMMON to 35f,
+            DropRarity.UNCOMMON to 38f,
+            DropRarity.RARE to 17.5f,
+            DropRarity.EPIC to 7f,
+            DropRarity.LEGENDARY to 2.5f
         )
     ),
     LootCrate(
@@ -454,11 +465,12 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("diamond"), accentColor = Color(0xFF00E5FF), secondaryColor = Color(0xFF80D8FF),
         icon = Icons.Default.Diamond,
         dropChances = mapOf(
-            DropRarity.COMMON to 5f,
-            DropRarity.UNCOMMON to 15f,
-            DropRarity.RARE to 35f,
-            DropRarity.EPIC to 30f,
-            DropRarity.LEGENDARY to 15f
+            DropRarity.COMMON to 28f,
+            DropRarity.UNCOMMON to 40f,
+            DropRarity.RARE to 20f,
+            DropRarity.EPIC to 8.5f,
+            DropRarity.LEGENDARY to 3f,
+            DropRarity.RED to 0.5f
         )
     ),
     LootCrate(
@@ -467,11 +479,11 @@ val lootCrates = listOf(
         icon = Icons.Default.Whatshot,
         dropChances = mapOf(
             DropRarity.COMMON to 25f,
-            DropRarity.UNCOMMON to 30f,
-            DropRarity.RARE to 25f,
-            DropRarity.EPIC to 15f,
-            DropRarity.LEGENDARY to 2f,
-            DropRarity.RED to 3f
+            DropRarity.UNCOMMON to 42f,
+            DropRarity.RARE to 21.2f,
+            DropRarity.EPIC to 8f,
+            DropRarity.LEGENDARY to 2.8f,
+            DropRarity.RED to 1f
         )
     ),
     LootCrate(
@@ -479,12 +491,12 @@ val lootCrates = listOf(
         cost = ShopPrices.getCrateCost("red_crate"), accentColor = Color(0xFFD32F2F), secondaryColor = Color(0xFFFF5252),
         icon = Icons.Default.Whatshot,
         dropChances = mapOf(
-            DropRarity.COMMON to 0f,
-            DropRarity.UNCOMMON to 0f,
-            DropRarity.RARE to 10f,
-            DropRarity.EPIC to 30f,
-            DropRarity.LEGENDARY to 40f,
-            DropRarity.RED to 20f
+            DropRarity.COMMON to 15f,
+            DropRarity.UNCOMMON to 35f,
+            DropRarity.RARE to 31.5f,
+            DropRarity.EPIC to 12f,
+            DropRarity.LEGENDARY to 4.5f,
+            DropRarity.RED to 2f
         )
     )
 )
@@ -511,6 +523,7 @@ fun iconForItemType(type: String): ImageVector = when (type) {
     "skin" -> Icons.Default.GridOn
     "cube_skin" -> Icons.Default.Widgets
     "avatar_frame" -> Icons.Default.AccountBox
+    "button_skin" -> Icons.Default.SmartButton
     "sound_pack" -> Icons.AutoMirrored.Filled.VolumeUp
     "nick_gradient" -> Icons.Default.ElectricBolt
     "bonus_xp" -> Icons.Default.MilitaryTech
@@ -518,12 +531,12 @@ fun iconForItemType(type: String): ImageVector = when (type) {
 }
 
 fun getItemSellPrice(rarity: DropRarity): Int = when (rarity) {
-    DropRarity.COMMON -> 35
-    DropRarity.UNCOMMON -> 100
-    DropRarity.RARE -> 250
-    DropRarity.EPIC -> 600
-    DropRarity.LEGENDARY -> 1500
-    DropRarity.RED -> 5000
+    DropRarity.COMMON -> 100
+    DropRarity.UNCOMMON -> 300
+    DropRarity.RARE -> 1000
+    DropRarity.EPIC -> 3500
+    DropRarity.LEGENDARY -> 10000
+    DropRarity.RED -> 30000
 }
 
 fun deserializeInventoryItem(serialized: String): InventoryItem? {
@@ -596,6 +609,7 @@ fun CasesScreen(
     var fastOpenMode by remember { mutableStateOf(false) }
     var inspectingItem by remember { mutableStateOf<InventoryItem?>(null) }
     var showMassRecycleDialog by remember { mutableStateOf(false) }
+    var lastDroppedInvItem by remember { mutableStateOf<InventoryItem?>(null) }
 
     // State of equipped cosmetics to show active badge in inventory
     val currentBoardSkin by viewModel.boardColorSkin.collectAsStateWithLifecycle()
@@ -627,7 +641,7 @@ fun CasesScreen(
             "SKINS" -> inventoryItems.filter { it.item.type == "skin" }
             "BLOCKS" -> inventoryItems.filter { it.item.type == "cube_skin" }
             "FRAMES" -> inventoryItems.filter { it.item.type == "avatar_frame" }
-            "SPECIAL" -> inventoryItems.filter { it.item.type in listOf("nick_gradient", "sound_pack", "bonus_xp") }
+            "SPECIAL" -> inventoryItems.filter { it.item.type in listOf("nick_gradient", "sound_pack", "bonus_xp", "button_skin") }
             else -> inventoryItems
         }
         when (selectedSortMode) {
@@ -656,6 +670,7 @@ fun CasesScreen(
             "skin" -> currentBoardSkin == item.id
             "cube_skin" -> currentBlockSkin == item.id
             "avatar_frame" -> currentAvatarFrame == item.id
+            "button_skin" -> viewModel.controlButtonStyle.value == item.id
             "nick_gradient" -> currentHasGradient
             "sound_pack" -> currentSoundPack == item.id
             else -> false
@@ -711,6 +726,21 @@ fun CasesScreen(
                     else -> "Equipped: $localizedName"
                 }
             }
+            "button_skin" -> {
+                val current = viewModel.purchasedControlButtonStyles.value
+                val updated = current.toMutableSet().apply { add(item.id) }
+                viewModel.setPurchasedControlButtonStyles(updated)
+                viewModel.setControlButtonStyle(item.id)
+                viewModel.triggerAudioFeedback("equip")
+                toastMessage = when (currentLang) {
+                    Language.RU -> "Экипированы кнопки: $localizedName"
+                    Language.UA -> "Одягнено кнопки: $localizedName"
+                    Language.KK -> "Батырмалар киілді: $localizedName"
+                    Language.DE -> "Tasten ausgerüstet: $localizedName"
+                    Language.ZH -> "已装备按键样式: $localizedName"
+                    else -> "Equipped: $localizedName"
+                }
+            }
             "sound_pack" -> {
                 val current = viewModel.purchasedSoundPacks.value
                 val updated = current.toMutableSet().apply { add(item.id) }
@@ -727,7 +757,10 @@ fun CasesScreen(
                 }
             }
             "nick_gradient" -> {
-                sharedPrefs.edit().putBoolean("has_nickname_gradient", true).apply()
+                sharedPrefs.edit()
+                    .putBoolean("has_nickname_gradient", true)
+                    .putBoolean("has_nickname_gradient_unlocked", true)
+                    .apply()
                 viewModel.setHasNicknameGradient(true)
                 viewModel.triggerAudioFeedback("equip")
                 toastMessage = when (currentLang) {
@@ -933,15 +966,19 @@ fun CasesScreen(
             if (winningItem.type == "credits") {
                 viewModel.addCredits(winningItem.creditValue)
                 resultMessage = "+${winningItem.creditValue} 🪙"
+                lastDroppedInvItem = null
             } else if (winningItem.type == "bonus_xp") {
-                viewModel.addBonusXp(5000)
-                resultMessage = "+5000 XP"
+                val xpAmount = if (winningItem.creditValue > 0) winningItem.creditValue else 15000
+                viewModel.addBonusXp(xpAmount)
+                resultMessage = "+$xpAmount XP"
+                lastDroppedInvItem = null
             } else {
                 val newInvItem = InventoryItem(
                     uuid = java.util.UUID.randomUUID().toString(),
                     item = winningItem,
                     acquiredTimestamp = System.currentTimeMillis()
                 )
+                lastDroppedInvItem = newInvItem
                 val updated = inventorySet.toMutableSet().apply {
                     add(serializeInventoryItem(newInvItem))
                 }
@@ -971,29 +1008,35 @@ fun CasesScreen(
                 title = {},
                 actions = {
                     Surface(
-                        modifier = Modifier.padding(end = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.3f))
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.openRewardedAdDialog()
+                            },
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AttachMoney,
-                                contentDescription = null,
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Text(text = "🪙", fontSize = 13.sp)
                             AdaptiveText(
                                 text = String.format(Locale.getDefault(), "%,d", credits),
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Black,
-                                    fontFamily = FontFamily.Monospace
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
                                 ),
-                                color = Color(0xFFFFD700)
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = "Free Coins",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
@@ -1494,8 +1537,9 @@ fun CasesScreen(
                                                             modifier = Modifier.padding(vertical = 6.dp),
                                                             horizontalAlignment = Alignment.CenterHorizontally
                                                         ) {
+                                                            val chanceFormatted = if (chance % 1f == 0f) "${chance.toInt()}%" else "${chance}%"
                                                             Text(
-                                                                text = "${chance}%",
+                                                                text = chanceFormatted,
                                                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
                                                                 color = rarity.color
                                                             )
@@ -1865,30 +1909,47 @@ fun CasesScreen(
                                         )
                                     }
 
-                                    val resultKeyCount = openedCrate?.let { crateKeys[it.id.lowercase()] ?: 0 } ?: 0
-                                    val resultHasKey = resultKeyCount > 0
-                                    if (openedCrate != null && (resultHasKey || credits >= openedCrate.cost)) {
-                                        OutlinedButton(
+                                    val dropSellPrice = getItemSellPrice(item.rarity)
+                                    if (item.type !in listOf("credits", "bonus_xp")) {
+                                        FilledTonalButton(
                                             onClick = {
+                                                lastDroppedInvItem?.let { invItem ->
+                                                    val updated = inventorySet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
+                                                    persistInventory(updated)
+                                                }
+                                                viewModel.addCredits(dropSellPrice)
+                                                viewModel.triggerAudioFeedback("selling")
+                                                toastMessage = "+$dropSellPrice 🪙"
                                                 showResult = false
+                                                openingCrate = null
                                                 droppedItem = null
+                                                lastDroppedInvItem = null
                                                 resultMessage = null
                                                 stripItems = emptyList()
-                                                startCrateOpening(openedCrate)
                                             },
-                                            modifier = Modifier.fillMaxWidth().height(46.dp),
+                                            modifier = Modifier.fillMaxWidth().height(44.dp),
                                             shape = RoundedCornerShape(14.dp),
-                                            border = BorderStroke(1.5.dp, openedCrate.accentColor)
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = Color(0xFFFF5252).copy(alpha = 0.18f),
+                                                contentColor = Color(0xFFFF5252)
+                                            )
                                         ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Payments,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = if (resultHasKey) {
-                                                    if (currentLang == Language.RU) "🔑 Открыть ещё раз (Ключ)"
-                                                    else if (currentLang == Language.UA) "🔑 Відкрити ще раз (Ключ)"
-                                                    else if (currentLang == Language.KK) "🔑 Қайта ашу (Кілт)"
-                                                    else "🔑 Open Again (Key)"
-                                                } else "${Translations.get("open_for", currentLang)} ${openedCrate.cost} 🪙",
-                                                fontWeight = FontWeight.Bold,
-                                                color = openedCrate.accentColor,
+                                                text = when (currentLang) {
+                                                    Language.RU -> "ПРОДАТЬ ЗА +$dropSellPrice 🪙"
+                                                    Language.UA -> "ПРОДАТИ ЗА +$dropSellPrice 🪙"
+                                                    Language.KK -> "+$dropSellPrice 🪙 САТУ"
+                                                    Language.DE -> "VERKAUFEN FÜR +$dropSellPrice 🪙"
+                                                    Language.ZH -> "立即出售 +$dropSellPrice 🪙"
+                                                    else -> "SELL FOR +$dropSellPrice 🪙"
+                                                },
+                                                fontWeight = FontWeight.Black,
                                                 style = MaterialTheme.typography.labelMedium
                                             )
                                         }

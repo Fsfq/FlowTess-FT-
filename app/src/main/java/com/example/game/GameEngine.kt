@@ -49,17 +49,17 @@ val EXTENDED_SHAPES = listOf(
 
 enum class GameMode(val code: String, val displayNameEn: String, val displayNameRu: String) {
     CLASSIC("classic", "Standard", "Стандарт"),
-    EXTENDED("extended", "Spectrum", "Спектр"),
+    EXTENDED("extended", "Extended", "Расширенный"),
     FAST_RUN("fast_run", "Sprint", "Спринт"),
-    REVERSE_CONTROLS("reverse", "Inversion", "Инверсия"),
     BLOCK_BLAST("block_blast", "Zeta", "Zeta"),
-    ZEN_FLOW("zen", "Zen", "Дзен"),
     TIME_ATTACK("time_attack", "Blitz", "Блиц"),
-    PULSE_EXTREME("pulse_extreme", "Tide", "Прилив"),
     MIRROR_DIMENSION("mirror", "Mirror", "Зеркало"),
-    PENTARY_CHAOS("penta", "Chaos", "Хаос"),
     RELAX("relax", "Sandbox", "Песочница"),
-    PERFECTIONIST("perfectionist", "Perfection", "Идеал")
+    PERFECTIONIST("perfectionist", "Perfection", "Идеал"),
+    PATTERN_PUZZLE("pattern", "Blueprint", "Шаблон"),
+    MEMORY_PUZZLE("memory", "Memory", "Память"),
+    SCULPTOR("sculptor", "Sculptor", "Скульптор"),
+    SLIDE_PUZZLE("slide", "Slide", "Слайдер")
 }
 
 data class PlacementHint(
@@ -69,7 +69,8 @@ data class PlacementHint(
     val shouldHold: Boolean = false,
     val holdReason: String = "",
     val holes: Int = 0,
-    val linesCleared: Int = 0
+    val linesCleared: Int = 0,
+    val actionLabel: String = ""
 )
 
 data class GameState(
@@ -87,7 +88,16 @@ data class GameState(
     val gameMode: GameMode = GameMode.CLASSIC,
     val timeRemainingSeconds: Int = 60,
     val piecesPlaced: Int = 0,
-    val tetrisesCleared: Int = 0
+    val tetrisesCleared: Int = 0,
+    val patternTargets: Set<Position> = emptySet(),
+    val puzzleLevel: Int = 1,
+    val puzzleGoalDescription: String = "",
+    val puzzleTargetCount: Int = 0,
+    val puzzleFilledCount: Int = 0,
+    val sculptorRemainingPieces: Int = 0,
+    val isPuzzleCompleted: Boolean = false,
+    val memoryCountdownSeconds: Int = 0,
+    val isMemoryHidden: Boolean = false
 )
 
 // Мотор игры — вся логика тетриса / core game engine, handles all tetris mechanics
@@ -112,8 +122,53 @@ class GameEngine {
     // Запуск/рестарт — сбрасываем сетку 22x10, генерим фигуры / start new game, reset grid
     fun startGame(mode: GameMode, startingLevel: Int = 1) {
         bag.clear()
-        val isExt = mode == GameMode.EXTENDED || mode == GameMode.PENTARY_CHAOS
+        val isExt = mode == GameMode.EXTENDED
         val finalLevel = if (mode == GameMode.FAST_RUN) 10 else startingLevel
+
+        if (mode == GameMode.PATTERN_PUZZLE || mode == GameMode.MEMORY_PUZZLE) {
+            val (patternTitle, targets) = getPatternForLevel(1)
+            _gameState.update {
+                GameState(
+                    grid = List(22) { IntArray(10) },
+                    nextPieces = List(3) { nextPiece(false) },
+                    currentPiece = nextPiece(false),
+                    isExtendedMode = false,
+                    level = 1,
+                    gameMode = mode,
+                    patternTargets = targets,
+                    puzzleLevel = 1,
+                    puzzleGoalDescription = patternTitle,
+                    puzzleTargetCount = targets.size,
+                    puzzleFilledCount = 0,
+                    memoryCountdownSeconds = if (mode == GameMode.MEMORY_PUZZLE) 3 else 0,
+                    isMemoryHidden = false
+                )
+            }
+            return
+        }
+
+        if (mode == GameMode.SCULPTOR) {
+            val levelData = getSculptorLevel(1)
+            val pQueue = levelData.pieceQueue
+            val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
+            val next = pQueue.drop(1)
+            _gameState.update {
+                GameState(
+                    grid = levelData.initialGrid.map { row -> row.clone() },
+                    nextPieces = next,
+                    currentPiece = cur,
+                    currentPos = Position(4, 0),
+                    isExtendedMode = false,
+                    level = 1,
+                    gameMode = mode,
+                    puzzleLevel = 1,
+                    puzzleGoalDescription = levelData.title,
+                    sculptorRemainingPieces = pQueue.size
+                )
+            }
+            return
+        }
+
         _gameState.update {
             GameState(
                 grid = List(22) { IntArray(10) },
@@ -124,6 +179,186 @@ class GameEngine {
                 gameMode = mode,
                 timeRemainingSeconds = if (mode == GameMode.TIME_ATTACK) 60 else 60,
                 piecesPlaced = 0
+            )
+        }
+    }
+
+    // ── РЕЖИМ «ШАБЛОН» (BLUEPRINT PUZZLE) ──
+    fun getPatternForLevel(lvl: Int): Pair<String, Set<Position>> {
+        return when ((lvl - 1) % 10 + 1) {
+            1 -> "АЛМАЗ" to setOf(
+                Position(4, 18), Position(5, 18),
+                Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19),
+                Position(4, 20), Position(5, 20)
+            )
+            2 -> "ПИРАМИДА" to setOf(
+                Position(4, 19), Position(5, 19),
+                Position(3, 20), Position(4, 20), Position(5, 20), Position(6, 20),
+                Position(2, 21), Position(3, 21), Position(4, 21), Position(5, 21), Position(6, 21), Position(7, 21)
+            )
+            3 -> "СЕРДЦЕ" to setOf(
+                Position(2, 18), Position(3, 18), Position(6, 18), Position(7, 18),
+                Position(2, 19), Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19), Position(7, 19),
+                Position(3, 20), Position(4, 20), Position(5, 20), Position(6, 20),
+                Position(4, 21), Position(5, 21)
+            )
+            4 -> "КОРОНА" to setOf(
+                Position(2, 18), Position(4, 18), Position(5, 18), Position(7, 18),
+                Position(2, 19), Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19), Position(7, 19),
+                Position(3, 20), Position(4, 20), Position(5, 20), Position(6, 20)
+            )
+            5 -> "КРЕСТ" to setOf(
+                Position(4, 17), Position(5, 17),
+                Position(2, 18), Position(3, 18), Position(4, 18), Position(5, 18), Position(6, 18), Position(7, 18),
+                Position(4, 19), Position(5, 19),
+                Position(4, 20), Position(5, 20)
+            )
+            6 -> "РАКЕТА" to setOf(
+                Position(4, 16), Position(5, 16),
+                Position(4, 17), Position(5, 17),
+                Position(3, 18), Position(4, 18), Position(5, 18), Position(6, 18),
+                Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19),
+                Position(2, 20), Position(4, 20), Position(5, 20), Position(7, 20)
+            )
+            7 -> "КУБОК" to setOf(
+                Position(2, 17), Position(3, 17), Position(6, 17), Position(7, 17),
+                Position(2, 18), Position(3, 18), Position(4, 18), Position(5, 18), Position(6, 18), Position(7, 18),
+                Position(4, 19), Position(5, 19),
+                Position(4, 20), Position(5, 20),
+                Position(3, 21), Position(4, 21), Position(5, 21), Position(6, 21)
+            )
+            8 -> "ЗВЕЗДА" to setOf(
+                Position(4, 17), Position(5, 17),
+                Position(1, 18), Position(2, 18), Position(3, 18), Position(4, 18), Position(5, 18), Position(6, 18), Position(7, 18), Position(8, 18),
+                Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19),
+                Position(2, 20), Position(7, 20)
+            )
+            9 -> "КРЕПОСТЬ" to setOf(
+                Position(1, 17), Position(2, 17), Position(7, 17), Position(8, 17),
+                Position(1, 18), Position(2, 18), Position(4, 18), Position(5, 18), Position(7, 18), Position(8, 18),
+                Position(1, 19), Position(2, 19), Position(3, 19), Position(4, 19), Position(5, 19), Position(6, 19), Position(7, 19), Position(8, 19),
+                Position(2, 20), Position(3, 20), Position(4, 20), Position(5, 20), Position(6, 20), Position(7, 20)
+            )
+            else -> "БЕСКОНЕЧНОСТЬ" to setOf(
+                Position(2, 18), Position(3, 18), Position(6, 18), Position(7, 18),
+                Position(1, 19), Position(4, 19), Position(5, 19), Position(8, 19),
+                Position(2, 20), Position(3, 20), Position(6, 20), Position(7, 20)
+            )
+        }
+    }
+
+    // ── РЕЖИМ «СКУЛЬПТОР» (SCULPTOR PUZZLE) ──
+    data class SculptorLevelData(
+        val title: String,
+        val initialGrid: List<IntArray>,
+        val pieceQueue: List<Tetromino>
+    )
+
+    fun getSculptorLevel(lvl: Int): SculptorLevelData {
+        val levelIndex = (lvl - 1) % 10 + 1
+        val g = List(22) { IntArray(10) }
+        val pieces: List<Tetromino>
+
+        when (levelIndex) {
+            1 -> {
+                for (x in listOf(0, 1, 2, 3, 6, 7, 8, 9)) {
+                    g[20][x] = 8
+                    g[21][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[3]) // O-piece
+            }
+            2 -> {
+                for (x in listOf(0, 1, 2, 7, 8, 9)) {
+                    g[21][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[0]) // I-piece
+            }
+            3 -> {
+                for (x in 3..9) g[20][x] = 8
+                for (x in 5..9) g[21][x] = 8
+                pieces = listOf(STANDARD_SHAPES[2], STANDARD_SHAPES[3]) // L, O
+            }
+            4 -> {
+                for (x in 0..9) {
+                    if (x !in 4..6) g[21][x] = 8
+                    if (x !in 3..7) g[20][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[5], STANDARD_SHAPES[0]) // T, I
+            }
+            5 -> {
+                for (x in 0..9) {
+                    if (x in 3..6) continue
+                    g[19][x] = 8
+                    g[20][x] = 8
+                    g[21][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[1], STANDARD_SHAPES[2]) // J, L
+            }
+            6 -> {
+                for (x in 0..9) {
+                    if (x in 2..7) continue
+                    g[20][x] = 8
+                    g[21][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[4], STANDARD_SHAPES[6]) // S, Z
+            }
+            7 -> {
+                for (x in 0..9) {
+                    if (x in 1..8) continue
+                    g[19][x] = 8
+                    g[20][x] = 8
+                    g[21][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[5])
+            }
+            8 -> {
+                for (x in 0..9) {
+                    if (x > 5) g[21][x] = 8
+                    if (x > 7) g[20][x] = 8
+                }
+                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[1], STANDARD_SHAPES[2])
+            }
+            9 -> {
+                for (x in 0..9) {
+                    if (x != 0 && x != 9) {
+                        g[19][x] = 8
+                        g[20][x] = 8
+                        g[21][x] = 8
+                    }
+                }
+                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[0], STANDARD_SHAPES[3])
+            }
+            else -> {
+                for (x in 0..9) {
+                    if (x !in 4..5) {
+                        g[18][x] = 8
+                        g[19][x] = 8
+                        g[20][x] = 8
+                        g[21][x] = 8
+                    }
+                }
+                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[1], STANDARD_SHAPES[2])
+            }
+        }
+
+        return SculptorLevelData("Уровень $levelIndex", g, pieces)
+    }
+
+    fun restartSculptorLevel() {
+        val lvl = _gameState.value.puzzleLevel
+        val levelData = getSculptorLevel(lvl)
+        val pQueue = levelData.pieceQueue
+        val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
+        val next = pQueue.drop(1)
+        _gameState.update {
+            it.copy(
+                grid = levelData.initialGrid.map { row -> row.clone() },
+                currentPiece = cur,
+                currentPos = Position(4, 0),
+                nextPieces = next,
+                sculptorRemainingPieces = pQueue.size,
+                puzzleGoalDescription = levelData.title,
+                isGameOver = false
             )
         }
     }
@@ -141,7 +376,12 @@ class GameEngine {
         isGameOver: Boolean,
         gameMode: GameMode = GameMode.CLASSIC,
         timeRemainingSeconds: Int = 60,
-        piecesPlaced: Int = 0
+        piecesPlaced: Int = 0,
+        puzzleLevel: Int = 1,
+        puzzleGoalDescription: String = "",
+        puzzleTargetCount: Int = 0,
+        puzzleFilledCount: Int = 0,
+        sculptorRemainingPieces: Int = 0
     ) {
         val allShapes = STANDARD_SHAPES + EXTENDED_SHAPES
         val currentPiece = allShapes.firstOrNull { it.colorIndex == currentPieceColorIndex } ?: allShapes[0]
@@ -163,7 +403,12 @@ class GameEngine {
                 isExtendedMode = isExtendedMode,
                 gameMode = gameMode,
                 timeRemainingSeconds = timeRemainingSeconds,
-                piecesPlaced = piecesPlaced
+                piecesPlaced = piecesPlaced,
+                puzzleLevel = puzzleLevel,
+                puzzleGoalDescription = puzzleGoalDescription,
+                puzzleTargetCount = puzzleTargetCount,
+                puzzleFilledCount = puzzleFilledCount,
+                sculptorRemainingPieces = sculptorRemainingPieces
             )
         }
     }
@@ -217,7 +462,14 @@ class GameEngine {
             garbageRow[(0..9).random()] = 0 // дырка в мусоре / hole in garbage
             grid.add(garbageRow)
         }
-        _gameState.update { it.copy(grid = grid) }
+        var newPos = state.currentPos
+        val piece = state.currentPiece
+        if (piece != null) {
+            while (!isValidMove(newPos, piece, grid) && newPos.y > -2) {
+                newPos = newPos.copy(y = newPos.y - 1)
+            }
+        }
+        _gameState.update { it.copy(grid = grid, currentPos = newPos) }
     }
 
     // Тик — опускаем фигуру на 1 ряд, если стенка — лочим / gravity tick, move piece down 1
@@ -237,11 +489,11 @@ class GameEngine {
         }
     }
 
-    // Движение влево (инверсия для REVERSE/MIRROR) / move left (reversed in chaos modes)
+    // Движение влево (инверсия для MIRROR) / move left (reversed in mirror mode)
     fun moveLeft() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
-        val isReverse = state.gameMode == GameMode.REVERSE_CONTROLS || state.gameMode == GameMode.MIRROR_DIMENSION
+        val isReverse = state.gameMode == GameMode.MIRROR_DIMENSION
         val nextX = if (isReverse) state.currentPos.x + 1 else state.currentPos.x - 1
         if (isValidMove(state.currentPos.copy(x = nextX), state.currentPiece, state.grid)) {
             _gameState.update { it.copy(currentPos = it.currentPos.copy(x = nextX)) }
@@ -252,7 +504,7 @@ class GameEngine {
     fun moveRight() {
         val state = _gameState.value
         if (state.isGameOver || state.currentPiece == null) return
-        val isReverse = state.gameMode == GameMode.REVERSE_CONTROLS || state.gameMode == GameMode.MIRROR_DIMENSION
+        val isReverse = state.gameMode == GameMode.MIRROR_DIMENSION
         val nextX = if (isReverse) state.currentPos.x - 1 else state.currentPos.x + 1
         if (isValidMove(state.currentPos.copy(x = nextX), state.currentPiece, state.grid)) {
             _gameState.update { it.copy(currentPos = it.currentPos.copy(x = nextX)) }
@@ -313,10 +565,24 @@ class GameEngine {
         if (isValidMove(state.currentPos, rotatedPiece, state.grid)) {
             _gameState.update { it.copy(currentPiece = rotatedPiece) }
         } else {
-            if (isValidMove(state.currentPos.copy(x = state.currentPos.x - 1), rotatedPiece, state.grid)) {
-                _gameState.update { it.copy(currentPiece = rotatedPiece, currentPos = it.currentPos.copy(x = it.currentPos.x - 1)) }
-            } else if (isValidMove(state.currentPos.copy(x = state.currentPos.x + 1), rotatedPiece, state.grid)) {
-                _gameState.update { it.copy(currentPiece = rotatedPiece, currentPos = it.currentPos.copy(x = it.currentPos.x + 1)) }
+            val kicks = listOf(
+                Position(-1, 0), Position(1, 0),
+                Position(-2, 0), Position(2, 0),
+                Position(0, -1), Position(-1, -1), Position(1, -1)
+            )
+            val successfulKick = kicks.firstOrNull { kick ->
+                isValidMove(state.currentPos.copy(x = state.currentPos.x + kick.x, y = state.currentPos.y + kick.y), rotatedPiece, state.grid)
+            }
+            if (successfulKick != null) {
+                _gameState.update {
+                    it.copy(
+                        currentPiece = rotatedPiece,
+                        currentPos = it.currentPos.copy(
+                            x = it.currentPos.x + successfulKick.x,
+                            y = it.currentPos.y + successfulKick.y
+                        )
+                    )
+                }
             }
         }
     }
@@ -386,14 +652,7 @@ class GameEngine {
             newGrid.add(0, IntArray(10))
         }
 
-        // Vortex Pulse — мусорная строка каждые 4 фигуры / garbage row every 4 pieces
         val newPiecesPlaced = state.piecesPlaced + 1
-        if (state.gameMode == GameMode.PULSE_EXTREME && newPiecesPlaced % 4 == 0) {
-            newGrid.removeAt(0)
-            val garbageRow = IntArray(10) { (1..6).random() }
-            garbageRow[(0..9).random()] = 0
-            newGrid.add(garbageRow)
-        }
 
         // Подсчёт очков — 1 линия=100, 2=300, 3=500, tetris=800, умножаем на уровень
         // scoring: 1=100, 2=300, 3=500, tetris=800, multiplied by level
@@ -410,20 +669,93 @@ class GameEngine {
         val addedScore = basePoints * state.level
         val addedTime = if (state.gameMode == GameMode.TIME_ATTACK) cleared * 10 else 0
 
-        // Проверка смерти — блоки в top-3 рядах = game over (кроме Zen/Relax)
-        // death check: blocks in top 3 rows = game over (except Zen/Relax)
+        // Проверка смерти — блоки в top-3 рядах = game over (кроме Relax)
+        // death check: blocks in top 3 rows = game over (except Relax)
         var isOver = false
         val nextP = state.nextPieces.firstOrNull() ?: nextPiece(state.isExtendedMode)
         val blocksAtTop = newGrid[0].any { it != 0 } || newGrid[1].any { it != 0 } || newGrid[2].any { it != 0 }
         if (!isValidMove(Position(4, 0), nextP, newGrid) || blocksAtTop) {
-            if (state.gameMode == GameMode.ZEN_FLOW || (state.gameMode == GameMode.RELAX && relaxImmortal)) {
-                // Zen/Relax бессмертие — очищаем поле при заполнении / immortal: clear board on fill
+            if (state.gameMode == GameMode.RELAX && relaxImmortal) {
+                // Relax бессмертие — очищаем поле при заполнении / immortal: clear board on fill
                 newGrid.clear()
                 for (i in 0 until 22) {
                     newGrid.add(0, IntArray(10))
                 }
             } else {
                 isOver = true
+            }
+        }
+
+        // Обработка режима «Шаблон» и «Головоломка на память»
+        if ((state.gameMode == GameMode.PATTERN_PUZZLE || state.gameMode == GameMode.MEMORY_PUZZLE) && state.patternTargets.isNotEmpty()) {
+            val filled = state.patternTargets.count { target ->
+                target.y in 0 until newGrid.size && target.x in 0 until newGrid[target.y].size && newGrid[target.y][target.x] != 0
+            }
+            if (filled >= state.patternTargets.size) {
+                val nextLvl = state.puzzleLevel + 1
+                val (nextTitle, nextTargets) = getPatternForLevel(nextLvl)
+                newGrid.clear()
+                for (i in 0 until 22) newGrid.add(0, IntArray(10))
+                _gameState.update {
+                    it.copy(
+                        grid = newGrid,
+                        score = it.score + (state.puzzleLevel * 2000),
+                        puzzleLevel = nextLvl,
+                        patternTargets = nextTargets,
+                        puzzleGoalDescription = nextTitle,
+                        puzzleTargetCount = nextTargets.size,
+                        puzzleFilledCount = 0,
+                        currentPiece = nextPiece(false),
+                        currentPos = Position(4, 0),
+                        hasHeldThisTurn = false,
+                        memoryCountdownSeconds = if (state.gameMode == GameMode.MEMORY_PUZZLE) 3 else 0,
+                        isMemoryHidden = false
+                    )
+                }
+                return
+            } else {
+                _gameState.update {
+                    it.copy(
+                        puzzleFilledCount = filled
+                    )
+                }
+            }
+        }
+
+        // Обработка режима «Скульптор»
+        if (state.gameMode == GameMode.SCULPTOR) {
+            val totalBlocks = newGrid.sumOf { row -> row.count { it != 0 } }
+            val remainingPieces = maxOf(0, state.sculptorRemainingPieces - 1)
+            if (totalBlocks == 0) {
+                val nextLvl = state.puzzleLevel + 1
+                val levelData = getSculptorLevel(nextLvl)
+                val pQueue = levelData.pieceQueue
+                val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
+                val next = pQueue.drop(1)
+                _gameState.update {
+                    it.copy(
+                        grid = levelData.initialGrid.map { row -> row.clone() },
+                        score = it.score + (state.puzzleLevel * 3000),
+                        puzzleLevel = nextLvl,
+                        puzzleGoalDescription = levelData.title,
+                        sculptorRemainingPieces = pQueue.size,
+                        currentPiece = cur,
+                        currentPos = Position(4, 0),
+                        nextPieces = next,
+                        hasHeldThisTurn = false,
+                        isGameOver = false
+                    )
+                }
+                return
+            } else if (remainingPieces == 0) {
+                _gameState.update {
+                    it.copy(
+                        grid = newGrid,
+                        sculptorRemainingPieces = 0,
+                        isGameOver = true
+                    )
+                }
+                return
             }
         }
 
@@ -446,7 +778,8 @@ class GameEngine {
                 hasHeldThisTurn = false,
                 timeRemainingSeconds = if (state.gameMode == GameMode.TIME_ATTACK) (it.timeRemainingSeconds + addedTime).coerceAtMost(180) else it.timeRemainingSeconds,
                 piecesPlaced = newPiecesPlaced,
-                tetrisesCleared = it.tetrisesCleared + (if (isTetris) 1 else 0)
+                tetrisesCleared = it.tetrisesCleared + (if (isTetris) 1 else 0),
+                sculptorRemainingPieces = if (state.gameMode == GameMode.SCULPTOR) maxOf(0, state.sculptorRemainingPieces - 1) else state.sculptorRemainingPieces
             )
         }
     }
@@ -456,13 +789,19 @@ class GameEngine {
         _gameState.update { it.copy(grid = currentGrid) }
     }
 
-    // Таймер для Time Attack — уменьшаем время / Time Attack countdown
+    // Таймер для Time Attack и Memory Puzzle
     fun decrementTime(sec: Int) {
         _gameState.update {
             val newTime = maxOf(0, it.timeRemainingSeconds - sec)
+            val newMemCountdown = if (it.gameMode == GameMode.MEMORY_PUZZLE && it.memoryCountdownSeconds > 0) {
+                maxOf(0, it.memoryCountdownSeconds - sec)
+            } else it.memoryCountdownSeconds
+            val isMemHidden = if (it.gameMode == GameMode.MEMORY_PUZZLE) newMemCountdown == 0 else false
             it.copy(
                 timeRemainingSeconds = newTime,
-                isGameOver = if (newTime <= 0) true else it.isGameOver
+                memoryCountdownSeconds = newMemCountdown,
+                isMemoryHidden = isMemHidden,
+                isGameOver = if (it.gameMode == GameMode.TIME_ATTACK && newTime <= 0) true else it.isGameOver
             )
         }
     }
@@ -481,7 +820,7 @@ class GameEngine {
         _gameState.update { it.copy(grid = currentGrid) }
     }
 
-    // AI-подсказчик для режима Перфекционист — глубокая эвристика Dellacherie + Hold recommendation
+    // ── AI-ПОДСКАЗЧИК: 2-PLY LOOKAHEAD + DELLACHERIE + T-SPIN + PANIC MODE ──
     fun calculateOptimalPlacement(
         grid: List<IntArray>,
         piece: Tetromino,
@@ -489,7 +828,6 @@ class GameEngine {
         nextPiece: Tetromino? = null,
         canHold: Boolean = true
     ): PlacementHint? {
-        // Конвертируем grid в 10-битные маски строк (rows 0..21)
         val gridMasks = IntArray(22)
         for (r in 0..21) {
             var mask = 0
@@ -504,26 +842,43 @@ class GameEngine {
             gridMasks[r] = mask
         }
 
-        // 1. Оцениваем текущую фигуру
-        val currentBest = evaluateBestPlacementForPiece(gridMasks, piece) ?: return null
+        // 1. Оцениваем текущую фигуру (топ-3 лучших кандидата для 2-ply проверки)
+        val candidates = evaluateCandidates(gridMasks, piece, topN = 3)
+        if (candidates.isEmpty()) return null
 
-        // 2. Если можно делать Hold, оцениваем кандидата из Hold
+        var bestHint = candidates[0]
+        var bestCombinedScore = -1_000_000.0
+
+        // 2-PLY LOOKAHEAD: для каждого из лучших ходов симулируем доску и проверяем следующий блок (nextPiece)
+        for (cand in candidates) {
+            val simMasks = simulateBoardAfterPlacement(gridMasks, cand.shape, cand.targetPos)
+            val nextBestScore = if (nextPiece != null) {
+                val nextCand = evaluateCandidates(simMasks, nextPiece, topN = 1)
+                nextCand.firstOrNull()?.score ?: 0.0
+            } else 0.0
+
+            val combined = cand.score + (nextBestScore * 0.65)
+            if (combined > bestCombinedScore) {
+                bestCombinedScore = combined
+                bestHint = cand.copy(score = combined)
+            }
+        }
+
+        // 2. Оценка Hold кандидата
         if (canHold) {
             val candidateHoldPiece = holdPiece ?: nextPiece
             if (candidateHoldPiece != null) {
-                val holdBest = evaluateBestPlacementForPiece(gridMasks, candidateHoldPiece)
+                val holdCandidates = evaluateCandidates(gridMasks, candidateHoldPiece, topN = 1)
+                val holdBest = holdCandidates.firstOrNull()
                 if (holdBest != null) {
-                    // Строгие условия рекомендации Hold:
-                    // 1. Текущая фигура создает новые дыры (holes > 0), а фигура из холда ставится идеально чисто (0 дыр)
-                    val currentCreatesHoles = currentBest.holes > 0 && holdBest.holes == 0
-                    // 2. В реальном холде есть фигура (holdPiece != null), которая дает Tetris (4 линии), а текущая нет
-                    val holdGivesTetris = holdPiece != null && holdBest.linesCleared == 4 && currentBest.linesCleared < 4
-                    // 3. В реальном холде есть фигура, которая дает очистку линий при отсутствии очистки у текущей и значительном преимуществе скора (> 350.0)
-                    val holdGivesCleanClear = holdPiece != null && currentBest.linesCleared == 0 && holdBest.linesCleared >= 2 && (holdBest.score - currentBest.score > 350.0)
+                    val currentCreatesHoles = bestHint.holes > 0 && holdBest.holes == 0
+                    val holdGivesTetris = holdPiece != null && holdBest.linesCleared == 4 && bestHint.linesCleared < 4
+                    val holdGivesCleanClear = holdPiece != null && bestHint.linesCleared == 0 && holdBest.linesCleared >= 2 && (holdBest.score - bestHint.score > 250.0)
 
                     if (currentCreatesHoles || holdGivesTetris || holdGivesCleanClear) {
-                        return currentBest.copy(
+                        return bestHint.copy(
                             shouldHold = true,
+                            actionLabel = "ХОЛД",
                             holdReason = when {
                                 currentCreatesHoles -> "Текущая фигура создает просвет"
                                 holdGivesTetris -> "В холде фигура для Тетриса"
@@ -535,14 +890,42 @@ class GameEngine {
             }
         }
 
-        return currentBest
+        val label = when {
+            bestHint.linesCleared == 4 -> "ТЕТРИС!"
+            bestHint.linesCleared in 2..3 -> "ЧИСТКА"
+            bestHint.actionLabel.isNotEmpty() -> bestHint.actionLabel
+            bestHint.holes == 0 && bestHint.score > 150.0 -> "СТЭК"
+            else -> "ХОД"
+        }
+        return bestHint.copy(actionLabel = label)
     }
 
-    private fun evaluateBestPlacementForPiece(gridMasks: IntArray, piece: Tetromino): PlacementHint? {
+    private fun simulateBoardAfterPlacement(masks: IntArray, shape: List<Position>, pos: Position): IntArray {
+        val res = masks.clone()
+        for (p in shape) {
+            val ny = pos.y + p.y
+            val nx = pos.x + p.x
+            if (ny in 0..21 && nx in 0..9) {
+                res[ny] = res[ny] or (1 shl nx)
+            }
+        }
+        // Очистка заполненных линий (row == 0x3FF)
+        var writeRow = 21
+        val finalMasks = IntArray(22)
+        for (r in 21 downTo 0) {
+            if (res[r] != 0x3FF) {
+                finalMasks[writeRow] = res[r]
+                writeRow--
+            }
+        }
+        return finalMasks
+    }
+
+    private fun evaluateCandidates(gridMasks: IntArray, piece: Tetromino, topN: Int = 3): List<PlacementHint> {
         val maxRotations = when (piece.colorIndex) {
-            4 -> 1 // Квадрат не вращается
-            1, 5, 7, 10 -> 2 // I, S, Z, dot: 2 положения
-            else -> 4 // T, L, J, и др.: 4 положения
+            4 -> 1
+            1, 5, 7, 10 -> 2
+            else -> 4
         }
 
         val rotations = mutableListOf<List<Position>>()
@@ -558,17 +941,15 @@ class GameEngine {
             }
         }
 
-        var bestHint: PlacementHint? = null
-        var maxScore = -1_000_000.0
         val simMasks = IntArray(22)
         val colHeights = IntArray(10)
+        val evaluatedList = mutableListOf<PlacementHint>()
 
         for (rotShape in rotations) {
             val minX = rotShape.minOf { it.x }
             val maxX = rotShape.maxOf { it.x }
 
             for (posX in (0 - minX)..(9 - maxX)) {
-                // Ищем точку падения hardDrop с битовой проверкой коллизий
                 var landingY = -1
                 for (posY in 0..21) {
                     var collision = false
@@ -589,11 +970,8 @@ class GameEngine {
 
                 if (landingY >= 0) {
                     val targetPos = Position(posX, landingY)
-
-                    // Копируем исходные маски
                     System.arraycopy(gridMasks, 0, simMasks, 0, 22)
 
-                    // Накладываем фигуру
                     for (p in rotShape) {
                         val ny = targetPos.y + p.y
                         val nx = targetPos.x + p.x
@@ -602,15 +980,13 @@ class GameEngine {
                         }
                     }
 
-                    // 1. Считаем заполненные линии (rowMask == 0x3FF)
+                    // 1. Полные линии
                     var completeLines = 0
                     for (r in 0..21) {
-                        if (simMasks[r] == 0x3FF) {
-                            completeLines++
-                        }
+                        if (simMasks[r] == 0x3FF) completeLines++
                     }
 
-                    // 2. Высоты столбцов (0..9)
+                    // 2. Высоты столбцов
                     var maxHeight = 0
                     var aggregateHeight = 0
                     for (c in 0..9) {
@@ -627,7 +1003,7 @@ class GameEngine {
                         if (h > maxHeight) maxHeight = h
                     }
 
-                    // 3. Подсчет дырок (Holes) и глубины захоронения (Hole Depth)
+                    // 3. Дырки и глубина
                     var holes = 0
                     var holeDepth = 0
                     for (c in 0..9) {
@@ -643,91 +1019,115 @@ class GameEngine {
                         }
                     }
 
-                    // 4. Переходы строк (Row Transitions)
+                    // 4. Переходы строк
                     var rowTransitions = 0
                     val startRow = (22 - maxHeight).coerceAtLeast(0)
                     for (r in startRow..21) {
                         val m = simMasks[r]
-                        // граница слева
                         if ((m and 1) == 0) rowTransitions++
-                        // биты между собой
                         for (c in 0..8) {
                             val b1 = (m shr c) and 1
                             val b2 = (m shr (c + 1)) and 1
                             if (b1 != b2) rowTransitions++
                         }
-                        // граница справа
                         if ((m and (1 shl 9)) == 0) rowTransitions++
                     }
 
-                    // 5. Переходы столбцов (Column Transitions)
+                    // 5. Переходы столбцов
                     var colTransitions = 0
                     for (c in 0..9) {
                         val bit = 1 shl c
-                        var prevBit = 0 // верхняя граница пустая
+                        var prevBit = 0
                         for (r in 0..21) {
                             val curBit = if ((simMasks[r] and bit) != 0) 1 else 0
                             if (curBit != prevBit) colTransitions++
                             prevBit = curBit
                         }
-                        // нижняя граница (пол) заполнена (1)
                         if (prevBit != 1) colTransitions++
                     }
 
-                    // 6. Неровность рельефа (Bumpiness)
+                    // 6. Неровность
                     var bumpiness = 0
                     for (c in 0..8) {
                         bumpiness += kotlin.math.abs(colHeights[c] - colHeights[c + 1])
                     }
 
-                    // 7. Контроль колодцев (Wells)
-                    var wellsPenalty = 0
+                    // 7. Контроль глубоких щелей (Crevices)
+                    var crevicePenalty = 0
                     for (c in 0..9) {
                         val leftH = if (c > 0) colHeights[c - 1] else 22
                         val rightH = if (c < 9) colHeights[c + 1] else 22
-                        val minAdjacent = kotlin.math.min(leftH, rightH)
-                        val wellDepth = minAdjacent - colHeights[c]
-                        if (wellDepth > 2) {
-                            val isEdgeWell = (c == 0 || c == 9)
-                            wellsPenalty += if (isEdgeWell) wellDepth * 4 else wellDepth * 18
+                        val minAdj = kotlin.math.min(leftH, rightH)
+                        val depth = minAdj - colHeights[c]
+                        if (depth >= 3) {
+                            crevicePenalty += depth * 22
                         }
                     }
 
-                    // Бонус за сбор линий
+                    // 8. T-spin слот бонус
+                    var isTspinSlot = false
+                    if (piece.colorIndex == 6) { // T-фигура
+                        var cornersFilled = 0
+                        val py = targetPos.y + piece.pivot.y
+                        val px = targetPos.x + piece.pivot.x
+                        for (dx in listOf(-1, 1)) {
+                            for (dy in listOf(-1, 1)) {
+                                val cy = py + dy
+                                val cx = px + dx
+                                if (cx !in 0..9 || cy >= 22 || (cy >= 0 && (gridMasks[cy] and (1 shl cx)) != 0)) {
+                                    cornersFilled++
+                                }
+                            }
+                        }
+                        if (cornersFilled >= 3) isTspinSlot = true
+                    }
+
+                    // 9. Tetris-колодец (Колонка 9 чистая при низкой высоте)
+                    var tetrisWellBonus = 0.0
+                    if (maxHeight < 12 && colHeights[9] < colHeights[8] - 1) {
+                        tetrisWellBonus = 90.0
+                    }
+
+                    // Базовые очки за линии
+                    val isPanic = maxHeight >= 13
                     val lineClearBonus = when (completeLines) {
-                        4 -> 850.0 // TETRIS
-                        3 -> 380.0
-                        2 -> 160.0
-                        1 -> 40.0
+                        4 -> 950.0
+                        3 -> if (isPanic) 500.0 else 380.0
+                        2 -> if (isPanic) 280.0 else 160.0
+                        1 -> if (isPanic) 120.0 else 40.0
                         else -> 0.0
                     }
 
-                    // Формула Dellacherie Enhanced
+                    val heightPenalty = if (isPanic) (maxHeight * 16.0) + (aggregateHeight * 3.5)
+                                        else (maxHeight * 5.0) + (aggregateHeight * 2.0)
+
                     val evalScore = lineClearBonus -
-                            (holes * 130.0) -
+                            (holes * 140.0) -
                             (holeDepth * 35.0) -
                             (rowTransitions * 8.0) -
                             (colTransitions * 12.0) -
                             (bumpiness * 6.0) -
-                            (aggregateHeight * 2.2) -
-                            (maxHeight * 5.0) -
-                            (wellsPenalty * 3.0) +
-                            (landingY * 3.5)
+                            heightPenalty -
+                            crevicePenalty +
+                            (landingY * 3.5) +
+                            tetrisWellBonus +
+                            (if (isTspinSlot) 150.0 else 0.0)
 
-                    if (evalScore > maxScore) {
-                        maxScore = evalScore
-                        bestHint = PlacementHint(
+                    evaluatedList.add(
+                        PlacementHint(
                             shape = rotShape,
                             targetPos = targetPos,
                             score = evalScore,
                             holes = holes,
-                            linesCleared = completeLines
+                            linesCleared = completeLines,
+                            actionLabel = if (isTspinSlot) "T-SPIN" else ""
                         )
-                    }
+                    )
                 }
             }
         }
 
-        return bestHint
+        evaluatedList.sortByDescending { it.score }
+        return evaluatedList.take(topN)
     }
 }

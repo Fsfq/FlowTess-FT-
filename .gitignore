@@ -15,4 +15,11 @@
 .cxx
 local.properties
 .env
+.env.example
 debug.keystore
+
+# Firebase / подписи / ключи — никогда не в репозиторий
+google-services.json
+app/google-services.json
+*.jks
+*.keystore

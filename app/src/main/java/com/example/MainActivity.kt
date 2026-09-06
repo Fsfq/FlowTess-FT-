@@ -13,10 +13,25 @@ import com.example.ui.TetrisApp
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
+  companion object {
+    init {
+      try {
+        System.loadLibrary("EOSSDK")
+        System.loadLibrary("eos_bridge")
+        android.util.Log.i("MainActivity", "EOS native libraries loaded in static block")
+      } catch (t: Throwable) {
+        android.util.Log.e("MainActivity", "Failed to load EOS native libraries in static block: ${t.message}", t)
+      }
+    }
+  }
+
   private lateinit var mainViewModel: MainViewModel
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // Initialize Epic Online Services SDK early
+    com.example.eos.EosManager.init(this)
+
     requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     enableEdgeToEdge()
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -46,5 +61,10 @@ class MainActivity : ComponentActivity() {
     if (::mainViewModel.isInitialized) {
       mainViewModel.onAppPause()
     }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    com.example.eos.EosManager.onDestroy()
   }
 }
