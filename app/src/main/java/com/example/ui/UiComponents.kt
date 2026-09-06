@@ -7408,24 +7408,17 @@ fun ModeSelectionScreen(
                 }
             }
 
-            AnimatedContent(
-                targetState = selectedCategoryFilter,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
-                        .togetherWith(fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)))
-                },
-                label = "modesAnimatedFilter",
-                modifier = Modifier.fillMaxSize()
-            ) { currentFilter ->
-                val animFilteredModes = remember(currentFilter, modes) {
-                    when (currentFilter) {
-                        "FREE" -> modes.filter { it.cost == 0 }
-                        "PAID" -> modes.filter { it.cost > 0 }
-                        "HARD" -> modes.filter { it.categoryTag == "HARD" }
-                        "FUN" -> modes.filter { it.categoryTag == "FUN" }
-                        else -> modes
-                    }
+            val filteredModes = remember(selectedCategoryFilter, modes) {
+                when (selectedCategoryFilter) {
+                    "FREE" -> modes.filter { it.cost == 0 }
+                    "PAID" -> modes.filter { it.cost > 0 }
+                    "HARD" -> modes.filter { it.categoryTag == "HARD" }
+                    "FUN" -> modes.filter { it.categoryTag == "FUN" }
+                    else -> modes
                 }
+            }
+
+            run {
 
                 LazyColumn(
                     modifier = Modifier
@@ -7433,7 +7426,7 @@ fun ModeSelectionScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    if (animFilteredModes.isEmpty()) {
+                    if (filteredModes.isEmpty()) {
                         item {
                             val emptyCategoryMsg = when (currentLang) {
                                 Language.RU -> "Нет режимов в этой категории"
@@ -7458,28 +7451,11 @@ fun ModeSelectionScreen(
                         }
                     }
 
-                    items(animFilteredModes.size) { index ->
-                        val modeInfo = animFilteredModes[index]
+                    items(filteredModes.size) { index ->
+                        val modeInfo = filteredModes[index]
                         val isPurchased = purchasedModesSet.contains(modeInfo.modeId)
                         val isPlayable = isPurchased || modeInfo.cost == 0
 
-                        // Staggered card entrance animation
-                        var appeared by remember { mutableStateOf(false) }
-                        LaunchedEffect(currentFilter) {
-                            appeared = false
-                            kotlinx.coroutines.delay(index * 50L)
-                            appeared = true
-                        }
-                        val cardAlpha by animateFloatAsState(
-                            targetValue = if (appeared) 1f else 0f,
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                            label = "cardAlpha_$index"
-                        )
-                        val cardOffsetY by animateDpAsState(
-                            targetValue = if (appeared) 0.dp else 24.dp,
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                            label = "cardOffset_$index"
-                        )
 
                         val modeAcquiredToast = when (currentLang) {
                             Language.RU -> "Режим разблокирован!"
@@ -7519,11 +7495,7 @@ fun ModeSelectionScreen(
                                 }
                             },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer {
-                                    alpha = cardAlpha
-                                    translationY = cardOffsetY.toPx()
-                                },
+                                .fillMaxWidth(),
                             colors = CardDefaults.elevatedCardColors(
                                 containerColor = if (isPlayable) MaterialTheme.colorScheme.surfaceContainerHigh
                                                  else MaterialTheme.colorScheme.surfaceContainer
