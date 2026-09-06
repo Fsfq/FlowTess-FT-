@@ -11,14 +11,27 @@ android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
-  defaultConfig {
+    defaultConfig {
     applicationId = "com.FsFq.Tetris"
     minSdk = 24
     targetSdk = 36
-    versionCode = 4
-    versionName = "0.93.3 Alpha"
+    versionCode = 10
+    versionName = "0.95.1 Alpha"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    externalNativeBuild {
+      cmake {
+        arguments("-DANDROID_STL=c++_shared")
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+      version = "3.22.1"
+    }
   }
 
   signingConfigs {
@@ -56,23 +69,60 @@ android {
     }
   }
   compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    isCoreLibraryDesugaringEnabled = true
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
   }
   buildFeatures {
     compose = true
     buildConfig = true
+    shaders = false
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   lint {
-    checkReleaseBuilds = false
     abortOnError = false
+    checkReleaseBuilds = false
+  }
+  splits {
+    abi {
+      isEnable = true
+      reset()
+      include("arm64-v8a", "x86_64")
+      isUniversalApk = false
+    }
+  }
+
+  packaging {
+    jniLibs {
+      useLegacyPackaging = true
+    }
+    resources {
+      excludes += listOf(
+        "META-INF/*.version",
+        "META-INF/DEPENDENCIES",
+        "META-INF/LICENSE*",
+        "META-INF/NOTICE*",
+        "META-INF/*.md",
+        "META-INF/*.txt",
+        "google/protobuf/*.proto",
+        "google/firestore/**/*.proto",
+        "google/api/*.proto"
+      )
+    }
   }
 }
 
 composeCompiler {
-  enableStrongSkippingMode = true
   includeSourceInformation = false
+}
+
+kotlin {
+  compilerOptions {
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    freeCompilerArgs.addAll(
+      "-Xbackend-threads=8"
+    )
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
@@ -85,6 +135,7 @@ secrets {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
   implementation(libs.firebase.analytics)
@@ -122,7 +173,9 @@ dependencies {
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   // implementation(libs.play.services.location)
-  implementation(libs.retrofit)
+  // Epic Online Services (EOS) SDK
+  implementation(files("SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar"))
+
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
@@ -141,4 +194,13 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+}
+
+tasks.register<Copy>("unzipEosAar") {
+  from(zipTree(file("SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar")))
+  into(file("${layout.buildDirectory.get().asFile}/unpacked/eossdk-StaticSTDC-release"))
+}
+
+tasks.named("preBuild") {
+  dependsOn("unzipEosAar")
 }

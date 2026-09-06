@@ -900,12 +900,13 @@ fun MultiplayerGameScreen(
                             Button(
                                 onClick = {
                                     viewModel.lobbyManager.leaveRoom()
+                                    com.example.eos.EosManager.leaveRoom()
                                     onBackToLobby()
                                 },
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = when (currentLang) {
@@ -961,6 +962,7 @@ fun MultiplayerGameScreen(
                             onClick = {
                                 showExitConfirmDialog = false
                                 viewModel.lobbyManager.leaveRoom()
+                                com.example.eos.EosManager.leaveRoom()
                                 onBackToLobby()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),

@@ -28,3 +28,9 @@
 -keepclassmembers class * {
     @com.squareup.moshi.Json *;
 }
+
+# Epic Online Services (EOS) SDK
+-keep class com.epicgames.mobile.eossdk.** { *; }
+-keepclassmembers class com.epicgames.mobile.eossdk.** { *; }
+-keep class com.example.eos.** { *; }
+-keepclassmembers class com.example.eos.** { *; }

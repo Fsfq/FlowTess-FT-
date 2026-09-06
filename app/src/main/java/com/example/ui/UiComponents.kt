@@ -326,13 +326,6 @@ fun TetrisApp(viewModel: MainViewModel) {
             ) {
                 MainMenuScreen(
                     viewModel = viewModel,
-                    onResumeGame = {
-                        if (menuDebouncer.canClick() && viewModel.loadSavedGame()) {
-                            try {
-                                navController.navigate("game") { launchSingleTop = true }
-                            } catch (e: Exception) {}
-                        }
-                    },
                     onLeaderboard = { if (menuDebouncer.canClick()) navigateDirect("leaderboard") },
                     onProfile = { if (menuDebouncer.canClick()) navigateDirect("profile") },
                     onModeSelection = { if (menuDebouncer.canClick()) navigateDirect("mode_selection") },
@@ -342,6 +335,9 @@ fun TetrisApp(viewModel: MainViewModel) {
                                 if (mode == com.example.game.GameMode.BLOCK_BLAST) {
                                     viewModel.startBlockBlast()
                                     navController.navigate("block_blast") { launchSingleTop = true }
+                                } else if (mode == com.example.game.GameMode.SLIDE_PUZZLE) {
+                                    viewModel.startSlidePuzzle()
+                                    navController.navigate("slide_puzzle") { launchSingleTop = true }
                                 } else {
                                     viewModel.startGame(mode)
                                     navController.navigate("game") { launchSingleTop = true }
@@ -350,7 +346,7 @@ fun TetrisApp(viewModel: MainViewModel) {
                         }
                     },
                     onMultiplayer = {
-                        if (menuDebouncer.canClick()) navigateDirect("lobby")
+                        if (menuDebouncer.canClick()) navigateDirect("multiplayer_select")
                     }
                 )
             }
@@ -379,6 +375,9 @@ fun TetrisApp(viewModel: MainViewModel) {
             composable("block_blast") {
                 BlockBlastScreen(viewModel = viewModel, onBack = { safePopBackStack() })
             }
+            composable("slide_puzzle") {
+                SlidePuzzleScreen(viewModel = viewModel, onBack = { safePopBackStack() })
+            }
             composable(
                 "cases",
                 enterTransition = { tabEnter("cases", initialState.destination.route ?: "") },
@@ -397,6 +396,9 @@ fun TetrisApp(viewModel: MainViewModel) {
                             if (mode == com.example.game.GameMode.BLOCK_BLAST) {
                                 viewModel.startBlockBlast()
                                 navController.navigate("block_blast") { launchSingleTop = true }
+                            } else if (mode == com.example.game.GameMode.SLIDE_PUZZLE) {
+                                viewModel.startSlidePuzzle()
+                                navController.navigate("slide_puzzle") { launchSingleTop = true }
                             } else {
                                 viewModel.startGame(mode)
                                 navController.navigate("game") { launchSingleTop = true }
@@ -423,6 +425,21 @@ fun TetrisApp(viewModel: MainViewModel) {
             ) {
                 ProfileScreen(viewModel = viewModel, initialTab = 0, onBack = { safePopBackStack() })
             }
+            composable("multiplayer_select") {
+                MultiplayerSelectScreen(
+                    viewModel = viewModel,
+                    onBack = { safePopBackStack() },
+                    onSelectServer = { navigateDirect("lobby") },
+                    onSelectEosP2p = { navigateDirect("eos_lobby") }
+                )
+            }
+            composable("eos_lobby") {
+                EosLobbyScreen(
+                    viewModel = viewModel,
+                    onBack = { safePopBackStack() },
+                    onNavigateToGame = { navigateDirect("multiplayer_game") }
+                )
+            }
             composable("lobby") {
                 LobbyScreen(
                     viewModel = viewModel,
@@ -435,11 +452,7 @@ fun TetrisApp(viewModel: MainViewModel) {
                     viewModel = viewModel,
                     onBackToLobby = {
                         if (backDebouncer.canClick()) {
-                            try {
-                                navController.navigate("lobby") {
-                                    popUpTo("lobby") { inclusive = true }
-                                }
-                            } catch (e: Exception) {}
+                            safePopBackStack()
                         }
                     }
                 )
@@ -548,17 +561,55 @@ fun TetrisApp(viewModel: MainViewModel) {
         // Public Profile Modal Dialog
         val selectedProfile by viewModel.selectedPublicProfile.collectAsStateWithLifecycle()
         if (selectedProfile != null) {
+            val prof = selectedProfile!!
+            val localPlayerName by viewModel.playerName.collectAsStateWithLifecycle()
+            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+            val isSelf = (myUid != null && prof.uid == myUid) ||
+                    (prof.username.isNotEmpty() && prof.username.equals(localPlayerName, ignoreCase = true))
+            val friendsList by viewModel.friendsList.collectAsStateWithLifecycle()
+            val isFriend = remember(friendsList, prof.uid, prof.username) {
+                friendsList.any { it.uid == prof.uid || (it.username.isNotEmpty() && it.username.equals(prof.username, ignoreCase = true)) }
+            }
+            val context = androidx.compose.ui.platform.LocalContext.current
+
             OtherUserProfileDialog(
-                profile = selectedProfile!!,
+                profile = prof,
                 currentLang = currentLang,
                 themeColor = themeColorVal,
+                isFriend = isFriend,
+                isSelf = isSelf,
                 onDismiss = { viewModel.closeUserProfile() },
                 onAddFriend = {
-                    viewModel.sendFriendRequest(selectedProfile!!.username) { _, _ -> }
+                    viewModel.sendFriendRequest(prof.username) { ok, msg ->
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 },
                 onInviteToDuel = {
-                    viewModel.closeUserProfile()
-                    navigateDirect("lobby")
+                    val currentRoom = viewModel.lobbyManager.currentRoom.value
+                    if (currentRoom != null) {
+                        viewModel.lobbyManager.sendRoomInvite(
+                            targetUid = prof.uid,
+                            roomId = currentRoom.roomId,
+                            roomName = currentRoom.name,
+                            hostName = localPlayerName,
+                            avatarEmoji = viewModel.customAvatarEmoji.value,
+                            avatarBgColor = viewModel.customAvatarBgColor.value,
+                            avatarFrame = viewModel.equippedAvatarFrame.value,
+                            hostTier = viewModel.onlineTier.value
+                        )
+                        val sentMsg = when (currentLang) {
+                            Language.RU -> "Приглашение на дуэль отправлено!"
+                            Language.UA -> "Запрошення на дуель надіслано!"
+                            Language.KK -> "Дуэльге шақыру жіберілді!"
+                            Language.DE -> "Duell-Einladung gesendet!"
+                            Language.ZH -> "对决邀请已发送！"
+                            else -> "Duel invitation sent!"
+                        }
+                        android.widget.Toast.makeText(context, sentMsg, android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        viewModel.closeUserProfile()
+                        navigateDirect("lobby")
+                    }
                 }
             )
         }
@@ -577,6 +628,15 @@ fun TetrisApp(viewModel: MainViewModel) {
                 }
             )
         }
+
+        // Rewarded Ad Dialog
+        val showRewardedAdDialog by viewModel.showRewardedAdDialog.collectAsStateWithLifecycle()
+        if (showRewardedAdDialog) {
+            RewardedAdDialog(
+                viewModel = viewModel,
+                onDismiss = { viewModel.closeRewardedAdDialog() }
+            )
+        }
     }
 }
 
@@ -584,7 +644,6 @@ fun TetrisApp(viewModel: MainViewModel) {
 @Composable
 fun MainMenuScreen(
     viewModel: MainViewModel,
-    onResumeGame: () -> Unit,
     onLeaderboard: () -> Unit,
     onProfile: () -> Unit,
     onModeSelection: () -> Unit,
@@ -593,10 +652,10 @@ fun MainMenuScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
-    val hasSaved by viewModel.hasSavedGame.collectAsStateWithLifecycle()
     val playerName by viewModel.playerName.collectAsStateWithLifecycle()
     val allAccounts by viewModel.allAccounts.collectAsStateWithLifecycle(initialValue = emptyList())
     val isAdminSessionAuthenticated by viewModel.isAdminSessionAuthenticated.collectAsStateWithLifecycle()
+    val credits by viewModel.credits.collectAsStateWithLifecycle()
 
     var showAdminPanelDialog by remember { mutableStateOf(false) }
     var showAdminPassDialog by remember { mutableStateOf(false) }
@@ -2887,6 +2946,43 @@ fun MainMenuScreen(
                                     }
                                 }
                             }
+
+                            // Coins Badge
+                            Surface(
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MonetizationOn,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = java.text.NumberFormat.getIntegerInstance().format(credits),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFFD700)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Watch Ad",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
 
                         Column(
@@ -2897,28 +2993,6 @@ fun MainMenuScreen(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            if (hasSaved) {
-                                Button(
-                                    onClick = onResumeGame,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 6.dp)
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                ) {
-                                    Text(
-                                        text = Translations.get("resume", currentLang).uppercase(),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Black,
-                                        letterSpacing = 1.sp
-                                    )
-                                }
-                            }
-
                             val classicBtnText = when (currentLang) {
                                 Language.RU -> "КЛАССИЧЕСКИЙ РЕЖИМ"
                                 Language.UA -> "КЛАСИЧНИЙ РЕЖИМ"
@@ -3048,24 +3122,39 @@ fun MainMenuScreen(
                             }
                         }
 
-                        if (hasSaved) {
-                            Button(
-                                onClick = onResumeGame,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp)
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                )
+                        // Coins Chip
+                        Surface(
+                            onClick = {
+                                viewModel.triggerAudioFeedback("click")
+                                viewModel.openRewardedAdDialog()
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                Icon(
+                                    imageVector = Icons.Default.MonetizationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Text(
-                                    text = Translations.get("resume", currentLang).uppercase(),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp
+                                    text = java.text.NumberFormat.getIntegerInstance().format(credits),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFD700)
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Watch Ad",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -4252,6 +4341,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
     val controlDas by viewModel.controlDas.collectAsStateWithLifecycle()
     val controlArr by viewModel.controlArr.collectAsStateWithLifecycle()
     val controlBottomPadding by viewModel.controlBottomPadding.collectAsStateWithLifecycle()
+    val newGameUiEnabled by viewModel.newGameUiEnabled.collectAsStateWithLifecycle()
 
     val purchasedThemes by viewModel.purchasedThemes.collectAsStateWithLifecycle()
     val purchasedFonts by viewModel.purchasedFonts.collectAsStateWithLifecycle()
@@ -5938,6 +6028,43 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                 // 4: ЯЗЫК И СИСТЕМА (LANGUAGE & SYSTEM)
                 // ─────────────────────────────────────────────────────────────
                 4 -> {
+                    // New Game Interface Mode Card
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        val newUiTitle = when (currentLang) {
+                            Language.RU -> "Новый интерфейс игры"
+                            Language.UA -> "Новий інтерфейс гри"
+                            Language.KK -> "Ойынның жаңа интерфейсі"
+                            Language.DE -> "Neues Spiel-Interface"
+                            Language.ZH -> "全新游戏界面"
+                            else -> "Modern Game Interface"
+                        }
+                        ListItem(
+                            headlineContent = {
+                                AdaptiveText(
+                                    text = newUiTitle,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = newGameUiEnabled,
+                                    onCheckedChange = {
+                                        viewModel.triggerAudioFeedback("click")
+                                        viewModel.setNewGameUiEnabled(it)
+                                    }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+
                     // Language Selection Card
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -6746,8 +6873,8 @@ fun ModeSelectionScreen(
     val purchasedModesSet = remember(credits) {
         val sharedPrefs = viewModel.getApplication<android.app.Application>()
             .getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
-        sharedPrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "reverse", "block_blast"))
-            ?: setOf("classic", "extended", "fast_run", "reverse", "block_blast")
+        sharedPrefs.getStringSet("purchased_modes", setOf("classic", "extended", "fast_run", "slide", "block_blast"))
+            ?: setOf("classic", "extended", "fast_run", "slide", "block_blast")
     }
 
     data class ModeInfo(
@@ -6875,60 +7002,32 @@ fun ModeSelectionScreen(
             ShopPrices.getModeCost("fast_run"), Icons.Default.FlashOn, "FREE"
         ),
         ModeInfo(
-            com.example.game.GameMode.ZEN_FLOW, "zen",
+            com.example.game.GameMode.SLIDE_PUZZLE, "slide",
             when (currentLang) {
-                Language.RU -> "Дзен"
-                Language.UA -> "Дзен"
-                Language.KK -> "Дзен"
-                Language.DE -> "Zen"
-                Language.ZH -> "禅境"
-                else -> "Zen"
+                Language.RU -> "Слайдер"
+                Language.UA -> "Слайдер"
+                Language.KK -> "Слайдер"
+                Language.DE -> "Schieberätsel"
+                Language.ZH -> "滑块消除"
+                else -> "Slide Puzzle"
             },
             when (currentLang) {
-                Language.RU -> "Бесконечный режим: очистка при переполнении, без проигрыша."
-                Language.UA -> "Нескінченний режим: очищення при переповненні, без програшу."
-                Language.KK -> "Шексіз режим: толып кеткенде тазарту, жеңіліссіз."
-                Language.DE -> "Endlos-Modus: Leerung bei Überlauf, keine Niederlage."
-                Language.ZH -> "无尽放松模式：满屏自动清理，永不失败。"
-                else -> "Endless game mode: clears board on overflow, no defeat."
+                Language.RU -> "Двигайте блоки горизонтально для заполнения линий."
+                Language.UA -> "Рухайте блоки горизонтально для заповнення ліній."
+                Language.KK -> "Сызықтарды толтыру үшін блоктарды көлденең жылжытыңыз."
+                Language.DE -> "Verschiebe Blöcke horizontal, um Linien zu füllen."
+                Language.ZH -> "水平滑动方块以填满整行消除并触发重力连击。"
+                else -> "Slide blocks horizontally to fill rows and trigger chain falls."
             },
             when (currentLang) {
-                Language.RU -> "Режим без проигрыша и спешки. При достижении верха поля нижние линии автоматически очищаются."
-                Language.UA -> "Режим без програшу та поспіху. При досягненні верху поля нижні лінії автоматично очищаються."
-                Language.KK -> "Асықпайтын және жеңілмейтін режим. Өрістің жоғарғы жағына жеткенде, төменгі сызықтар автоматты түрде тазартылады."
-                Language.DE -> "Entspannter Modus ohne Zeitdruck. Bei oberer Kante werden untere Zeilen automatisch bereinigt."
-                Language.ZH -> "无时间压力、无死亡压力的静心模式。当方块触顶时底层自动清空，享受纯粹的堆叠乐趣。"
-                else -> "Endless mode with no loss. When reaching the top, bottom lines auto-clear, allowing calm and endless relaxation."
+                Language.RU -> "Сдвигайте блоки влево и вправо. Когда блок падает в пустоту, срабатывает физика гравитации. Заполненные линии уничтожаются, принося комбо!"
+                Language.UA -> "Зсувайте блоки вліво та вправо. Коли блок падає в порожнечу, спрацьовує гравітація. Заповнені лінії знищуються!"
+                Language.KK -> "Блоктарды солға және оңға жылжытыңыз. Блок бос орынға құлаған кезде гравитация іске қосылады. Толық сызықтар жойылады!"
+                Language.DE -> "Schiebe Blöcke nach links oder rechts. Blöcke fallen nach unten. Komplette Reihen explodieren und bringen Kettenreaktionen!"
+                Language.ZH -> "左右滑动方块使其落入空缺处。整行填满后立即消除，上方方块受重力下坠可能触发连锁消除与高额连击奖励！"
+                else -> "Slide blocks left and right. Falling blocks settle with gravity. Completed lines clear and trigger cascade chain combos!"
             },
-            ShopPrices.getModeCost("zen"), Icons.Default.Spa, "FUN"
-        ),
-        ModeInfo(
-            com.example.game.GameMode.REVERSE_CONTROLS, "reverse",
-            when (currentLang) {
-                Language.RU -> "Инверсия"
-                Language.UA -> "Інверсія"
-                Language.KK -> "Инверсия"
-                Language.DE -> "Inversion"
-                Language.ZH -> "反转"
-                else -> "Inversion"
-            },
-            when (currentLang) {
-                Language.RU -> "Классический режим с инвертированным управлением."
-                Language.UA -> "Класичний режим з інвертованим керуванням."
-                Language.KK -> "Инверттелген басқаруы бар классикалық режим."
-                Language.DE -> "Klassisches Gameplay mit umgekehrter Richtungssteuerung."
-                Language.ZH -> "方向左右反转的经典挑战模式。"
-                else -> "Classic gameplay with inverted directional controls."
-            },
-            when (currentLang) {
-                Language.RU -> "Кнопки Влево и Вправо поменяны местами! Попробуйте перестроить привычки мышления во время игры."
-                Language.UA -> "Кнопки Вліво та Вправо поміняні місцями! Спробуйте перебудувати звички мислення під час гри."
-                Language.KK -> "Солға және Оңға батырмалары орындарын ауыстырған! Ойын барысында ойлау дағдыларыңызды өзгертіп көріңіз."
-                Language.DE -> "Links- und Rechts-Tasten sind vertauscht! Trainiere deine Anpassungsfähigkeit unter Druck."
-                Language.ZH -> "左移和右移按键完全对调！重塑肌肉记忆并考验逆向思维反应。"
-                else -> "Left and Right control buttons are inverted! Test your muscle memory and brain adaptability under pressure."
-            },
-            ShopPrices.getModeCost("reverse"), Icons.Default.Visibility, "FREE"
+            ShopPrices.getModeCost("slide"), Icons.Default.SwapHoriz, "FUN"
         ),
         ModeInfo(
             com.example.game.GameMode.BLOCK_BLAST, "block_blast",
@@ -6959,32 +7058,32 @@ fun ModeSelectionScreen(
             ShopPrices.getModeCost("block_blast"), Icons.Default.Computer, "FREE"
         ),
         ModeInfo(
-            com.example.game.GameMode.PULSE_EXTREME, "pulse_extreme",
+            com.example.game.GameMode.PATTERN_PUZZLE, "pattern",
             when (currentLang) {
-                Language.RU -> "Прилив"
-                Language.UA -> "Приплив"
-                Language.KK -> "Толысу"
-                Language.DE -> "Flut"
-                Language.ZH -> "潮汐"
-                else -> "Tide"
+                Language.RU -> "Шаблон"
+                Language.UA -> "Шаблон"
+                Language.KK -> "Үлгі"
+                Language.DE -> "Muster"
+                Language.ZH -> "图腾拼图"
+                else -> "Pattern Puzzle"
             },
             when (currentLang) {
-                Language.RU -> "Каждые 4 фигуры снизу поднимается новая мусорная линия."
-                Language.UA -> "Кожні 4 фігури знизу піднімається нова сміттєва лінія."
-                Language.KK -> "Әрбір 4 фигура сайын төменнен жаңа қоқыс сызығы көтеріледі."
-                Language.DE -> "Alle 4 platzierten Steine steigt eine Müllzeile auf."
-                Language.ZH -> "每放置4个方块，底部涌升一条垃圾行。"
-                else -> "Garbage line is added at bottom every 4 placed pieces."
+                Language.RU -> "Заполните светящийся шаблон на поле заданными блоками."
+                Language.UA -> "Заповніть сяючий шаблон на полі заданими блоками."
+                Language.KK -> "Берілген блоктармен өрістегі жарқыраған үлгіні толтырыңыз."
+                Language.DE -> "Fülle die markierte Schablone mit fallenden Steinen."
+                Language.ZH -> "用掉落方块精准填充棋盘上的目标轮廓。"
+                else -> "Fill the target outline pattern on the board with falling blocks."
             },
             when (currentLang) {
-                Language.RU -> "Экстремальный режим! Каждые 4 установленных блока снизу поля выталкивается неполная мусорная линия."
-                Language.UA -> "Екстремальний режим! Кожні 4 встановлені блоки знизу поля виштовхується неповна сміттєва лінія."
-                Language.KK -> "Экстремалды режим! Әрбір 4 орнатылған блок сайын өрістің төменгі жағынан толық емес қоқыс сызығы шығады."
-                Language.DE -> "Extremer Modus! Alle 4 Steine drückt eine unvollständige Störzeile von unten nach oben."
-                Language.ZH -> "极限危机！每下落放置4个方块，底部便会顶升一层带有缺口的干扰垃圾行。"
-                else -> "Extreme challenge! Every 4 dropped blocks forces a random garbage line to emerge from the bottom."
+                Language.RU -> "На поле отображается контур фигуры. Заполните каждую подсвеченную клетку, чтобы пройти уровень!"
+                Language.UA -> "На полі відображається контур фігури. Заповніть кожну підсвічену клітинку, щоб пройти рівень!"
+                Language.KK -> "Өрісте фигураның контуры көрсетіледі. Деңгейден өту үшін әрбір бөлектелген ұяшықты толтырыңыз!"
+                Language.DE -> "Auf dem Feld erscheint eine Schablone. Fülle alle markierten Zellen, um das Level abzuschließen!"
+                Language.ZH -> "棋盘上投射出目标轮廓。精准摆放方块填满所有高亮方格即可通关！"
+                else -> "A target outline is shown on the grid. Fill every highlighted cell to complete the stage!"
             },
-            ShopPrices.getModeCost("pulse_extreme"), Icons.Default.Bolt, "HARD"
+            ShopPrices.getModeCost("pattern"), Icons.Default.AutoAwesome, "HARD"
         ),
         ModeInfo(
             com.example.game.GameMode.MIRROR_DIMENSION, "mirror",
@@ -7015,32 +7114,32 @@ fun ModeSelectionScreen(
             ShopPrices.getModeCost("mirror"), Icons.Default.SwapHoriz, "FUN"
         ),
         ModeInfo(
-            com.example.game.GameMode.PENTARY_CHAOS, "penta",
+            com.example.game.GameMode.MEMORY_PUZZLE, "memory",
             when (currentLang) {
-                Language.RU -> "Хаос"
-                Language.UA -> "Хаос"
-                Language.KK -> "Хаос"
-                Language.DE -> "Chaos"
-                Language.ZH -> "混沌"
-                else -> "Chaos"
+                Language.RU -> "Память"
+                Language.UA -> "Пам'ять"
+                Language.KK -> "Жады"
+                Language.DE -> "Gedächtnis"
+                Language.ZH -> "记忆大师"
+                else -> "Memory Puzzle"
             },
             when (currentLang) {
-                Language.RU -> "Все падающие фигуры состоят из пяти блоков."
-                Language.UA -> "Усі падаючі фігури складаються з п'яти блоків."
-                Language.KK -> "Барлық құлайтын фигуралар бес блоктан тұрады."
-                Language.DE -> "Alle fallenden Steine bestehen aus fünf Blöcken."
-                Language.ZH -> "所有掉落的方块均由5个单块构成。"
-                else -> "All falling pieces consist of five blocks."
+                Language.RU -> "Запомните шаблон за 3 секунды до того, как он исчезнет!"
+                Language.UA -> "Запам'ятайте шаблон за 3 секунди до того, як він зникне!"
+                Language.KK -> "Үлгіні жоғалғанға дейін 3 секунд ішінде есте сақтаңыз!"
+                Language.DE -> "Präge dir das Muster in 3 Sekunden ein, bevor es verschwindet!"
+                Language.ZH -> "在目标图案隐形前的3秒内记住其位置！"
+                else -> "Memorize the pattern in 3 seconds before it disappears!"
             },
             when (currentLang) {
-                Language.RU -> "Максимальная сложность! Все фигуры представляют собой сложные пентамино (5 блоков)."
-                Language.UA -> "Максимальна складність! Усі фігури є складними пентаміно (5 блоків)."
-                Language.KK -> "Ең жоғары қиындық! Барлық фигуралар күрделі пентамино (5 блок)."
-                Language.DE -> "Maximale Schwierigkeit! Jeder fallende Stein ist ein komplexes Pentamino (5 Blöcke)."
-                Language.ZH -> "终极难度！全部下落方块均为高难度5格多联骨牌，需要精确严密的棋盘规划。"
-                else -> "Ultimate difficulty! Every falling piece is a complex pentamino (5 blocks), requiring strategic grid planning."
+                Language.RU -> "Шаблон показывается всего 3 секунды в начале каждого раунда, после чего исчезает! Соберите его по памяти."
+                Language.UA -> "Шаблон показується лише 3 секунди на початку кожного раунду, після чого зникає! Зберіть його по пам'яті."
+                Language.KK -> "Үлгі әр раундтың басында тек 3 секунд көрсетіледі, содан кейін жоғалады! Оны жадыңыздан жинаңыз."
+                Language.DE -> "Das Muster wird nur 3 Sekunden lang eingeblendet und verschwindet dann! Setze es aus dem Gedächtnis zusammen."
+                Language.ZH -> "目标图案仅展示3秒随即隐形！全凭瞬间记忆在脑海中复原并完成方块拼合。"
+                else -> "The target pattern is visible for only 3 seconds before vanishing! Fill it entirely from memory."
             },
-            ShopPrices.getModeCost("penta"), Icons.Default.AutoAwesome, "HARD"
+            ShopPrices.getModeCost("memory"), Icons.Default.Visibility, "HARD"
         ),
         ModeInfo(
             com.example.game.GameMode.RELAX, "relax",
@@ -7069,6 +7168,34 @@ fun ModeSelectionScreen(
                 else -> "A sandbox mode allowing full customization of gameplay rules to match your preference."
             },
             ShopPrices.getModeCost("relax"), Icons.Default.Spa, "FREE"
+        ),
+        ModeInfo(
+            com.example.game.GameMode.SCULPTOR, "sculptor",
+            when (currentLang) {
+                Language.RU -> "Скульптор"
+                Language.UA -> "Скульптор"
+                Language.KK -> "Мүсінші"
+                Language.DE -> "Bildhauer"
+                Language.ZH -> "雕刻大师"
+                else -> "Sculptor"
+            },
+            when (currentLang) {
+                Language.RU -> "Высекайте форму, очищая ненужные блоки."
+                Language.UA -> "Висікайте форму, очищаючи непотрібні блоки."
+                Language.KK -> "Қажет емес блоктарды тазарту арқылы пішінді жасаңыз."
+                Language.DE -> "Meißle die Zielform heraus durch gezieltes Linienlöschen."
+                Language.ZH -> "消除多余方块，雕刻出完美目标造型。"
+                else -> "Carve out the target shape by clearing surrounding rows."
+            },
+            when (currentLang) {
+                Language.RU -> "На поле уже размещена заготовка. Очищайте линии вокруг, чтобы освободить скрытую скульптуру!"
+                Language.UA -> "На полі вже розміщена заготовка. Очищайте лінії навколо, щоб звільнити приховану скульптуру!"
+                Language.KK -> "Өрісте дайындама орналасқан. Жасырын мүсінді босату үшін айналасындағы сызықтарды тазартыңыз!"
+                Language.DE -> "Ein Block-Monolith ist vorgegeben. Lösche gezielt Reihen, um die Skulptur freizulegen!"
+                Language.ZH -> "棋盘初始被杂乱方块填满。通过策略性消除横行剥离多余方块，完整雕琢出隐藏的目标雕塑！"
+                else -> "A pre-filled block structure is given. Clear specific rows to reveal and carve the hidden shape!"
+            },
+            ShopPrices.getModeCost("sculptor"), Icons.Default.Palette, "HARD"
         ),
         ModeInfo(
             com.example.game.GameMode.PERFECTIONIST, "perfectionist",
@@ -8312,6 +8439,8 @@ fun OtherUserProfileDialog(
     profile: PublicUserProfile,
     currentLang: Language,
     themeColor: Color,
+    isFriend: Boolean = false,
+    isSelf: Boolean = false,
     onDismiss: () -> Unit,
     onAddFriend: () -> Unit,
     onInviteToDuel: () -> Unit
@@ -8438,6 +8567,8 @@ fun OtherUserProfileDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         shadowElevation = 8.dp
                     ) {
                         val requestSentText = when (currentLang) {
@@ -8456,6 +8587,14 @@ fun OtherUserProfileDialog(
                             Language.ZH -> "加为好友"
                             else -> "Add Friend"
                         }
+                        val alreadyFriendsText = when (currentLang) {
+                            Language.RU -> "В друзьях"
+                            Language.UA -> "У друзях"
+                            Language.KK -> "Достарда"
+                            Language.DE -> "Befreundet"
+                            Language.ZH -> "已是好友"
+                            else -> "Friends"
+                        }
                         val duelBtnText = when (currentLang) {
                             Language.RU -> "Вызвать на дуэль"
                             Language.UA -> "Викликати на дуель"
@@ -8469,67 +8608,131 @@ fun OtherUserProfileDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .navigationBarsPadding()
-                                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp)
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
+                            if (isSelf) {
                                 Button(
-                                    onClick = {
-                                        friendAddedState = true
-                                        onAddFriend()
-                                    },
-                                    enabled = !friendAddedState,
+                                    onClick = onDismiss,
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .height(52.dp),
+                                        .fillMaxWidth()
+                                        .height(48.dp),
                                     shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = playerAccentColor,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
-                                    )
+                                        containerColor = themeColor,
+                                        contentColor = if (themeColor.red * 0.299f + themeColor.green * 0.587f + themeColor.blue * 0.114f > 0.6f) Color(0xFF111111) else Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (friendAddedState) Icons.Default.Check else Icons.Default.PersonAdd,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = if (friendAddedState) requestSentText else addFriendText,
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold)
-                                        )
+                                    val selfProfileText = when (currentLang) {
+                                        Language.RU -> "Ваш профиль (Закрыть)"
+                                        Language.UA -> "Ваш профіль (Закрити)"
+                                        Language.KK -> "Сіздің профиліңіз (Жабу)"
+                                        Language.DE -> "Dein Profil (Schließen)"
+                                        Language.ZH -> "你的资料 (关闭)"
+                                        else -> "Your Profile (Close)"
                                     }
-                                }
-
-                                FilledTonalButton(
-                                    onClick = onInviteToDuel,
-                                    modifier = Modifier
-                                        .weight(1.2f)
-                                        .height(52.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = Color(0xFFFF5722).copy(alpha = 0.2f),
-                                        contentColor = Color(0xFFFF5722)
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
                                     )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = selfProfileText,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    val isActionDisabled = isFriend || friendAddedState
+                                    val friendText = when {
+                                        isFriend -> alreadyFriendsText
+                                        friendAddedState -> requestSentText
+                                        else -> addFriendText
+                                    }
+                                    val friendIcon = if (isActionDisabled) Icons.Default.Check else Icons.Default.PersonAdd
+
+                                    Button(
+                                        onClick = {
+                                            friendAddedState = true
+                                            onAddFriend()
+                                        },
+                                        enabled = !isActionDisabled,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = themeColor,
+                                            contentColor = if (themeColor.red * 0.299f + themeColor.green * 0.587f + themeColor.blue * 0.114f > 0.6f) Color(0xFF111111) else Color.White,
+                                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.SportsEsports,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = friendIcon,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = friendText,
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                ),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+
+                                    FilledTonalButton(
+                                        onClick = onInviteToDuel,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFFF5722).copy(alpha = 0.35f)),
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = Color(0xFFFF5722).copy(alpha = 0.18f),
+                                            contentColor = Color(0xFFFF7043)
                                         )
-                                        Text(
-                                            text = duelBtnText,
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
-                                        )
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.SportsEsports,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = duelBtnText,
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                ),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
                                 }
                             }

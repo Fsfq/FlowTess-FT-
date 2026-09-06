@@ -1,0 +1,96 @@
+apply from: "config.gradle"
+
+android {
+	namespace versions.namespace
+
+	compileSdkVersion = versions.compileSdk
+	buildToolsVersion = versions.buildTools
+	
+	final String productId = gradle.ext.has("ProductId") ? gradle.ext.get("ProductId") : ProductId
+	final String sandboxId = gradle.ext.has("SandboxId") ? gradle.ext.get("SandboxId") : SandboxId
+	final String deploymentId = gradle.ext.has("DeploymentId") ? gradle.ext.get("DeploymentId") : DeploymentId
+	final String clientId = gradle.ext.has("ClientId") ? gradle.ext.get("ClientId") : ClientId
+	final String clientSecret = gradle.ext.has("ClientSecret") ? gradle.ext.get("ClientSecret") : ClientSecret
+	
+	defaultConfig {
+		applicationId versions.appId
+		
+		minSdkVersion versions.minSdk
+		targetSdkVersion versions.targetSdk
+		
+		versionCode 1
+		versionName "1.0"
+		
+		splits {
+			abi {
+				enable true
+				reset()
+				include 'arm64-v8a', 'x86_64'
+				universalApk false
+			}
+		}
+		
+		String lowerCaseClientId = clientId.toLowerCase().substring(1, clientId.length() - 1)
+		resValue("string", "eos_login_protocol_scheme", "eos." + lowerCaseClientId)
+	}
+	
+	buildFeatures {
+		buildConfig = true
+	}
+
+	signingConfigs {
+		debug {
+			storeFile rootProject.file('eossdkSampleKeystore.keystore')
+			keyAlias 'androiddebugkey'
+			keyPassword 'android'
+			storePassword 'android'
+		}
+	}
+
+	externalNativeBuild {
+		cmake {
+			path "src/main/cpp/CMakeLists.txt"
+			version versions.cmake
+		}
+	}
+	
+	buildTypes {
+		buildTypes.each {
+			it.buildConfigField 'String', 'ProductId', productId
+			it.buildConfigField 'String', 'SandboxId', sandboxId
+			it.buildConfigField 'String', 'DeploymentId', deploymentId
+			it.buildConfigField 'String', 'ClientId', clientId
+			it.buildConfigField 'String', 'ClientSecret', clientSecret
+		}
+		release {
+			minifyEnabled false
+			signingConfig signingConfigs.debug
+		}
+		debug {
+			signingConfig signingConfigs.debug
+		}
+	}
+
+	compileOptions {
+		coreLibraryDesugaringEnabled true
+		sourceCompatibility versions.java
+		targetCompatibility versions.java
+	}
+	
+	sourceSets {
+		main {
+			jniLibs.srcDirs = ["jniLibs"]
+		}
+	}
+}
+
+dependencies {
+	coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+	implementation androidXLibraries.constraintLayout
+	implementation androidXLibraries.appCompat
+	implementation androidXLibraries.securityCrypto
+	implementation androidXLibraries.browser
+	implementation androidXLibraries.webkit
+	
+	implementation otherLibraries.material
+}

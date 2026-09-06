@@ -6,111 +6,47 @@ service cloud.firestore {
     // 🛡️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ БЕЗОПАСНОСТИ
     // ════════════════════════════════════════════════
 
-    // Проверка: вошел ли пользователь и подтвердил ли почту (или Google Auth)
     function isVerifiedUser() {
-      return request.auth != null && (
-        request.auth.token.email_verified == true ||
-        request.auth.token.firebase.sign_in_provider == 'google.com'
-      );
+      return request.auth != null;
     }
 
-    // Проверка: администратор (FsFq)
     function isAdmin() {
       return request.auth != null && (
-        request.auth.uid == 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2'
+        request.auth.uid == 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'ezik02021@gmail.com' || 
+          request.auth.token.email == 'eziko04@gmail.com'
+        )) ||
+        (resource != null && 'player_name' in resource.data && resource.data.player_name == 'FsFq') ||
+        (resource != null && 'is_admin' in resource.data && resource.data.is_admin == true)
       );
     }
 
-    // Проверка: пользователь владелец документа и имеет верифицированную сессию
+    function isBanned() {
+      return resource != null && 'is_banned' in resource.data && resource.data.is_banned == true;
+    }
+
     function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid && (
-        request.auth.token.email_verified == true ||
-        request.auth.token.firebase.sign_in_provider == 'google.com'
-      );
+      return request.auth != null && request.auth.uid == uid && !isBanned();
     }
 
-    // Античит: допустимые лиги и ранги
-    function isValidTier(tier) {
-      return tier in [
-        'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND',
-        'PRO BRONZE', 'PRO SILVER', 'PRO GOLD', 'PRO PLATINUM',
-        'PRO DIAMOND', 'MASTER', 'GRANDMASTER', 'CHALLENGER', 'LEGEND'
-      ];
-    }
-
-    // Античит: диапазон очков
     function isValidScore(score) {
-      return score is int && score >= 0 && score <= 99999999;
-    }
-
-    // Античит: диапазон кредитов
-    function isValidCredits(credits) {
-      return credits is int && credits >= 0 && credits <= 9999999;
-    }
-
-    // Античит: бонусный XP
-    function isValidBonusXp(xp) {
-      return xp is int && xp >= 0 && xp <= 5000000;
-    }
-
-    // Проверка обязательных полей при создании профиля
-    function hasRequiredUserFields(data) {
-      return data.keys().hasAll([
-        'player_name', 'credits', 'online_tier',
-        'has_nickname_gradient', 'bonus_xp'
-      ]);
-    }
-
-    // Комплексная валидация полей профиля игрока
-    function isValidUserWrite(data) {
-      return isValidCredits(data.credits)
-          && isValidTier(data.online_tier)
-          && isValidBonusXp(data.bonus_xp)
-          && data.player_name is string
-          && data.player_name.size() >= 1
-          && data.player_name.size() <= 32
-          && (!('case_inventory' in data) || data.case_inventory is list)
-          && (!('purchased_avatar_frames' in data) || data.purchased_avatar_frames is list)
-          && (!('purchased_titles' in data) || data.purchased_titles is list)
-          && (!('purchased_sound_packs' in data) || data.purchased_sound_packs is list)
-          && (!('purchased_themes' in data) || data.purchased_themes is list)
-          && (!('purchased_fonts' in data) || data.purchased_fonts is list)
-          && (!('purchased_control_button_styles' in data) || data.purchased_control_button_styles is list)
-          && (!('purchased_cube_skins' in data) || data.purchased_cube_skins is list)
-          && (!('purchased_modes' in data) || data.purchased_modes is list)
-          && (!('unlocked_achievements' in data) || data.unlocked_achievements is list)
-          && (!('setting_lang_code' in data) || data.setting_lang_code is string)
-          && (!('setting_theme_color' in data) || data.setting_theme_color is string)
-          && (!('setting_next_count' in data) || data.setting_next_count is int)
-          && (!('setting_ghost_visible' in data) || data.setting_ghost_visible is bool)
-          && (!('setting_control_style' in data) || data.setting_control_style is string)
-          && (!('setting_sound_enabled' in data) || data.setting_sound_enabled is bool)
-          && (!('setting_vibration_enabled' in data) || data.setting_vibration_enabled is bool)
-          && (!('online_rating' in data) || data.online_rating is int)
-          && (!('win_streak' in data) || data.win_streak is int);
+      return score is int && score >= 0 && score <= 100000000;
     }
 
     // ════════════════════════════════════════════════
     // 🧑 USERS — профиль игрока и социальные подколлекции
     // ════════════════════════════════════════════════
     match /users/{userId} {
-      // Чтение разрешено верифицированным игрокам (для поиска игроков и публичных профилей) и админу
-      allow read: if isVerifiedUser() || isAdmin();
-      
-      allow create: if isOwner(userId)
-                    && hasRequiredUserFields(request.resource.data)
-                    && isValidUserWrite(request.resource.data);
-
-      allow update: if (isOwner(userId) && isValidUserWrite(request.resource.data))
-                    || isAdmin();
-
+      allow read: if true;
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
 
       // Подколлекция друзей: users/{userId}/friends/{friendId}
       match /friends/{friendId} {
         allow read: if isOwner(userId) || (isVerifiedUser() && request.auth.uid == friendId) || isAdmin();
-        allow create, update: if (isVerifiedUser() && (request.auth.uid == userId || request.auth.uid == friendId)) || isAdmin();
-        allow delete: if (isVerifiedUser() && (request.auth.uid == userId || request.auth.uid == friendId)) || isAdmin();
+        allow create, update, delete: if (!isBanned() && isVerifiedUser() && (request.auth.uid == userId || request.auth.uid == friendId)) || isAdmin();
       }
     }
 
@@ -118,20 +54,18 @@ service cloud.firestore {
     // 🏆 HIGH_SCORES — глобальный лидерборд
     // ════════════════════════════════════════════════
     match /high_scores/{scoreId} {
-      allow read: if isVerifiedUser() || isAdmin();
+      allow read: if true;
 
       allow create: if isOwner(scoreId)
-                    && request.resource.data.keys().hasAll(['uid', 'playerName', 'score', 'timestamp'])
+                    && request.resource.data.keys().hasAll(['uid', 'playerName', 'timestamp'])
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.playerName is string
                     && request.resource.data.playerName.size() >= 1
-                    && isValidScore(request.resource.data.score);
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score));
 
       allow update: if (isOwner(scoreId)
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.playerName is string
-                    && isValidScore(request.resource.data.score)
-                    && request.resource.data.score >= resource.data.score)
+                    && (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid)
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score)))
                     || isAdmin();
 
       allow delete: if isOwner(scoreId) || isAdmin();
@@ -139,19 +73,17 @@ service cloud.firestore {
 
     // 🏆 Рекорды по отдельным режимам игры
     match /high_scores_by_mode/{modeId}/scores/{scoreId} {
-      allow read: if isVerifiedUser() || isAdmin();
+      allow read: if true;
       
       allow create: if isOwner(scoreId)
-                    && request.resource.data.keys().hasAll(['uid', 'playerName', 'score', 'timestamp'])
+                    && request.resource.data.keys().hasAll(['uid', 'playerName', 'timestamp'])
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.playerName is string
-                    && isValidScore(request.resource.data.score);
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score));
 
       allow update: if (isOwner(scoreId)
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.playerName is string
-                    && isValidScore(request.resource.data.score)
-                    && request.resource.data.score >= resource.data.score)
+                    && (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid)
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score)))
                     || isAdmin();
 
       allow delete: if isOwner(scoreId) || isAdmin();
@@ -159,7 +91,7 @@ service cloud.firestore {
 
     // 🟢 PRESENCE — онлайн-статус пользователей
     match /presence/{presenceId} {
-      allow read: if isVerifiedUser() || isAdmin();
+      allow read: if true;
       
       allow create, update: if isOwner(presenceId)
                             && request.resource.data.uid == request.auth.uid
@@ -170,12 +102,14 @@ service cloud.firestore {
 
     // 💬 LOBBY_CHAT — общий чат
     match /lobby_chat/{messageId} {
-      allow read: if isVerifiedUser() || isAdmin();
+      allow read: if true;
       
-      allow create: if isVerifiedUser()
+      allow create: if (isVerifiedUser()
+                    && !isBanned()
                     && request.resource.data.senderId == request.auth.uid
                     && request.resource.data.text is string
-                    && request.resource.data.text.size() <= 500;
+                    && request.resource.data.text.size() <= 500)
+                    || isAdmin();
 
       allow update: if false;
       allow delete: if isAdmin();
@@ -183,32 +117,53 @@ service cloud.firestore {
 
     // 🎮 ROOMS — сетевые комнаты и дуэли
     match /rooms/{roomId} {
-      allow read: if isVerifiedUser() || isAdmin();
+      allow read: if true;
       
-      allow create: if isVerifiedUser()
+      allow create: if (isVerifiedUser()
+                    && !isBanned()
                     && request.resource.data.hostId == request.auth.uid
-                    && request.resource.data.status == 'waiting';
+                    && request.resource.data.status == 'waiting')
+                    || isAdmin();
 
-      allow update: if isVerifiedUser() || isAdmin();
+      allow update: if (isVerifiedUser() && !isBanned()) || isAdmin();
       
       allow delete: if (isVerifiedUser() && resource.data.hostId == request.auth.uid) || isAdmin();
 
       match /chat/{chatMsgId} {
-        allow read: if isVerifiedUser() || isAdmin();
+        allow read: if true;
         
-        allow create: if isVerifiedUser()
+        allow create: if (isVerifiedUser()
+                      && !isBanned()
                       && request.resource.data.senderId == request.auth.uid
                       && request.resource.data.text is string
-                      && request.resource.data.text.size() <= 500;
+                      && request.resource.data.text.size() <= 500)
+                      || isAdmin();
 
         allow update: if false;
         allow delete: if isAdmin();
       }
     }
 
+    // 📢 GLOBAL_ANNOUNCEMENTS & BROADCASTS — глобальные системные оповещения
+    match /global_announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /global_broadcasts/{broadcastId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 📢 SYSTEM_CONFIG — системные настройки сервера
+    match /system_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Запрет на любые другие коллекции
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

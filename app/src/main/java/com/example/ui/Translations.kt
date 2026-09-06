@@ -31,6 +31,11 @@ object Translations {
         "score" to "Score",
         "level" to "Level",
         "lines" to "Lines",
+        "pieces" to "Pieces",
+        "tap" to "TAP",
+        "puzzle_stencil" to "BLUEPRINT",
+        "sculptor" to "SCULPTOR",
+        "moves" to "MOVES",
         "game_over" to "Game Over",
         "restart" to "Restart",
         "back" to "Back",
@@ -197,6 +202,11 @@ object Translations {
         "score" to "Счет",
         "level" to "Уровень",
         "lines" to "Линии",
+        "pieces" to "Фигуры",
+        "tap" to "НАЖМИ",
+        "puzzle_stencil" to "ШАБЛОН",
+        "sculptor" to "СКУЛЬПТОР",
+        "moves" to "ХОДОВ",
         "game_over" to "Игра завершена",
         "restart" to "Перезапустить сессию",
         "back" to "Назад",
@@ -363,6 +373,11 @@ object Translations {
         "score" to "Рахунок",
         "level" to "Рівень",
         "lines" to "Лінії",
+        "pieces" to "Фігури",
+        "tap" to "НАТИСНИ",
+        "puzzle_stencil" to "ШАБЛОН",
+        "sculptor" to "СКУЛЬПТОР",
+        "moves" to "ХОДІВ",
         "game_over" to "Гра Закінчена",
         "restart" to "Заново",
         "back" to "Назад",
@@ -529,6 +544,11 @@ object Translations {
         "score" to "Ұпай",
         "level" to "Деңгей",
         "lines" to "Жолдар",
+        "pieces" to "Фигуралар",
+        "tap" to "БАС",
+        "puzzle_stencil" to "ҮЛГІ",
+        "sculptor" to "СКУЛЬПТОР",
+        "moves" to "ЖҮРІС",
         "game_over" to "Ойын Аяқталды",
         "restart" to "Қайталау",
         "back" to "Артқа",
@@ -695,6 +715,11 @@ object Translations {
         "score" to "Punkte",
         "level" to "Level",
         "lines" to "Linien",
+        "pieces" to "Steine",
+        "tap" to "TIPPEN",
+        "puzzle_stencil" to "SCHABLONE",
+        "sculptor" to "BILDHAUER",
+        "moves" to "ZÜGE",
         "game_over" to "Spiel vorbei",
         "restart" to "Neustart",
         "back" to "Zurück",
@@ -861,6 +886,11 @@ object Translations {
         "score" to "得分",
         "level" to "等级",
         "lines" to "消除行",
+        "pieces" to "方块数",
+        "tap" to "点击",
+        "puzzle_stencil" to "全息模板",
+        "sculptor" to "雕塑家",
+        "moves" to "步数",
         "game_over" to "游戏结束",
         "restart" to "重新开始",
         "back" to "返回",
@@ -1105,12 +1135,12 @@ object Translations {
                 else -> "Standard"
             }
             "extended" -> when (lang) {
-                Language.RU -> "Спектр"
-                Language.UA -> "Спектр"
-                Language.KK -> "Спектр"
-                Language.DE -> "Spektrum"
-                Language.ZH -> "光谱"
-                else -> "Spectrum"
+                Language.RU -> "Расширенный"
+                Language.UA -> "Розширений"
+                Language.KK -> "Кеңейтілген"
+                Language.DE -> "Erweitert"
+                Language.ZH -> "扩展"
+                else -> "Extended"
             }
             "fast_run" -> when (lang) {
                 Language.RU -> "Спринт"
@@ -1136,14 +1166,6 @@ object Translations {
                 Language.ZH -> "擂台"
                 else -> "Arena"
             }
-            "zen" -> when (lang) {
-                Language.RU -> "Дзен"
-                Language.UA -> "Дзен"
-                Language.KK -> "Дзен"
-                Language.DE -> "Zen"
-                Language.ZH -> "禅境"
-                else -> "Zen"
-            }
             "time_attack" -> when (lang) {
                 Language.RU -> "Блиц"
                 Language.UA -> "Бліц"
@@ -1152,14 +1174,6 @@ object Translations {
                 Language.ZH -> "闪击"
                 else -> "Blitz"
             }
-            "pulse_extreme" -> when (lang) {
-                Language.RU -> "Прилив"
-                Language.UA -> "Приплив"
-                Language.KK -> "Толысу"
-                Language.DE -> "Flut"
-                Language.ZH -> "潮汐"
-                else -> "Tide"
-            }
             "mirror" -> when (lang) {
                 Language.RU -> "Зеркало"
                 Language.UA -> "Дзеркало"
@@ -1167,14 +1181,6 @@ object Translations {
                 Language.DE -> "Spiegel"
                 Language.ZH -> "镜界"
                 else -> "Mirror"
-            }
-            "penta" -> when (lang) {
-                Language.RU -> "Хаос"
-                Language.UA -> "Хаос"
-                Language.KK -> "Хаос"
-                Language.DE -> "Chaos"
-                Language.ZH -> "混沌"
-                else -> "Chaos"
             }
             "relax" -> when (lang) {
                 Language.RU -> "Песочница"
@@ -1191,6 +1197,38 @@ object Translations {
                 Language.DE -> "Perfektion"
                 Language.ZH -> "完美"
                 else -> "Perfection"
+            }
+            "pattern" -> when (lang) {
+                Language.RU -> "Шаблон"
+                Language.UA -> "Шаблон"
+                Language.KK -> "Үлгі"
+                Language.DE -> "Muster"
+                Language.ZH -> "图形模板"
+                else -> "Blueprint"
+            }
+            "sculptor" -> when (lang) {
+                Language.RU -> "Скульптор"
+                Language.UA -> "Скульптор"
+                Language.KK -> "Мүсінші"
+                Language.DE -> "Bildhauer"
+                Language.ZH -> "雕塑家"
+                else -> "Sculptor"
+            }
+            "slide", "slide_puzzle" -> when (lang) {
+                Language.RU -> "Слайдер"
+                Language.UA -> "Слайдер"
+                Language.KK -> "Слайдер"
+                Language.DE -> "Schieberätsel"
+                Language.ZH -> "滑块"
+                else -> "Slide Puzzle"
+            }
+            "memory", "memory_puzzle" -> when (lang) {
+                Language.RU -> "Память"
+                Language.UA -> "Пам'ять"
+                Language.KK -> "Жады"
+                Language.DE -> "Gedächtnis"
+                Language.ZH -> "记忆大师"
+                else -> "Memory Puzzle"
             }
             else -> modeCode
         }
@@ -1551,12 +1589,12 @@ object Translations {
                 else -> "Time Attack"
             }
             "mode_reverse" -> when (lang) {
-                Language.RU -> "Хаос-управление"
-                Language.UA -> "Хаос-керування"
-                Language.KK -> "Хаос-басқару"
-                Language.DE -> "Chaos-Steuerung"
-                Language.ZH -> "逆向混乱"
-                else -> "Chaos Controls"
+                Language.RU -> "Инверсия"
+                Language.UA -> "Інверсія"
+                Language.KK -> "Инверсия"
+                Language.DE -> "Inversion"
+                Language.ZH -> "反转控制"
+                else -> "Inversion Controls"
             }
             "mode_mirror" -> when (lang) {
                 Language.RU -> "Зеркальный мир"
@@ -1566,21 +1604,21 @@ object Translations {
                 Language.ZH -> "镜像空间"
                 else -> "Mirror World"
             }
-            "mode_pentary" -> when (lang) {
-                Language.RU -> "Пента-хаос"
-                Language.UA -> "Пента-хаос"
-                Language.KK -> "Пента-хаос"
-                Language.DE -> "Penta-Chaos"
-                Language.ZH -> "五阶混乱"
-                else -> "Penta Chaos"
+            "mode_relax", "mode_pentary" -> when (lang) {
+                Language.RU -> "Песочница"
+                Language.UA -> "Пісочниця"
+                Language.KK -> "Құмсалғыш"
+                Language.DE -> "Sandbox"
+                Language.ZH -> "沙盒模式"
+                else -> "Sandbox Mode"
             }
-            "mode_pulse" -> when (lang) {
-                Language.RU -> "Импульсный вихрь"
-                Language.UA -> "Імпульсний вихор"
-                Language.KK -> "Импульсті құйын"
-                Language.DE -> "Vortex-Impuls"
-                Language.ZH -> "涡流脉冲"
-                else -> "Vortex Pulse"
+            "mode_extended" -> when (lang) {
+                Language.RU -> "Расширенный режим"
+                Language.UA -> "Розширений режим"
+                Language.KK -> "Кеңейтілген режим"
+                Language.DE -> "Erweiterter Modus"
+                Language.ZH -> "扩展模式"
+                else -> "Extended Mode"
             }
             "speed_level_max" -> when (lang) {
                 Language.RU -> "Мастер скорости"
@@ -1972,12 +2010,12 @@ object Translations {
                 else -> "Play a game in Time Attack mode"
             }
             "mode_reverse" -> when (lang) {
-                Language.RU -> "Сыграйте матч в режиме Хаос-Управление"
-                Language.UA -> "Зіграйте матч у режимі Хаос-Керування"
-                Language.KK -> "Хаос-басқару режимінде ойын ойнаңыз"
-                Language.DE -> "Spiele ein Match im Chaos-Steuerungs-Modus"
-                Language.ZH -> "开启一局混乱逆向控制模式对决"
-                else -> "Play a game in Chaos Controls mode"
+                Language.RU -> "Сыграйте матч в режиме Инверсия"
+                Language.UA -> "Зіграйте матч у режимі Інверсія"
+                Language.KK -> "Инверсия режимінде ойын ойнаңыз"
+                Language.DE -> "Spiele ein Match im Inversions-Modus"
+                Language.ZH -> "开启一局反转控制模式对决"
+                else -> "Play a game in Inversion mode"
             }
             "mode_mirror" -> when (lang) {
                 Language.RU -> "Сыграйте матч в режиме Зеркальный Мир"
@@ -1987,21 +2025,21 @@ object Translations {
                 Language.ZH -> "开启一局镜像异次元模式对决"
                 else -> "Play a game in Mirror Dimension mode"
             }
-            "mode_pentary" -> when (lang) {
-                Language.RU -> "Сыграйте матч в режиме Пента-Хаос"
-                Language.UA -> "Зіграйте матч у режимі Пента-Хаос"
-                Language.KK -> "Пента-хаос режимінде ойын ойнаңыз"
-                Language.DE -> "Spiele ein Match im Penta-Chaos-Modus"
-                Language.ZH -> "开启一局五阶混乱混沌模式对决"
-                else -> "Play a game in Pentary Chaos mode"
+            "mode_relax", "mode_pentary" -> when (lang) {
+                Language.RU -> "Сыграйте матч в режиме Песочница"
+                Language.UA -> "Зіграйте матч у режимі Пісочниця"
+                Language.KK -> "Құмсалғыш режимінде ойын ойнаңыз"
+                Language.DE -> "Spiele ein Match im Sandbox-Modus"
+                Language.ZH -> "开启一局沙盒模式对决"
+                else -> "Play a game in Sandbox mode"
             }
-            "mode_pulse" -> when (lang) {
-                Language.RU -> "Сыграйте матч в режиме Импульсный Вихрь"
-                Language.UA -> "Зіграйте матч у режимі Імпульсний Вихор"
-                Language.KK -> "Импульсті құйын режимінде ойын ойнаңыз"
-                Language.DE -> "Spiele ein Match im Vortex-Puls-Modus"
-                Language.ZH -> "开启一局涡流脉冲风暴模式对决"
-                else -> "Play a game in Vortex Pulse mode"
+            "mode_extended" -> when (lang) {
+                Language.RU -> "Сыграйте матч в Расширенном режиме"
+                Language.UA -> "Зіграйте матч у Розширеному режимі"
+                Language.KK -> "Кеңейтілген режимде ойын ойнаңыз"
+                Language.DE -> "Spiele ein Match im erweiterten Modus"
+                Language.ZH -> "开启一局扩展模式对决"
+                else -> "Play a game in Extended mode"
             }
             "speed_level_max" -> when (lang) {
                 Language.RU -> "Достигните 15-й скорости в обычном матче"
@@ -2231,6 +2269,38 @@ object Translations {
             Language.ZH -> "黄铜"
             else -> "BRASS"
         }
+        "red_gradient" -> when (lang) {
+            Language.RU -> "КРАСНЫЙ ПУЛЬС"
+            Language.UA -> "ЧЕРВОНИЙ ПУЛЬС"
+            Language.KK -> "ҚЫЗЫЛ ПУЛЬС"
+            Language.DE -> "ROTER IMPULS"
+            Language.ZH -> "赤红脉冲"
+            else -> "RED PULSE"
+        }
+        "green_gradient" -> when (lang) {
+            Language.RU -> "ИЗУМРУДНЫЙ ПУЛЬС"
+            Language.UA -> "СМАРАГДОВИЙ ПУЛЬС"
+            Language.KK -> "ЗҮМРӘТ ПУЛЬС"
+            Language.DE -> "SMARAGD IMPULS"
+            Language.ZH -> "翡翠脉冲"
+            else -> "EMERALD PULSE"
+        }
+        "blue_gradient" -> when (lang) {
+            Language.RU -> "САПФИРОВЫЙ ПУЛЬС"
+            Language.UA -> "САПФІРОВИЙ ПУЛЬС"
+            Language.KK -> "САПФИР ПУЛЬС"
+            Language.DE -> "SAPHIR IMPULS"
+            Language.ZH -> "蓝宝石脉冲"
+            else -> "SAPPHIRE PULSE"
+        }
+        "purple_gradient" -> when (lang) {
+            Language.RU -> "АМЕТИСТОВЫЙ ПУЛЬС"
+            Language.UA -> "АМЕТИСТОВИЙ ПУЛЬС"
+            Language.KK -> "АМЕТИСТ ПУЛЬС"
+            Language.DE -> "AMETHYST IMPULS"
+            Language.ZH -> "紫晶脉冲"
+            else -> "AMETHYST PULSE"
+        }
         else -> cubeSkinId.uppercase()
     }
 
@@ -2291,6 +2361,38 @@ object Translations {
             Language.ZH -> "复古黄铜机械齿轮与铆钉美学"
             else -> "Heavy brass gears and rivets industrial aesthetic"
         }
+        "red_gradient" -> when (lang) {
+            Language.RU -> "Пульсирующий красный градиент реликвии"
+            Language.UA -> "Пульсуючий червоний градієнт реліквії"
+            Language.KK -> "Реликттің пульсацияланатын қызыл градиенті"
+            Language.DE -> "Pulsierender roter Relikt-Farbverlauf"
+            Language.ZH -> "动态脉冲赤红遗物光效"
+            else -> "Pulsing red relic gradient glow"
+        }
+        "green_gradient" -> when (lang) {
+            Language.RU -> "Пульсирующий изумрудный градиент реликвии"
+            Language.UA -> "Пульсуючий смарагдовий градієнт реліквії"
+            Language.KK -> "Реликттің пульсацияланатын зүмрәт градиенті"
+            Language.DE -> "Pulsierender smaragdgrüner Relikt-Farbverlauf"
+            Language.ZH -> "动态脉冲翡翠遗物光效"
+            else -> "Pulsing emerald relic gradient glow"
+        }
+        "blue_gradient" -> when (lang) {
+            Language.RU -> "Пульсирующий сапфировый градиент реликвии"
+            Language.UA -> "Пульсуючий сапфіровий градієнт реліквії"
+            Language.KK -> "Реликттің пульсацияланатын сапфир градиенті"
+            Language.DE -> "Pulsierender saphirblauer Relikt-Farbverlauf"
+            Language.ZH -> "动态脉冲蓝宝石遗物光效"
+            else -> "Pulsing sapphire relic gradient glow"
+        }
+        "purple_gradient" -> when (lang) {
+            Language.RU -> "Пульсирующий аметистовый градиент реликвии"
+            Language.UA -> "Пульсуючий аметистовий градієнт реліквії"
+            Language.KK -> "Реликттің пульсацияланатын аметист градиенті"
+            Language.DE -> "Pulsierender amethystener Relikt-Farbverlauf"
+            Language.ZH -> "动态脉冲紫晶遗物光效"
+            else -> "Pulsing amethyst relic gradient glow"
+        }
         else -> ""
     }
 
@@ -2302,6 +2404,70 @@ object Translations {
             Language.DE -> "Standard"
             Language.ZH -> "默认"
             else -> "Default"
+        }
+        "neon_frame" -> when (lang) {
+            Language.RU -> "Бирюза"
+            Language.UA -> "Бірюза"
+            Language.KK -> "Бирюза"
+            Language.DE -> "Türkis"
+            Language.ZH -> "青蓝"
+            else -> "Turquoise"
+        }
+        "gold_frame" -> when (lang) {
+            Language.RU -> "Золото"
+            Language.UA -> "Золото"
+            Language.KK -> "Алтын"
+            Language.DE -> "Gold"
+            Language.ZH -> "黄金"
+            else -> "Gold"
+        }
+        "cyber_frame" -> when (lang) {
+            Language.RU -> "Фиолет"
+            Language.UA -> "Фіолет"
+            Language.KK -> "Күлгін"
+            Language.DE -> "Violett"
+            Language.ZH -> "紫罗兰"
+            else -> "Violet"
+        }
+        "fire_frame" -> when (lang) {
+            Language.RU -> "Пламя"
+            Language.UA -> "Полум'я"
+            Language.KK -> "Жалын"
+            Language.DE -> "Flamme"
+            Language.ZH -> "烈焰"
+            else -> "Flame"
+        }
+        "ice_frame" -> when (lang) {
+            Language.RU -> "Ледник"
+            Language.UA -> "Льодовик"
+            Language.KK -> "Мұздық"
+            Language.DE -> "Gletscher"
+            Language.ZH -> "极地冰霜"
+            else -> "Glacier"
+        }
+        "matrix_frame" -> when (lang) {
+            Language.RU -> "Матрица"
+            Language.UA -> "Матриця"
+            Language.KK -> "Матрица"
+            Language.DE -> "Matrix"
+            Language.ZH -> "黑客帝国"
+            else -> "Matrix"
+        }
+        "galaxy_frame" -> when (lang) {
+            Language.RU -> "Галактика"
+            Language.UA -> "Галактика"
+            Language.KK -> "Галактика"
+            Language.DE -> "Galaxie"
+            Language.ZH -> "星系星云"
+            else -> "Galaxy"
+        }
+        "rainbow_frame" -> when (lang) {
+            Language.RU -> "Радуга"
+            Language.UA -> "Веселка"
+            Language.KK -> "Кемпірқосақ"
+            Language.DE -> "Regenbogen"
+            Language.ZH -> "七彩炫彩"
+            else -> "Rainbow"
         }
         "chrono_gl", "gradient_frame" -> when (lang) {
             Language.RU -> "Градиентная Рамка"
@@ -2322,6 +2488,70 @@ object Translations {
             Language.DE -> "Klassischer dezenter Rahmen"
             Language.ZH -> "经典微质感相框"
             else -> "Classic subtle frame"
+        }
+        "neon_frame" -> when (lang) {
+            Language.RU -> "Свежий бирюзовый контур"
+            Language.UA -> "Свіжий бірюзовий контур"
+            Language.KK -> "Жаңа бирюза контуры"
+            Language.DE -> "Frischer türkisblauer Rahmen"
+            Language.ZH -> "清爽青蓝色轮廓"
+            else -> "Fresh turquoise outline"
+        }
+        "gold_frame" -> when (lang) {
+            Language.RU -> "Теплый золотой контур"
+            Language.UA -> "Теплий золотий контур"
+            Language.KK -> "Жылы алтын контур"
+            Language.DE -> "Warmer Gold-Rahmen"
+            Language.ZH -> "温暖金色光环"
+            else -> "Warm golden outline"
+        }
+        "cyber_frame" -> when (lang) {
+            Language.RU -> "Мягкий фиолетовый контур"
+            Language.UA -> "М'який фіолетовий контур"
+            Language.KK -> "Жұмсақ күлгін контур"
+            Language.DE -> "Sanfter violetter Rahmen"
+            Language.ZH -> "柔和紫色轮廓"
+            else -> "Soft violet outline"
+        }
+        "fire_frame" -> when (lang) {
+            Language.RU -> "Пылающий огненный контур с искрами"
+            Language.UA -> "Палаючий вогняний контур з іскрами"
+            Language.KK -> "Жалынды отты контур"
+            Language.DE -> "Feuriger Rahmen mit Glüheffekt"
+            Language.ZH -> "烈焰燃烧流光动态光环"
+            else -> "Blazing fiery outline with sparks"
+        }
+        "ice_frame" -> when (lang) {
+            Language.RU -> "Морозное арктическое свечение кристаллов льда"
+            Language.UA -> "Морозне арктичне світіння кристалів льоду"
+            Language.KK -> "Арктикалық мұз жарқылы"
+            Language.DE -> "Arktisches Eiskristall-Leuchten"
+            Language.ZH -> "晶莹剔透极地极光冰晶"
+            else -> "Frosty arctic ice crystal glow"
+        }
+        "matrix_frame" -> when (lang) {
+            Language.RU -> "Цифровой кибернетический поток данных"
+            Language.UA -> "Цифровий кібернетичний потік даних"
+            Language.KK -> "Сандық кибер-ағын"
+            Language.DE -> "Digitaler Cyber-Datenstrom"
+            Language.ZH -> "绿色数字流黑客动态光环"
+            else -> "Digital cyber data stream outline"
+        }
+        "galaxy_frame" -> when (lang) {
+            Language.RU -> "Глубокая космическая туманность со звёздами"
+            Language.UA -> "Глибока космічна туманність із зірками"
+            Language.KK -> "Жұлдызды терең ғарыш"
+            Language.DE -> "Tiefe kosmische Nebel-Aura"
+            Language.ZH -> "深邃星云与恒星微光环绕"
+            else -> "Deep cosmic nebula with starlight"
+        }
+        "rainbow_frame" -> when (lang) {
+            Language.RU -> "Переливающийся спектр неоновых цветов"
+            Language.UA -> "Спектр неонових кольорів, що переливається"
+            Language.KK -> "Кемпірқосақты спектр жарқылы"
+            Language.DE -> "Schimmerndes prismatisches Farbspektrum"
+            Language.ZH -> "七彩棱镜动态光谱流动"
+            else -> "Prismatic rainbow neon color spectrum"
         }
         "chrono_gl", "gradient_frame", "neon_ae", "gold_ma", "omega_ti" -> when (lang) {
             Language.RU -> "Анимированная переливающаяся рамка под стиль вашего ника"
@@ -2359,6 +2589,22 @@ object Translations {
             Language.ZH -> "磨砂玻璃"
             else -> "Frosted Glass"
         }
+        "gold_legendary", "gold" -> when (lang) {
+            Language.RU -> "Золото"
+            Language.UA -> "Золото"
+            Language.KK -> "Алтын"
+            Language.DE -> "Gold"
+            Language.ZH -> "黄金传奇"
+            else -> "Gold"
+        }
+        "plasma_legendary", "plasma" -> when (lang) {
+            Language.RU -> "Плазма"
+            Language.UA -> "Плазма"
+            Language.KK -> "Плазма"
+            Language.DE -> "Plasma"
+            Language.ZH -> "等离子体"
+            else -> "Plasma"
+        }
         else -> btnStyleId
     }
 
@@ -2386,6 +2632,22 @@ object Translations {
             Language.DE -> "Halbtransparente Tasten im modernen Glas-Look"
             Language.ZH -> "现代半透明磨砂质感玻璃按键"
             else -> "Semi-transparent modern glassmorphic look"
+        }
+        "gold_legendary", "gold" -> when (lang) {
+            Language.RU -> "Золотой градиент и мягкое свечение"
+            Language.UA -> "Золотий градієнт і м'яке свічення"
+            Language.KK -> "Алтын градиент және жұмсақ жарқыл"
+            Language.DE -> "Goldener Farbverlauf mit Glanz"
+            Language.ZH -> "奢华流金渐变与柔和光效"
+            else -> "Golden gradient with soft glow"
+        }
+        "plasma_legendary", "plasma" -> when (lang) {
+            Language.RU -> "Фиолетово-голубой плазменный импульс"
+            Language.UA -> "Фіолетово-блакитний плазмовий імпульс"
+            Language.KK -> "Күлгін-көгілдір плазмалық импульс"
+            Language.DE -> "Plasma-Impuls in Violett-Blau"
+            Language.ZH -> "紫蓝等离子能量脉冲质感"
+            else -> "Violet-blue plasma pulse"
         }
         else -> ""
     }
@@ -2424,12 +2686,12 @@ object Translations {
             else -> "Elite master of tactical warfare"
         }
         "ai_consensus" -> when (lang) {
-            Language.RU -> "Легендарный чемпион абсолютного консенсуса"
-            Language.UA -> "Легендарний чемпіон абсолютного консенсусу"
-            Language.KK -> "Абсолютті консенсустың аңызға айналған чемпионы"
-            Language.DE -> "Legendärer Champion der Bestenliste"
-            Language.ZH -> "登峰造极的至尊天梯传奇称号"
-            else -> "Legendary champion of highest consensus"
+            Language.RU -> "Титул опытного профессионала"
+            Language.UA -> "Титул досвідченого професіонала"
+            Language.KK -> "Тәжірибелі кәсіпқой атағы"
+            Language.DE -> "Titel für erfahrene Profis"
+            Language.ZH -> "资深职业玩家称号"
+            else -> "Title of experienced pro"
         }
         else -> ""
     }
@@ -2564,22 +2826,6 @@ object Translations {
             Language.ZH -> "冲刺"
             else -> "Sprint"
         }
-        "ZEN" -> when (lang) {
-            Language.RU -> "Дзен"
-            Language.UA -> "Дзен"
-            Language.KK -> "Дзен"
-            Language.DE -> "Zen"
-            Language.ZH -> "禅境"
-            else -> "Zen"
-        }
-        "PULSE_EXTREME" -> when (lang) {
-            Language.RU -> "Прилив"
-            Language.UA -> "Приплив"
-            Language.KK -> "Толысу"
-            Language.DE -> "Flut"
-            Language.ZH -> "潮汐"
-            else -> "Tide"
-        }
         "MIRROR" -> when (lang) {
             Language.RU -> "Зеркало"
             Language.UA -> "Дзеркало"
@@ -2588,21 +2834,13 @@ object Translations {
             Language.ZH -> "镜界"
             else -> "Mirror"
         }
-        "PENTA" -> when (lang) {
-            Language.RU -> "Хаос"
-            Language.UA -> "Хаос"
-            Language.KK -> "Хаос"
-            Language.DE -> "Chaos"
-            Language.ZH -> "混沌"
-            else -> "Chaos"
-        }
         "EXTENDED" -> when (lang) {
-            Language.RU -> "Спектр"
-            Language.UA -> "Спектр"
-            Language.KK -> "Спектр"
-            Language.DE -> "Spektrum"
-            Language.ZH -> "光谱"
-            else -> "Spectrum"
+            Language.RU -> "Расширенный"
+            Language.UA -> "Розширений"
+            Language.KK -> "Кеңейтілген"
+            Language.DE -> "Erweitert"
+            Language.ZH -> "扩展"
+            else -> "Extended"
         }
         "REVERSE" -> when (lang) {
             Language.RU -> "Инверсия"
@@ -2643,6 +2881,22 @@ object Translations {
             Language.DE -> "Perfektion"
             Language.ZH -> "完美"
             else -> "Perfection"
+        }
+        "PATTERN", "PATTERN_PUZZLE" -> when (lang) {
+            Language.RU -> "Шаблон"
+            Language.UA -> "Шаблон"
+            Language.KK -> "Үлгі"
+            Language.DE -> "Muster"
+            Language.ZH -> "图形模板"
+            else -> "Blueprint"
+        }
+        "SCULPTOR" -> when (lang) {
+            Language.RU -> "Скульптор"
+            Language.UA -> "Скульптор"
+            Language.KK -> "Мүсінші"
+            Language.DE -> "Bildhauer"
+            Language.ZH -> "雕塑家"
+            else -> "Sculptor"
         }
         else -> modeId
     }
@@ -2748,22 +3002,6 @@ object Translations {
             Language.ZH -> "极速重力坠落，考验极限反应力"
             else -> "High gravity drop speed"
         }
-        "ZEN" -> when (lang) {
-            Language.RU -> "Бесконечная игра без проигрыша и спешки"
-            Language.UA -> "Нескінченна гра без програшу та поспіху"
-            Language.KK -> "Жеңіліссіз және асығыссыз шексіз ойын"
-            Language.DE -> "Endloses Spiel ohne Zeitdruck und Game Over"
-            Language.ZH -> "无失败压力的静心畅玩无尽模式"
-            else -> "Endless relaxation mode with no game over"
-        }
-        "PULSE_EXTREME" -> when (lang) {
-            Language.RU -> "Волны ускорения и динамические импульсы"
-            Language.UA -> "Хвилі прискорення та динамічні імпульси"
-            Language.KK -> "Жылдамдату толқындары мен динамикалық импульстер"
-            Language.DE -> "Geschwindigkeitswellen und dynamische Impulse"
-            Language.ZH -> "周期性速度浪涌与动态脉冲挑战"
-            else -> "Dynamic speed waves and pulse challenges"
-        }
         "MIRROR" -> when (lang) {
             Language.RU -> "Инвертированное отражение игрового поля"
             Language.UA -> "Інвертоване відображення ігрового поля"
@@ -2772,13 +3010,29 @@ object Translations {
             Language.ZH -> "左右水平镜像对称的颠覆性视野挑战"
             else -> "Horizontally flipped gameplay challenge"
         }
-        "PENTA" -> when (lang) {
-            Language.RU -> "Сложные фигуры из 5 блоков (пентамино)"
-            Language.UA -> "Складні фігури з 5 блоків (пентаміно)"
-            Language.KK -> "5 блоктан тұратын күрделі фигуралар (пентамино)"
-            Language.DE -> "Komplexe 5-Block-Formen (Pentamino)"
-            Language.ZH -> "由5个单块组成的复杂多形态超难方块"
-            else -> "Complex 5-block pentamino puzzle pieces"
+        "PERFECTIONIST" -> when (lang) {
+            Language.RU -> "Режим абсолютной точности и мастерства"
+            Language.UA -> "Режим абсолютної точності та майстерності"
+            Language.KK -> "Абсолютті дәлдік пен шеберлік режимі"
+            Language.DE -> "Modus für absolute Präzision und Meisterschaft"
+            Language.ZH -> "极致精准度与最高技巧要求的无瑕挑战模式"
+            else -> "Ultimate precision and mastery mode"
+        }
+        "PATTERN", "PATTERN_PUZZLE" -> when (lang) {
+            Language.RU -> "Головоломка: заполните неоновый шаблон фигурами"
+            Language.UA -> "Головоломка: заповніть неоновий шаблон фігурами"
+            Language.KK -> "Басқатырғыш: неонды үлгіні фигуралармен толтырыңыз"
+            Language.DE -> "Puzzle: Fülle die Neonschablone mit Steinen"
+            Language.ZH -> "全息拼图解密：用方块精准填满图形轮廓"
+            else -> "Puzzle: Fill the neon blueprint stencil with pieces"
+        }
+        "SCULPTOR" -> when (lang) {
+            Language.RU -> "Головоломка: добейтесь Perfect Clear за лимит ходов"
+            Language.UA -> "Головоломка: досягніть Perfect Clear за ліміт ходів"
+            Language.KK -> "Басқатырғыш: шектеулі жүрісте алаңды толық тазартыңыз"
+            Language.DE -> "Puzzle: Erreiche einen Perfect Clear mit begrenzten Zügen"
+            Language.ZH -> "雕塑家烧脑解密：限定步数完美全消清屏"
+            else -> "Puzzle: Achieve a Perfect Clear within move limits"
         }
         else -> ""
     }
@@ -2999,12 +3253,12 @@ object Translations {
             else -> "ELITE"
         }
         "ai_consensus" -> when (lang) {
-            Language.RU -> "ЛЕГЕНДА"
-            Language.UA -> "ЛЕГЕНДА"
-            Language.KK -> "АҢЫЗ"
-            Language.DE -> "LEGENDE"
-            Language.ZH -> "传奇"
-            else -> "LEGEND"
+            Language.RU -> "ПРОФИ"
+            Language.UA -> "ПРОФІ"
+            Language.KK -> "ПРОФИ"
+            Language.DE -> "PROFI"
+            Language.ZH -> "职业专家"
+            else -> "PRO"
         }
         else -> ""
     }
