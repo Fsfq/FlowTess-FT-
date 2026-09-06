@@ -263,31 +263,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             }
                         }
 
-                        if (!gameState.isGameOver && gameState.currentPiece != null) {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        viewModel.triggerAudioFeedback("click")
-                                        if (isPlaying) {
-                                            viewModel.pauseGame()
-                                        } else {
-                                            viewModel.resumeGame()
-                                        }
-                                    },
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        contentDescription = if (isPlaying) "Pause" else "Resume",
-                                        tint = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                        }
+
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -1522,25 +1498,7 @@ fun ModernGameLayout(
                                 }
                             }
 
-                            if (!gameState.isGameOver && gameState.currentPiece != null) {
-                                FilledIconButton(
-                                    onClick = {
-                                        viewModel.triggerAudioFeedback("click")
-                                        if (isPlaying) viewModel.pauseGame() else viewModel.resumeGame()
-                                    },
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
-                                        contentColor = if (isPlaying) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary
-                                    ),
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        contentDescription = Translations.get(if (isPlaying) "pause" else "resume", currentLang),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
+
                         }
                     }
                 }
