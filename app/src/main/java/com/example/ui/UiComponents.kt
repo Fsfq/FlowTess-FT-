@@ -6349,6 +6349,30 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
     }
 }
 
+/**
+ * Resolves the application version dynamically from Android PackageManager API with fallback to BuildConfig.
+ */
+@Composable
+fun rememberAppVersionName(): String {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return remember(context) {
+        try {
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    android.content.pm.PackageManager.PackageInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            pInfo.versionName?.ifBlank { com.example.BuildConfig.VERSION_NAME } ?: com.example.BuildConfig.VERSION_NAME
+        } catch (e: Exception) {
+            com.example.BuildConfig.VERSION_NAME
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutAppDialog(
@@ -6356,6 +6380,7 @@ fun AboutAppDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val appVersionName = rememberAppVersionName()
     val appIcon = remember(context) {
         try {
             val drawable = context.packageManager.getApplicationIcon(context.packageName)
@@ -6571,7 +6596,7 @@ fun AboutAppDialog(
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
                                     Text(
-                                        text = "0.94.9",
+                                        text = appVersionName,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
