@@ -71,6 +71,11 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val scanlinesFilter by viewModel.scanlinesFilter.collectAsStateWithLifecycle()
     val boardColorSkin by viewModel.boardColorSkin.collectAsStateWithLifecycle()
     val graphicsQuality by viewModel.graphicsQuality.collectAsStateWithLifecycle()
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val screenHeightDp = configuration.screenHeightDp
+    val screenWidthDp = configuration.screenWidthDp
+    val isCompactScreen = screenHeightDp < 680
+    val isUltraCompact = screenHeightDp < 600
 
     val themeColorKey by viewModel.themeColor.collectAsStateWithLifecycle()
     val themeColor = remember(themeColorKey) {
@@ -372,22 +377,39 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = if (isUltraCompact) 4.dp else 8.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // LEFT PANEL (HOLD & STATS)
-                Column(
-                    modifier = Modifier.width(82.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                val totalH = maxHeight
+                val totalW = maxWidth
+                val sidePanelW = when {
+                    totalW < 340.dp -> 60.dp
+                    totalW < 380.dp -> 70.dp
+                    else -> 82.dp
+                }
+                val hSpacing = if (totalW < 360.dp) 6.dp else 10.dp
+                val maxBoardW = (totalW - (sidePanelW * 2) - (hSpacing * 2)).coerceAtLeast(80.dp)
+                val maxBoardH = (totalH - 4.dp).coerceAtLeast(160.dp)
+                val boardH = minOf(maxBoardH, maxBoardW * 2f)
+                val boardW = boardH * 0.5f
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
-                    val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
+                    // LEFT PANEL (HOLD & STATS)
+                    Column(
+                        modifier = Modifier.width(sidePanelW),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(if (isCompactScreen) 6.dp else 10.dp)
+                    ) {
+                        val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
+                        val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
                         if (isPerfectionistMode && gameState.currentPiece != null) {
                             viewModel.gameEngine.calculateOptimalPlacement(
                                 grid = gameState.grid,
@@ -616,14 +638,13 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(hSpacing))
 
                 // CENTER GAME BOARD
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .size(width = boardW, height = boardH)
                         .offset(x = shakeX, y = shakeY)
-                        .aspectRatio(10f / 20f)
                         .clip(RoundedCornerShape(18.dp))
                         .background(Color(0xFF0A0A0E).copy(alpha = gridOpacity.coerceAtLeast(0.85f)))
                         .border(
@@ -633,7 +654,8 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             ), 
                             RoundedCornerShape(18.dp)
                         )
-                        .padding(3.dp)
+                        .padding(3.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     GameBoardView(
                         gameState = gameState,
@@ -660,15 +682,39 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             }
                         }
                     }
+
+                    // Memory Mode 3-2-1 Countdown Badge
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE && gameState.memoryCountdownSeconds > 0,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut()
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                            shadowElevation = 8.dp,
+                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.error),
+                            modifier = Modifier.size(68.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "${gameState.memoryCountdownSeconds}",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(hSpacing))
 
                 // RIGHT PANEL (NEXT & SCORE)
                 Column(
-                    modifier = Modifier.width(82.dp),
+                    modifier = Modifier.width(sidePanelW),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (isCompactScreen) 6.dp else 10.dp)
                 ) {
                     // NEXT BOX
                     ElevatedCard(
@@ -816,8 +862,9 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     }
                 }
             }
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isCompactScreen) 6.dp else 14.dp))
 
         if (!gameState.isGameOver) {
             Column(
@@ -1524,6 +1571,65 @@ fun ModernGameLayout(
                             }
                         }
                     }
+                } else if (gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (gameState.memoryCountdownSeconds > 0) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                tint = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (gameState.memoryCountdownSeconds > 0) {
+                                    when (currentLang) {
+                                        Language.RU -> "ЗАПОМНИТЕ: ${gameState.memoryCountdownSeconds} сек!"
+                                        Language.UA -> "ЗАПАМ'ЯТАЙТЕ: ${gameState.memoryCountdownSeconds} сек!"
+                                        Language.KK -> "ЕСТЕ САҚТАҢЫЗ: ${gameState.memoryCountdownSeconds} сек!"
+                                        Language.DE -> "MERKEN: ${gameState.memoryCountdownSeconds}s!"
+                                        Language.ZH -> "记忆倒计时：${gameState.memoryCountdownSeconds}秒！"
+                                        else -> "MEMORIZE: ${gameState.memoryCountdownSeconds}s!"
+                                    }
+                                } else {
+                                    when (currentLang) {
+                                        Language.RU -> "ПАМЯТЬ: ШАБЛОН СКРЫТ"
+                                        Language.UA -> "ПАМ'ЯТЬ: ШАБЛОН ПРИХОВАНО"
+                                        Language.KK -> "ЖАДЫ: ҮЛГІ ЖАСЫРЫЛДЫ"
+                                        Language.DE -> "GEDÄCHTNIS: MUSTER VERSTECKT"
+                                        Language.ZH -> "记忆模式：图案已隐藏"
+                                        else -> "MEMORY: PATTERN HIDDEN"
+                                    }
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest
+                            ) {
+                                Text(
+                                    text = "${gameState.puzzleFilledCount}/${gameState.puzzleTargetCount}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (gameState.memoryCountdownSeconds > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -1531,21 +1637,38 @@ fun ModernGameLayout(
                 // ─────────────────────────────────────────────────────────────
                 // PLAYFIELD ROW: LEFT WING (HOLD) + CENTER BOARD + RIGHT WING (NEXT)
                 // ─────────────────────────────────────────────────────────────
-                Row(
+                BoxWithConstraints(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    contentAlignment = Alignment.Center
                 ) {
-                    // LEFT WING (HOLD & STATS) - 66dp
-                    Column(
-                        modifier = Modifier.width(66.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    val totalH = maxHeight
+                    val totalW = maxWidth
+                    val sidePanelW = when {
+                        totalW < 340.dp -> 54.dp
+                        totalW < 380.dp -> 60.dp
+                        else -> 66.dp
+                    }
+                    val hSpacing = if (totalW < 360.dp) 6.dp else 8.dp
+                    val maxBoardW = (totalW - (sidePanelW * 2) - (hSpacing * 2)).coerceAtLeast(80.dp)
+                    val maxBoardH = (totalH - 4.dp).coerceAtLeast(160.dp)
+                    val boardH = minOf(maxBoardH, maxBoardW * 2f)
+                    val boardW = boardH * 0.5f
+
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
+                        // LEFT WING (HOLD & STATS)
+                        Column(
+                            modifier = Modifier.width(sidePanelW),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
                         val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
                             if (isPerfectionistMode && gameState.currentPiece != null) {
                                 viewModel.gameEngine.calculateOptimalPlacement(
@@ -1665,21 +1788,21 @@ fun ModernGameLayout(
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(hSpacing))
 
                     // ── CENTRAL BOARD MATRIX ──
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .size(width = boardW, height = boardH)
                             .offset(x = shakeX, y = shakeY)
-                            .aspectRatio(10f / 20f)
                             .clip(RoundedCornerShape(22.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                             .border(
                                 BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
                                 RoundedCornerShape(22.dp)
                             )
-                            .padding(2.dp)
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         GameBoardView(
                             gameState = gameState,
@@ -1710,15 +1833,39 @@ fun ModernGameLayout(
                                     .background(MaterialTheme.colorScheme.error.copy(alpha = hazardAlpha))
                             )
                         }
+
+                        // Memory Mode 3-2-1 Countdown Badge
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE && gameState.memoryCountdownSeconds > 0,
+                            enter = fadeIn() + scaleIn(),
+                            exit = fadeOut() + scaleOut()
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                                shadowElevation = 8.dp,
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.error),
+                                modifier = Modifier.size(64.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "${gameState.memoryCountdownSeconds}",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(hSpacing))
 
-                    // RIGHT WING (NEXT QUEUE & TIMER/BADGES) - 66dp
+                    // RIGHT WING (NEXT QUEUE & TIMER/BADGES)
                     Column(
-                        modifier = Modifier.width(66.dp),
+                        modifier = Modifier.width(sidePanelW),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // MD3 Expressive NEXT Queue Card
                         Surface(
@@ -1832,8 +1979,9 @@ fun ModernGameLayout(
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
                 // ─────────────────────────────────────────────────────────────
                 // CONTROLS SECTION (Standard configurable controls)
@@ -2039,52 +2187,6 @@ fun GameControlsSection(
                         ControlButton(actionType = "down", onClick = onDownPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
                         Spacer(modifier = Modifier.width(10.dp))
                         ControlButton(actionType = "right", onClick = onRightPress, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                    }
-                }
-            }
-            "swipe_hybrid" -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height((76 * controlButtonScale).dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onTap = { onRotatePress() }
-                                )
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = onLeftPress) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Left", tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = onDownPress) {
-                                Icon(Icons.Default.ArrowDownward, contentDescription = "Soft Drop", tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = onRightPress) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Right", tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        ControlButton(actionType = "drop", onClick = onHardDropPress, isPrimary = true, scale = controlButtonScale, buttonStyle = controlButtonStyle, viewModel = viewModel)
-                        ControlButton(actionType = "hold", onClick = onHoldPress, scale = controlButtonScale * 0.9f, buttonStyle = controlButtonStyle, viewModel = viewModel)
                     }
                 }
             }
@@ -2298,7 +2400,16 @@ fun GameBoardView(
                                    tx in 0 until gameState.grid[target.y].size && 
                                    gameState.grid[target.y][tx] != 0
 
-                    val stencilFill = if (isFilled) Color(0xFFFFD700).copy(alpha = 0.25f) else Color.Gray.copy(alpha = 0.08f)
+                    val stencilFill = when {
+                        isFilled -> Color(0xFFFFD700).copy(alpha = 0.35f)
+                        gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE -> Color(0xFF42A5F5).copy(alpha = 0.45f)
+                        else -> Color.Gray.copy(alpha = 0.12f)
+                    }
+                    val stencilStroke = when {
+                        isFilled -> Color(0xFFFFD700).copy(alpha = 0.80f)
+                        gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE -> Color(0xFF90CAF9).copy(alpha = 0.90f)
+                        else -> Color.Gray.copy(alpha = 0.35f)
+                    }
                     drawRoundRect(
                         color = stencilFill,
                         topLeft = Offset(drawTx * cellSize + 2f, ty * cellSize + 2f),
@@ -2306,12 +2417,12 @@ fun GameBoardView(
                         cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
                     )
                     drawRoundRect(
-                        color = Color.Gray.copy(alpha = if (isFilled) 0.60f else 0.35f),
+                        color = stencilStroke,
                         topLeft = Offset(drawTx * cellSize + 2f, ty * cellSize + 2f),
                         size = Size(cellSize - 4f, cellSize - 4f),
                         cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx()),
                         style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = 0.8.dp.toPx()
+                            width = if (gameState.gameMode == com.example.game.GameMode.MEMORY_PUZZLE) 1.5.dp.toPx() else 0.8.dp.toPx()
                         )
                     )
                 }

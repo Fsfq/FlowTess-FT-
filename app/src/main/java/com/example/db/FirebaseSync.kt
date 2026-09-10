@@ -71,8 +71,14 @@ object FirebaseSync {
         val unlockedAchievements = allPrefs.filter { it.key.startsWith("ach_") && it.key.endsWith("_unlocked") && it.value == true }
             .map { it.key.removePrefix("ach_").removeSuffix("_unlocked") }
 
+        val isVerified = user.isEmailVerified || profilePrefs.getBoolean("is_email_verified", false)
+
         val data = mutableMapOf<String, Any>(
             "uid" to user.uid,
+            "email" to (user.email ?: ""),
+            "email_verified" to isVerified,
+            "is_verified" to isVerified,
+            "emailVerified" to isVerified,
             "player_name" to playerName,
             "equipped_avatar_frame" to (profilePrefs.getString("equipped_avatar_frame", "standard") ?: "standard"),
             "purchased_avatar_frames" to (profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard"))?.toList() ?: listOf("standard")),
@@ -195,6 +201,13 @@ object FirebaseSync {
 
                 val editorProfile = profilePrefs.edit()
                 val editorTetris = tetrisPrefs.edit()
+
+                val cloudVerified = (data["email_verified"] as? Boolean)
+                    ?: (data["is_verified"] as? Boolean)
+                    ?: (data["emailVerified"] as? Boolean)
+                if (cloudVerified == true) {
+                    editorProfile.putBoolean("is_email_verified", true)
+                }
 
                 (data["equipped_avatar_frame"] as? String)?.let { editorProfile.putString("equipped_avatar_frame", it) }
                 val localFrames = profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard")) ?: setOf("standard")

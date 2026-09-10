@@ -24,6 +24,8 @@ static bool g_IsInitialized = false;
 static EOS_ProductUserId g_LocalProductUserId = nullptr;
 static std::string g_LocalProductUserIdStr = "";
 static EOS_NotificationId g_P2pNotificationId = EOS_INVALID_NOTIFICATIONID;
+static EOS_NotificationId g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
+static jobject g_MemberStatusCallbackRef = nullptr;
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     g_JavaVM = vm;
@@ -128,6 +130,16 @@ Java_com_example_eos_EosBridge_nativeTick(JNIEnv* env, jobject thiz) {
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeShutdown(JNIEnv* env, jobject thiz) {
     if (g_PlatformHandle != nullptr) {
+        EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+        if (LobbyHandle != nullptr && g_LobbyMemberStatusNotificationId != EOS_INVALID_NOTIFICATIONID) {
+            EOS_Lobby_RemoveNotifyLobbyMemberStatusReceived(LobbyHandle, g_LobbyMemberStatusNotificationId);
+            g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
+        }
+        if (g_MemberStatusCallbackRef != nullptr) {
+            env->DeleteGlobalRef(g_MemberStatusCallbackRef);
+            g_MemberStatusCallbackRef = nullptr;
+        }
+
         EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
         if (P2pHandle != nullptr && g_P2pNotificationId != EOS_INVALID_NOTIFICATIONID) {
             EOS_P2P_RemoveNotifyPeerConnectionRequest(P2pHandle, g_P2pNotificationId);
@@ -474,27 +486,114 @@ Java_com_example_eos_EosBridge_nativeAcceptConnection(
 
 // ── REAL EOS LOBBY CLOUD API ──
 
-struct LobbyContext {
+struct CreateLobbyContext {
     jobject callbackRef;
     std::string roomName;
+    std::string hostName;
+    std::string hostTier;
+    std::string shortCode;
     int bet;
+    bool isPrivate;
+};
+
+struct JoinLobbyContext {
+    jobject callbackRef;
+};
+
+struct SearchContext {
+    jobject callbackRef;
+    EOS_HLobbySearch searchHandle;
 };
 
 static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackInfo* Data) {
-    LobbyContext* ctx = static_cast<LobbyContext*>(Data->ClientData);
+    CreateLobbyContext* ctx = static_cast<CreateLobbyContext*>(Data->ClientData);
     JNIEnv* env = GetEnv();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string lobbyId = Data->LobbyId ? Data->LobbyId : "";
     LOGI("EOS_Lobby_CreateLobby finished: result=%d, lobbyId=%s", (int)Data->ResultCode, lobbyId.c_str());
 
+    if (success && !lobbyId.empty() && g_PlatformHandle != nullptr) {
+        EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+        if (LobbyHandle != nullptr) {
+            EOS_Lobby_UpdateLobbyModificationOptions ModOpts = {};
+            ModOpts.ApiVersion = EOS_LOBBY_UPDATELOBBYMODIFICATION_API_LATEST;
+            ModOpts.LobbyId = lobbyId.c_str();
+            ModOpts.LocalUserId = g_LocalProductUserId;
+            EOS_HLobbyModification ModHandle = nullptr;
+
+            if (EOS_Lobby_UpdateLobbyModification(LobbyHandle, &ModOpts, &ModHandle) == EOS_EResult::EOS_Success && ModHandle != nullptr) {
+                auto AddStr = [&](const char* k, const std::string& v) {
+                    EOS_Lobby_AttributeData a = {};
+                    a.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
+                    a.Key = k;
+                    a.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+                    a.Value.AsUtf8 = v.c_str();
+                    EOS_LobbyModification_AddAttributeOptions o = {};
+                    o.ApiVersion = EOS_LOBBYMODIFICATION_ADDATTRIBUTE_API_LATEST;
+                    o.Attribute = &a;
+                    o.Visibility = EOS_ELobbyAttributeVisibility::EOS_LAT_PUBLIC;
+                    EOS_LobbyModification_AddAttribute(ModHandle, &o);
+                };
+
+                auto AddInt = [&](const char* k, int64_t v) {
+                    EOS_Lobby_AttributeData a = {};
+                    a.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
+                    a.Key = k;
+                    a.ValueType = EOS_ELobbyAttributeType::EOS_AT_INT64;
+                    a.Value.AsInt64 = v;
+                    EOS_LobbyModification_AddAttributeOptions o = {};
+                    o.ApiVersion = EOS_LOBBYMODIFICATION_ADDATTRIBUTE_API_LATEST;
+                    o.Attribute = &a;
+                    o.Visibility = EOS_ELobbyAttributeVisibility::EOS_LAT_PUBLIC;
+                    EOS_LobbyModification_AddAttribute(ModHandle, &o);
+                };
+
+                AddStr("ROOM_NAME", ctx->roomName);
+                AddStr("HOST_NAME", ctx->hostName);
+                AddStr("HOST_TIER", ctx->hostTier);
+                AddStr("CODE", ctx->shortCode);
+                AddInt("BET", (int64_t)ctx->bet);
+                AddInt("IS_PRIVATE", ctx->isPrivate ? 1 : 0);
+
+                EOS_Lobby_UpdateLobbyOptions UpOpts = {};
+                UpOpts.ApiVersion = EOS_LOBBY_UPDATELOBBY_API_LATEST;
+                UpOpts.LobbyModificationHandle = ModHandle;
+
+                EOS_Lobby_UpdateLobby(LobbyHandle, &UpOpts, nullptr, [](const EOS_Lobby_UpdateLobbyCallbackInfo* UpData) {
+                    LOGI("Lobby attributes update result: %d", (int)UpData->ResultCode);
+                });
+
+                EOS_LobbyModification_Release(ModHandle);
+            }
+        }
+    }
+
     if (ctx && ctx->callbackRef && env) {
         jclass cbClass = env->GetObjectClass(ctx->callbackRef);
-        jmethodID methodId = env->GetMethodID(cbClass, "onLobbyResult", "(ZLjava/lang/String;)V");
+        jmethodID methodId = env->GetMethodID(
+            cbClass,
+            "onLobbyResult",
+            "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
+        );
         if (methodId) {
             jstring idJStr = lobbyId.empty() ? nullptr : env->NewStringUTF(lobbyId.c_str());
-            env->CallVoidMethod(ctx->callbackRef, methodId, success ? JNI_TRUE : JNI_FALSE, idJStr);
+            jstring puidJStr = g_LocalProductUserIdStr.empty() ? nullptr : env->NewStringUTF(g_LocalProductUserIdStr.c_str());
+            jstring nameJStr = env->NewStringUTF(ctx->roomName.c_str());
+            jstring hostNameJStr = env->NewStringUTF(ctx->hostName.c_str());
+            jstring hostTierJStr = env->NewStringUTF(ctx->hostTier.c_str());
+
+            env->CallVoidMethod(
+                ctx->callbackRef, methodId,
+                success ? JNI_TRUE : JNI_FALSE,
+                idJStr, puidJStr, nameJStr, hostNameJStr, hostTierJStr, ctx->bet
+            );
+
             if (idJStr) env->DeleteLocalRef(idJStr);
+            if (puidJStr) env->DeleteLocalRef(puidJStr);
+            if (nameJStr) env->DeleteLocalRef(nameJStr);
+            if (hostNameJStr) env->DeleteLocalRef(hostNameJStr);
+            if (hostTierJStr) env->DeleteLocalRef(hostTierJStr);
         }
         env->DeleteGlobalRef(ctx->callbackRef);
     }
@@ -504,7 +603,9 @@ static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackIn
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeCreateLobby(
     JNIEnv* env, jobject thiz,
-    jstring roomName, jint bet, jboolean isPrivate, jobject callback) {
+    jstring roomName, jint bet, jboolean isPrivate,
+    jstring shortCode, jstring hostName, jstring hostTier,
+    jobject callback) {
 
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         LOGE("Cannot create lobby: platform or local user is null");
@@ -514,39 +615,159 @@ Java_com_example_eos_EosBridge_nativeCreateLobby(
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
     if (LobbyHandle == nullptr) return;
 
-    LobbyContext* ctx = new LobbyContext();
+    const char* rNameChars = env->GetStringUTFChars(roomName, nullptr);
+    const char* codeChars = env->GetStringUTFChars(shortCode, nullptr);
+    const char* hNameChars = env->GetStringUTFChars(hostName, nullptr);
+    const char* hTierChars = env->GetStringUTFChars(hostTier, nullptr);
+
+    CreateLobbyContext* ctx = new CreateLobbyContext();
     ctx->callbackRef = env->NewGlobalRef(callback);
+    ctx->roomName = rNameChars ? rNameChars : "Tetris Room";
+    ctx->shortCode = codeChars ? codeChars : "";
+    ctx->hostName = hNameChars ? hNameChars : "Host";
+    ctx->hostTier = hTierChars ? hTierChars : "Bronze";
     ctx->bet = bet;
+    ctx->isPrivate = (isPrivate == JNI_TRUE);
+
+    env->ReleaseStringUTFChars(roomName, rNameChars);
+    env->ReleaseStringUTFChars(shortCode, codeChars);
+    env->ReleaseStringUTFChars(hostName, hNameChars);
+    env->ReleaseStringUTFChars(hostTier, hTierChars);
 
     EOS_Lobby_CreateLobbyOptions CreateOptions = {};
     CreateOptions.ApiVersion = EOS_LOBBY_CREATELOBBY_API_LATEST;
     CreateOptions.LocalUserId = g_LocalProductUserId;
     CreateOptions.MaxLobbyMembers = 2;
-    CreateOptions.PermissionLevel = isPrivate ? EOS_ELobbyPermissionLevel::EOS_LPL_INVITEONLY : EOS_ELobbyPermissionLevel::EOS_LPL_PUBLICADVERTISED;
+    CreateOptions.PermissionLevel = EOS_ELobbyPermissionLevel::EOS_LPL_PUBLICADVERTISED;
     CreateOptions.bPresenceEnabled = EOS_FALSE;
     CreateOptions.bAllowInvites = EOS_TRUE;
-    CreateOptions.BucketId = "TetrisLobby";
+    CreateOptions.BucketId = "TetrisLobby:1";
     CreateOptions.bDisableHostMigration = EOS_TRUE;
     CreateOptions.bEnableRTCRoom = EOS_FALSE;
+    CreateOptions.bEnableJoinById = EOS_TRUE; // CRITICAL: allows join by ID/Code!
 
     EOS_Lobby_CreateLobby(LobbyHandle, &CreateOptions, ctx, OnCreateLobbyCallback);
 }
 
 static void EOS_CALL OnJoinLobbyCallback(const EOS_Lobby_JoinLobbyByIdCallbackInfo* Data) {
-    LobbyContext* ctx = static_cast<LobbyContext*>(Data->ClientData);
+    JoinLobbyContext* ctx = static_cast<JoinLobbyContext*>(Data->ClientData);
     JNIEnv* env = GetEnv();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string lobbyId = Data->LobbyId ? Data->LobbyId : "";
+    std::string hostPuidStr = "";
+    std::string roomNameStr = "EOS Room";
+    std::string hostNameStr = "Host";
+    std::string hostTierStr = "Bronze";
+    int bet = 0;
+
     LOGI("EOS_Lobby_JoinLobbyById finished: result=%d, lobbyId=%s", (int)Data->ResultCode, lobbyId.c_str());
+
+    if (success && !lobbyId.empty() && g_PlatformHandle != nullptr) {
+        EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+        if (LobbyHandle != nullptr) {
+            EOS_Lobby_CopyLobbyDetailsHandleOptions CopyOpts = {};
+            CopyOpts.ApiVersion = EOS_LOBBY_COPYLOBBYDETAILSHANDLE_API_LATEST;
+            CopyOpts.LobbyId = lobbyId.c_str();
+            CopyOpts.LocalUserId = g_LocalProductUserId;
+            EOS_HLobbyDetails Details = nullptr;
+
+            if (EOS_Lobby_CopyLobbyDetailsHandle(LobbyHandle, &CopyOpts, &Details) == EOS_EResult::EOS_Success && Details != nullptr) {
+                EOS_LobbyDetails_CopyInfoOptions InfoOpts = {};
+                InfoOpts.ApiVersion = EOS_LOBBYDETAILS_COPYINFO_API_LATEST;
+                EOS_LobbyDetails_Info* Info = nullptr;
+                if (EOS_LobbyDetails_CopyInfo(Details, &InfoOpts, &Info) == EOS_EResult::EOS_Success && Info != nullptr) {
+                    if (Info->LobbyOwnerUserId) {
+                        char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+                        int32_t bSize = sizeof(puidBuf);
+                        if (EOS_ProductUserId_ToString(Info->LobbyOwnerUserId, puidBuf, &bSize) == EOS_EResult::EOS_Success) {
+                            hostPuidStr = puidBuf;
+                        }
+                    }
+                    EOS_LobbyDetails_Info_Release(Info);
+                }
+
+                auto ReadStr = [&](const char* k, std::string& out) {
+                    EOS_LobbyDetails_CopyAttributeByKeyOptions o = {};
+                    o.ApiVersion = EOS_LOBBYDETAILS_COPYATTRIBUTEBYKEY_API_LATEST;
+                    o.AttrKey = k;
+                    EOS_Lobby_Attribute* a = nullptr;
+                    if (EOS_LobbyDetails_CopyAttributeByKey(Details, &o, &a) == EOS_EResult::EOS_Success && a) {
+                        if (a->Data && a->Data->ValueType == EOS_ELobbyAttributeType::EOS_AT_STRING && a->Data->Value.AsUtf8) {
+                            out = a->Data->Value.AsUtf8;
+                        }
+                        EOS_Lobby_Attribute_Release(a);
+                    }
+                };
+
+                auto ReadInt = [&](const char* k, int& out) {
+                    EOS_LobbyDetails_CopyAttributeByKeyOptions o = {};
+                    o.ApiVersion = EOS_LOBBYDETAILS_COPYATTRIBUTEBYKEY_API_LATEST;
+                    o.AttrKey = k;
+                    EOS_Lobby_Attribute* a = nullptr;
+                    if (EOS_LobbyDetails_CopyAttributeByKey(Details, &o, &a) == EOS_EResult::EOS_Success && a) {
+                        if (a->Data && a->Data->ValueType == EOS_ELobbyAttributeType::EOS_AT_INT64) {
+                            out = (int)a->Data->Value.AsInt64;
+                        }
+                        EOS_Lobby_Attribute_Release(a);
+                    }
+                };
+
+                ReadStr("ROOM_NAME", roomNameStr);
+                ReadStr("HOST_NAME", hostNameStr);
+                ReadStr("HOST_TIER", hostTierStr);
+                ReadInt("BET", bet);
+
+                EOS_LobbyDetails_Release(Details);
+            }
+
+            // Proactively accept connection from host
+            if (!hostPuidStr.empty()) {
+                EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
+                if (P2pHandle != nullptr) {
+                    EOS_ProductUserId hostUserId = EOS_ProductUserId_FromString(hostPuidStr.c_str());
+                    if (EOS_ProductUserId_IsValid(hostUserId)) {
+                        EOS_P2P_SocketId SocketId = {};
+                        SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
+                        strncpy(SocketId.SocketName, "TetrisP2PSocket", sizeof(SocketId.SocketName) - 1);
+
+                        EOS_P2P_AcceptConnectionOptions AcceptOptions = {};
+                        AcceptOptions.ApiVersion = EOS_P2P_ACCEPTCONNECTION_API_LATEST;
+                        AcceptOptions.LocalUserId = g_LocalProductUserId;
+                        AcceptOptions.RemoteUserId = hostUserId;
+                        AcceptOptions.SocketId = &SocketId;
+                        EOS_P2P_AcceptConnection(P2pHandle, &AcceptOptions);
+                    }
+                }
+            }
+        }
+    }
 
     if (ctx && ctx->callbackRef && env) {
         jclass cbClass = env->GetObjectClass(ctx->callbackRef);
-        jmethodID methodId = env->GetMethodID(cbClass, "onLobbyResult", "(ZLjava/lang/String;)V");
+        jmethodID methodId = env->GetMethodID(
+            cbClass,
+            "onLobbyResult",
+            "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
+        );
         if (methodId) {
             jstring idJStr = lobbyId.empty() ? nullptr : env->NewStringUTF(lobbyId.c_str());
-            env->CallVoidMethod(ctx->callbackRef, methodId, success ? JNI_TRUE : JNI_FALSE, idJStr);
+            jstring puidJStr = hostPuidStr.empty() ? nullptr : env->NewStringUTF(hostPuidStr.c_str());
+            jstring nameJStr = env->NewStringUTF(roomNameStr.c_str());
+            jstring hostNameJStr = env->NewStringUTF(hostNameStr.c_str());
+            jstring hostTierJStr = env->NewStringUTF(hostTierStr.c_str());
+
+            env->CallVoidMethod(
+                ctx->callbackRef, methodId,
+                success ? JNI_TRUE : JNI_FALSE,
+                idJStr, puidJStr, nameJStr, hostNameJStr, hostTierJStr, bet
+            );
+
             if (idJStr) env->DeleteLocalRef(idJStr);
+            if (puidJStr) env->DeleteLocalRef(puidJStr);
+            if (nameJStr) env->DeleteLocalRef(nameJStr);
+            if (hostNameJStr) env->DeleteLocalRef(hostNameJStr);
+            if (hostTierJStr) env->DeleteLocalRef(hostTierJStr);
         }
         env->DeleteGlobalRef(ctx->callbackRef);
     }
@@ -562,10 +783,10 @@ Java_com_example_eos_EosBridge_nativeJoinLobby(
     if (LobbyHandle == nullptr) return;
 
     const char* idChars = env->GetStringUTFChars(lobbyId, nullptr);
-    std::string idStr = idChars;
-    env->ReleaseStringUTFChars(lobbyId, idChars);
+    std::string idStr = idChars ? idChars : "";
+    if (idChars) env->ReleaseStringUTFChars(lobbyId, idChars);
 
-    LobbyContext* ctx = new LobbyContext();
+    JoinLobbyContext* ctx = new JoinLobbyContext();
     ctx->callbackRef = env->NewGlobalRef(callback);
 
     EOS_Lobby_JoinLobbyByIdOptions JoinOptions = {};
@@ -588,8 +809,8 @@ Java_com_example_eos_EosBridge_nativeLeaveLobby(JNIEnv* env, jobject thiz, jstri
     if (LobbyHandle == nullptr) return;
 
     const char* idChars = env->GetStringUTFChars(lobbyId, nullptr);
-    std::string idStr = idChars;
-    env->ReleaseStringUTFChars(lobbyId, idChars);
+    std::string idStr = idChars ? idChars : "";
+    if (idChars) env->ReleaseStringUTFChars(lobbyId, idChars);
 
     EOS_Lobby_LeaveLobbyOptions LeaveOptions = {};
     LeaveOptions.ApiVersion = EOS_LOBBY_LEAVELOBBY_API_LATEST;
@@ -597,6 +818,267 @@ Java_com_example_eos_EosBridge_nativeLeaveLobby(JNIEnv* env, jobject thiz, jstri
     LeaveOptions.LocalUserId = g_LocalProductUserId;
 
     EOS_Lobby_LeaveLobby(LobbyHandle, &LeaveOptions, nullptr, OnLeaveLobbyCallback);
+}
+
+// ── LOBBY MEMBER STATUS NOTIFICATION ──
+
+static void EOS_CALL OnLobbyMemberStatusReceived(const EOS_Lobby_LobbyMemberStatusReceivedCallbackInfo* Data) {
+    if (Data == nullptr) return;
+
+    std::string lobbyId = Data->LobbyId ? Data->LobbyId : "";
+    char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+    int32_t bufSize = sizeof(puidBuf);
+    std::string puidStr = "";
+    if (Data->TargetUserId && EOS_ProductUserId_ToString(Data->TargetUserId, puidBuf, &bufSize) == EOS_EResult::EOS_Success) {
+        puidStr = puidBuf;
+    }
+
+    std::string statusStr = "UNKNOWN";
+    if (Data->CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_JOINED) {
+        statusStr = "JOINED";
+        // Proactively accept connection from joined user
+        if (g_PlatformHandle != nullptr && g_LocalProductUserId != nullptr && Data->TargetUserId != nullptr) {
+            EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
+            if (P2pHandle != nullptr) {
+                EOS_P2P_SocketId SocketId = {};
+                SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
+                strncpy(SocketId.SocketName, "TetrisP2PSocket", sizeof(SocketId.SocketName) - 1);
+
+                EOS_P2P_AcceptConnectionOptions AcceptOptions = {};
+                AcceptOptions.ApiVersion = EOS_P2P_ACCEPTCONNECTION_API_LATEST;
+                AcceptOptions.LocalUserId = g_LocalProductUserId;
+                AcceptOptions.RemoteUserId = Data->TargetUserId;
+                AcceptOptions.SocketId = &SocketId;
+                EOS_P2P_AcceptConnection(P2pHandle, &AcceptOptions);
+                LOGI("Proactively accepted connection for joined member %s", puidStr.c_str());
+            }
+        }
+    } else if (Data->CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_LEFT) {
+        statusStr = "LEFT";
+    } else if (Data->CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_DISCONNECTED) {
+        statusStr = "DISCONNECTED";
+    } else if (Data->CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_CLOSED) {
+        statusStr = "CLOSED";
+    }
+
+    LOGI("EOS Member status changed: lobby=%s, member=%s, status=%s", lobbyId.c_str(), puidStr.c_str(), statusStr.c_str());
+
+    if (g_MemberStatusCallbackRef != nullptr) {
+        JNIEnv* env = GetEnv();
+        if (env) {
+            jclass cbClass = env->GetObjectClass(g_MemberStatusCallbackRef);
+            jmethodID methodId = env->GetMethodID(cbClass, "onMemberStatusChanged", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            if (methodId) {
+                jstring lId = env->NewStringUTF(lobbyId.c_str());
+                jstring pId = env->NewStringUTF(puidStr.c_str());
+                jstring sId = env->NewStringUTF(statusStr.c_str());
+                env->CallVoidMethod(g_MemberStatusCallbackRef, methodId, lId, pId, sId);
+                if (lId) env->DeleteLocalRef(lId);
+                if (pId) env->DeleteLocalRef(pId);
+                if (sId) env->DeleteLocalRef(sId);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_eos_EosBridge_nativeSetupMemberStatusNotification(JNIEnv* env, jobject thiz, jobject callback) {
+    if (g_PlatformHandle == nullptr) return;
+    EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+    if (LobbyHandle == nullptr) return;
+
+    if (g_LobbyMemberStatusNotificationId != EOS_INVALID_NOTIFICATIONID) {
+        EOS_Lobby_RemoveNotifyLobbyMemberStatusReceived(LobbyHandle, g_LobbyMemberStatusNotificationId);
+        g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
+    }
+    if (g_MemberStatusCallbackRef != nullptr) {
+        env->DeleteGlobalRef(g_MemberStatusCallbackRef);
+        g_MemberStatusCallbackRef = nullptr;
+    }
+
+    if (callback != nullptr) {
+        g_MemberStatusCallbackRef = env->NewGlobalRef(callback);
+        EOS_Lobby_AddNotifyLobbyMemberStatusReceivedOptions Opts = {};
+        Opts.ApiVersion = EOS_LOBBY_ADDNOTIFYLOBBYMEMBERSTATUSRECEIVED_API_LATEST;
+        g_LobbyMemberStatusNotificationId = EOS_Lobby_AddNotifyLobbyMemberStatusReceived(LobbyHandle, &Opts, nullptr, OnLobbyMemberStatusReceived);
+        LOGI("Lobby member status notification registered, ID: %llu", (unsigned long long)g_LobbyMemberStatusNotificationId);
+    }
+}
+
+// ── REAL EOS LOBBY SEARCH ──
+
+static void EOS_CALL OnLobbySearchFindCallback(const EOS_LobbySearch_FindCallbackInfo* Data) {
+    SearchContext* ctx = static_cast<SearchContext*>(Data->ClientData);
+    JNIEnv* env = GetEnv();
+
+    bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
+    std::string jsonResult = "[]";
+
+    LOGI("EOS_LobbySearch_Find finished with result: %d", (int)Data->ResultCode);
+
+    if (success && ctx && ctx->searchHandle != nullptr) {
+        EOS_LobbySearch_GetSearchResultCountOptions CountOpts = {};
+        CountOpts.ApiVersion = EOS_LOBBYSEARCH_GETSEARCHRESULTCOUNT_API_LATEST;
+        uint32_t count = EOS_LobbySearch_GetSearchResultCount(ctx->searchHandle, &CountOpts);
+        LOGI("EOS_LobbySearch found %u lobbies", count);
+
+        std::stringstream ss;
+        ss << "[";
+        bool first = true;
+
+        for (uint32_t i = 0; i < count; ++i) {
+            EOS_LobbySearch_CopySearchResultByIndexOptions CopyOpts = {};
+            CopyOpts.ApiVersion = EOS_LOBBYSEARCH_COPYSEARCHRESULTBYINDEX_API_LATEST;
+            CopyOpts.LobbyIndex = i;
+            EOS_HLobbyDetails Details = nullptr;
+
+            if (EOS_LobbySearch_CopySearchResultByIndex(ctx->searchHandle, &CopyOpts, &Details) == EOS_EResult::EOS_Success && Details != nullptr) {
+                EOS_LobbyDetails_CopyInfoOptions InfoOpts = {};
+                InfoOpts.ApiVersion = EOS_LOBBYDETAILS_COPYINFO_API_LATEST;
+                EOS_LobbyDetails_Info* Info = nullptr;
+
+                if (EOS_LobbyDetails_CopyInfo(Details, &InfoOpts, &Info) == EOS_EResult::EOS_Success && Info != nullptr) {
+                    std::string lobbyId = Info->LobbyId ? Info->LobbyId : "";
+                    std::string hostPuid = "";
+                    if (Info->LobbyOwnerUserId) {
+                        char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+                        int32_t bSize = sizeof(puidBuf);
+                        if (EOS_ProductUserId_ToString(Info->LobbyOwnerUserId, puidBuf, &bSize) == EOS_EResult::EOS_Success) {
+                            hostPuid = puidBuf;
+                        }
+                    }
+                    uint32_t availSlots = Info->AvailableSlots;
+                    EOS_LobbyDetails_Info_Release(Info);
+
+                    std::string rName = "EOS Room";
+                    std::string hName = "Player";
+                    std::string hTier = "Bronze";
+                    std::string code = "";
+                    int bet = 0;
+                    int isPriv = 0;
+
+                    auto ReadStr = [&](const char* k, std::string& out) {
+                        EOS_LobbyDetails_CopyAttributeByKeyOptions o = {};
+                        o.ApiVersion = EOS_LOBBYDETAILS_COPYATTRIBUTEBYKEY_API_LATEST;
+                        o.AttrKey = k;
+                        EOS_Lobby_Attribute* a = nullptr;
+                        if (EOS_LobbyDetails_CopyAttributeByKey(Details, &o, &a) == EOS_EResult::EOS_Success && a) {
+                            if (a->Data && a->Data->ValueType == EOS_ELobbyAttributeType::EOS_AT_STRING && a->Data->Value.AsUtf8) {
+                                out = a->Data->Value.AsUtf8;
+                            }
+                            EOS_Lobby_Attribute_Release(a);
+                        }
+                    };
+
+                    auto ReadInt = [&](const char* k, int& out) {
+                        EOS_LobbyDetails_CopyAttributeByKeyOptions o = {};
+                        o.ApiVersion = EOS_LOBBYDETAILS_COPYATTRIBUTEBYKEY_API_LATEST;
+                        o.AttrKey = k;
+                        EOS_Lobby_Attribute* a = nullptr;
+                        if (EOS_LobbyDetails_CopyAttributeByKey(Details, &o, &a) == EOS_EResult::EOS_Success && a) {
+                            if (a->Data && a->Data->ValueType == EOS_ELobbyAttributeType::EOS_AT_INT64) {
+                                out = (int)a->Data->Value.AsInt64;
+                            }
+                            EOS_Lobby_Attribute_Release(a);
+                        }
+                    };
+
+                    ReadStr("ROOM_NAME", rName);
+                    ReadStr("HOST_NAME", hName);
+                    ReadStr("HOST_TIER", hTier);
+                    ReadStr("CODE", code);
+                    ReadInt("BET", bet);
+                    ReadInt("IS_PRIVATE", isPriv);
+
+                    if (isPriv == 0 && !lobbyId.empty()) {
+                        if (!first) ss << ",";
+                        first = false;
+                        ss << "{";
+                        ss << "\"id\":\"" << lobbyId << "\",";
+                        ss << "\"name\":\"" << rName << "\",";
+                        ss << "\"hostPuid\":\"" << hostPuid << "\",";
+                        ss << "\"hostName\":\"" << hName << "\",";
+                        ss << "\"hostTier\":\"" << hTier << "\",";
+                        ss << "\"bet\":" << bet << ",";
+                        ss << "\"code\":\"" << code << "\",";
+                        ss << "\"availableSlots\":" << availSlots;
+                        ss << "}";
+                    }
+                }
+                EOS_LobbyDetails_Release(Details);
+            }
+        }
+        ss << "]";
+        jsonResult = ss.str();
+    }
+
+    if (ctx && ctx->searchHandle != nullptr) {
+        EOS_LobbySearch_Release(ctx->searchHandle);
+        ctx->searchHandle = nullptr;
+    }
+
+    if (ctx && ctx->callbackRef && env) {
+        jclass cbClass = env->GetObjectClass(ctx->callbackRef);
+        jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+        if (methodId) {
+            jstring resJStr = env->NewStringUTF(jsonResult.c_str());
+            env->CallVoidMethod(ctx->callbackRef, methodId, success ? JNI_TRUE : JNI_FALSE, resJStr);
+            if (resJStr) env->DeleteLocalRef(resJStr);
+        }
+        env->DeleteGlobalRef(ctx->callbackRef);
+    }
+    delete ctx;
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jobject callback) {
+    if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
+        if (callback) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
+        return;
+    }
+
+    EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+    if (LobbyHandle == nullptr) return;
+
+    EOS_Lobby_CreateLobbySearchOptions SearchOpts = {};
+    SearchOpts.ApiVersion = EOS_LOBBY_CREATELOBBYSEARCH_API_LATEST;
+    SearchOpts.MaxResults = 50;
+    EOS_HLobbySearch SearchHandle = nullptr;
+
+    if (EOS_Lobby_CreateLobbySearch(LobbyHandle, &SearchOpts, &SearchHandle) != EOS_EResult::EOS_Success || SearchHandle == nullptr) {
+        if (callback) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
+        return;
+    }
+
+    EOS_Lobby_AttributeData bucketAttr = {};
+    bucketAttr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
+    bucketAttr.Key = EOS_LOBBY_SEARCH_BUCKET_ID;
+    bucketAttr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+    bucketAttr.Value.AsUtf8 = "TetrisLobby:1";
+
+    EOS_LobbySearch_SetParameterOptions ParamOpts = {};
+    ParamOpts.ApiVersion = EOS_LOBBYSEARCH_SETPARAMETER_API_LATEST;
+    ParamOpts.Parameter = &bucketAttr;
+    ParamOpts.ComparisonOp = EOS_EComparisonOp::EOS_CO_EQUAL;
+    EOS_LobbySearch_SetParameter(SearchHandle, &ParamOpts);
+
+    SearchContext* ctx = new SearchContext();
+    ctx->callbackRef = env->NewGlobalRef(callback);
+    ctx->searchHandle = SearchHandle;
+
+    EOS_LobbySearch_FindOptions FindOpts = {};
+    FindOpts.ApiVersion = EOS_LOBBYSEARCH_FIND_API_LATEST;
+    FindOpts.LocalUserId = g_LocalProductUserId;
+
+    EOS_LobbySearch_Find(SearchHandle, &FindOpts, ctx, OnLobbySearchFindCallback);
 }
 
 } // extern "C"

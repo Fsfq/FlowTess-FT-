@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -437,7 +437,18 @@ fun TetrisApp(viewModel: MainViewModel) {
                 EosLobbyScreen(
                     viewModel = viewModel,
                     onBack = { safePopBackStack() },
-                    onNavigateToGame = { navigateDirect("multiplayer_game") }
+                    onNavigateToGame = { navigateDirect("eos_game") }
+                )
+            }
+            composable("eos_game") {
+                EosGameScreen(
+                    viewModel = viewModel,
+                    onBackToLobby = {
+                        val popped = navController.popBackStack()
+                        if (!popped) {
+                            navigateDirect("eos_lobby")
+                        }
+                    }
                 )
             }
             composable("lobby") {
@@ -558,60 +569,66 @@ fun TetrisApp(viewModel: MainViewModel) {
 
 
 
-        // Public Profile Modal Dialog
+        // Public Profile Full Screen Overlay
         val selectedProfile by viewModel.selectedPublicProfile.collectAsStateWithLifecycle()
-        if (selectedProfile != null) {
-            val prof = selectedProfile!!
-            val localPlayerName by viewModel.playerName.collectAsStateWithLifecycle()
-            val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-            val isSelf = (myUid != null && prof.uid == myUid) ||
-                    (prof.username.isNotEmpty() && prof.username.equals(localPlayerName, ignoreCase = true))
-            val friendsList by viewModel.friendsList.collectAsStateWithLifecycle()
-            val isFriend = remember(friendsList, prof.uid, prof.username) {
-                friendsList.any { it.uid == prof.uid || (it.username.isNotEmpty() && it.username.equals(prof.username, ignoreCase = true)) }
-            }
-            val context = androidx.compose.ui.platform.LocalContext.current
-
-            OtherUserProfileDialog(
-                profile = prof,
-                currentLang = currentLang,
-                themeColor = themeColorVal,
-                isFriend = isFriend,
-                isSelf = isSelf,
-                onDismiss = { viewModel.closeUserProfile() },
-                onAddFriend = {
-                    viewModel.sendFriendRequest(prof.username) { ok, msg ->
-                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onInviteToDuel = {
-                    val currentRoom = viewModel.lobbyManager.currentRoom.value
-                    if (currentRoom != null) {
-                        viewModel.lobbyManager.sendRoomInvite(
-                            targetUid = prof.uid,
-                            roomId = currentRoom.roomId,
-                            roomName = currentRoom.name,
-                            hostName = localPlayerName,
-                            avatarEmoji = viewModel.customAvatarEmoji.value,
-                            avatarBgColor = viewModel.customAvatarBgColor.value,
-                            avatarFrame = viewModel.equippedAvatarFrame.value,
-                            hostTier = viewModel.onlineTier.value
-                        )
-                        val sentMsg = when (currentLang) {
-                            Language.RU -> "Приглашение на дуэль отправлено!"
-                            Language.UA -> "Запрошення на дуель надіслано!"
-                            Language.KK -> "Дуэльге шақыру жіберілді!"
-                            Language.DE -> "Duell-Einladung gesendet!"
-                            Language.ZH -> "对决邀请已发送！"
-                            else -> "Duel invitation sent!"
-                        }
-                        android.widget.Toast.makeText(context, sentMsg, android.widget.Toast.LENGTH_SHORT).show()
-                    } else {
-                        viewModel.closeUserProfile()
-                        navigateDirect("lobby")
-                    }
+        AnimatedVisibility(
+            visible = selectedProfile != null,
+            enter = fadeIn(animationSpec = tween(220)) + slideInVertically(initialOffsetY = { it / 4 }, animationSpec = tween(250)),
+            exit = fadeOut(animationSpec = tween(180)) + slideOutVertically(targetOffsetY = { it / 4 }, animationSpec = tween(200))
+        ) {
+            val prof = selectedProfile
+            if (prof != null) {
+                val localPlayerName by viewModel.playerName.collectAsStateWithLifecycle()
+                val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                val isSelf = (myUid != null && prof.uid == myUid) ||
+                        (prof.username.isNotEmpty() && prof.username.equals(localPlayerName, ignoreCase = true))
+                val friendsList by viewModel.friendsList.collectAsStateWithLifecycle()
+                val isFriend = remember(friendsList, prof.uid, prof.username) {
+                    friendsList.any { it.uid == prof.uid || (it.username.isNotEmpty() && it.username.equals(prof.username, ignoreCase = true)) }
                 }
-            )
+                val context = androidx.compose.ui.platform.LocalContext.current
+
+                OtherUserProfileDialog(
+                    profile = prof,
+                    currentLang = currentLang,
+                    themeColor = themeColorVal,
+                    isFriend = isFriend,
+                    isSelf = isSelf,
+                    onDismiss = { viewModel.closeUserProfile() },
+                    onAddFriend = {
+                        viewModel.sendFriendRequest(prof.username) { ok, msg ->
+                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onInviteToDuel = {
+                        val currentRoom = viewModel.lobbyManager.currentRoom.value
+                        if (currentRoom != null) {
+                            viewModel.lobbyManager.sendRoomInvite(
+                                targetUid = prof.uid,
+                                roomId = currentRoom.roomId,
+                                roomName = currentRoom.name,
+                                hostName = localPlayerName,
+                                avatarEmoji = viewModel.customAvatarEmoji.value,
+                                avatarBgColor = viewModel.customAvatarBgColor.value,
+                                avatarFrame = viewModel.equippedAvatarFrame.value,
+                                hostTier = viewModel.onlineTier.value
+                            )
+                            val sentMsg = when (currentLang) {
+                                Language.RU -> "Приглашение на дуэль отправлено!"
+                                Language.UA -> "Запрошення на дуель надіслано!"
+                                Language.KK -> "Дуэльге шақыру жіберілді!"
+                                Language.DE -> "Duell-Einladung gesendet!"
+                                Language.ZH -> "对决邀请已发送！"
+                                else -> "Duel invitation sent!"
+                            }
+                            android.widget.Toast.makeText(context, sentMsg, android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            viewModel.closeUserProfile()
+                            navigateDirect("lobby")
+                        }
+                    }
+                )
+            }
         }
 
         // Friends System Dialog
@@ -887,7 +904,7 @@ fun MainMenuScreen(
                 var broadcastText by remember { mutableStateOf("") }
                 var broadcastSentFeedback by remember { mutableStateOf<String?>(null) }
                 var userSearchQuery by remember { mutableStateOf("") }
-                var selectedUserFilter by remember { mutableIntStateOf(0) } // 0: All, 1: Online, 2: Verified, 3: Banned, 4: Rich
+                var selectedUserFilter by remember { mutableIntStateOf(0) } // 0: All, 1: Online, 2: Verified, 3: Unverified, 4: Banned, 5: Rich
                 var selectedAdminTab by remember { mutableIntStateOf(0) }
                 val firebaseUsers by viewModel.firebaseUsers.collectAsStateWithLifecycle(initialValue = emptyList())
                 var editingAdminUser by remember { mutableStateOf<Map<String, Any>?>(null) }
@@ -902,6 +919,8 @@ fun MainMenuScreen(
                 var editUserGradient by remember { mutableStateOf(false) }
                 var editUserTagUnlocked by remember { mutableStateOf(false) }
                 var editUserTag by remember { mutableStateOf("") }
+                var editUserEmailVerified by remember { mutableStateOf(false) }
+                var showWipeConfirmDialog by remember { mutableStateOf(false) }
                 var adminToastMessage by remember { mutableStateOf<String?>(null) }
                 val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
@@ -1020,7 +1039,11 @@ fun MainMenuScreen(
                                 // Server Stats Summary Bar
                                 val totalUsers = firebaseUsers.size
                                 val onlineCount = firebaseUsers.count { (it["is_online"] as? Boolean) == true }
-                                val verifiedCount = firebaseUsers.count { (it["email_verified"] as? Boolean) == true }
+                                val verifiedCount = firebaseUsers.count { 
+                                    (it["email_verified"] as? Boolean) == true || 
+                                    (it["is_verified"] as? Boolean) == true || 
+                                    (it["emailVerified"] as? Boolean) == true 
+                                }
                                 val bannedCount = firebaseUsers.count { (it["is_banned"] as? Boolean) == true }
                                 val totalEconomy = firebaseUsers.sumOf { (it["credits"] as? Number)?.toLong() ?: 0L }
 
@@ -1846,10 +1869,17 @@ fun MainMenuScreen(
                                                         .horizontalScroll(rememberScrollState()),
                                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
+                                                    val verifiedCount = firebaseUsers.count { 
+                                                        (it["email_verified"] as? Boolean) == true || 
+                                                        (it["is_verified"] as? Boolean) == true || 
+                                                        (it["emailVerified"] as? Boolean) == true 
+                                                    }
+                                                    val unverifiedCount = firebaseUsers.size - verifiedCount
                                                     val filterLabels = listOf(
                                                         "Все (${firebaseUsers.size})",
                                                         "Онлайн (${firebaseUsers.count { (it["is_online"] as? Boolean) == true }})",
-                                                        "Вериф. (${firebaseUsers.count { (it["email_verified"] as? Boolean) == true }})",
+                                                        "Вериф. ($verifiedCount)",
+                                                        "Невериф. ($unverifiedCount)",
                                                         "Бан (${firebaseUsers.count { (it["is_banned"] as? Boolean) == true }})",
                                                         "Богатые (${firebaseUsers.count { ((it["credits"] as? Number)?.toLong() ?: 0L) >= 50_000 }})"
                                                     )
@@ -1880,9 +1910,10 @@ fun MainMenuScreen(
                                                             val rawSynced = (it["last_synced_timestamp"] as? Number)?.toLong() ?: 0L
                                                             (it["is_online"] as? Boolean) == true && (rawSynced == 0L || (System.currentTimeMillis() - rawSynced) < 120_000L)
                                                         }
-                                                        2 -> list.filter { (it["email_verified"] as? Boolean) == true }
-                                                        3 -> list.filter { (it["is_banned"] as? Boolean) == true }
-                                                        4 -> list.filter { ((it["credits"] as? Number)?.toLong() ?: 0L) >= 50_000 }
+                                                        2 -> list.filter { (it["email_verified"] as? Boolean) == true || (it["is_verified"] as? Boolean) == true || (it["emailVerified"] as? Boolean) == true }
+                                                        3 -> list.filter { !((it["email_verified"] as? Boolean) == true || (it["is_verified"] as? Boolean) == true || (it["emailVerified"] as? Boolean) == true) }
+                                                        4 -> list.filter { (it["is_banned"] as? Boolean) == true }
+                                                        5 -> list.filter { ((it["credits"] as? Number)?.toLong() ?: 0L) >= 50_000 }
                                                         else -> list
                                                     }
                                                 }
@@ -1903,7 +1934,7 @@ fun MainMenuScreen(
                                                         val rawLastSynced = (user["last_synced_timestamp"] as? Number)?.toLong() ?: 0L
                                                         val isRecentlyActive = (System.currentTimeMillis() - rawLastSynced) < 120_000L
                                                         val isOnline = ((user["is_online"] as? Boolean) == true) && (rawLastSynced == 0L || isRecentlyActive)
-                                                        val isEmailVerified = (user["email_verified"] as? Boolean) == true
+                                                        val isEmailVerified = (user["email_verified"] as? Boolean) == true || (user["is_verified"] as? Boolean) == true || (user["emailVerified"] as? Boolean) == true
                                                         val uTier = (user["online_tier"] as? String) ?: "BRONZE"
                                                         val uRating = (user["online_rating"] as? Number)?.toInt() ?: 1000
                                                         val uHighScore = (user["stats_high_score"] as? Number)?.toInt() ?: 0
@@ -1993,18 +2024,38 @@ fun MainMenuScreen(
 
                                                                     Surface(
                                                                         shape = RoundedCornerShape(8.dp),
-                                                                        color = if (isBanned) MaterialTheme.colorScheme.error else if (isEmailVerified) Color(0xFF00E676).copy(alpha = 0.2f) else Color(0xFFFF9100).copy(alpha = 0.2f)
+                                                                        color = if (isBanned) MaterialTheme.colorScheme.error.copy(alpha = 0.2f) 
+                                                                                else if (isEmailVerified) Color(0xFF00E676).copy(alpha = 0.2f) 
+                                                                                else Color(0xFFFF9100).copy(alpha = 0.2f),
+                                                                        modifier = Modifier.clickable {
+                                                                            if (!uUid.startsWith("local_")) {
+                                                                                viewModel.adminSetEmailVerified(uUid, !isEmailVerified)
+                                                                                viewModel.triggerAudioFeedback("click")
+                                                                                adminToastMessage = if (!isEmailVerified) "Почта $uName подтверждена ✓" else "Подтверждение почты $uName снято"
+                                                                            }
+                                                                        }
                                                                     ) {
-                                                                        Text(
-                                                                            text = if (isBanned) "BANNED" else if (isEmailVerified) "VERIFIED" else "PENDING",
-                                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                                                                            color = if (isBanned) MaterialTheme.colorScheme.onError else if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100),
+                                                                        Row(
+                                                                            verticalAlignment = Alignment.CenterVertically,
+                                                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                                                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                        )
+                                                                        ) {
+                                                                            Icon(
+                                                                                imageVector = if (isBanned) Icons.Default.Block else if (isEmailVerified) Icons.Default.CheckCircle else Icons.Default.MarkEmailUnread,
+                                                                                contentDescription = null,
+                                                                                modifier = Modifier.size(11.dp),
+                                                                                tint = if (isBanned) MaterialTheme.colorScheme.error else if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100)
+                                                                            )
+                                                                            Text(
+                                                                                text = if (isBanned) "BANNED" else if (isEmailVerified) "VERIFIED" else "PENDING",
+                                                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                                                                color = if (isBanned) MaterialTheme.colorScheme.error else if (isEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100)
+                                                                            )
+                                                                        }
                                                                     }
                                                                 }
 
-                                                                // UID + Email Row (with copy UID button)
+                                                                // UID + Email Row (with copy UID & copy Email buttons)
                                                                 Row(
                                                                     modifier = Modifier.fillMaxWidth(),
                                                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -2036,11 +2087,33 @@ fun MainMenuScreen(
                                                                         }
                                                                     }
 
-                                                                    Text(
-                                                                        text = uEmail,
-                                                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                                    )
+                                                                    Row(
+                                                                        verticalAlignment = Alignment.CenterVertically,
+                                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                                    ) {
+                                                                        Text(
+                                                                            text = if (uEmail.length > 22) uEmail.take(20) + "..." else uEmail,
+                                                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                        )
+                                                                        if (uEmail != "No email" && uEmail.isNotBlank()) {
+                                                                            IconButton(
+                                                                                onClick = {
+                                                                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(uEmail))
+                                                                                    viewModel.triggerAudioFeedback("click")
+                                                                                    adminToastMessage = "Email скопирован: $uEmail"
+                                                                                },
+                                                                                modifier = Modifier.size(18.dp)
+                                                                            ) {
+                                                                                Icon(
+                                                                                    imageVector = Icons.Default.ContentCopy,
+                                                                                    contentDescription = "Copy Email",
+                                                                                    modifier = Modifier.size(12.dp),
+                                                                                    tint = themeColor
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
 
                                                                 // Stats Grid: Credits, ELO/Tier, Score, Lines, Games
@@ -2114,6 +2187,7 @@ fun MainMenuScreen(
                                                                             editUserGradient = (user["has_nickname_gradient"] as? Boolean) == true
                                                                             editUserTagUnlocked = (user["custom_tag_unlocked"] as? Boolean) == true
                                                                             editUserTag = uCustomTag
+                                                                            editUserEmailVerified = isEmailVerified
                                                                             viewModel.triggerAudioFeedback("click")
                                                                         },
                                                                         shape = RoundedCornerShape(10.dp),
@@ -2502,6 +2576,20 @@ fun MainMenuScreen(
                                                                 }
                                                                 Text(deleteUsersLabel, fontWeight = FontWeight.Bold)
                                                         }
+
+                                                        Button(
+                                                            onClick = {
+                                                                showWipeConfirmDialog = true
+                                                                viewModel.triggerAudioFeedback("click")
+                                                            },
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                                            shape = RoundedCornerShape(14.dp)
+                                                        ) {
+                                                            Icon(imageVector = Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text("ПОЛНЫЙ ВАЙП БД (FIRESTORE + БАЗА)", fontWeight = FontWeight.Black)
+                                                        }
                                                     }
                                                 }
                                             }
@@ -2837,11 +2925,77 @@ fun MainMenuScreen(
                                                         modifier = Modifier.fillMaxWidth()
                                                     )
                                                 }
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (editUserEmailVerified) Icons.Default.CheckCircle else Icons.Default.MarkEmailUnread,
+                                                            contentDescription = null,
+                                                            tint = if (editUserEmailVerified) Color(0xFF00E676) else Color(0xFFFF9100),
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                        Text("Подтверждение почты (Verified)", style = MaterialTheme.typography.bodyMedium)
+                                                    }
+                                                    Switch(checked = editUserEmailVerified, onCheckedChange = { editUserEmailVerified = it })
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                                                // Quick action buttons for this user
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            viewModel.adminGiveAllCosmetics(tName)
+                                                            viewModel.triggerAudioFeedback("success")
+                                                            adminToastMessage = "Косметика выдана игроку $tName"
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(10.dp)
+                                                    ) {
+                                                        Text("Вся косметика", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            if (!tUid.startsWith("local_")) {
+                                                                viewModel.adminWipeStatsFirebase(tUid)
+                                                            } else {
+                                                                viewModel.adminWipeStatsLocal(tName)
+                                                            }
+                                                            viewModel.triggerAudioFeedback("gameover")
+                                                            adminToastMessage = "Статистика $tName сброшена"
+                                                            editUserCredits = "750"
+                                                            editUserHighScore = "0"
+                                                            editUserLines = "0"
+                                                            editUserGames = "0"
+                                                            editUserXp = "0"
+                                                            editUserTier = "BRONZE"
+                                                            editUserGradient = false
+                                                            editUserTagUnlocked = false
+                                                            editUserTag = ""
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                                        shape = RoundedCornerShape(10.dp)
+                                                    ) {
+                                                        Text("Сброс статы", style = MaterialTheme.typography.labelSmall)
+                                                    }
+                                                }
                                             }
                                         },
                                         confirmButton = {
                                             Button(
                                                 onClick = {
+                                                    viewModel.adminSetEmailVerified(tUid, editUserEmailVerified)
                                                     viewModel.adminUpdateUserStats(
                                                         uid = tUid,
                                                         credits = editUserCredits.toIntOrNull() ?: 0,
@@ -2882,6 +3036,38 @@ fun MainMenuScreen(
                                                     else -> "Cancel"
                                                 }
                                                 Text(cancelBtnLabel)
+                                            }
+                                        }
+                                    )
+                                }
+
+                                if (showWipeConfirmDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showWipeConfirmDialog = false },
+                                        title = { Text("⚠️ Полный вайп базы данных", fontWeight = FontWeight.Black) },
+                                        text = { 
+                                            Text(
+                                                "Вы действительно хотите полностью очистить всю базу данных Firestore (пользователи кроме FsFq, рекорды, лобби, чаты) и локальные аккаунты?",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            ) 
+                                        },
+                                        confirmButton = {
+                                            Button(
+                                                onClick = {
+                                                    viewModel.adminFullDatabaseWipe()
+                                                    viewModel.triggerAudioFeedback("gameover")
+                                                    adminToastMessage = "Полный вайп базы данных выполнен!"
+                                                    showWipeConfirmDialog = false
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Text("УДАЛИТЬ ВСЁ", fontWeight = FontWeight.Bold)
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(onClick = { showWipeConfirmDialog = false }) {
+                                                Text("Отмена")
                                             }
                                         }
                                     )
@@ -5304,14 +5490,6 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                                     Language.DE -> "6-Tasten Pro Matrix"
                                     Language.ZH -> "电竞6键独立控制矩阵"
                                     else -> "6-key competitive matrix"
-                                }),
-                                "swipe_hybrid" to (Translations.getLocalizedControlPresetName("swipe_hybrid", currentLang) to when (currentLang) {
-                                    Language.RU -> "Сенсорная панель + быстрые триггеры"
-                                    Language.UA -> "Сенсорна панель + швидкі тригери"
-                                    Language.KK -> "Сенсорлық тақта + триггерлер"
-                                    Language.DE -> "Touch-Fläche + Schnell-Trigger"
-                                    Language.ZH -> "滑动手势区 + 快捷扳机"
-                                    else -> "Gesture touch area + fast action pills"
                                 })
                             )
 
@@ -7870,6 +8048,20 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val controlStyle by viewModel.controlStyle.collectAsStateWithLifecycle()
     val leftHandedControls by viewModel.leftHandedControls.collectAsStateWithLifecycle()
     val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
+    val controlDas by viewModel.controlDas.collectAsStateWithLifecycle()
+    val controlArr by viewModel.controlArr.collectAsStateWithLifecycle()
+    val controlBottomPadding by viewModel.controlBottomPadding.collectAsStateWithLifecycle()
+    val controlButtonStyle by viewModel.controlButtonStyle.collectAsStateWithLifecycle()
+    val purchasedControlButtonStyles by viewModel.purchasedControlButtonStyles.collectAsStateWithLifecycle()
+
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importCodeText by remember { mutableStateOf("") }
+    var importErrorText by remember { mutableStateOf<String?>(null) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     // Start CLASSIC mode sandbox game when entering CustomControlsScreen
     LaunchedEffect(Unit) {
@@ -7890,26 +8082,253 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     }
 
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = {
+                Text(
+                    text = when (currentLang) {
+                        Language.RU -> "Сбросить управление?"
+                        Language.UA -> "Скинути керування?"
+                        Language.KK -> "Басқаруды қайтару?"
+                        Language.DE -> "Steuerung zurücksetzen?"
+                        Language.ZH -> "重置按键设置？"
+                        else -> "Reset controls?"
+                    },
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = when (currentLang) {
+                        Language.RU -> "Вернуть все параметры кнопок, таймингов и макета к рекомендованным настройкам?"
+                        Language.UA -> "Повернути всі параметри кнопок, таймінгів та макета до рекомендованих налаштувань?"
+                        Language.KK -> "Барлық баптауларды бастапқы қалыпқа қайтару керек пе?"
+                        Language.DE -> "Alle Tasten-, Timing- und Layout-Einstellungen auf Standardwerte zurücksetzen?"
+                        Language.ZH -> "是否将所有按键、延迟与布局参数恢复为推荐默认值？"
+                        else -> "Reset all button sizes, timings, and layout to recommended defaults?"
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.resetControlConfigToDefaults()
+                        viewModel.triggerAudioFeedback("click")
+                        showResetDialog = false
+                        android.widget.Toast.makeText(
+                            context,
+                            when (currentLang) {
+                                Language.RU -> "Настройки управления сброшены к стандартным"
+                                Language.UA -> "Налаштування керування скинуто"
+                                Language.KK -> "Басқару баптаулары бастапқы күйге қайтарылды"
+                                Language.DE -> "Steuerungseinstellungen zurückgesetzt"
+                                Language.ZH -> "按键设置已恢复默认"
+                                else -> "Control settings reset to default"
+                            },
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                ) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Сбросить"
+                            Language.UA -> "Скинути"
+                            Language.KK -> "Қайтару"
+                            Language.DE -> "Zurücksetzen"
+                            Language.ZH -> "重置"
+                            else -> "Reset"
+                        },
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Отмена"
+                            Language.UA -> "Скасувати"
+                            Language.KK -> "Болдырмау"
+                            Language.DE -> "Abbrechen"
+                            Language.ZH -> "取消"
+                            else -> "Cancel"
+                        }
+                    )
+                }
+            }
+        )
+    }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showImportDialog = false
+                importErrorText = null
+            },
+            title = {
+                Text(
+                    text = when (currentLang) {
+                        Language.RU -> "Импорт кода управления"
+                        Language.UA -> "Імпорт коду керування"
+                        Language.KK -> "Басқару кодын импорттау"
+                        Language.DE -> "Steuerungscode importieren"
+                        Language.ZH -> "导入按键配置代码"
+                        else -> "Import Control Code"
+                    },
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Вставьте код конфигурации (TTR-CTRL:... или Base64 JSON):"
+                            Language.UA -> "Вставте код конфігурації (TTR-CTRL:... або Base64 JSON):"
+                            Language.KK -> "Конфигурация кодын қойыңыз:"
+                            Language.DE -> "Konfigurationscode einfügen (TTR-CTRL:... oder Base64):"
+                            Language.ZH -> "粘贴配置代码（TTR-CTRL:... 或 Base64 JSON）："
+                            else -> "Paste configuration code (TTR-CTRL:... or Base64 JSON):"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = importCodeText,
+                        onValueChange = {
+                            importCodeText = it
+                            importErrorText = null
+                        },
+                        placeholder = { Text("TTR-CTRL:...") },
+                        singleLine = false,
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = importErrorText != null
+                    )
+                    if (importErrorText != null) {
+                        Text(
+                            text = importErrorText ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            val clip = clipboardManager.getText()?.text
+                            if (!clip.isNullOrBlank()) {
+                                importCodeText = clip.trim()
+                                importErrorText = null
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (currentLang) {
+                                Language.RU -> "Вставить из буфера"
+                                Language.UA -> "Вставити з буфера"
+                                Language.KK -> "Буферден қою"
+                                Language.DE -> "Aus Zwischenablage einfügen"
+                                Language.ZH -> "从剪贴板粘贴"
+                                else -> "Paste from clipboard"
+                            }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val success = viewModel.importControlConfigCode(importCodeText)
+                        if (success) {
+                            viewModel.triggerAudioFeedback("click")
+                            showImportDialog = false
+                            importCodeText = ""
+                            importErrorText = null
+                            android.widget.Toast.makeText(
+                                context,
+                                when (currentLang) {
+                                    Language.RU -> "Конфигурация управления успешно применена!"
+                                    Language.UA -> "Конфігурацію успішно застосовано!"
+                                    Language.KK -> "Басқару конфигурациясы сәтті қолданылды!"
+                                    Language.DE -> "Steuerungskonfiguration erfolgreich übernommen!"
+                                    Language.ZH -> "按键配置已成功应用！"
+                                    else -> "Control configuration applied successfully!"
+                                },
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            viewModel.triggerAudioFeedback("error")
+                            importErrorText = when (currentLang) {
+                                Language.RU -> "Неверный формат кода управления!"
+                                Language.UA -> "Невірний формат коду керування!"
+                                Language.KK -> "Басқару кодының форматы қате!"
+                                Language.DE -> "Ungültiges Code-Format!"
+                                Language.ZH -> "配置代码格式错误！"
+                                else -> "Invalid control code format!"
+                            }
+                        }
+                    }
+                ) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Применить"
+                            Language.UA -> "Застосувати"
+                            Language.KK -> "Қолдану"
+                            Language.DE -> "Anwenden"
+                            Language.ZH -> "应用"
+                            else -> "Apply"
+                        }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImportDialog = false
+                        importErrorText = null
+                    }
+                ) {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Отмена"
+                            Language.UA -> "Скасувати"
+                            Language.KK -> "Болдырмау"
+                            Language.DE -> "Abbrechen"
+                            Language.ZH -> "取消"
+                            else -> "Cancel"
+                        }
+                    )
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    val customControlsHeader = when (currentLang) {
-                        Language.RU -> "КАСТОМИЗАЦИЯ УПРАВЛЕНИЯ"
-                        Language.UA -> "КАСТОМІЗАЦІЯ КЕРУВАННЯ"
-                        Language.KK -> "БАСҚАРУДЫ ТЕҢШЕУ"
-                        Language.DE -> "STEUERUNG ANPASSEN"
-                        Language.ZH -> "自定义按键布局"
-                        else -> "CUSTOMIZE CONTROLS"
-                    }
                     Text(
-                        text = customControlsHeader,
+                        text = when (currentLang) {
+                            Language.RU -> "КАСТОМИЗАЦИЯ УПРАВЛЕНИЯ"
+                            Language.UA -> "КАСТОМІЗАЦІЯ КЕРУВАННЯ"
+                            Language.KK -> "БАСҚАРУДЫ ТЕҢШЕУ"
+                            Language.DE -> "STEUERUNG ANPASSEN"
+                            Language.ZH -> "自定义按键布局"
+                            else -> "CUSTOMIZE CONTROLS"
+                        },
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showResetDialog = true }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Reset to defaults")
                     }
                 }
             )
@@ -7919,216 +8338,1125 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Config Panel
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            // Modern MD3 Navigation Tab Row
+            val tabs = listOf(
+                when (currentLang) {
+                    Language.RU -> "Макет"
+                    Language.UA -> "Макет"
+                    Language.KK -> "Макет"
+                    Language.DE -> "Layout"
+                    Language.ZH -> "布局"
+                    else -> "Layout"
+                } to Icons.Default.Gamepad,
+                when (currentLang) {
+                    Language.RU -> "Параметры"
+                    Language.UA -> "Параметри"
+                    Language.KK -> "Баптаулар"
+                    Language.DE -> "Parameter"
+                    Language.ZH -> "参数"
+                    else -> "Settings"
+                } to Icons.Default.Tune,
+                when (currentLang) {
+                    Language.RU -> "Код"
+                    Language.UA -> "Код"
+                    Language.KK -> "Код"
+                    Language.DE -> "Code"
+                    Language.ZH -> "代码"
+                    else -> "Code"
+                } to Icons.Default.Share,
+                when (currentLang) {
+                    Language.RU -> "Песочница"
+                    Language.UA -> "Пісочниця"
+                    Language.KK -> "Сынақ"
+                    Language.DE -> "Sandbox"
+                    Language.ZH -> "测试"
+                    else -> "Sandbox"
+                } to Icons.Default.PlayArrow
+            )
+
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Size slider
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            val buttonSizeLabel = when (currentLang) {
-                                Language.RU -> "Размер кнопок"
-                                Language.UA -> "Розмір кнопок"
-                                Language.KK -> "Батырмалар өлшемі"
-                                Language.DE -> "Tastengröße"
-                                Language.ZH -> "按键大小"
-                                else -> "Button Size"
-                            }
+                tabs.forEachIndexed { index, (title, icon) ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = {
+                            viewModel.triggerAudioFeedback("click")
+                            selectedTab = index
+                        },
+                        text = {
                             Text(
-                                text = buttonSizeLabel,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = title,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
                             )
-                            Text(
-                                text = "${(controlButtonScale * 100).toInt()}%",
-                                fontWeight = FontWeight.Bold,
-                                color = themeColorVal,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        },
+                        icon = {
+                            Icon(icon, contentDescription = title, modifier = Modifier.size(18.dp))
                         }
-                        Slider(
-                            value = controlButtonScale,
-                            onValueChange = { viewModel.setControlButtonScale(it) },
-                            valueRange = 0.5f..1.5f,
-                            colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
-                        )
-                    }
+                    )
+                }
+            }
 
-                    // Transparency slider
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            val buttonTransparencyLabel = when (currentLang) {
-                                Language.RU -> "Прозрачность кнопок"
-                                Language.UA -> "Прозорість кнопок"
-                                Language.KK -> "Батырмалардың мөлдірлігі"
-                                Language.DE -> "Tastendeckkraft"
-                                Language.ZH -> "按键透明度"
-                                else -> "Button Transparency"
-                            }
-                            Text(
-                                text = buttonTransparencyLabel,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "${(controlButtonAlpha * 100).toInt()}%",
-                                fontWeight = FontWeight.Bold,
-                                color = themeColorVal,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        Slider(
-                            value = controlButtonAlpha,
-                            onValueChange = { viewModel.setControlButtonAlpha(it) },
-                            valueRange = 0.1f..1.0f,
-                            colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
-                        )
-                    }
-
-                    // Quick layout options
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            when (selectedTab) {
+                // TAB 0: LAYOUT PRESETS, HANDEDNESS, VERTICAL POS & VISUAL STYLE
+                0 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        val leftHandBtnLabel = when (currentLang) {
-                            Language.RU -> "ЛЕВША"
-                            Language.UA -> "ШУЛЬГА"
-                            Language.KK -> "СОЛАҚАЙ"
-                            Language.DE -> "LINKSHÄNDER"
-                            Language.ZH -> "左手模式"
-                            else -> "LEFT HAND"
-                        }
-                        Button(
-                            onClick = {
-                                viewModel.triggerAudioFeedback("click")
-                                viewModel.setLeftHandedControls(!leftHandedControls)
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (leftHandedControls) themeColorVal else MaterialTheme.colorScheme.surfaceVariant
-                            )
+                        // Presets Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                         ) {
-                            Text(
-                                text = leftHandBtnLabel,
-                                fontWeight = FontWeight.Bold,
-                                color = if (leftHandedControls) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "СХЕМА РАСПОЛОЖЕНИЯ КНОПОК"
+                                        Language.UA -> "СХЕМА РОЗТАШУВАННЯ КНОПОК"
+                                        Language.KK -> "БАТЫРМАЛАР ОРНАЛАСУЫ"
+                                        Language.DE -> "TASTEN-LAYOUT SCHEME"
+                                        Language.ZH -> "按键布局方案"
+                                        else -> "BUTTON LAYOUT SCHEME"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                val presetList = listOf(
+                                    "split" to (Translations.getLocalizedControlPresetName("split", currentLang) to when (currentLang) {
+                                        Language.RU -> "Для двух больших пальцев по краям экрана"
+                                        Language.UA -> "Для двох великих пальців по краях"
+                                        Language.KK -> "Екі бас бармаққа арналған"
+                                        Language.DE -> "Geteilte Zweihand-Steuerung"
+                                        Language.ZH -> "双拇指边缘分列布局"
+                                        else -> "Two-thumb ergonomics on edges"
+                                    }),
+                                    "classic" to (Translations.getLocalizedControlPresetName("classic", currentLang) to when (currentLang) {
+                                        Language.RU -> "4 кнопки в ряд + сброс и удержание"
+                                        Language.UA -> "4 кнопки в ряд + скидання і утримання"
+                                        Language.KK -> "Қатардағы 4 батырма"
+                                        Language.DE -> "4 Tasten in Reihe + Drop/Hold"
+                                        Language.ZH -> "4键排布 + 底部下落/暂存"
+                                        else -> "4 inline buttons + drop/hold"
+                                    }),
+                                    "arcade" to (Translations.getLocalizedControlPresetName("arcade", currentLang) to when (currentLang) {
+                                        Language.RU -> "Крестовина D-Pad слева, действия справа"
+                                        Language.UA -> "Хрестовина D-Pad зліва, дії справа"
+                                        Language.KK -> "D-Pad сол жақта, әрекеттер оң жақта"
+                                        Language.DE -> "Arcade D-Pad links, Aktionen rechts"
+                                        Language.ZH -> "左侧D-Pad摇杆，右侧动作键"
+                                        else -> "D-Pad left, action triggers right"
+                                    }),
+                                    "one_hand_right" to (Translations.getLocalizedControlPresetName("one_hand_right", currentLang) to when (currentLang) {
+                                        Language.RU -> "Компактно справа для игры одной рукой"
+                                        Language.UA -> "Компактно справа для гри однією рукою"
+                                        Language.KK -> "Оң қолмен ойнауға арналған"
+                                        Language.DE -> "Kompakt rechts für Einhand-Bedienung"
+                                        Language.ZH -> "右手单手操作紧凑布局"
+                                        else -> "Compact right cluster for 1-hand play"
+                                    }),
+                                    "one_hand_left" to (Translations.getLocalizedControlPresetName("one_hand_left", currentLang) to when (currentLang) {
+                                        Language.RU -> "Компактно слева для игры одной рукой"
+                                        Language.UA -> "Компактно зліва для гри однією рукою"
+                                        Language.KK -> "Сол қолмен ойнауға арналған"
+                                        Language.DE -> "Kompakt links для гри однією рукою"
+                                        Language.ZH -> "左手单手操作紧凑布局"
+                                        else -> "Compact left cluster for 1-hand play"
+                                    }),
+                                    "claw_pro" to (Translations.getLocalizedControlPresetName("claw_pro", currentLang) to when (currentLang) {
+                                        Language.RU -> "Киберспортивная матрица из 6 клавиш"
+                                        Language.UA -> "Кіберспортивна матриця з 6 клавіш"
+                                        Language.KK -> "Киберспорттық 6 батырма"
+                                        Language.DE -> "6-Tasten Pro Matrix"
+                                        Language.ZH -> "电竞6键独立控制矩阵"
+                                        else -> "6-key competitive matrix"
+                                    })
+                                )
+
+                                presetList.forEach { (key, info) ->
+                                    val (title, desc) = info
+                                    val isSelected = controlStyle == key
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                                        border = if (isSelected) BorderStroke(1.5.dp, themeColorVal) else null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.setControlStyle(key)
+                                                viewModel.triggerAudioFeedback("click")
+                                            }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = isSelected,
+                                                onClick = {
+                                                    viewModel.setControlStyle(key)
+                                                    viewModel.triggerAudioFeedback("click")
+                                                },
+                                                colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = title,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = desc,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        Button(
-                            onClick = {
-                                viewModel.triggerAudioFeedback("click")
-                                val nextStyle = when (controlStyle) {
-                                    "buttons" -> "arcade"
-                                    "arcade" -> "split"
-                                    "split" -> "swipe"
-                                    else -> "buttons"
-                                }
-                                viewModel.setControlStyle(nextStyle)
-                            },
-                            modifier = Modifier.weight(1.5f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = themeColorVal, contentColor = Color.Black)
+                        // Handedness & Vertical Position Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                         ) {
-                            Text(
-                                text = controlStyle.uppercase(),
-                                fontWeight = FontWeight.Bold
-                            )
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "ОРИЕНТАЦИЯ И ПОЗИЦИЯ"
+                                        Language.UA -> "ОРІЄНТАЦІЯ ТА ПОЗИЦІЯ"
+                                        Language.KK -> "БАҒЫТ ПЕН ОРНЫ"
+                                        Language.DE -> "AUSRICHTUNG & POSITION"
+                                        Language.ZH -> "手位与垂直位置"
+                                        else -> "ORIENTATION & POSITION"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                // Left handed switch
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Режим для левши (зеркальный)"
+                                                Language.UA -> "Режим для шульги (дзеркальний)"
+                                                Language.KK -> "Солақай режимі"
+                                                Language.DE -> "Linkshänder-Modus (gespiegelt)"
+                                                Language.ZH -> "左手镜像模式"
+                                                else -> "Left-handed mode (mirrored)"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Меняет местами блок движений и блок действий"
+                                                Language.UA -> "Міняє місцями рух і дію"
+                                                Language.KK -> "Қозғалыс пен әрекет орындарын ауыстырады"
+                                                Language.DE -> "Tauscht Bewegung und Aktionen"
+                                                Language.ZH -> "对调移动与动作操作区"
+                                                else -> "Swaps motion and action blocks"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Switch(
+                                        checked = leftHandedControls,
+                                        onCheckedChange = {
+                                            viewModel.setLeftHandedControls(it)
+                                            viewModel.triggerAudioFeedback("click")
+                                        }
+                                    )
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                // Vertical Position
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        text = when (currentLang) {
+                                            Language.RU -> "Высота панели управления"
+                                            Language.UA -> "Висота панелі керування"
+                                            Language.KK -> "Басқару панелінің биіктігі"
+                                            Language.DE -> "Vertikale Position"
+                                            Language.ZH -> "操作面板垂直位置"
+                                            else -> "Vertical Position"
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        val positions = listOf(
+                                            "bottom" to when (currentLang) {
+                                                Language.RU -> "Снизу"
+                                                Language.UA -> "Знизу"
+                                                Language.KK -> "Төменде"
+                                                Language.DE -> "Unten"
+                                                Language.ZH -> "底部"
+                                                else -> "Bottom"
+                                            },
+                                            "middle" to when (currentLang) {
+                                                Language.RU -> "По центру"
+                                                Language.UA -> "По центру"
+                                                Language.KK -> "Ортада"
+                                                Language.DE -> "Mitte"
+                                                Language.ZH -> "居中"
+                                                else -> "Middle"
+                                            },
+                                            "top" to when (currentLang) {
+                                                Language.RU -> "Сверху"
+                                                Language.UA -> "Зверху"
+                                                Language.KK -> "Жоғарыда"
+                                                Language.DE -> "Oben"
+                                                Language.ZH -> "顶部"
+                                                else -> "Top"
+                                            }
+                                        )
+                                        positions.forEach { (posKey, label) ->
+                                            val isSel = controlVerticalPosition == posKey
+                                            FilterChip(
+                                                selected = isSel,
+                                                onClick = {
+                                                    viewModel.setControlVerticalPosition(posKey)
+                                                    viewModel.triggerAudioFeedback("click")
+                                                },
+                                                label = { Text(label) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        Button(
-                            onClick = {
-                                viewModel.triggerAudioFeedback("click")
-                                val nextPos = when (controlVerticalPosition) {
-                                    "bottom" -> "middle"
-                                    "middle" -> "top"
-                                    else -> "bottom"
-                                }
-                                viewModel.setControlVerticalPosition(nextPos)
-                            },
-                            modifier = Modifier.weight(1.2f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        // Button Visual Style Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                         ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "ВИЗУАЛЬНЫЙ СТИЛЬ КНОПОК"
+                                        Language.UA -> "ВІЗУАЛЬНИЙ СТИЛЬ КНОПОК"
+                                        Language.KK -> "БАТЫРМАЛАР СТИЛІ"
+                                        Language.DE -> "TASTEN-DESIGN"
+                                        Language.ZH -> "按键外观风格"
+                                        else -> "BUTTON VISUAL THEME"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                val styles = listOf(
+                                    "neon" to "Neon Glow",
+                                    "classic" to "Classic Solid",
+                                    "glass" to "Glassmorphism",
+                                    "gold" to "Golden Edge",
+                                    "plasma" to "Plasma Cyber"
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    styles.forEach { (key, name) ->
+                                        val isOwned = key == "classic" || key == "neon" || purchasedControlButtonStyles.contains(key)
+                                        val isSel = controlButtonStyle == key
+                                        FilterChip(
+                                            selected = isSel,
+                                            onClick = {
+                                                if (isOwned) {
+                                                    viewModel.setControlButtonStyle(key)
+                                                    viewModel.triggerAudioFeedback("click")
+                                                } else {
+                                                    viewModel.triggerAudioFeedback("error")
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        when (currentLang) {
+                                                            Language.RU -> "Купите этот стиль в магазине!"
+                                                            Language.UA -> "Придбайте цей стиль у магазині!"
+                                                            Language.KK -> "Бұл стильді дүкеннен алыңыз!"
+                                                            Language.DE -> "Kaufe diesen Stil im Shop!"
+                                                            Language.ZH -> "请在商店中解锁该风格！"
+                                                            else -> "Unlock this style in store!"
+                                                        },
+                                                        android.widget.Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            },
+                                            label = { Text(name) },
+                                            leadingIcon = if (!isOwned) {
+                                                { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                                            } else if (isSel) {
+                                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                                            } else null
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Live Preview Box & Sandbox CTA
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "Предпросмотр раскладки:"
+                                        Language.UA -> "Попередній перегляд:"
+                                        Language.KK -> "Орналасуды алдын ала көру:"
+                                        Language.DE -> "Layout-Vorschau:"
+                                        Language.ZH -> "按键布局实时预览："
+                                        else -> "Layout Preview:"
+                                    },
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    GameControlsSection(
+                                        viewModel = viewModel,
+                                        gameState = gameState,
+                                        controlStyle = controlStyle,
+                                        leftHandedControls = leftHandedControls,
+                                        controlVerticalPosition = "bottom",
+                                        controlButtonScale = (controlButtonScale * 0.85f).coerceIn(0.55f, 1.15f),
+                                        controlButtonStyle = controlButtonStyle,
+                                        onLeftPress = { viewModel.triggerAudioFeedback("move") },
+                                        onRightPress = { viewModel.triggerAudioFeedback("move") },
+                                        onDownPress = { viewModel.triggerAudioFeedback("move") },
+                                        onRotatePress = { viewModel.triggerAudioFeedback("rotate") },
+                                        onHardDropPress = { viewModel.triggerAudioFeedback("drop") },
+                                        onHoldPress = { viewModel.triggerAudioFeedback("click") }
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        viewModel.triggerAudioFeedback("click")
+                                        selectedTab = 3 // Switch to Sandbox
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = when (currentLang) {
+                                            Language.RU -> "Тестировать в игре (Песочница)"
+                                            Language.UA -> "Тестувати в грі (Пісочниця)"
+                                            Language.KK -> "Ойында сынап көру"
+                                            Language.DE -> "In Sandbox testen"
+                                            Language.ZH -> "进入实战沙盒测试"
+                                            else -> "Test in Sandbox Game"
+                                        },
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 1: GEOMETRY, SIZES, PADDING, DAS & ARR TIMINGS
+                1 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Button Scale & Opacity Card
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "РАЗМЕР И ПРОЗРАЧНОСТЬ"
+                                        Language.UA -> "РОЗМІР ТА ПРОЗОРІСТЬ"
+                                        Language.KK -> "ӨЛШЕМ МЕН МӨЛДІРЛІК"
+                                        Language.DE -> "GRÖSSE & TRANSPARENZ"
+                                        Language.ZH -> "按键尺寸与透明度"
+                                        else -> "SIZE & OPACITY"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                // Scale Slider
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Размер кнопок"
+                                                Language.UA -> "Розмір кнопок"
+                                                Language.KK -> "Батырмалар өлшемі"
+                                                Language.DE -> "Tastengröße"
+                                                Language.ZH -> "按键大小"
+                                                else -> "Button Size"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${(controlButtonScale * 100).toInt()}%",
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                    Slider(
+                                        value = controlButtonScale,
+                                        onValueChange = { viewModel.setControlButtonScale(it) },
+                                        valueRange = 0.5f..1.5f,
+                                        colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf(0.75f to "75%", 1.0f to "100%", 1.25f to "125%").forEach { (sc, label) ->
+                                            AssistChip(
+                                                onClick = { viewModel.setControlButtonScale(sc) },
+                                                label = { Text(label) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                // Alpha Slider
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Прозрачность кнопок"
+                                                Language.UA -> "Прозорість кнопок"
+                                                Language.KK -> "Мөлдірлігі"
+                                                Language.DE -> "Deckkraft"
+                                                Language.ZH -> "按键透明度"
+                                                else -> "Button Opacity"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = "${(controlButtonAlpha * 100).toInt()}%",
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                    Slider(
+                                        value = controlButtonAlpha,
+                                        onValueChange = { viewModel.setControlButtonAlpha(it) },
+                                        valueRange = 0.1f..1.0f,
+                                        colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                                    )
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                // Bottom Padding
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Отступ снизу (для навигации)"
+                                                    Language.UA -> "Відступ знизу"
+                                                    Language.KK -> "Төменнен шегініс"
+                                                    Language.DE -> "Unterer Randabstand"
+                                                    Language.ZH -> "底部防误触边距"
+                                                    else -> "Bottom Screen Margin"
+                                                },
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "Защита от случайных срабатываний жестов"
+                                                    Language.UA -> "Захист від випадкових жестів"
+                                                    Language.KK -> "Ым-ишарадан қорғау"
+                                                    Language.DE -> "Schutz vor Gestenleiste"
+                                                    Language.ZH -> "防止被手势小白条误触"
+                                                    else -> "Prevents accidental gesture trigger"
+                                                },
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Text(
+                                            text = "${controlBottomPadding} dp",
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                    Slider(
+                                        value = controlBottomPadding.toFloat(),
+                                        onValueChange = { viewModel.setControlBottomPadding(it.toInt()) },
+                                        valueRange = 0f..60f,
+                                        colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Timings Tuning Card (DAS & ARR)
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "ЧУВСТВИТЕЛЬНОСТЬ И ТАЙМИНГИ (DAS / ARR)"
+                                        Language.UA -> "ЧУТЛИВІСТЬ ТА ВІДГУК (DAS / ARR)"
+                                        Language.KK -> "СЕЗІМТАЛДЫҚ ПЕН ЖЫЛДАМДЫҚ"
+                                        Language.DE -> "ANSPRECHVERHALTEN (DAS / ARR)"
+                                        Language.ZH -> "按键灵敏度 (DAS / ARR)"
+                                        else -> "TIMINGS & RESPONSE (DAS / ARR)"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                // DAS Slider
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "DAS (Задержка зажатия)",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = "Время до непрерывного сдвига",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Text(
+                                            text = "$controlDas мс",
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                    Slider(
+                                        value = controlDas.toFloat(),
+                                        onValueChange = { viewModel.setControlDas(it.toInt()) },
+                                        valueRange = 80f..300f,
+                                        colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf(120 to "Pro (120мс)", 160 to "Стандарт", 220 to "Мягкий").forEach { (d, label) ->
+                                            AssistChip(
+                                                onClick = { viewModel.setControlDas(d) },
+                                                label = { Text(label) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                // ARR Slider
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "ARR (Скорость авто-повтора)",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = "Интервал между шагами (меньше = быстрее)",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Text(
+                                            text = "$controlArr мс",
+                                            fontWeight = FontWeight.Bold,
+                                            color = themeColorVal
+                                        )
+                                    }
+                                    Slider(
+                                        value = controlArr.toFloat(),
+                                        onValueChange = { viewModel.setControlArr(it.toInt()) },
+                                        valueRange = 16f..80f,
+                                        colors = SliderDefaults.colors(thumbColor = themeColorVal, activeTrackColor = themeColorVal)
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf(20 to "Турбо (20мс)", 35 to "Стандарт", 50 to "Плавный").forEach { (a, label) ->
+                                            AssistChip(
+                                                onClick = { viewModel.setControlArr(a) },
+                                                label = { Text(label) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 2: EXPORT / IMPORT CONFIG CODE
+                2 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Current Config Code Box
+                        val currentCode = remember(controlStyle, controlButtonScale, controlButtonAlpha, controlButtonStyle, controlVerticalPosition, leftHandedControls, controlDas, controlArr, controlBottomPadding) {
+                            viewModel.exportControlConfigCode()
+                        }
+
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "ТЕКУЩИЙ КОД УПРАВЛЕНИЯ"
+                                        Language.UA -> "ПОТОЧНИЙ КОД КЕРУВАННЯ"
+                                        Language.KK -> "АҒЫМДАҒЫ БАСҚАРУ КОДЫ"
+                                        Language.DE -> "AKTUELLER STEUERUNGSCODE"
+                                        Language.ZH -> "当前操作配置代码"
+                                        else -> "CURRENT CONTROL CODE"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "Этот код содержит всю вашу раскладку, масштаб, прозрачность, отступы и задержки DAS/ARR. Скопируйте и поделитесь с друзьями:"
+                                        Language.UA -> "Цей код містить усі ваші налаштування. Скопіюйте та поділіться з друзями:"
+                                        Language.KK -> "Бұл код барлық параметрлерді сақтайды. Көшіріп, достарыңызбен бөлісіңіз:"
+                                        Language.DE -> "Dieser Code enthält alle Parameter. Kopieren und mit Freunden teilen:"
+                                        Language.ZH -> "此代码包含您的全部按键布局、尺寸、底边距及DAS/ARR延迟，可一键分享："
+                                        else -> "This code encapsulates all your layout, scale, opacity, margins and DAS/ARR timings. Copy to share with friends:"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = currentCode,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(12.dp),
+                                        maxLines = 4,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            viewModel.triggerAudioFeedback("click")
+                                            clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(currentCode))
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                when (currentLang) {
+                                                    Language.RU -> "Код управления скопирован в буфер обмена!"
+                                                    Language.UA -> "Код скопійовано в буфер!"
+                                                    Language.KK -> "Басқару коды көшірілді!"
+                                                    Language.DE -> "Code in Zwischenablage kopiert!"
+                                                    Language.ZH -> "控制代码已复制到剪贴板！"
+                                                    else -> "Control code copied to clipboard!"
+                                                },
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Копировать"
+                                                Language.UA -> "Копіювати"
+                                                Language.KK -> "Көшіру"
+                                                Language.DE -> "Kopieren"
+                                                Language.ZH -> "复制"
+                                                else -> "Copy"
+                                            },
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            viewModel.triggerAudioFeedback("click")
+                                            try {
+                                                val sendIntent = android.content.Intent().apply {
+                                                    action = android.content.Intent.ACTION_SEND
+                                                    putExtra(
+                                                        android.content.Intent.EXTRA_TEXT,
+                                                        "Tetris Controls Config: $currentCode"
+                                                    )
+                                                    type = "text/plain"
+                                                }
+                                                val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                                                context.startActivity(shareIntent)
+                                            } catch (e: Exception) {
+                                                // Fallback copy if no share handler
+                                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(currentCode))
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = when (currentLang) {
+                                                Language.RU -> "Поделиться"
+                                                Language.UA -> "Поділитися"
+                                                Language.KK -> "Бөлісу"
+                                                Language.DE -> "Teilen"
+                                                Language.ZH -> "分享"
+                                                else -> "Share"
+                                            },
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Import Code Section
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "ИМПОРТ КОДА УПРАВЛЕНИЯ"
+                                        Language.UA -> "ІМПОРТ КОДУ КЕРУВАННЯ"
+                                        Language.KK -> "КОДТЫ ИМПОРТТАУ"
+                                        Language.DE -> "CODE IMPORTIEREN"
+                                        Language.ZH -> "导入已有配置代码"
+                                        else -> "IMPORT CONTROL CODE"
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = themeColorVal
+                                )
+
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "Вставьте код управления, полученный от другого игрока, чтобы мгновенно применить его настройки:"
+                                        Language.UA -> "Вставте код керування від іншого гравця:"
+                                        Language.KK -> "Басқа ойыншының кодын қойыңыз:"
+                                        Language.DE -> "Füge einen Code ein, um die Steuerung zu übernehmen:"
+                                        Language.ZH -> "粘贴其他玩家分享的控制代码以立即套用："
+                                        else -> "Paste a code from another player to instantly apply their layout:"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                OutlinedTextField(
+                                    value = importCodeText,
+                                    onValueChange = {
+                                        importCodeText = it
+                                        importErrorText = null
+                                    },
+                                    placeholder = { Text("TTR-CTRL:...") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    isError = importErrorText != null,
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                val clip = clipboardManager.getText()?.text
+                                                if (!clip.isNullOrBlank()) {
+                                                    importCodeText = clip.trim()
+                                                    importErrorText = null
+                                                    viewModel.triggerAudioFeedback("click")
+                                                }
+                                            }
+                                        ) {
+                                            Icon(Icons.Default.ContentPaste, contentDescription = "Paste from clipboard")
+                                        }
+                                    }
+                                )
+
+                                if (importErrorText != null) {
+                                    Text(
+                                        text = importErrorText ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        val ok = viewModel.importControlConfigCode(importCodeText)
+                                        if (ok) {
+                                            viewModel.triggerAudioFeedback("click")
+                                            importCodeText = ""
+                                            importErrorText = null
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                when (currentLang) {
+                                                    Language.RU -> "Конфигурация успешно загружена!"
+                                                    Language.UA -> "Конфігурацію успішно завантажено!"
+                                                    Language.KK -> "Конфигурация сәтті жүктелді!"
+                                                    Language.DE -> "Konfiguration erfolgreich geladen!"
+                                                    Language.ZH -> "配置已成功套用！"
+                                                    else -> "Configuration loaded successfully!"
+                                                },
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            viewModel.triggerAudioFeedback("error")
+                                            importErrorText = when (currentLang) {
+                                                Language.RU -> "Неверный код! Проверьте формат."
+                                                Language.UA -> "Невірний код! Перевірте формат."
+                                                Language.KK -> "Қате код! Форматты тексеріңіз."
+                                                Language.DE -> "Ungültiger Code! Prüfen."
+                                                Language.ZH -> "代码无效！请检查格式。"
+                                                else -> "Invalid code! Check format."
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = when (currentLang) {
+                                            Language.RU -> "Применить этот код"
+                                            Language.UA -> "Застосувати цей код"
+                                            Language.KK -> "Осы кодты қолдану"
+                                            Language.DE -> "Diesen Code anwenden"
+                                            Language.ZH -> "立即应用此代码"
+                                            else -> "Apply this code"
+                                        },
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Reset Button
+                        OutlinedButton(
+                            onClick = { showResetDialog = true },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = controlVerticalPosition.uppercase(),
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                text = when (currentLang) {
+                                    Language.RU -> "Сбросить управление к рекомендованному"
+                                    Language.UA -> "Скинути до рекомендованого"
+                                    Language.KK -> "Басқаруды стандартқа қайтару"
+                                    Language.DE -> "Auf Standardwerte zurücksetzen"
+                                    Language.ZH -> "恢复推荐默认按键设置"
+                                    else -> "Reset controls to recommended defaults"
+                                }
                             )
                         }
                     }
                 }
-            }
 
-            // Sandbox board game view & controls layout
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
+                // TAB 3: PLAYABLE SANDBOX
+                3 -> {
+                    Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(0.5f)
-                            .border(1.5.dp, themeColorVal.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp))
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        GameBoardView(
-                            gameState = gameState,
-                            blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
-                            ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
-                            ghostOutlineOnly = viewModel.ghostOutlineOnly.collectAsStateWithLifecycle().value,
-                            smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
-                            gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
-                            boardColorSkin = viewModel.themeColor.collectAsStateWithLifecycle().value
-                        )
-                    }
+                        // Sandbox banner
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "🕹️ Песочница: поле авто-очищается"
+                                        Language.UA -> "🕹️ Пісочниця: поле авто-очищується"
+                                        Language.KK -> "🕹️ Сынақ: алаң өздігінен тазарады"
+                                        Language.DE -> "🕹️ Sandbox: Spielfeld leert sich auto."
+                                        Language.ZH -> "🕹️ 实战沙盒：网格填满自动重置"
+                                        else -> "🕹️ Sandbox: board auto-clears"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                TextButton(
+                                    onClick = {
+                                        viewModel.clearRelaxBoard()
+                                        viewModel.triggerAudioFeedback("click")
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = when (currentLang) {
+                                            Language.RU -> "Очистить"
+                                            Language.UA -> "Очистити"
+                                            Language.KK -> "Тазарту"
+                                            Language.DE -> "Leeren"
+                                            Language.ZH -> "清屏"
+                                            else -> "Clear"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        // Sandbox Game Board View
+                        Box(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .fillMaxHeight(0.55f)
+                                .aspectRatio(0.5f)
+                                .border(1.5.dp, themeColorVal.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                        ) {
+                            GameBoardView(
+                                gameState = gameState,
+                                blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
+                                ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
+                                ghostOutlineOnly = viewModel.ghostOutlineOnly.collectAsStateWithLifecycle().value,
+                                smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
+                                gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
+                                boardColorSkin = viewModel.themeColor.collectAsStateWithLifecycle().value
+                            )
+                        }
 
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        GameControlsSection(
-                            viewModel = viewModel,
-                            gameState = gameState,
-                            controlStyle = controlStyle,
-                            leftHandedControls = leftHandedControls,
-                            controlVerticalPosition = controlVerticalPosition,
-                            controlButtonScale = controlButtonScale,
-                            controlButtonStyle = viewModel.controlButtonStyle.collectAsStateWithLifecycle().value,
-                            onLeftPress = { viewModel.gameEngine.moveLeft() },
-                            onRightPress = { viewModel.gameEngine.moveRight() },
-                            onDownPress = { viewModel.gameEngine.softDrop() },
-                            onRotatePress = { viewModel.gameEngine.rotate() },
-                            onHardDropPress = { viewModel.gameEngine.hardDrop() },
-                            onHoldPress = { viewModel.gameEngine.hold() }
-                        )
+                        // Sandbox Controls Section
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = controlBottomPadding.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            GameControlsSection(
+                                viewModel = viewModel,
+                                gameState = gameState,
+                                controlStyle = controlStyle,
+                                leftHandedControls = leftHandedControls,
+                                controlVerticalPosition = controlVerticalPosition,
+                                controlButtonScale = controlButtonScale,
+                                controlButtonStyle = controlButtonStyle,
+                                onLeftPress = { viewModel.gameEngine.moveLeft() },
+                                onRightPress = { viewModel.gameEngine.moveRight() },
+                                onDownPress = { viewModel.gameEngine.softDrop() },
+                                onRotatePress = { viewModel.gameEngine.rotate() },
+                                onHardDropPress = { viewModel.gameEngine.hardDrop() },
+                                onHoldPress = { viewModel.gameEngine.hold() }
+                            )
+                        }
                     }
                 }
             }
@@ -8398,17 +9726,12 @@ fun OtherUserProfileDialog(
         else -> themeColor
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+    BackHandler(onBack = onDismiss)
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
@@ -8489,10 +9812,21 @@ fun OtherUserProfileDialog(
                     )
                 },
                 bottomBar = {
+                    val configuration = LocalConfiguration.current
+                    val isCompactHeight = configuration.screenHeightDp < 680
+                    val isNarrowWidth = configuration.screenWidthDp < 360
+
+                    val btnHeight = if (isCompactHeight) 40.dp else 46.dp
+                    val btnCorner = if (isCompactHeight) 12.dp else 16.dp
+                    val btnPaddingV = if (isCompactHeight) 6.dp else 10.dp
+                    val btnPaddingH = if (isNarrowWidth) 10.dp else 16.dp
+                    val fontSize = if (isNarrowWidth || isCompactHeight) 11.sp else 12.sp
+                    val iconSize = if (isCompactHeight) 16.dp else 18.dp
+
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         shadowElevation = 8.dp
                     ) {
@@ -8533,21 +9867,21 @@ fun OtherUserProfileDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .navigationBarsPadding()
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .padding(horizontal = btnPaddingH, vertical = btnPaddingV)
                         ) {
                             if (isSelf) {
                                 Button(
                                     onClick = onDismiss,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(48.dp),
-                                    shape = RoundedCornerShape(16.dp),
+                                        .height(btnHeight),
+                                    shape = RoundedCornerShape(btnCorner),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = themeColor,
                                         contentColor = if (themeColor.red * 0.299f + themeColor.green * 0.587f + themeColor.blue * 0.114f > 0.6f) Color(0xFF111111) else Color.White
                                     ),
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
                                 ) {
                                     val selfProfileText = when (currentLang) {
                                         Language.RU -> "Ваш профиль (Закрыть)"
@@ -8560,14 +9894,14 @@ fun OtherUserProfileDialog(
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(iconSize)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = selfProfileText,
                                         style = MaterialTheme.typography.labelMedium.copy(
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp
+                                            fontSize = fontSize
                                         ),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -8576,7 +9910,7 @@ fun OtherUserProfileDialog(
                             } else {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     val isActionDisabled = isFriend || friendAddedState
                                     val friendText = when {
@@ -8594,9 +9928,9 @@ fun OtherUserProfileDialog(
                                         enabled = !isActionDisabled,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(48.dp),
-                                        shape = RoundedCornerShape(16.dp),
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                            .height(btnHeight),
+                                        shape = RoundedCornerShape(btnCorner),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = themeColor,
@@ -8607,18 +9941,18 @@ fun OtherUserProfileDialog(
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Icon(
                                                 imageVector = friendIcon,
                                                 contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(iconSize)
                                             )
                                             Text(
                                                 text = friendText,
                                                 style = MaterialTheme.typography.labelMedium.copy(
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp
+                                                    fontSize = fontSize
                                                 ),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -8630,9 +9964,9 @@ fun OtherUserProfileDialog(
                                         onClick = onInviteToDuel,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(48.dp),
-                                        shape = RoundedCornerShape(16.dp),
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                            .height(btnHeight),
+                                        shape = RoundedCornerShape(btnCorner),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                         border = BorderStroke(1.dp, Color(0xFFFF5722).copy(alpha = 0.35f)),
                                         colors = ButtonDefaults.filledTonalButtonColors(
                                             containerColor = Color(0xFFFF5722).copy(alpha = 0.18f),
@@ -8641,18 +9975,18 @@ fun OtherUserProfileDialog(
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.SportsEsports,
                                                 contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(iconSize)
                                             )
                                             Text(
                                                 text = duelBtnText,
                                                 style = MaterialTheme.typography.labelMedium.copy(
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp
+                                                    fontSize = fontSize
                                                 ),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -9014,7 +10348,6 @@ fun OtherUserProfileDialog(
                 }
             }
         }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

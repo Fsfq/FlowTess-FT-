@@ -92,7 +92,6 @@ fun EosLobbyScreen(
     // Listen for game start signal
     LaunchedEffect(Unit) {
         EosManager.gameStartSignal.collect {
-            viewModel.startGame(GameMode.CLASSIC)
             onNavigateToGame()
         }
     }
@@ -216,7 +215,6 @@ fun EosLobbyScreen(
                     viewModel = viewModel,
                     onStartGame = {
                         EosManager.startMatch()
-                        viewModel.startGame(GameMode.CLASSIC)
                         onNavigateToGame()
                     },
                     onLeave = { EosManager.leaveRoom() }
@@ -492,36 +490,56 @@ private fun EosRoomsListTab(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            placeholder = {
-                Text(
-                    text = when (currentLang) {
-                        Language.RU -> "Поиск комнат по имени или ID..."
-                        Language.UA -> "Пошук кімнат..."
-                        Language.KK -> "Бөлмелерді іздеу..."
-                        Language.DE -> "Räume suchen..."
-                        Language.ZH -> "按名称或房间号搜索..."
-                        else -> "Search rooms..."
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-            },
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null, tint = themeColor, modifier = Modifier.size(20.dp))
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
-                    }
-                }
-            },
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            singleLine = true
-        )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = {
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Поиск комнат по имени, коду или ID..."
+                            Language.UA -> "Пошук кімнат..."
+                            Language.KK -> "Бөлмелерді іздеу..."
+                            Language.DE -> "Räume suchen..."
+                            Language.ZH -> "按名称或房间号搜索..."
+                            else -> "Search rooms..."
+                        },
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = themeColor, modifier = Modifier.size(20.dp))
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                singleLine = true
+            )
+
+            IconButton(
+                onClick = {
+                    viewModel.triggerAudioFeedback("click")
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    EosManager.refreshRooms()
+                },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = themeColor)
+            }
+        }
 
         if (filteredRooms.isEmpty()) {
             Box(
@@ -602,7 +620,7 @@ private fun EosRoomsListTab(
                                     }
                                 }
                                 Text(
-                                    text = "Хост: ${room.hostName} • ID: ${room.id.takeLast(6)}",
+                                    text = "Хост: ${room.hostName} • ${if (room.code.isNotBlank()) "Код: " + room.code else "ID: " + room.id.takeLast(6)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -668,8 +686,8 @@ private fun EosDirectCodeTab(
         ) {
             OutlinedTextField(
                 value = codeInput,
-                onValueChange = { codeInput = it.uppercase() },
-                label = { Text("EOS Lobby ID / Room Code") },
+                onValueChange = { codeInput = it.trim() },
+                label = { Text("Код комнаты (6 знаков) или Lobby ID") },
                 leadingIcon = {
                     Icon(Icons.Default.Tag, contentDescription = null, tint = themeColor)
                 },
@@ -678,7 +696,7 @@ private fun EosDirectCodeTab(
                         onClick = {
                             val clip = clipboardManager.getText()?.text
                             if (!clip.isNullOrBlank()) {
-                                codeInput = clip.trim().uppercase()
+                                codeInput = clip.trim()
                                 viewModel.triggerAudioFeedback("click")
                             }
                         }
@@ -1019,21 +1037,29 @@ private fun InsideEosRoomView(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "EOS LOBBY CODE",
+                        text = if (room.code.isNotBlank()) "КОД КОМНАТЫ" else "EOS LOBBY ID",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = themeColor
                     )
                     Text(
-                        text = room.id,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                        text = if (room.code.isNotBlank()) room.code else room.id,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black, letterSpacing = if (room.code.isNotBlank()) 2.sp else 0.sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    if (room.code.isNotBlank()) {
+                        Text(
+                            text = "Lobby ID: ${room.id.take(8)}...${room.id.takeLast(4)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(room.id))
+                            val copyVal = if (room.code.isNotBlank()) room.code else room.id
+                            clipboardManager.setText(AnnotatedString(copyVal))
                             viewModel.triggerAudioFeedback("click")
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
@@ -1045,9 +1071,10 @@ private fun InsideEosRoomView(
                         onClick = {
                             viewModel.triggerAudioFeedback("click")
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            val shareVal = if (room.code.isNotBlank()) room.code else room.id
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "Присоединяйся к игре в Tetris EOS! Код: ${room.id}")
+                                putExtra(Intent.EXTRA_TEXT, "Присоединяйся к игре в Tetris EOS! Код комнаты: $shareVal")
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Share EOS Room"))
                         }

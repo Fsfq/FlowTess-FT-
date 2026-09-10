@@ -16,8 +16,8 @@ android {
     applicationId = "com.FsFq.Tetris"
     minSdk = 24
     targetSdk = 36
-    versionCode = 13
-    versionName = "0.95.3 Alpha"
+    versionCode = 14
+    versionName = "0.95.4 Alpha"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -121,8 +121,8 @@ androidComponents {
     variant.outputs.forEach { output ->
       val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
       val abiCode = abiCodes[abi] ?: 0
-      output.versionCode.set((13 * 10) + abiCode)
-      (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("FT-0.95.3-Alpha-$abi.apk")
+      output.versionCode.set((14 * 10) + abiCode)
+      (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("FT-0.95.4-Alpha-$abi.apk")
     }
   }
 }

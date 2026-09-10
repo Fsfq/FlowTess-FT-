@@ -2937,14 +2937,6 @@ object Translations {
             Language.ZH -> "竞技6键矩阵"
             else -> "Claw Pro (6-Key)"
         }
-        "swipe_hybrid" -> when (lang) {
-            Language.RU -> "Свайп-Гибрид"
-            Language.UA -> "Свайп-Гібрид"
-            Language.KK -> "Свайп-Гибрид"
-            Language.DE -> "Wisch-Hybrid"
-            Language.ZH -> "滑动触控手势"
-            else -> "Swipe Hybrid"
-        }
         else -> preset
     }
 

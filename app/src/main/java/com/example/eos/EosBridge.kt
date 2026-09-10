@@ -7,7 +7,23 @@ interface EosLoginCallback {
 }
 
 interface EosLobbyCallback {
-    fun onLobbyResult(success: Boolean, lobbyId: String?)
+    fun onLobbyResult(
+        success: Boolean,
+        lobbyId: String?,
+        hostPuid: String?,
+        roomName: String?,
+        hostName: String?,
+        hostTier: String?,
+        bet: Int
+    )
+}
+
+interface EosMemberStatusCallback {
+    fun onMemberStatusChanged(lobbyId: String, memberPuid: String, status: String)
+}
+
+interface EosSearchCallback {
+    fun onSearchResult(success: Boolean, roomsJson: String?)
 }
 
 object EosBridge {
@@ -71,17 +87,25 @@ object EosBridge {
         nativeSetupP2pNotification()
     }
 
-    fun createLobby(roomName: String, bet: Int, isPrivate: Boolean, callback: EosLobbyCallback) {
+    fun createLobby(
+        roomName: String,
+        bet: Int,
+        isPrivate: Boolean,
+        shortCode: String,
+        hostName: String,
+        hostTier: String,
+        callback: EosLobbyCallback
+    ) {
         if (!isNativeLoaded) {
-            callback.onLobbyResult(false, null)
+            callback.onLobbyResult(false, null, null, null, null, null, 0)
             return
         }
-        nativeCreateLobby(roomName, bet, isPrivate, callback)
+        nativeCreateLobby(roomName, bet, isPrivate, shortCode, hostName, hostTier, callback)
     }
 
     fun joinLobby(lobbyId: String, callback: EosLobbyCallback) {
         if (!isNativeLoaded) {
-            callback.onLobbyResult(false, null)
+            callback.onLobbyResult(false, null, null, null, null, null, 0)
             return
         }
         nativeJoinLobby(lobbyId, callback)
@@ -90,6 +114,19 @@ object EosBridge {
     fun leaveLobby(lobbyId: String) {
         if (!isNativeLoaded) return
         nativeLeaveLobby(lobbyId)
+    }
+
+    fun searchLobbies(callback: EosSearchCallback) {
+        if (!isNativeLoaded) {
+            callback.onSearchResult(false, null)
+            return
+        }
+        nativeSearchLobbies(callback)
+    }
+
+    fun setupMemberStatusNotification(callback: EosMemberStatusCallback?) {
+        if (!isNativeLoaded) return
+        nativeSetupMemberStatusNotification(callback)
     }
 
     fun sendPacket(targetPuid: String, socketName: String, data: ByteArray): Boolean {
@@ -121,9 +158,19 @@ object EosBridge {
     private external fun nativeLoginAnonymous(displayName: String, callback: EosLoginCallback)
     private external fun nativeGetLocalProductUserId(): String?
     private external fun nativeSetupP2pNotification()
-    private external fun nativeCreateLobby(roomName: String, bet: Int, isPrivate: Boolean, callback: EosLobbyCallback)
+    private external fun nativeCreateLobby(
+        roomName: String,
+        bet: Int,
+        isPrivate: Boolean,
+        shortCode: String,
+        hostName: String,
+        hostTier: String,
+        callback: EosLobbyCallback
+    )
     private external fun nativeJoinLobby(lobbyId: String, callback: EosLobbyCallback)
     private external fun nativeLeaveLobby(lobbyId: String)
+    private external fun nativeSearchLobbies(callback: EosSearchCallback)
+    private external fun nativeSetupMemberStatusNotification(callback: EosMemberStatusCallback?)
     private external fun nativeSendPacket(targetPuid: String, socketName: String, data: ByteArray): Boolean
     private external fun nativeReceivePacket(socketName: String): ByteArray?
     private external fun nativeAcceptConnection(remotePuid: String, socketName: String): Boolean
