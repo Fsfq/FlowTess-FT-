@@ -34,3 +34,7 @@
 -keepclassmembers class com.epicgames.mobile.eossdk.** { *; }
 -keep class com.example.eos.** { *; }
 -keepclassmembers class com.example.eos.** { *; }
+
+# AndroidX Security Crypto (required by EOS SDK Keychain)
+-keep class androidx.security.crypto.** { *; }
+-keepclassmembers class androidx.security.crypto.** { *; }

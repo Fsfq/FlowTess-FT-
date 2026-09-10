@@ -382,16 +382,8 @@ val allLootItems = listOf(
     LootItem("blue_gradient", "cube_skin", "Cobalt Pulse", "Кобальтовый Пульс", DropRarity.RED),
     LootItem("purple_gradient", "cube_skin", "Void Pulse", "Пульс Бездны", DropRarity.RED),
 
-    // Avatar Frames
-    LootItem("neon_frame", "avatar_frame", "Turquoise", "Бирюза", DropRarity.RARE),
-    LootItem("gold_frame", "avatar_frame", "Gold", "Золото", DropRarity.EPIC),
-    LootItem("cyber_frame", "avatar_frame", "Violet", "Фиолет", DropRarity.EPIC),
-    LootItem("fire_frame", "avatar_frame", "Flame", "Пламя", DropRarity.EPIC),
-    LootItem("ice_frame", "avatar_frame", "Frost", "Мороз", DropRarity.EPIC),
-    LootItem("matrix_frame", "avatar_frame", "Matrix", "Матрица", DropRarity.EPIC),
-    LootItem("galaxy_frame", "avatar_frame", "Galaxy", "Галактика", DropRarity.LEGENDARY),
-    LootItem("rainbow_frame", "avatar_frame", "Rainbow", "Радуга", DropRarity.LEGENDARY),
-    LootItem("chrono_gl", "avatar_frame", "OVERDRIVE FRAME", "Градиентная Рамка", DropRarity.RED),
+    // Avatar Frames (Exclusive Red Crate Dynamic Rainbow Gradient Frame)
+    LootItem("chrono_gl", "avatar_frame", "Gradient", "Градиент", DropRarity.RED),
 
     // Control Buttons
     LootItem("gold_legendary", "button_skin", "Gold Buttons", "Золотые Кнопки", DropRarity.LEGENDARY),

@@ -150,13 +150,97 @@ struct LoginContext {
     std::string displayName;
 };
 
+static void EOS_CALL ConnectLoginCallback(const EOS_Connect_LoginCallbackInfo* Data);
+
+static void DoConnectLogin(LoginContext* ctx) {
+    if (g_PlatformHandle == nullptr) {
+        LOGE("g_PlatformHandle is null in DoConnectLogin");
+        delete ctx;
+        return;
+    }
+    EOS_HConnect ConnectHandle = EOS_Platform_GetConnectInterface(g_PlatformHandle);
+    if (ConnectHandle == nullptr) {
+        LOGE("ConnectHandle is null in DoConnectLogin");
+        delete ctx;
+        return;
+    }
+
+    EOS_Connect_Credentials Credentials = {};
+    Credentials.ApiVersion = EOS_CONNECT_CREDENTIALS_API_LATEST;
+    Credentials.Token = nullptr;
+    Credentials.Type = EOS_EExternalCredentialType::EOS_ECT_DEVICEID_ACCESS_TOKEN;
+
+    EOS_Connect_UserLoginInfo UserLoginInfo = {};
+    UserLoginInfo.ApiVersion = EOS_CONNECT_USERLOGININFO_API_LATEST;
+    UserLoginInfo.DisplayName = ctx->displayName.c_str();
+
+    EOS_Connect_LoginOptions LoginOptions = {};
+    LoginOptions.ApiVersion = EOS_CONNECT_LOGIN_API_LATEST;
+    LoginOptions.Credentials = &Credentials;
+    LoginOptions.UserLoginInfo = &UserLoginInfo;
+
+    EOS_Connect_Login(ConnectHandle, &LoginOptions, ctx, ConnectLoginCallback);
+}
+
 static void EOS_CALL ConnectCreateDeviceIdCallback(const EOS_Connect_CreateDeviceIdCallbackInfo* Data) {
     LOGI("EOS_Connect_CreateDeviceId result: %d", (int)Data->ResultCode);
+    LoginContext* ctx = static_cast<LoginContext*>(Data->ClientData);
+    if (ctx != nullptr) {
+        DoConnectLogin(ctx);
+    }
+}
+
+static void EOS_CALL ConnectCreateUserCallback(const EOS_Connect_CreateUserCallbackInfo* Data) {
+    LoginContext* ctx = static_cast<LoginContext*>(Data->ClientData);
+    JNIEnv* env = GetEnv();
+
+    bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
+    std::string puidStr = "";
+
+    if (success) {
+        g_LocalProductUserId = Data->LocalUserId;
+        char puidBuffer[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+        int32_t bufSize = sizeof(puidBuffer);
+        if (EOS_ProductUserId_ToString(g_LocalProductUserId, puidBuffer, &bufSize) == EOS_EResult::EOS_Success) {
+            g_LocalProductUserIdStr = puidBuffer;
+            puidStr = puidBuffer;
+        }
+        LOGI("EOS_Connect_CreateUser success! Local PUID: %s", puidStr.c_str());
+    } else {
+        LOGE("EOS_Connect_CreateUser failed with code: %d", (int)Data->ResultCode);
+    }
+
+    if (ctx && ctx->callbackRef && env) {
+        jclass cbClass = env->GetObjectClass(ctx->callbackRef);
+        jmethodID methodId = env->GetMethodID(cbClass, "onLoginResult", "(ZLjava/lang/String;)V");
+        if (methodId) {
+            jstring puidJStr = puidStr.empty() ? nullptr : env->NewStringUTF(puidStr.c_str());
+            env->CallVoidMethod(ctx->callbackRef, methodId, success ? JNI_TRUE : JNI_FALSE, puidJStr);
+            if (puidJStr) env->DeleteLocalRef(puidJStr);
+        }
+        env->DeleteGlobalRef(ctx->callbackRef);
+    }
+
+    delete ctx;
 }
 
 static void EOS_CALL ConnectLoginCallback(const EOS_Connect_LoginCallbackInfo* Data) {
     LoginContext* ctx = static_cast<LoginContext*>(Data->ClientData);
     JNIEnv* env = GetEnv();
+
+    if (Data->ResultCode == EOS_EResult::EOS_NotFound && Data->ContinuanceToken != nullptr) {
+        LOGI("User not found in EOS Connect, creating user with ContinuanceToken...");
+        if (g_PlatformHandle != nullptr) {
+            EOS_HConnect ConnectHandle = EOS_Platform_GetConnectInterface(g_PlatformHandle);
+            if (ConnectHandle != nullptr) {
+                EOS_Connect_CreateUserOptions CreateUserOptions = {};
+                CreateUserOptions.ApiVersion = EOS_CONNECT_CREATEUSER_API_LATEST;
+                CreateUserOptions.ContinuanceToken = Data->ContinuanceToken;
+                EOS_Connect_CreateUser(ConnectHandle, &CreateUserOptions, ctx, ConnectCreateUserCallback);
+                return; // Wait for ConnectCreateUserCallback
+            }
+        }
+    }
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string puidStr = "";
@@ -207,30 +291,14 @@ Java_com_example_eos_EosBridge_nativeLoginAnonymous(
     std::string nameStr = dName;
     if (displayName) env->ReleaseStringUTFChars(displayName, dName);
 
-    EOS_Connect_CreateDeviceIdOptions DeviceOptions = {};
-    DeviceOptions.ApiVersion = EOS_CONNECT_CREATEDEVICEID_API_LATEST;
-    DeviceOptions.DeviceModel = "AndroidDevice";
-    EOS_Connect_CreateDeviceId(ConnectHandle, &DeviceOptions, nullptr, ConnectCreateDeviceIdCallback);
-
     LoginContext* ctx = new LoginContext();
     ctx->callbackRef = env->NewGlobalRef(callback);
     ctx->displayName = nameStr;
 
-    EOS_Connect_Credentials Credentials = {};
-    Credentials.ApiVersion = EOS_CONNECT_CREDENTIALS_API_LATEST;
-    Credentials.Token = nullptr;
-    Credentials.Type = EOS_EExternalCredentialType::EOS_ECT_DEVICEID_ACCESS_TOKEN;
-
-    EOS_Connect_UserLoginInfo UserLoginInfo = {};
-    UserLoginInfo.ApiVersion = EOS_CONNECT_USERLOGININFO_API_LATEST;
-    UserLoginInfo.DisplayName = ctx->displayName.c_str();
-
-    EOS_Connect_LoginOptions LoginOptions = {};
-    LoginOptions.ApiVersion = EOS_CONNECT_LOGIN_API_LATEST;
-    LoginOptions.Credentials = &Credentials;
-    LoginOptions.UserLoginInfo = &UserLoginInfo;
-
-    EOS_Connect_Login(ConnectHandle, &LoginOptions, ctx, ConnectLoginCallback);
+    EOS_Connect_CreateDeviceIdOptions DeviceOptions = {};
+    DeviceOptions.ApiVersion = EOS_CONNECT_CREATEDEVICEID_API_LATEST;
+    DeviceOptions.DeviceModel = "AndroidDevice";
+    EOS_Connect_CreateDeviceId(ConnectHandle, &DeviceOptions, ctx, ConnectCreateDeviceIdCallback);
 }
 
 JNIEXPORT jstring JNICALL

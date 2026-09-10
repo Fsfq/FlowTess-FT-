@@ -1,3 +1,4 @@
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -15,8 +16,8 @@ android {
     applicationId = "com.FsFq.Tetris"
     minSdk = 24
     targetSdk = 36
-    versionCode = 10
-    versionName = "0.95.1 Alpha"
+    versionCode = 13
+    versionName = "0.95.3 Alpha"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -88,9 +89,11 @@ android {
       isEnable = true
       reset()
       include("arm64-v8a", "x86_64")
-      isUniversalApk = false
+      isUniversalApk = true
     }
   }
+
+
 
   packaging {
     jniLibs {
@@ -108,6 +111,18 @@ android {
         "google/firestore/**/*.proto",
         "google/api/*.proto"
       )
+    }
+  }
+}
+
+androidComponents {
+  onVariants { variant ->
+    val abiCodes = mapOf("universal" to 0, "armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
+    variant.outputs.forEach { output ->
+      val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
+      val abiCode = abiCodes[abi] ?: 0
+      output.versionCode.set((13 * 10) + abiCode)
+      (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("FT-0.95.3-Alpha-$abi.apk")
     }
   }
 }
@@ -174,6 +189,7 @@ dependencies {
   implementation(libs.okhttp)
   // implementation(libs.play.services.location)
   // Epic Online Services (EOS) SDK
+  implementation(libs.androidx.security.crypto)
   implementation(files("SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar"))
 
   testImplementation(libs.androidx.compose.ui.test.junit4)

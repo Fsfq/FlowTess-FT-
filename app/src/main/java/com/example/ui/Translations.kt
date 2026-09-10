@@ -34,7 +34,6 @@ object Translations {
         "pieces" to "Pieces",
         "tap" to "TAP",
         "puzzle_stencil" to "BLUEPRINT",
-        "sculptor" to "SCULPTOR",
         "moves" to "MOVES",
         "game_over" to "Game Over",
         "restart" to "Restart",
@@ -205,7 +204,6 @@ object Translations {
         "pieces" to "Фигуры",
         "tap" to "НАЖМИ",
         "puzzle_stencil" to "ШАБЛОН",
-        "sculptor" to "СКУЛЬПТОР",
         "moves" to "ХОДОВ",
         "game_over" to "Игра завершена",
         "restart" to "Перезапустить сессию",
@@ -376,7 +374,6 @@ object Translations {
         "pieces" to "Фігури",
         "tap" to "НАТИСНИ",
         "puzzle_stencil" to "ШАБЛОН",
-        "sculptor" to "СКУЛЬПТОР",
         "moves" to "ХОДІВ",
         "game_over" to "Гра Закінчена",
         "restart" to "Заново",
@@ -547,7 +544,6 @@ object Translations {
         "pieces" to "Фигуралар",
         "tap" to "БАС",
         "puzzle_stencil" to "ҮЛГІ",
-        "sculptor" to "СКУЛЬПТОР",
         "moves" to "ЖҮРІС",
         "game_over" to "Ойын Аяқталды",
         "restart" to "Қайталау",
@@ -718,7 +714,6 @@ object Translations {
         "pieces" to "Steine",
         "tap" to "TIPPEN",
         "puzzle_stencil" to "SCHABLONE",
-        "sculptor" to "BILDHAUER",
         "moves" to "ZÜGE",
         "game_over" to "Spiel vorbei",
         "restart" to "Neustart",
@@ -889,7 +884,6 @@ object Translations {
         "pieces" to "方块数",
         "tap" to "点击",
         "puzzle_stencil" to "全息模板",
-        "sculptor" to "雕塑家",
         "moves" to "步数",
         "game_over" to "游戏结束",
         "restart" to "重新开始",
@@ -1205,14 +1199,6 @@ object Translations {
                 Language.DE -> "Muster"
                 Language.ZH -> "图形模板"
                 else -> "Blueprint"
-            }
-            "sculptor" -> when (lang) {
-                Language.RU -> "Скульптор"
-                Language.UA -> "Скульптор"
-                Language.KK -> "Мүсінші"
-                Language.DE -> "Bildhauer"
-                Language.ZH -> "雕塑家"
-                else -> "Sculptor"
             }
             "slide", "slide_puzzle" -> when (lang) {
                 Language.RU -> "Слайдер"
@@ -2396,170 +2382,179 @@ object Translations {
         else -> ""
     }
 
-    fun getLocalizedAvatarFrameTitle(frameId: String, lang: Language): String = when (frameId) {
+    fun getLocalizedAvatarFrameTitle(frameId: String, lang: Language): String = when (frameId.lowercase()) {
         "standard" -> when (lang) {
-            Language.RU -> "По умолчанию"
-            Language.UA -> "За замовчуванням"
-            Language.KK -> "Әдепкі"
+            Language.RU -> "Базовая"
+            Language.UA -> "Базова"
+            Language.KK -> "Негізгі"
             Language.DE -> "Standard"
             Language.ZH -> "默认"
-            else -> "Default"
+            else -> "Standard"
         }
-        "neon_frame" -> when (lang) {
-            Language.RU -> "Бирюза"
-            Language.UA -> "Бірюза"
-            Language.KK -> "Бирюза"
-            Language.DE -> "Türkis"
-            Language.ZH -> "青蓝"
-            else -> "Turquoise"
+        "frame_white" -> when (lang) {
+            Language.RU -> "Белая"
+            Language.UA -> "Біла"
+            Language.KK -> "Ақ"
+            Language.DE -> "Weiß"
+            Language.ZH -> "白色"
+            else -> "White"
         }
-        "gold_frame" -> when (lang) {
-            Language.RU -> "Золото"
-            Language.UA -> "Золото"
-            Language.KK -> "Алтын"
-            Language.DE -> "Gold"
-            Language.ZH -> "黄金"
-            else -> "Gold"
+        "frame_blue" -> when (lang) {
+            Language.RU -> "Синяя"
+            Language.UA -> "Синя"
+            Language.KK -> "Көк"
+            Language.DE -> "Blau"
+            Language.ZH -> "蓝色"
+            else -> "Blue"
         }
-        "cyber_frame" -> when (lang) {
-            Language.RU -> "Фиолет"
-            Language.UA -> "Фіолет"
+        "frame_green" -> when (lang) {
+            Language.RU -> "Зеленая"
+            Language.UA -> "Зелена"
+            Language.KK -> "Жасыл"
+            Language.DE -> "Grün"
+            Language.ZH -> "绿色"
+            else -> "Green"
+        }
+        "frame_yellow" -> when (lang) {
+            Language.RU -> "Желтая"
+            Language.UA -> "Жовта"
+            Language.KK -> "Сары"
+            Language.DE -> "Gelb"
+            Language.ZH -> "黄色"
+            else -> "Yellow"
+        }
+        "frame_orange" -> when (lang) {
+            Language.RU -> "Оранжевая"
+            Language.UA -> "Помаранчева"
+            Language.KK -> "Қызғылт сары"
+            Language.DE -> "Orange"
+            Language.ZH -> "橙色"
+            else -> "Orange"
+        }
+        "frame_red" -> when (lang) {
+            Language.RU -> "Красная"
+            Language.UA -> "Червона"
+            Language.KK -> "Қызыл"
+            Language.DE -> "Rot"
+            Language.ZH -> "红色"
+            else -> "Red"
+        }
+        "frame_purple" -> when (lang) {
+            Language.RU -> "Фиолетовая"
+            Language.UA -> "Фіолетова"
             Language.KK -> "Күлгін"
-            Language.DE -> "Violett"
-            Language.ZH -> "紫罗兰"
-            else -> "Violet"
+            Language.DE -> "Lila"
+            Language.ZH -> "紫色"
+            else -> "Purple"
         }
-        "fire_frame" -> when (lang) {
-            Language.RU -> "Пламя"
-            Language.UA -> "Полум'я"
-            Language.KK -> "Жалын"
-            Language.DE -> "Flamme"
-            Language.ZH -> "烈焰"
-            else -> "Flame"
-        }
-        "ice_frame" -> when (lang) {
-            Language.RU -> "Ледник"
-            Language.UA -> "Льодовик"
-            Language.KK -> "Мұздық"
-            Language.DE -> "Gletscher"
-            Language.ZH -> "极地冰霜"
-            else -> "Glacier"
-        }
-        "matrix_frame" -> when (lang) {
-            Language.RU -> "Матрица"
-            Language.UA -> "Матриця"
-            Language.KK -> "Матрица"
-            Language.DE -> "Matrix"
-            Language.ZH -> "黑客帝国"
-            else -> "Matrix"
-        }
-        "galaxy_frame" -> when (lang) {
-            Language.RU -> "Галактика"
-            Language.UA -> "Галактика"
-            Language.KK -> "Галактика"
-            Language.DE -> "Galaxie"
-            Language.ZH -> "星系星云"
-            else -> "Galaxy"
-        }
-        "rainbow_frame" -> when (lang) {
-            Language.RU -> "Радуга"
-            Language.UA -> "Веселка"
-            Language.KK -> "Кемпірқосақ"
-            Language.DE -> "Regenbogen"
-            Language.ZH -> "七彩炫彩"
-            else -> "Rainbow"
+        "frame_dark" -> when (lang) {
+            Language.RU -> "Темная"
+            Language.UA -> "Темна"
+            Language.KK -> "Қараңғы"
+            Language.DE -> "Dunkel"
+            Language.ZH -> "深暗"
+            else -> "Dark"
         }
         "chrono_gl", "gradient_frame" -> when (lang) {
-            Language.RU -> "Градиентная Рамка"
-            Language.UA -> "Градієнтна Рамка"
-            Language.KK -> "Градиентті Жақтау"
-            Language.DE -> "Farbverlauf-Rahmen"
-            Language.ZH -> "渐变动态光环"
-            else -> "Gradient Frame"
+            Language.RU -> "Градиент"
+            Language.UA -> "Градієнт"
+            Language.KK -> "Градиент"
+            Language.DE -> "Farbverlauf"
+            Language.ZH -> "动态渐变"
+            else -> "Gradient"
         }
+        // Legacy fallbacks
+        "neon_frame" -> "Бирюза"
+        "gold_frame" -> "Золото"
+        "cyber_frame" -> "Фиолет"
+        "fire_frame" -> "Пламя"
+        "ice_frame" -> "Ледник"
+        "matrix_frame" -> "Матрица"
+        "galaxy_frame" -> "Галактика"
+        "rainbow_frame" -> "Радуга"
         else -> frameId
     }
 
-    fun getLocalizedAvatarFrameDesc(frameId: String, lang: Language): String = when (frameId) {
+    fun getLocalizedAvatarFrameDesc(frameId: String, lang: Language): String = when (frameId.lowercase()) {
         "standard" -> when (lang) {
-            Language.RU -> "Классическая рамка"
-            Language.UA -> "Класична рамка"
-            Language.KK -> "Классикалық жақтау"
+            Language.RU -> "Базовая классическая рамка"
+            Language.UA -> "Базова класична рамка"
+            Language.KK -> "Классикалық негізгі жақтау"
             Language.DE -> "Klassischer dezenter Rahmen"
             Language.ZH -> "经典微质感相框"
             else -> "Classic subtle frame"
         }
-        "neon_frame" -> when (lang) {
-            Language.RU -> "Свежий бирюзовый контур"
-            Language.UA -> "Свіжий бірюзовий контур"
-            Language.KK -> "Жаңа бирюза контуры"
-            Language.DE -> "Frischer türkisblauer Rahmen"
-            Language.ZH -> "清爽青蓝色轮廓"
-            else -> "Fresh turquoise outline"
+        "frame_white" -> when (lang) {
+            Language.RU -> "Минималистичный белый контур"
+            Language.UA -> "Мінімалістичний білий контур"
+            Language.KK -> "Минималистік ақ контур"
+            Language.DE -> "Minimalistischer weißer Rahmen"
+            Language.ZH -> "简约白色轮廓相框"
+            else -> "Minimalist white outline"
         }
-        "gold_frame" -> when (lang) {
-            Language.RU -> "Теплый золотой контур"
-            Language.UA -> "Теплий золотий контур"
-            Language.KK -> "Жылы алтын контур"
-            Language.DE -> "Warmer Gold-Rahmen"
-            Language.ZH -> "温暖金色光环"
-            else -> "Warm golden outline"
+        "frame_blue" -> when (lang) {
+            Language.RU -> "Классический синий контур"
+            Language.UA -> "Класичний синій контур"
+            Language.KK -> "Классикалық көк контур"
+            Language.DE -> "Klassischer blauer Rahmen"
+            Language.ZH -> "经典蓝色轮廓相框"
+            else -> "Classic blue outline"
         }
-        "cyber_frame" -> when (lang) {
-            Language.RU -> "Мягкий фиолетовый контур"
-            Language.UA -> "М'який фіолетовий контур"
-            Language.KK -> "Жұмсақ күлгін контур"
-            Language.DE -> "Sanfter violetter Rahmen"
-            Language.ZH -> "柔和紫色轮廓"
-            else -> "Soft violet outline"
+        "frame_green" -> when (lang) {
+            Language.RU -> "Свежий зеленый контур"
+            Language.UA -> "Свіжий зелений контур"
+            Language.KK -> "Жаңа жасыл контур"
+            Language.DE -> "Frischer grüner Rahmen"
+            Language.ZH -> "清新绿色轮廓相框"
+            else -> "Fresh green outline"
         }
-        "fire_frame" -> when (lang) {
-            Language.RU -> "Пылающий огненный контур с искрами"
-            Language.UA -> "Палаючий вогняний контур з іскрами"
-            Language.KK -> "Жалынды отты контур"
-            Language.DE -> "Feuriger Rahmen mit Glüheffekt"
-            Language.ZH -> "烈焰燃烧流光动态光环"
-            else -> "Blazing fiery outline with sparks"
+        "frame_yellow" -> when (lang) {
+            Language.RU -> "Яркий желтый контур"
+            Language.UA -> "Яскравий жовтий контур"
+            Language.KK -> "Жарық сары контур"
+            Language.DE -> "Heller gelber Rahmen"
+            Language.ZH -> "明亮黄色轮廓相框"
+            else -> "Bright yellow outline"
         }
-        "ice_frame" -> when (lang) {
-            Language.RU -> "Морозное арктическое свечение кристаллов льда"
-            Language.UA -> "Морозне арктичне світіння кристалів льоду"
-            Language.KK -> "Арктикалық мұз жарқылы"
-            Language.DE -> "Arktisches Eiskristall-Leuchten"
-            Language.ZH -> "晶莹剔透极地极光冰晶"
-            else -> "Frosty arctic ice crystal glow"
+        "frame_orange" -> when (lang) {
+            Language.RU -> "Теплый оранжевый контур"
+            Language.UA -> "Теплий помаранчевий контур"
+            Language.KK -> "Жылы қызғылт сары контур"
+            Language.DE -> "Warmer orangefarbener Rahmen"
+            Language.ZH -> "温暖橙色轮廓相框"
+            else -> "Warm orange outline"
         }
-        "matrix_frame" -> when (lang) {
-            Language.RU -> "Цифровой кибернетический поток данных"
-            Language.UA -> "Цифровий кібернетичний потік даних"
-            Language.KK -> "Сандық кибер-ағын"
-            Language.DE -> "Digitaler Cyber-Datenstrom"
-            Language.ZH -> "绿色数字流黑客动态光环"
-            else -> "Digital cyber data stream outline"
+        "frame_red" -> when (lang) {
+            Language.RU -> "Насыщенный красный контур"
+            Language.UA -> "Насичений червоний контур"
+            Language.KK -> "Қанық қызыл контур"
+            Language.DE -> "Kräftiger roter Rahmen"
+            Language.ZH -> "热烈红色轮廓相框"
+            else -> "Vivid red outline"
         }
-        "galaxy_frame" -> when (lang) {
-            Language.RU -> "Глубокая космическая туманность со звёздами"
-            Language.UA -> "Глибока космічна туманність із зірками"
-            Language.KK -> "Жұлдызды терең ғарыш"
-            Language.DE -> "Tiefe kosmische Nebel-Aura"
-            Language.ZH -> "深邃星云与恒星微光环绕"
-            else -> "Deep cosmic nebula with starlight"
+        "frame_purple" -> when (lang) {
+            Language.RU -> "Глубокий фиолетовый контур"
+            Language.UA -> "Глибокий фіолетовий контур"
+            Language.KK -> "Терең күлгін контур"
+            Language.DE -> "Tiefer violetter Rahmen"
+            Language.ZH -> "深邃紫色轮廓相框"
+            else -> "Deep purple outline"
         }
-        "rainbow_frame" -> when (lang) {
-            Language.RU -> "Переливающийся спектр неоновых цветов"
-            Language.UA -> "Спектр неонових кольорів, що переливається"
-            Language.KK -> "Кемпірқосақты спектр жарқылы"
-            Language.DE -> "Schimmerndes prismatisches Farbspektrum"
-            Language.ZH -> "七彩棱镜动态光谱流动"
-            else -> "Prismatic rainbow neon color spectrum"
+        "frame_dark" -> when (lang) {
+            Language.RU -> "Строгий темный контур"
+            Language.UA -> "Строгий темний контур"
+            Language.KK -> "Қатал қараңғы контур"
+            Language.DE -> "Eleganter dunkler Rahmen"
+            Language.ZH -> "沉稳暗色轮廓相框"
+            else -> "Sleek dark outline"
         }
         "chrono_gl", "gradient_frame", "neon_ae", "gold_ma", "omega_ti" -> when (lang) {
-            Language.RU -> "Анимированная переливающаяся рамка под стиль вашего ника"
-            Language.UA -> "Анімована рамка, що переливається під стиль вашого ніка"
-            Language.KK -> "Ник стиліңізге сәйкес келетін анимациялық жарқыл"
-            Language.DE -> "Animierter leuchtender Rahmen passend zu Ihrem Nicknamen"
-            Language.ZH -> "与您的昵称渐变风格一致的流光动态光环"
-            else -> "Animated shining frame matching your nickname style"
+            Language.RU -> "Динамическая радужная рамка с переливом"
+            Language.UA -> "Динамічна веселкова рамка з переливом"
+            Language.KK -> "Динамикалық кемпірқосақ жақтау"
+            Language.DE -> "Dynamischer Regenbogen-Farbverlauf"
+            Language.ZH -> "动态全彩流光渐变相框"
+            else -> "Dynamic rainbow gradient frame"
         }
         else -> ""
     }
@@ -2890,14 +2885,6 @@ object Translations {
             Language.ZH -> "图形模板"
             else -> "Blueprint"
         }
-        "SCULPTOR" -> when (lang) {
-            Language.RU -> "Скульптор"
-            Language.UA -> "Скульптор"
-            Language.KK -> "Мүсінші"
-            Language.DE -> "Bildhauer"
-            Language.ZH -> "雕塑家"
-            else -> "Sculptor"
-        }
         else -> modeId
     }
 
@@ -3025,14 +3012,6 @@ object Translations {
             Language.DE -> "Puzzle: Fülle die Neonschablone mit Steinen"
             Language.ZH -> "全息拼图解密：用方块精准填满图形轮廓"
             else -> "Puzzle: Fill the neon blueprint stencil with pieces"
-        }
-        "SCULPTOR" -> when (lang) {
-            Language.RU -> "Головоломка: добейтесь Perfect Clear за лимит ходов"
-            Language.UA -> "Головоломка: досягніть Perfect Clear за ліміт ходів"
-            Language.KK -> "Басқатырғыш: шектеулі жүрісте алаңды толық тазартыңыз"
-            Language.DE -> "Puzzle: Erreiche einen Perfect Clear mit begrenzten Zügen"
-            Language.ZH -> "雕塑家烧脑解密：限定步数完美全消清屏"
-            else -> "Puzzle: Achieve a Perfect Clear within move limits"
         }
         else -> ""
     }

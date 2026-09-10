@@ -129,8 +129,6 @@
         "multiplayer_launches":   { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)" },
         "stats_pattern_level":    { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)" },
         "stats_pattern_score":    { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000)" },
-        "stats_sculptor_level":   { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)" },
-        "stats_sculptor_score":   { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000)" },
         "custom_tag": {
           ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 32)"
         },

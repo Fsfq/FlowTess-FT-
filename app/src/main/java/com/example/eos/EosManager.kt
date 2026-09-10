@@ -151,7 +151,7 @@ object EosManager {
 
     private fun startTickLoop() {
         tickJob?.cancel()
-        tickJob = coroutineScope.launch {
+        tickJob = coroutineScope.launch(Dispatchers.Main.immediate) {
             while (isActive) {
                 try {
                     EosBridge.tick()

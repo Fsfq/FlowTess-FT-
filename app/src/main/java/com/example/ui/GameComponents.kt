@@ -368,40 +368,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         )
                     }
                 }
-            } else if (gameState.gameMode == com.example.game.GameMode.SCULPTOR) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                    modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .padding(vertical = 4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Default.Build, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                        Text(
-                            text = "СКУЛЬПТОР • ${gameState.puzzleGoalDescription} (ХОДОВ: ${gameState.sculptorRemainingPieces})",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        FilledTonalButton(
-                            onClick = { viewModel.gameEngine.restartSculptorLevel() },
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
-                        ) {
-                            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("ПОВТОР", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -1517,7 +1483,7 @@ fun ModernGameLayout(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Sculptor or Pattern Puzzle Banners
+                // Pattern Puzzle Banner
                 if (gameState.gameMode == com.example.game.GameMode.PATTERN_PUZZLE) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -1554,48 +1520,6 @@ fun ModernGameLayout(
                                     fontWeight = FontWeight.Black,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                } else if (gameState.gameMode == com.example.game.GameMode.SCULPTOR) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Build,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "${Translations.get("sculptor", currentLang)} • ${gameState.sculptorRemainingPieces} ${Translations.get("moves", currentLang)}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            FilledTonalIconButton(
-                                onClick = { viewModel.gameEngine.restartSculptorLevel() },
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                ),
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Replay,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
@@ -2551,7 +2475,7 @@ private fun isValidGhostMove(pos: Position, piece: Tetromino, grid: List<IntArra
     }
 }
 
-private fun DrawScope.drawBlock(
+internal fun DrawScope.drawBlock(
     color: Color,
     x: Float,
     y: Float,

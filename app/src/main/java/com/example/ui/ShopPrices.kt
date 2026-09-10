@@ -59,7 +59,6 @@ object ShopPrices {
     const val MODE_SLIDE = 1500
     const val MODE_PATTERN = 2500
     const val MODE_MEMORY = 2000
-    const val MODE_SCULPTOR = 3000
     const val MODE_PERFECTIONIST = 5000
 
     fun getModeCost(modeId: String): Int = when (modeId.lowercase()) {
@@ -73,32 +72,40 @@ object ShopPrices {
         "slide", "slide_puzzle" -> MODE_SLIDE
         "pattern", "pattern_puzzle" -> MODE_PATTERN
         "memory", "memory_puzzle" -> MODE_MEMORY
-        "sculptor" -> MODE_SCULPTOR
         "perfectionist" -> MODE_PERFECTIONIST
         else -> 1000
     }
 
     // ── Avatar Frames ──
     const val FRAME_STANDARD = 0
-    const val FRAME_NEON = 1500
-    const val FRAME_GOLD = 2000
-    const val FRAME_CYBER = 2200
-    const val FRAME_FIRE = 2400
-    const val FRAME_ICE = 2500
-    const val FRAME_MATRIX = 2600
-    const val FRAME_GALAXY = 3000
-    const val FRAME_RAINBOW = 3500
+    const val FRAME_WHITE = 400
+    const val FRAME_BLUE = 600
+    const val FRAME_GREEN = 800
+    const val FRAME_YELLOW = 1000
+    const val FRAME_ORANGE = 1200
+    const val FRAME_RED = 1500
+    const val FRAME_PURPLE = 1800
+    const val FRAME_DARK = 2200
 
     fun getAvatarFrameCost(frameId: String): Int = when (frameId.lowercase()) {
         "standard" -> FRAME_STANDARD
-        "neon_frame" -> FRAME_NEON
-        "gold_frame" -> FRAME_GOLD
-        "cyber_frame" -> FRAME_CYBER
-        "fire_frame" -> FRAME_FIRE
-        "ice_frame" -> FRAME_ICE
-        "matrix_frame" -> FRAME_MATRIX
-        "galaxy_frame" -> FRAME_GALAXY
-        "rainbow_frame" -> FRAME_RAINBOW
+        "frame_white" -> FRAME_WHITE
+        "frame_blue" -> FRAME_BLUE
+        "frame_green" -> FRAME_GREEN
+        "frame_yellow" -> FRAME_YELLOW
+        "frame_orange" -> FRAME_ORANGE
+        "frame_red" -> FRAME_RED
+        "frame_purple" -> FRAME_PURPLE
+        "frame_dark" -> FRAME_DARK
+        // Legacy fallback
+        "neon_frame" -> 1500
+        "gold_frame" -> 2000
+        "cyber_frame" -> 2200
+        "fire_frame" -> 2400
+        "ice_frame" -> 2500
+        "matrix_frame" -> 2600
+        "galaxy_frame" -> 3000
+        "rainbow_frame" -> 3500
         else -> 0
     }
 
@@ -210,10 +217,15 @@ object ShopPrices {
             }
             "FRAME", "AVATAR_FRAME", "FRAMES" -> when (lowerId) {
                 "standard" -> DropRarity.COMMON
+                "frame_white", "frame_blue" -> DropRarity.UNCOMMON
+                "frame_green", "frame_yellow" -> DropRarity.RARE
+                "frame_orange", "frame_red", "frame_purple" -> DropRarity.EPIC
+                "frame_dark" -> DropRarity.LEGENDARY
+                "chrono_gl", "gradient_frame" -> DropRarity.RED
+                // Legacy fallback
                 "neon_frame" -> DropRarity.RARE
                 "gold_frame", "cyber_frame", "fire_frame", "ice_frame", "matrix_frame" -> DropRarity.EPIC
                 "galaxy_frame", "rainbow_frame" -> DropRarity.LEGENDARY
-                "chrono_gl", "gradient_frame" -> DropRarity.RED
                 else -> DropRarity.COMMON
             }
             "BUTTON", "BUTTONS", "BUTTON_SKIN" -> when (lowerId) {
@@ -233,7 +245,7 @@ object ShopPrices {
                 "classic", "time_attack" -> DropRarity.COMMON
                 "fast_run", "hyper", "relax" -> DropRarity.UNCOMMON
                 "mirror", "extended" -> DropRarity.RARE
-                "block_blast", "pattern", "pattern_puzzle", "slide", "slide_puzzle", "memory", "memory_puzzle", "sculptor" -> DropRarity.EPIC
+                "block_blast", "pattern", "pattern_puzzle", "slide", "slide_puzzle", "memory", "memory_puzzle" -> DropRarity.EPIC
                 "perfectionist" -> DropRarity.LEGENDARY
                 else -> DropRarity.COMMON
             }

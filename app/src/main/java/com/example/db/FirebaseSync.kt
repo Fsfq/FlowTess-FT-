@@ -151,9 +151,7 @@ object FirebaseSync {
             "stats_avatar_changes" to tetrisPrefs.getInt("stats_avatar_changes", 0),
             "multiplayer_launches" to tetrisPrefs.getInt("multiplayer_launches", 0),
             "stats_pattern_level" to tetrisPrefs.getInt("stats_pattern_level", 1),
-            "stats_pattern_score" to tetrisPrefs.getInt("stats_pattern_score", 0),
-            "stats_sculptor_level" to tetrisPrefs.getInt("stats_sculptor_level", 1),
-            "stats_sculptor_score" to tetrisPrefs.getInt("stats_sculptor_score", 0)
+            "stats_pattern_score" to tetrisPrefs.getInt("stats_pattern_score", 0)
         )
 
         data["custom_avatar_base64"] = avatarBase64 ?: ""
@@ -386,14 +384,6 @@ object FirebaseSync {
                 val localPatternScore = tetrisPrefs.getInt("stats_pattern_score", 0)
                 val cloudPatternScore = (data["stats_pattern_score"] as? Number)?.toInt() ?: localPatternScore
                 editorTetris.putInt("stats_pattern_score", maxOf(localPatternScore, cloudPatternScore))
-
-                val localSculptorLevel = tetrisPrefs.getInt("stats_sculptor_level", 1)
-                val cloudSculptorLevel = (data["stats_sculptor_level"] as? Number)?.toInt() ?: localSculptorLevel
-                editorTetris.putInt("stats_sculptor_level", maxOf(localSculptorLevel, cloudSculptorLevel))
-
-                val localSculptorScore = tetrisPrefs.getInt("stats_sculptor_score", 0)
-                val cloudSculptorScore = (data["stats_sculptor_score"] as? Number)?.toInt() ?: localSculptorScore
-                editorTetris.putInt("stats_sculptor_score", maxOf(localSculptorScore, cloudSculptorScore))
 
                 editorProfile.apply()
                 editorTetris.apply()

@@ -58,7 +58,6 @@ enum class GameMode(val code: String, val displayNameEn: String, val displayName
     PERFECTIONIST("perfectionist", "Perfection", "Идеал"),
     PATTERN_PUZZLE("pattern", "Blueprint", "Шаблон"),
     MEMORY_PUZZLE("memory", "Memory", "Память"),
-    SCULPTOR("sculptor", "Sculptor", "Скульптор"),
     SLIDE_PUZZLE("slide", "Slide", "Слайдер")
 }
 
@@ -94,7 +93,6 @@ data class GameState(
     val puzzleGoalDescription: String = "",
     val puzzleTargetCount: Int = 0,
     val puzzleFilledCount: Int = 0,
-    val sculptorRemainingPieces: Int = 0,
     val isPuzzleCompleted: Boolean = false,
     val memoryCountdownSeconds: Int = 0,
     val isMemoryHidden: Boolean = false
@@ -142,28 +140,6 @@ class GameEngine {
                     puzzleFilledCount = 0,
                     memoryCountdownSeconds = if (mode == GameMode.MEMORY_PUZZLE) 3 else 0,
                     isMemoryHidden = false
-                )
-            }
-            return
-        }
-
-        if (mode == GameMode.SCULPTOR) {
-            val levelData = getSculptorLevel(1)
-            val pQueue = levelData.pieceQueue
-            val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
-            val next = pQueue.drop(1)
-            _gameState.update {
-                GameState(
-                    grid = levelData.initialGrid.map { row -> row.clone() },
-                    nextPieces = next,
-                    currentPiece = cur,
-                    currentPos = Position(4, 0),
-                    isExtendedMode = false,
-                    level = 1,
-                    gameMode = mode,
-                    puzzleLevel = 1,
-                    puzzleGoalDescription = levelData.title,
-                    sculptorRemainingPieces = pQueue.size
                 )
             }
             return
@@ -247,122 +223,6 @@ class GameEngine {
         }
     }
 
-    // ── РЕЖИМ «СКУЛЬПТОР» (SCULPTOR PUZZLE) ──
-    data class SculptorLevelData(
-        val title: String,
-        val initialGrid: List<IntArray>,
-        val pieceQueue: List<Tetromino>
-    )
-
-    fun getSculptorLevel(lvl: Int): SculptorLevelData {
-        val levelIndex = (lvl - 1) % 10 + 1
-        val g = List(22) { IntArray(10) }
-        val pieces: List<Tetromino>
-
-        when (levelIndex) {
-            1 -> {
-                for (x in listOf(0, 1, 2, 3, 6, 7, 8, 9)) {
-                    g[20][x] = 8
-                    g[21][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[3]) // O-piece
-            }
-            2 -> {
-                for (x in listOf(0, 1, 2, 7, 8, 9)) {
-                    g[21][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[0]) // I-piece
-            }
-            3 -> {
-                for (x in 3..9) g[20][x] = 8
-                for (x in 5..9) g[21][x] = 8
-                pieces = listOf(STANDARD_SHAPES[2], STANDARD_SHAPES[3]) // L, O
-            }
-            4 -> {
-                for (x in 0..9) {
-                    if (x !in 4..6) g[21][x] = 8
-                    if (x !in 3..7) g[20][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[5], STANDARD_SHAPES[0]) // T, I
-            }
-            5 -> {
-                for (x in 0..9) {
-                    if (x in 3..6) continue
-                    g[19][x] = 8
-                    g[20][x] = 8
-                    g[21][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[1], STANDARD_SHAPES[2]) // J, L
-            }
-            6 -> {
-                for (x in 0..9) {
-                    if (x in 2..7) continue
-                    g[20][x] = 8
-                    g[21][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[4], STANDARD_SHAPES[6]) // S, Z
-            }
-            7 -> {
-                for (x in 0..9) {
-                    if (x in 1..8) continue
-                    g[19][x] = 8
-                    g[20][x] = 8
-                    g[21][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[5])
-            }
-            8 -> {
-                for (x in 0..9) {
-                    if (x > 5) g[21][x] = 8
-                    if (x > 7) g[20][x] = 8
-                }
-                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[1], STANDARD_SHAPES[2])
-            }
-            9 -> {
-                for (x in 0..9) {
-                    if (x != 0 && x != 9) {
-                        g[19][x] = 8
-                        g[20][x] = 8
-                        g[21][x] = 8
-                    }
-                }
-                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[0], STANDARD_SHAPES[3])
-            }
-            else -> {
-                for (x in 0..9) {
-                    if (x !in 4..5) {
-                        g[18][x] = 8
-                        g[19][x] = 8
-                        g[20][x] = 8
-                        g[21][x] = 8
-                    }
-                }
-                pieces = listOf(STANDARD_SHAPES[0], STANDARD_SHAPES[3], STANDARD_SHAPES[1], STANDARD_SHAPES[2])
-            }
-        }
-
-        return SculptorLevelData("Уровень $levelIndex", g, pieces)
-    }
-
-    fun restartSculptorLevel() {
-        val lvl = _gameState.value.puzzleLevel
-        val levelData = getSculptorLevel(lvl)
-        val pQueue = levelData.pieceQueue
-        val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
-        val next = pQueue.drop(1)
-        _gameState.update {
-            it.copy(
-                grid = levelData.initialGrid.map { row -> row.clone() },
-                currentPiece = cur,
-                currentPos = Position(4, 0),
-                nextPieces = next,
-                sculptorRemainingPieces = pQueue.size,
-                puzzleGoalDescription = levelData.title,
-                isGameOver = false
-            )
-        }
-    }
-
     fun restoreState(
         grid: List<IntArray>,
         currentPieceColorIndex: Int,
@@ -380,8 +240,7 @@ class GameEngine {
         puzzleLevel: Int = 1,
         puzzleGoalDescription: String = "",
         puzzleTargetCount: Int = 0,
-        puzzleFilledCount: Int = 0,
-        sculptorRemainingPieces: Int = 0
+        puzzleFilledCount: Int = 0
     ) {
         val allShapes = STANDARD_SHAPES + EXTENDED_SHAPES
         val currentPiece = allShapes.firstOrNull { it.colorIndex == currentPieceColorIndex } ?: allShapes[0]
@@ -407,8 +266,7 @@ class GameEngine {
                 puzzleLevel = puzzleLevel,
                 puzzleGoalDescription = puzzleGoalDescription,
                 puzzleTargetCount = puzzleTargetCount,
-                puzzleFilledCount = puzzleFilledCount,
-                sculptorRemainingPieces = sculptorRemainingPieces
+                puzzleFilledCount = puzzleFilledCount
             )
         }
     }
@@ -722,43 +580,6 @@ class GameEngine {
             }
         }
 
-        // Обработка режима «Скульптор»
-        if (state.gameMode == GameMode.SCULPTOR) {
-            val totalBlocks = newGrid.sumOf { row -> row.count { it != 0 } }
-            val remainingPieces = maxOf(0, state.sculptorRemainingPieces - 1)
-            if (totalBlocks == 0) {
-                val nextLvl = state.puzzleLevel + 1
-                val levelData = getSculptorLevel(nextLvl)
-                val pQueue = levelData.pieceQueue
-                val cur = pQueue.firstOrNull() ?: STANDARD_SHAPES[0]
-                val next = pQueue.drop(1)
-                _gameState.update {
-                    it.copy(
-                        grid = levelData.initialGrid.map { row -> row.clone() },
-                        score = it.score + (state.puzzleLevel * 3000),
-                        puzzleLevel = nextLvl,
-                        puzzleGoalDescription = levelData.title,
-                        sculptorRemainingPieces = pQueue.size,
-                        currentPiece = cur,
-                        currentPos = Position(4, 0),
-                        nextPieces = next,
-                        hasHeldThisTurn = false,
-                        isGameOver = false
-                    )
-                }
-                return
-            } else if (remainingPieces == 0) {
-                _gameState.update {
-                    it.copy(
-                        grid = newGrid,
-                        sculptorRemainingPieces = 0,
-                        isGameOver = true
-                    )
-                }
-                return
-            }
-        }
-
         _gameState.update {
             val updatedNext = if (it.nextPieces.isNotEmpty()) {
                 it.nextPieces.drop(1) + nextPiece(state.isExtendedMode)
@@ -778,8 +599,7 @@ class GameEngine {
                 hasHeldThisTurn = false,
                 timeRemainingSeconds = if (state.gameMode == GameMode.TIME_ATTACK) (it.timeRemainingSeconds + addedTime).coerceAtMost(180) else it.timeRemainingSeconds,
                 piecesPlaced = newPiecesPlaced,
-                tetrisesCleared = it.tetrisesCleared + (if (isTetris) 1 else 0),
-                sculptorRemainingPieces = if (state.gameMode == GameMode.SCULPTOR) maxOf(0, state.sculptorRemainingPieces - 1) else state.sculptorRemainingPieces
+                tetrisesCleared = it.tetrisesCleared + (if (isTetris) 1 else 0)
             )
         }
     }
