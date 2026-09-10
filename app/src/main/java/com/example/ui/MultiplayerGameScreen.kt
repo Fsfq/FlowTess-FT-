@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -62,8 +63,15 @@ fun MultiplayerGameScreen(
     val onlineRating by viewModel.onlineRating.collectAsStateWithLifecycle()
     val winStreak by viewModel.winStreak.collectAsStateWithLifecycle()
 
+    val eosRoom by com.example.eos.EosManager.currentRoom.collectAsStateWithLifecycle()
+    val isEosMode = (eosRoom != null)
+    val eosLocalPuid by com.example.eos.EosManager.localPuid.collectAsStateWithLifecycle()
+    val eosOpponentScore by com.example.eos.EosManager.opponentScore.collectAsStateWithLifecycle()
+    val eosOpponentLines by com.example.eos.EosManager.opponentLines.collectAsStateWithLifecycle()
+    val eosPendingGarbage by com.example.eos.EosManager.pendingGarbage.collectAsStateWithLifecycle()
+
     val localUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    val isHost = room?.hostId == localUid
+    val isHost = if (isEosMode) (eosRoom?.hostPuid == eosLocalPuid) else (room?.hostId == localUid)
     val opponent = room?.players?.find { it.uid.isNotEmpty() && it.uid != localUid }
 
     val liveHostState by viewModel.lobbyManager.liveHostBattleState.collectAsStateWithLifecycle()
@@ -72,10 +80,10 @@ fun MultiplayerGameScreen(
     val myLiveState = if (isHost) liveHostState else liveOpponentState
     val oppLiveState = if (isHost) liveOpponentState else liveHostState
 
-    val opponentScore = oppLiveState.score
-    val opponentLines = oppLiveState.lines
-    val opponentCombo = oppLiveState.combo
-    val opponentGameOver = oppLiveState.isGameOver
+    val opponentScore = if (isEosMode) eosOpponentScore else oppLiveState.score
+    val opponentLines = if (isEosMode) eosOpponentLines else oppLiveState.lines
+    val opponentCombo = if (isEosMode) 0 else oppLiveState.combo
+    val opponentGameOver = if (isEosMode) (eosRoom?.status == "finished") else oppLiveState.isGameOver
     val opponentGrid = remember(oppLiveState.grid) { convertFlatListToGrid(oppLiveState.grid) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "BorderPulse")
@@ -91,11 +99,39 @@ fun MultiplayerGameScreen(
 
     var showExitConfirmDialog by remember { mutableStateOf(false) }
     var matchFinishedAwarded by remember { mutableStateOf(false) }
+    var showMatchFinishedDialog by remember { mutableStateOf(false) }
+    var cachedWinnerId by remember { mutableStateOf<String?>(null) }
+    var cachedOpponentLeft by remember { mutableStateOf(false) }
     var attackBannerText by remember { mutableStateOf<String?>(null) }
 
-    // Start Game on entry or when round increases
-    LaunchedEffect(room?.currentRound) {
-        viewModel.startGame(GameMode.CLASSIC)
+    // Start Game on entry or when round increases (only when room is active and match not finished)
+    LaunchedEffect(room?.currentRound, eosRoom?.status) {
+        val currentR = room?.currentRound
+        if (currentR != null && currentR > 0 && (!isEosMode || eosRoom?.status == "playing") && !matchFinishedAwarded && !showMatchFinishedDialog) {
+            viewModel.startGame(GameMode.CLASSIC)
+        }
+    }
+
+    LaunchedEffect(gameState.score, gameState.lines) {
+        if (isEosMode) {
+            com.example.eos.EosManager.sendGameMove(gameState.score, gameState.lines)
+        }
+    }
+
+    LaunchedEffect(gameState.isGameOver) {
+        if (isEosMode && gameState.isGameOver) {
+            com.example.eos.EosManager.sendGameOver(gameState.score)
+        }
+    }
+
+    LaunchedEffect(eosPendingGarbage) {
+        if (isEosMode && eosPendingGarbage > 0) {
+            val lines = com.example.eos.EosManager.consumePendingGarbage()
+            if (lines > 0) {
+                viewModel.gameEngine.addGarbageLines(lines)
+                viewModel.triggerAudioFeedback("fall")
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -150,7 +186,7 @@ fun MultiplayerGameScreen(
     var prevLines by remember { mutableIntStateOf(0) }
     LaunchedEffect(gameState.lines) {
         val cleared = gameState.lines - prevLines
-        val isAttacksEnabled = (room?.garbageIntensity ?: 1.0f) > 0f && room?.gameMode != "SCORE_RACE"
+        val isAttacksEnabled = isEosMode || ((room?.garbageIntensity ?: 1.0f) > 0f && room?.gameMode != "SCORE_RACE")
         if (cleared > 0 && prevLines > 0 && isAttacksEnabled) {
             val garbageToSend = when (cleared) {
                 2 -> 1
@@ -159,7 +195,11 @@ fun MultiplayerGameScreen(
                 else -> 0
             }
             if (garbageToSend > 0) {
-                viewModel.lobbyManager.sendGarbageToOpponent(garbageToSend)
+                if (isEosMode) {
+                    com.example.eos.EosManager.sendGarbageLines(garbageToSend)
+                } else {
+                    viewModel.lobbyManager.sendGarbageToOpponent(garbageToSend)
+                }
                 attackBannerText = if (cleared == 4) "💥 TETRIS ATTACK! +4 💣" else "+$garbageToSend 💣"
             }
         }
@@ -236,6 +276,9 @@ fun MultiplayerGameScreen(
     LaunchedEffect(room?.status, room?.winnerId) {
         if (room?.status == "finished" && !matchFinishedAwarded && !room?.winnerId.isNullOrEmpty()) {
             matchFinishedAwarded = true
+            cachedWinnerId = room?.winnerId
+            cachedOpponentLeft = (room?.players?.size ?: 0) < 2
+            showMatchFinishedDialog = true
             val isWinner = room!!.winnerId == localUid
             val isDraw = room!!.winnerId == "draw"
             viewModel.awardMultiplayerCredits(
@@ -248,10 +291,27 @@ fun MultiplayerGameScreen(
         }
     }
 
-    // Handle sudden room closure (e.g. room purged after delay)
-    LaunchedEffect(room) {
-        if (room == null && !matchFinishedAwarded) {
+    // Handle sudden room closure or opponent leaving
+    LaunchedEffect(room, matchFinishedAwarded) {
+        if (room == null) {
+            if (!matchFinishedAwarded && !showMatchFinishedDialog) {
+                onBackToLobby()
+            } else {
+                cachedOpponentLeft = true
+            }
+        } else if (matchFinishedAwarded && (room?.players?.size ?: 0) < 2) {
+            cachedOpponentLeft = true
+        }
+    }
+
+    BackHandler {
+        if (showMatchFinishedDialog) {
+            showMatchFinishedDialog = false
+            viewModel.lobbyManager.leaveRoom()
+            com.example.eos.EosManager.leaveRoom()
             onBackToLobby()
+        } else {
+            showExitConfirmDialog = true
         }
     }
 
@@ -455,8 +515,13 @@ fun MultiplayerGameScreen(
                                     Language.ZH -> "对手"
                                     else -> "OPPONENT"
                                 }
+                                val oppDisplayName = if (isEosMode) {
+                                    if (isHost) (eosRoom?.guestName ?: "Guest") else (eosRoom?.hostName ?: "Host")
+                                } else {
+                                    opponent?.name ?: defaultOpponentLabel
+                                }
                                 Text(
-                                    text = (opponent?.name ?: defaultOpponentLabel).uppercase(),
+                                    text = oppDisplayName.uppercase(),
                                     style = if (oppNickBrush != null) {
                                         MaterialTheme.typography.labelSmall.copy(brush = oppNickBrush, fontWeight = FontWeight.Black)
                                     } else {
@@ -490,20 +555,32 @@ fun MultiplayerGameScreen(
                 // ─────────────────────────────────────────────────────────────
                 // MAIN BATTLE ARENA (Board + Live Opponent Feed)
                 // ─────────────────────────────────────────────────────────────
-                Row(
+                BoxWithConstraints(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Top
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Local Player Game Board
-                    Box(
-                        modifier = Modifier
-                            .weight(1.3f)
-                            .aspectRatio(10f / 20f)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFF08080C))
+                    val totalH = maxHeight
+                    val totalW = maxWidth
+                    val sideW = (totalW * 0.36f).coerceIn(85.dp, 130.dp)
+                    val maxBoardW = (totalW - sideW - 10.dp).coerceAtLeast(80.dp)
+                    val maxBoardH = (totalH - 4.dp).coerceAtLeast(160.dp)
+                    val boardH = minOf(maxBoardH, maxBoardW * 2f)
+                    val boardW = boardH * 0.5f
+
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Local Player Game Board
+                        Box(
+                            modifier = Modifier
+                                .size(width = boardW, height = boardH)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFF08080C))
                             .border(
                                 width = 2.dp,
                                 brush = Brush.sweepGradient(
@@ -601,11 +678,13 @@ fun MultiplayerGameScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.width(10.dp))
+
                     // Right Side Column: Next Piece + Opponent Live Board (Full 20 rows)
                     Column(
                         modifier = Modifier
-                            .weight(0.72f)
-                            .fillMaxHeight(),
+                            .width(sideW)
+                            .height(boardH),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -692,8 +771,9 @@ fun MultiplayerGameScreen(
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
                 // ─────────────────────────────────────────────────────────────
                 // TOUCH CONTROLS
@@ -733,10 +813,11 @@ fun MultiplayerGameScreen(
             // ─────────────────────────────────────────────────────────────
             // MATCH FINISHED MODAL (MD3 Perfectionism with Forfeit support)
             // ─────────────────────────────────────────────────────────────
-            if (room?.status == "finished") {
-                val isWinner = room?.winnerId == localUid
-                val isDraw = room?.winnerId == "draw"
-                val wasForfeit = room?.players?.size ?: 0 < 2
+            if (showMatchFinishedDialog) {
+                val effectiveWinnerId = room?.winnerId ?: cachedWinnerId
+                val isWinner = effectiveWinnerId == localUid
+                val isDraw = effectiveWinnerId == "draw"
+                val wasForfeit = cachedOpponentLeft || (room?.players?.size ?: 0) < 2
 
                 Box(
                     modifier = Modifier
@@ -899,6 +980,7 @@ fun MultiplayerGameScreen(
 
                             Button(
                                 onClick = {
+                                    showMatchFinishedDialog = false
                                     viewModel.lobbyManager.leaveRoom()
                                     com.example.eos.EosManager.leaveRoom()
                                     onBackToLobby()

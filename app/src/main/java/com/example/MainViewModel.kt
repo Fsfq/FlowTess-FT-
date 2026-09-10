@@ -2,9 +2,11 @@ package com.example
 
 import android.app.Application
 import android.content.Context
+import android.util.Base64
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
+import org.json.JSONObject
 import com.example.db.AppDatabase
 import com.example.db.HighScore
 import com.example.db.ScoreRepository
@@ -179,6 +181,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var gameLoopJob: Job? = null
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying = _isPlaying.asStateFlow()
+
+    fun setPlaying(playing: Boolean) {
+        _isPlaying.value = playing
+    }
 
     private val _playerName = MutableStateFlow("Player 1")
     val playerName = _playerName.asStateFlow()
@@ -717,7 +723,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _nextCount.update { prefs.getInt("next_count", 3) }
         _ghostVisible.update { prefs.getBoolean("ghost_visible", true) }
         _ghostOutlineOnly.update { prefs.getBoolean("ghost_outline_only", true) }
-        _controlStyle.update { prefs.getString("control_style", "split") ?: "split" }
+        _controlStyle.update {
+            val s = prefs.getString("control_style", "split") ?: "split"
+            if (s == "swipe_hybrid") "split" else s
+        }
         _soundEnabled.update { prefs.getBoolean("sound_enabled", true) }
         _vibrationEnabled.update { prefs.getBoolean("vibration_enabled", true) }
         _credits.update { prefs.getInt("credits", 750) }
@@ -824,9 +833,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 try {
                     _isAuthLoading.value = true
                     // Перезагружаем профиль — проверяем верификацию почты / reload to check email verification
-                    currentUser.reload()
-                    _isEmailVerified.value = currentUser.isEmailVerified
+                    try { currentUser.reload() } catch (_: Exception) {}
                     val data = com.example.db.FirebaseSync.pullUserData(getApplication())
+                    val isVerified = currentUser.isEmailVerified ||
+                        (data?.get("email_verified") as? Boolean == true) ||
+                        (data?.get("is_verified") as? Boolean == true) ||
+                        (data?.get("emailVerified") as? Boolean == true) ||
+                        profilePrefs.getBoolean("is_email_verified", false)
+                    _isEmailVerified.value = isVerified
+                    if (isVerified) {
+                        _showVerificationBanner.value = false
+                        profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                    }
                     val resolvedUsername = currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "FirebaseUser"
                     val localCredits = prefs.getInt("credits", 750)
                     val cloudCredits = (data?.get("credits") as? Number)?.toInt()
@@ -922,6 +940,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (cloudGradient != null && cloudGradient != _hasNicknameGradient.value) {
                     _hasNicknameGradient.value = cloudGradient
                     profilePrefs.edit().putBoolean("has_nickname_gradient", cloudGradient).apply()
+                }
+
+                // 7. Email Verification status from Firestore
+                val cloudVerified = (data["email_verified"] as? Boolean)
+                    ?: (data["is_verified"] as? Boolean)
+                    ?: (data["emailVerified"] as? Boolean)
+                if (cloudVerified != null && cloudVerified != _isEmailVerified.value) {
+                    _isEmailVerified.value = cloudVerified
+                    profilePrefs.edit().putBoolean("is_email_verified", cloudVerified).apply()
+                    if (cloudVerified) {
+                        _showVerificationBanner.value = false
+                    }
                 }
             }
     }
@@ -1331,6 +1361,105 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putString("control_vertical_position", pos).apply()
     }
 
+    fun exportControlConfigCode(): String {
+        return try {
+            val json = JSONObject().apply {
+                put("v", 1)
+                put("style", _controlStyle.value)
+                put("scale", (_controlButtonScale.value * 100).toInt())
+                put("alpha", (_controlButtonAlpha.value * 100).toInt())
+                put("btn", _controlButtonStyle.value)
+                put("pos", _controlVerticalPosition.value)
+                put("left", _leftHandedControls.value)
+                put("das", _controlDas.value)
+                put("arr", _controlArr.value)
+                put("pad", _controlBottomPadding.value)
+            }
+            val base64 = Base64.encodeToString(
+                json.toString().toByteArray(Charsets.UTF_8),
+                Base64.NO_WRAP
+            )
+            "TTR-CTRL:$base64"
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    fun importControlConfigCode(rawCode: String): Boolean {
+        return try {
+            val trimmed = rawCode.trim()
+            if (trimmed.isEmpty()) return false
+
+            val payload = when {
+                trimmed.startsWith("TTR-CTRL:", ignoreCase = true) -> trimmed.substring("TTR-CTRL:".length).trim()
+                trimmed.startsWith("TETRIS-CTRL:", ignoreCase = true) -> trimmed.substring("TETRIS-CTRL:".length).trim()
+                trimmed.startsWith("TTR:", ignoreCase = true) -> trimmed.substring("TTR:".length).trim()
+                else -> trimmed
+            }
+
+            val jsonStr = if (payload.startsWith("{") && payload.endsWith("}")) {
+                payload
+            } else {
+                String(Base64.decode(payload, Base64.DEFAULT), Charsets.UTF_8)
+            }
+
+            val json = JSONObject(jsonStr)
+
+            if (json.has("style")) {
+                val style = json.getString("style")
+                val validStyles = setOf("split", "classic", "arcade", "one_hand_right", "one_hand_left", "claw_pro")
+                setControlStyle(if (style in validStyles) style else "split")
+            }
+            if (json.has("scale")) {
+                val rawScale = json.getDouble("scale")
+                val scale = if (rawScale > 10.0) (rawScale / 100.0).toFloat() else rawScale.toFloat()
+                setControlButtonScale(scale.coerceIn(0.5f, 1.5f))
+            }
+            if (json.has("alpha")) {
+                val rawAlpha = json.getDouble("alpha")
+                val alpha = if (rawAlpha > 1.0) (rawAlpha / 100.0).toFloat() else rawAlpha.toFloat()
+                setControlButtonAlpha(alpha.coerceIn(0.1f, 1.0f))
+            }
+            if (json.has("btn")) {
+                val btn = json.getString("btn")
+                val validBtnStyles = setOf("neon", "classic", "glass", "gold", "plasma")
+                setControlButtonStyle(if (btn in validBtnStyles) btn else "neon")
+            }
+            if (json.has("pos")) {
+                val pos = json.getString("pos")
+                val validPos = setOf("bottom", "middle", "top")
+                setControlVerticalPosition(if (pos in validPos) pos else "bottom")
+            }
+            if (json.has("left")) {
+                setLeftHandedControls(json.getBoolean("left"))
+            }
+            if (json.has("das")) {
+                setControlDas(json.getInt("das").coerceIn(60, 350))
+            }
+            if (json.has("arr")) {
+                setControlArr(json.getInt("arr").coerceIn(10, 100))
+            }
+            if (json.has("pad")) {
+                setControlBottomPadding(json.getInt("pad").coerceIn(0, 80))
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun resetControlConfigToDefaults() {
+        setControlStyle("split")
+        setControlButtonScale(1.0f)
+        setControlButtonAlpha(1.0f)
+        setControlButtonStyle("neon")
+        setControlVerticalPosition("bottom")
+        setLeftHandedControls(false)
+        setControlDas(160)
+        setControlArr(35)
+        setControlBottomPadding(16)
+    }
+
     fun setScreenShakeIntensity(v: Float) {
         _screenShakeIntensity.value = v
         prefs.edit().putFloat("screen_shake_intensity", v).apply()
@@ -1695,43 +1824,91 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             auth.signInWithEmailAndPassword(email, trimmedPass)
                 .addOnSuccessListener { authResult ->
-                    viewModelScope.launch {
-                        val user = authResult.user
-                        if (user != null) {
-                            // Перезагружаем данные пользователя чтобы получить актуальный isEmailVerified
-                            try { user.reload() } catch (_: Exception) {}
-                            
-                            // Блокируем вход если почта не подтверждена / block if email not verified
-                            if (!user.isEmailVerified) {
-                                _isEmailVerified.value = false
-                                _showVerificationBanner.value = true
-                                _loginError.value = "Подтвердите почту! Проверьте входящие."
-                                auth.signOut()
-                                _isAuthLoading.value = false
-                                return@launch
+                    val user = authResult.user
+                    if (user != null) {
+                        try { user.reload() } catch (_: Exception) {}
+                        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        firestore.collection("users").document(user.uid).get()
+                            .addOnSuccessListener { doc ->
+                                val cloudVerified = (doc.getBoolean("email_verified") == true) ||
+                                        (doc.getBoolean("is_verified") == true) ||
+                                        (doc.getBoolean("emailVerified") == true)
+                                val isVerified = user.isEmailVerified || cloudVerified
+
+                                if (!isVerified) {
+                                    _isEmailVerified.value = false
+                                    _showVerificationBanner.value = true
+                                    _loginError.value = "Подтвердите почту! Проверьте входящие."
+                                    auth.signOut()
+                                    _isAuthLoading.value = false
+                                    return@addOnSuccessListener
+                                }
+
+                                viewModelScope.launch {
+                                    _isEmailVerified.value = true
+                                    _showVerificationBanner.value = false
+                                    profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+
+                                    firestore.collection("users").document(user.uid).set(
+                                        mapOf(
+                                            "email" to (user.email ?: ""),
+                                            "email_verified" to true,
+                                            "is_verified" to true,
+                                            "emailVerified" to true
+                                        ),
+                                        com.google.firebase.firestore.SetOptions.merge()
+                                    )
+
+                                    val data = com.example.db.FirebaseSync.pullUserData(getApplication())
+                                    val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
+                                    val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
+                                        ?: if (_playerName.value == "Player 1") _credits.value else prefs.getInt("credits", 750)
+                                    val resolvedTier = (data?.get("online_tier") as? String)
+                                        ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+                                    val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
+                                    val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
+
+                                    val resolvedHighScore = (data?.get("stats_high_score") as? Number)?.toInt() ?: 0
+                                    if (resolvedHighScore > 0) {
+                                        scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                                    }
+
+                                    switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
+                                    startUserDocListener(user.uid)
+                                    _loginSuccessMessage.value = "Успешный вход!"
+                                    _isAuthLoading.value = false
+                                }
                             }
-                            
-                            _isEmailVerified.value = true
-                            _showVerificationBanner.value = false
-                            val data = com.example.db.FirebaseSync.pullUserData(getApplication())
-                            val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
-                            val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
-                                ?: if (_playerName.value == "Player 1") _credits.value else prefs.getInt("credits", 750)
-                            val resolvedTier = (data?.get("online_tier") as? String)
-                                ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
-                            val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
-                            val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
-                            
-                            val resolvedHighScore = (data?.get("stats_high_score") as? Number)?.toInt() ?: 0
-                            if (resolvedHighScore > 0) {
-                                scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                            .addOnFailureListener {
+                                if (!user.isEmailVerified) {
+                                    _isEmailVerified.value = false
+                                    _showVerificationBanner.value = true
+                                    _loginError.value = "Подтвердите почту! Проверьте входящие."
+                                    auth.signOut()
+                                    _isAuthLoading.value = false
+                                } else {
+                                    viewModelScope.launch {
+                                        _isEmailVerified.value = true
+                                        _showVerificationBanner.value = false
+                                        profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                                        val data = com.example.db.FirebaseSync.pullUserData(getApplication())
+                                        val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
+                                        val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
+                                            ?: if (_playerName.value == "Player 1") _credits.value else prefs.getInt("credits", 750)
+                                        val resolvedTier = (data?.get("online_tier") as? String)
+                                            ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+                                        val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
+                                        val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
+
+                                        switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
+                                        startUserDocListener(user.uid)
+                                        _loginSuccessMessage.value = "Успешный вход!"
+                                        _isAuthLoading.value = false
+                                    }
+                                }
                             }
-                            
-                            switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
-                            _loginSuccessMessage.value = "Успешный вход!"
-                        } else {
-                            _loginError.value = "Ошибка авторизации!"
-                        }
+                    } else {
+                        _loginError.value = "Ошибка авторизации!"
                         _isAuthLoading.value = false
                     }
                 }
@@ -1905,7 +2082,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
                             }
                             
+                            _isEmailVerified.value = true
+                            _showVerificationBanner.value = false
+                            profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users").document(user.uid).set(
+                                    mapOf(
+                                        "email" to (user.email ?: ""),
+                                        "email_verified" to true,
+                                        "is_verified" to true,
+                                        "emailVerified" to true
+                                    ),
+                                    com.google.firebase.firestore.SetOptions.merge()
+                                )
                             switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
+                            startUserDocListener(user.uid)
                             
                             if (data == null) {
                                 com.example.db.FirebaseSync.pushUserData(getApplication())
@@ -1986,6 +2177,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             _isEmailVerified.value = false
             _showVerificationBanner.value = false
+            profilePrefs.edit().putBoolean("is_email_verified", false).apply()
             val guestAcc = accountRepo.getAccount("Player 1")
             resetPrefsToGuestDefaults(guestAcc)
             reloadAllCustomizationsAndStats()
@@ -2017,9 +2209,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (user != null) {
                 try {
                     user.reload()
-                    if (user.isEmailVerified) {
+                    val isVerified = user.isEmailVerified || profilePrefs.getBoolean("is_email_verified", false)
+                    if (isVerified) {
                         _isEmailVerified.value = true
                         _showVerificationBanner.value = false
+                        profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("users").document(user.uid).set(
+                                mapOf(
+                                    "email" to (user.email ?: ""),
+                                    "email_verified" to true,
+                                    "is_verified" to true,
+                                    "emailVerified" to true
+                                ),
+                                com.google.firebase.firestore.SetOptions.merge()
+                            )
                         _loginSuccessMessage.value = "Почта подтверждена!"
                     } else {
                         _loginError.value = "Почта ещё не подтверждена"
@@ -2168,6 +2372,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             mapOf<String, Any>(
                                 "uid" to "local_${acc.username}",
                                 "player_name" to acc.username,
+                                "email" to "${acc.username}@local.db",
+                                "email_verified" to true,
+                                "is_verified" to true,
+                                "emailVerified" to true,
                                 "credits" to acc.credits,
                                 "online_tier" to acc.onlineTier,
                                 "has_nickname_gradient" to acc.hasGradient,
@@ -2822,6 +3030,72 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun adminSetEmailVerified(uid: String, isVerified: Boolean) {
+        if (uid.startsWith("local_")) {
+            val uName = uid.removePrefix("local_")
+            _firebaseUsers.update { list ->
+                list.map { if (it["uid"] == uid) it + mapOf("email_verified" to isVerified, "is_verified" to isVerified, "emailVerified" to isVerified) else it }
+            }
+            if (_playerName.value == uName) {
+                _isEmailVerified.value = isVerified
+                profilePrefs.edit().putBoolean("is_email_verified", isVerified).apply()
+                if (isVerified) _showVerificationBanner.value = false
+            }
+            return
+        }
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        firestore.collection("users").document(uid).set(
+            mapOf(
+                "email_verified" to isVerified,
+                "is_verified" to isVerified,
+                "emailVerified" to isVerified
+            ),
+            com.google.firebase.firestore.SetOptions.merge()
+        ).addOnSuccessListener {
+            fetchFirebaseUsersForAdmin()
+            val currentUser = auth.currentUser
+            if (currentUser != null && currentUser.uid == uid) {
+                _isEmailVerified.value = isVerified
+                profilePrefs.edit().putBoolean("is_email_verified", isVerified).apply()
+                if (isVerified) {
+                    _showVerificationBanner.value = false
+                }
+            }
+        }
+    }
+
+    fun adminFullDatabaseWipe() {
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        viewModelScope.launch {
+            scoreRepo.clearAll()
+            accountRepo.clearAllNonAdmin()
+        }
+        val collections = listOf("high_scores", "high_scores_by_mode", "global_broadcasts", "lobby_chat", "rooms", "lobbies", "friends")
+        for (col in collections) {
+            firestore.collection(col).get().addOnSuccessListener { snapshot ->
+                val batch = firestore.batch()
+                for (doc in snapshot.documents) {
+                    batch.delete(doc.reference)
+                }
+                batch.commit()
+            }
+        }
+        firestore.collection("users").get().addOnSuccessListener { snapshot ->
+            val batch = firestore.batch()
+            for (doc in snapshot.documents) {
+                val pName = doc.getString("player_name") ?: ""
+                val uid = doc.id
+                if (pName != "FsFq" && uid != "ge9Lzx5EkCfbINDZEG6I8vYcJCd2") {
+                    batch.delete(doc.reference)
+                }
+            }
+            batch.commit().addOnSuccessListener {
+                fetchFirebaseUsersForAdmin()
+                fetchGlobalLeaderboard()
+            }
+        }
+    }
+
     fun startGame(mode: GameMode = GameMode.CLASSIC) {
         gameEngine.startGame(mode, startingLevel = _customStartLevel.value)
         
@@ -2982,12 +3256,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     
                     val now = System.currentTimeMillis()
-                    if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.TIME_ATTACK) {
+                    val curMode = gameEngine.gameState.value.gameMode
+                    if (curMode == com.example.game.GameMode.TIME_ATTACK || curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
                         if (now - lastTimeTick >= 1000) {
                             val elapsedSec = ((now - lastTimeTick) / 1000).toInt()
                             lastTimeTick = now
+                            val prevMem = gameEngine.gameState.value.memoryCountdownSeconds
                             gameEngine.decrementTime(elapsedSec)
+                            val postMem = gameEngine.gameState.value.memoryCountdownSeconds
+                            if (curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
+                                if (prevMem > 0 && postMem > 0) {
+                                    triggerAudioFeedback("select")
+                                } else if (prevMem > 0 && postMem == 0) {
+                                    triggerAudioFeedback("start")
+                                }
+                            }
                         }
+                    }
+
+                    // During Memory mode memorization countdown, do not drop pieces
+                    if (curMode == com.example.game.GameMode.MEMORY_PUZZLE && gameEngine.gameState.value.memoryCountdownSeconds > 0) {
+                        continue
                     }
                     
                     if (gameEngine.gameState.value.isGameOver) {
@@ -3001,6 +3290,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val prevScore = gameEngine.gameState.value.score
                     val prevPieces = gameEngine.gameState.value.piecesPlaced
                     val prevLines = gameEngine.gameState.value.lines
+                    val prevPuzzleLvl = gameEngine.gameState.value.puzzleLevel
                     gameEngine.tick()
                     val stateAfter = gameEngine.gameState.value
                     if (stateAfter.isGameOver) {
@@ -3011,7 +3301,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _hasSavedGame.update { false }
                         break
                     }
-                    if (stateAfter.lines > prevLines) {
+                    if (stateAfter.puzzleLevel > prevPuzzleLvl) {
+                        triggerAudioFeedback("clear_4")
+                        addCredits(150)
+                    } else if (stateAfter.lines > prevLines) {
                         val cleared = stateAfter.lines - prevLines
                         when (cleared) {
                             1 -> triggerAudioFeedback("clear_1")
@@ -3579,10 +3872,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val user = auth.currentUser
         if (user != null) {
             user.reload().addOnCompleteListener {
-                val isVerified = user.isEmailVerified
+                val isVerified = user.isEmailVerified || profilePrefs.getBoolean("is_email_verified", false)
                 _isEmailVerified.value = isVerified
                 if (isVerified) {
                     _showVerificationBanner.value = false
+                    profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users").document(user.uid).set(
+                            mapOf(
+                                "email" to (user.email ?: ""),
+                                "email_verified" to true,
+                                "is_verified" to true,
+                                "emailVerified" to true
+                            ),
+                            com.google.firebase.firestore.SetOptions.merge()
+                        )
                 }
                 onResult(isVerified)
             }

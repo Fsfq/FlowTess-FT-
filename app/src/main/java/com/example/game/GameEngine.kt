@@ -347,10 +347,15 @@ class GameEngine {
         }
     }
 
+    private fun isControlsBlocked(): Boolean {
+        val state = _gameState.value
+        return state.isGameOver || (state.gameMode == GameMode.MEMORY_PUZZLE && state.memoryCountdownSeconds > 0)
+    }
+
     // Движение влево (инверсия для MIRROR) / move left (reversed in mirror mode)
     fun moveLeft() {
         val state = _gameState.value
-        if (state.isGameOver || state.currentPiece == null) return
+        if (isControlsBlocked() || state.currentPiece == null) return
         val isReverse = state.gameMode == GameMode.MIRROR_DIMENSION
         val nextX = if (isReverse) state.currentPos.x + 1 else state.currentPos.x - 1
         if (isValidMove(state.currentPos.copy(x = nextX), state.currentPiece, state.grid)) {
@@ -361,7 +366,7 @@ class GameEngine {
     // Движение вправо / move right
     fun moveRight() {
         val state = _gameState.value
-        if (state.isGameOver || state.currentPiece == null) return
+        if (isControlsBlocked() || state.currentPiece == null) return
         val isReverse = state.gameMode == GameMode.MIRROR_DIMENSION
         val nextX = if (isReverse) state.currentPos.x - 1 else state.currentPos.x + 1
         if (isValidMove(state.currentPos.copy(x = nextX), state.currentPiece, state.grid)) {
@@ -370,13 +375,14 @@ class GameEngine {
     }
     
     fun softDrop() {
+        if (isControlsBlocked()) return
         tick()
     }
 
     // Хард-дроп — моментальное падение до дна / instant drop to bottom
     fun hardDrop() {
         var state = _gameState.value
-        if (state.isGameOver || state.currentPiece == null) return
+        if (isControlsBlocked() || state.currentPiece == null) return
         
         var newY = state.currentPos.y
         while (isValidMove(Position(state.currentPos.x, newY + 1), state.currentPiece, state.grid)) {
@@ -390,7 +396,7 @@ class GameEngine {
     fun rotate() {
         val state = _gameState.value
         val piece = state.currentPiece ?: return
-        if (state.isGameOver) return
+        if (isControlsBlocked()) return
 
         // 1. Квадрат (O-форма) не вращается
         if (piece.colorIndex == 4) return
@@ -448,7 +454,7 @@ class GameEngine {
     // Hold-механика — обмен текущей фигуры с запасной / swap current piece with hold slot
     fun hold() {
         val state = _gameState.value
-        if (state.isGameOver || state.hasHeldThisTurn || state.currentPiece == null) return
+        if (isControlsBlocked() || state.hasHeldThisTurn || state.currentPiece == null) return
 
         val nextP = state.holdPiece ?: state.nextPieces.firstOrNull() ?: nextPiece(state.isExtendedMode)
         val remainingNext = if (state.holdPiece == null) {

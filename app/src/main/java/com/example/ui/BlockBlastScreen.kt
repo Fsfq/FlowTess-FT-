@@ -191,15 +191,24 @@ fun BlockBlastScreen(
                     rootBoxBounds = coords.boundsInWindow()
                 }
         ) {
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // MD3 Tonal Score Dashboard (No Strikes, Clean Counting Score)
+                val totalH = maxHeight
+                val totalW = maxWidth
+                val isCompact = totalH < 720.dp
+                val boardSize = minOf(totalW, totalH * (if (isCompact) 0.46f else 0.50f))
+                val slotSize = if (isCompact) 78.dp else 96.dp
+
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // MD3 Tonal Score Dashboard (No Strikes, Clean Counting Score)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -269,8 +278,7 @@ fun BlockBlastScreen(
                 // 8x8 Grid Container (Clean MD3 Tonal Surface)
                 Card(
                     modifier = Modifier
-                        .aspectRatio(1f)
-                        .fillMaxWidth()
+                        .size(boardSize)
                         .onGloballyPositioned { coords ->
                             boardBounds = coords.boundsInWindow()
                         },
@@ -653,7 +661,7 @@ fun BlockBlastScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .size(96.dp)
+                                    .size(slotSize)
                                     .onGloballyPositioned { coords ->
                                         val bounds = coords.boundsInWindow()
                                         if (cardBoundsList.size > idx) {
@@ -773,8 +781,9 @@ fun BlockBlastScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
+        }
 
             // Floating Dragged Figure Overlay (Clean overlay with no outer box shadow or ghost outlines)
             if (activeDraggingIdx != null) {

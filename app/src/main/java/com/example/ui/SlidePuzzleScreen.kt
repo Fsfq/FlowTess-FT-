@@ -204,53 +204,62 @@ fun SlidePuzzleScreen(
                 BoxWithConstraints(
                     modifier = Modifier
                         .weight(1f)
-                        .aspectRatio(8f / 10f)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                        .border(
-                            BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                            RoundedCornerShape(22.dp)
-                        )
-                        .padding(4.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val boardWidth = maxWidth
-                    val boardHeight = maxHeight
-                    val cellWidth = boardWidth / SlidePuzzleEngine.COLS
-                    val cellHeight = boardHeight / SlidePuzzleEngine.ROWS
-                    val cellWidthPx = with(LocalDensity.current) { cellWidth.toPx() }
+                    val boardH = minOf(maxHeight, maxWidth * (10f / 8f))
+                    val boardW = boardH * (8f / 10f)
 
-                    // Danger ceiling line
-                    if (dangerCeiling) {
-                        val hazardTransition = rememberInfiniteTransition(label = "SlideHazard")
-                        val hazardAlpha by hazardTransition.animateFloat(
-                            initialValue = 0.3f,
-                            targetValue = 0.9f,
-                            animationSpec = infiniteRepeatable(tween(450, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                            label = "SlideHazardAlpha"
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(cellHeight * 2)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(MaterialTheme.colorScheme.error.copy(alpha = hazardAlpha * 0.3f), Color.Transparent)
+                    Box(
+                        modifier = Modifier
+                            .size(width = boardW, height = boardH)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                            .border(
+                                BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                                RoundedCornerShape(22.dp)
+                            )
+                            .padding(4.dp)
+                    ) {
+                        val boardWidth = boardW
+                        val boardHeight = boardH
+                        val cellWidth = boardWidth / SlidePuzzleEngine.COLS
+                        val cellHeight = boardHeight / SlidePuzzleEngine.ROWS
+                        val cellWidthPx = with(LocalDensity.current) { cellWidth.toPx() }
+
+                        // Danger ceiling line
+                        if (dangerCeiling) {
+                            val hazardTransition = rememberInfiniteTransition(label = "SlideHazard")
+                            val hazardAlpha by hazardTransition.animateFloat(
+                                initialValue = 0.3f,
+                                targetValue = 0.9f,
+                                animationSpec = infiniteRepeatable(tween(450, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                                label = "SlideHazardAlpha"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(cellHeight * 2)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(MaterialTheme.colorScheme.error.copy(alpha = hazardAlpha * 0.3f), Color.Transparent)
+                                        )
                                     )
-                                )
-                        )
-                    }
+                            )
+                        }
 
-                    // Render blocks
-                    for (block in state.blocks) {
-                        SlideBlockItem(
-                            block = block,
-                            cellWidth = cellWidth,
-                            cellHeight = cellHeight,
-                            cellWidthPx = cellWidthPx,
-                            onMove = { targetCol ->
-                                viewModel.moveSlideBlock(block.id, targetCol)
-                            }
-                        )
+                        // Render blocks
+                        for (block in state.blocks) {
+                            SlideBlockItem(
+                                block = block,
+                                cellWidth = cellWidth,
+                                cellHeight = cellHeight,
+                                cellWidthPx = cellWidthPx,
+                                onMove = { targetCol ->
+                                    viewModel.moveSlideBlock(block.id, targetCol)
+                                }
+                            )
+                        }
                     }
                 }
 
