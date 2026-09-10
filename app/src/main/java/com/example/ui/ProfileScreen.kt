@@ -52,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Email
@@ -460,135 +461,7 @@ fun ProfileScreen(
 
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val avatarFrameBorderBrush = remember(equippedAvatarFrame, themeColor, secondaryColor) {
-        when (equippedAvatarFrame) {
-            "neon_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFF00FFCC),
-                        Color(0xFF00E5FF),
-                        Color(0xFF1DE9B6),
-                        Color(0xFF00B0FF),
-                        Color(0xFF00FFCC)
-                    )
-                )
-            }
-            "gold_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFFFFD700),
-                        Color(0xFFFFA000),
-                        Color(0xFFFFE082),
-                        Color(0xFFFF8F00),
-                        Color(0xFFFFD700)
-                    )
-                )
-            }
-            "cyber_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFFE040FB),
-                        Color(0xFF7C4DFF),
-                        Color(0xFF536DFE),
-                        Color(0xFFFF4081),
-                        Color(0xFFE040FB)
-                    )
-                )
-            }
-            "fire_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFFFF1744),
-                        Color(0xFFFF5722),
-                        Color(0xFFFF9100),
-                        Color(0xFFFFD600),
-                        Color(0xFFFF3D00),
-                        Color(0xFFFF1744)
-                    )
-                )
-            }
-            "ice_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFF00E5FF),
-                        Color(0xFF80D8FF),
-                        Color(0xFFE0F7FA),
-                        Color(0xFF00B0FF),
-                        Color(0xFF0091EA),
-                        Color(0xFF00E5FF)
-                    )
-                )
-            }
-            "matrix_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFF00FF66),
-                        Color(0xFF00E676),
-                        Color(0xFF69F0AE),
-                        Color(0xFF00BFA5),
-                        Color(0xFF00C853),
-                        Color(0xFF00FF66)
-                    )
-                )
-            }
-            "galaxy_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFF7C4DFF),
-                        Color(0xFF651FFF),
-                        Color(0xFFD500F9),
-                        Color(0xFFFF4081),
-                        Color(0xFF3D5AFE),
-                        Color(0xFF7C4DFF)
-                    )
-                )
-            }
-            "rainbow_frame" -> {
-                Brush.sweepGradient(
-                    listOf(
-                        Color(0xFFFF0055),
-                        Color(0xFFFF7700),
-                        Color(0xFFFFDD00),
-                        Color(0xFF00DD77),
-                        Color(0xFF0099FF),
-                        Color(0xFF8800FF),
-                        Color(0xFFFF0055)
-                    )
-                )
-            }
-            "standard" -> {
-                Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
-            }
-            else -> {
-                val isMonochrome = (themeColor.red < 0.22f && themeColor.green < 0.22f && themeColor.blue < 0.22f) ||
-                        (themeColor.red > 0.80f && themeColor.green > 0.80f && themeColor.blue > 0.80f)
-
-                if (isMonochrome) {
-                    Brush.sweepGradient(listOf(Color(0xFFFFFFFF), Color(0xFFA0A5B5), Color(0xFFE8EDF8), Color(0xFF656A7A), Color(0xFFFFFFFF)))
-                } else {
-                    val hsv = FloatArray(3)
-                    android.graphics.Color.colorToHSV(
-                        android.graphics.Color.argb(
-                            (themeColor.alpha * 255).toInt(),
-                            (themeColor.red * 255).toInt(),
-                            (themeColor.green * 255).toInt(),
-                            (themeColor.blue * 255).toInt()
-                        ),
-                        hsv
-                    )
-                    val baseHue = hsv[0]
-                    val sat = hsv[1].coerceIn(0.70f, 0.98f)
-                    val value = hsv[2].coerceIn(0.85f, 1f)
-
-                    val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
-                    val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-                    val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
-                    val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-                    val c5 = c1
-
-                    Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
-                }
-            }
-        }
+        getAvatarFrameBrush(equippedAvatarFrame, themeColor, secondaryColor)
     }
     val avatarFrameThickness = if (equippedAvatarFrame != "standard") 3.5.dp else 2.dp
 
@@ -671,7 +544,6 @@ fun ProfileScreen(
             GameModeStoreData("reverse", ShopPrices.getModeCost("reverse"), Translations.getLobbyModeTitle("reverse", currentLang), Translations.getLobbyModeDesc("reverse", currentLang), ""),
             GameModeStoreData("block_blast", ShopPrices.getModeCost("block_blast"), Translations.getLobbyModeTitle("block_blast", currentLang), Translations.getLobbyModeDesc("block_blast", currentLang), ""),
             GameModeStoreData("pattern", ShopPrices.getModeCost("pattern"), Translations.getLobbyModeTitle("pattern", currentLang), Translations.getLobbyModeDesc("pattern", currentLang), ""),
-            GameModeStoreData("sculptor", ShopPrices.getModeCost("sculptor"), Translations.getLobbyModeTitle("sculptor", currentLang), Translations.getLobbyModeDesc("sculptor", currentLang), ""),
             GameModeStoreData("perfectionist", ShopPrices.getModeCost("perfectionist"), Translations.getLobbyModeTitle("perfectionist", currentLang), Translations.getLobbyModeDesc("perfectionist", currentLang), "")
         )
     }
@@ -2832,52 +2704,52 @@ fun ProfileScreen(
                         Color.Gray
                     ),
                     AvatarFrameStoreData(
-                        "neon_frame", ShopPrices.getAvatarFrameCost("neon_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("neon_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("neon_frame", currentLang),
-                        Color(0xFF00FFCC)
+                        "frame_white", ShopPrices.getAvatarFrameCost("frame_white"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_white", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_white", currentLang),
+                        Color(0xFFFFFFFF)
                     ),
                     AvatarFrameStoreData(
-                        "gold_frame", ShopPrices.getAvatarFrameCost("gold_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("gold_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("gold_frame", currentLang),
-                        Color(0xFFFFD700)
+                        "frame_blue", ShopPrices.getAvatarFrameCost("frame_blue"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_blue", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_blue", currentLang),
+                        Color(0xFF2196F3)
                     ),
                     AvatarFrameStoreData(
-                        "cyber_frame", ShopPrices.getAvatarFrameCost("cyber_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("cyber_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("cyber_frame", currentLang),
-                        Color(0xFFE040FB)
+                        "frame_green", ShopPrices.getAvatarFrameCost("frame_green"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_green", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_green", currentLang),
+                        Color(0xFF4CAF50)
                     ),
                     AvatarFrameStoreData(
-                        "fire_frame", ShopPrices.getAvatarFrameCost("fire_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("fire_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("fire_frame", currentLang),
-                        Color(0xFFFF5722)
+                        "frame_yellow", ShopPrices.getAvatarFrameCost("frame_yellow"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_yellow", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_yellow", currentLang),
+                        Color(0xFFFFEB3B)
                     ),
                     AvatarFrameStoreData(
-                        "ice_frame", ShopPrices.getAvatarFrameCost("ice_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("ice_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("ice_frame", currentLang),
-                        Color(0xFF00E5FF)
+                        "frame_orange", ShopPrices.getAvatarFrameCost("frame_orange"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_orange", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_orange", currentLang),
+                        Color(0xFFFF9800)
                     ),
                     AvatarFrameStoreData(
-                        "matrix_frame", ShopPrices.getAvatarFrameCost("matrix_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("matrix_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("matrix_frame", currentLang),
-                        Color(0xFF00FF66)
+                        "frame_red", ShopPrices.getAvatarFrameCost("frame_red"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_red", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_red", currentLang),
+                        Color(0xFFF44336)
                     ),
                     AvatarFrameStoreData(
-                        "galaxy_frame", ShopPrices.getAvatarFrameCost("galaxy_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("galaxy_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("galaxy_frame", currentLang),
-                        Color(0xFF7C4DFF)
+                        "frame_purple", ShopPrices.getAvatarFrameCost("frame_purple"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_purple", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_purple", currentLang),
+                        Color(0xFF9C27B0)
                     ),
                     AvatarFrameStoreData(
-                        "rainbow_frame", ShopPrices.getAvatarFrameCost("rainbow_frame"),
-                        Translations.getLocalizedAvatarFrameTitle("rainbow_frame", currentLang),
-                        Translations.getLocalizedAvatarFrameDesc("rainbow_frame", currentLang),
-                        Color(0xFFFF0055)
+                        "frame_dark", ShopPrices.getAvatarFrameCost("frame_dark"),
+                        Translations.getLocalizedAvatarFrameTitle("frame_dark", currentLang),
+                        Translations.getLocalizedAvatarFrameDesc("frame_dark", currentLang),
+                        Color(0xFF37474F)
                     )
                 )
             }
@@ -2929,6 +2801,8 @@ fun ProfileScreen(
                     "TAGS" to Translations.getStoreCategoryTitle("TAGS", currentLang)
                 )
             }
+
+            var inspectItemData by remember { mutableStateOf<StoreItemInspectData?>(null) }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -3032,73 +2906,63 @@ fun ProfileScreen(
                             currentLang = currentLang
                         )
                     }
-                    items(ranksList.chunked(2)) { pair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            for (rank in pair) {
-                                val rankIndex = ranksList.indexOfFirst { it.id == rank.id }
-                                val isCurrent = rank.id == onlineTier
-                                val isOwned = purchasedRanks.contains(rank.id)
-                                val prevRankId = if (rankIndex > 0) ranksList[rankIndex - 1].id else null
-                                val isNext = !isOwned && (prevRankId == null || purchasedRanks.contains(prevRankId))
-                                val isLocked = !isOwned && !isNext
-                                val rankCategoryLabel = when (currentLang) {
-                                    Language.RU -> "Ранг"
-                                    Language.UA -> "Ранг"
-                                    Language.KK -> "Ранг"
-                                    Language.DE -> "Rang"
-                                    Language.ZH -> "段位"
-                                    else -> "Rank"
-                                }
+                    item {
+                        val nextRank = ranksList.firstOrNull { !purchasedRanks.contains(it.id) }
+                        val currentRankObj = ranksList.lastOrNull { purchasedRanks.contains(it.id) } ?: ranksList.first()
+                        val rankToShow = nextRank ?: currentRankObj
+                        val isMaxRank = nextRank == null
+                        val isOwned = purchasedRanks.contains(rankToShow.id)
+                        val isCurrent = rankToShow.id == onlineTier
 
-                                Box(modifier = Modifier.weight(1f)) {
-                                    StoreItemCard(
-                                        icon = Icons.Default.MilitaryTech,
-                                        category = rankCategoryLabel,
-                                        title = Translations.getLocalizedRank(rank.id, currentLang),
-                                        description = rank.description,
-                                        isActive = isCurrent,
-                                        isOwned = isOwned,
-                                        cost = rank.cost,
-                                        currentLang = currentLang,
-                                        isLocked = isLocked,
-                                        rarity = ShopPrices.getCosmeticRarity("RANK", rank.id),
-                                        onAction = {
-                                            if (isCurrent) {
-                                                viewModel.setOnlineTier("BRONZE")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Ранг сброшен до базового"
-                                                    Language.UA -> "Ранг скинуто до базового"
-                                                    Language.KK -> "Ранг негізгіге қайтарылды"
-                                                    Language.DE -> "Rang auf BRONZE zurückgesetzt."
-                                                    Language.ZH -> "段位已重置为青铜。"
-                                                    else -> "Rank reset to BRONZE."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else if (isOwned) {
-                                                viewModel.setOnlineTier(rank.id)
-                                                val selectedMsg = when (currentLang) {
-                                                    Language.RU -> "Ранг успешно выбран"
-                                                    Language.UA -> "Ранг успішно обрано"
-                                                    Language.KK -> "Ранг сәтті таңдалды"
-                                                    Language.DE -> "Rang erfolgreich aktualisiert"
-                                                    Language.ZH -> "段位更新成功"
-                                                    else -> "Rank updated to ${rank.id}."
-                                                }
-                                                triggerMessage(selectedMsg)
-                                            } else if (isNext) {
-                                                purchaseRank(rank.id, rank.cost)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                            if (pair.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                        val rankCategoryLabel = when (currentLang) {
+                            Language.RU -> if (isMaxRank) "Максимальный ранг" else "Следующий ранг"
+                            Language.UA -> if (isMaxRank) "Максимальний ранг" else "Наступний ранг"
+                            Language.KK -> if (isMaxRank) "Ең жоғары ранг" else "Келесі ранг"
+                            Language.DE -> if (isMaxRank) "Maximaler Rang" else "Nächster Rang"
+                            Language.ZH -> if (isMaxRank) "最高段位" else "下一段位"
+                            else -> if (isMaxRank) "Maximum Rank" else "Next Rank"
+                        }
+                        val rankTitle = Translations.getLocalizedRank(rankToShow.id, currentLang)
+
+                        val rankAction = {
+                            if (isMaxRank || isOwned) {
+                                viewModel.setOnlineTier(rankToShow.id)
+                            } else {
+                                purchaseRank(rankToShow.id, rankToShow.cost)
                             }
                         }
+
+                        StoreItemCard(
+                            icon = Icons.Default.MilitaryTech,
+                            category = rankCategoryLabel,
+                            title = rankTitle,
+                            description = rankToShow.description,
+                            isActive = isCurrent,
+                            isOwned = isOwned,
+                            cost = rankToShow.cost,
+                            currentLang = currentLang,
+                            isLocked = false,
+                            rarity = ShopPrices.getCosmeticRarity("RANK", rankToShow.id),
+                            itemType = "RANK",
+                            itemId = rankToShow.id,
+                            isSquare = false,
+                            onInspect = {
+                                inspectItemData = StoreItemInspectData(
+                                    itemType = "RANK",
+                                    itemId = rankToShow.id,
+                                    category = rankCategoryLabel,
+                                    title = rankTitle,
+                                    description = rankToShow.description,
+                                    cost = rankToShow.cost,
+                                    isOwned = isOwned,
+                                    isActive = isCurrent,
+                                    isLocked = false,
+                                    rarity = ShopPrices.getCosmeticRarity("RANK", rankToShow.id),
+                                    onAction = rankAction
+                                )
+                            },
+                            onAction = rankAction
+                        )
                     }
                 }
 
@@ -3138,6 +3002,22 @@ fun ProfileScreen(
                                     else -> "Theme"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val skinAction = {
+                                        if (isEquipped) {
+                                            viewModel.setBoardColorSkin("cyberpunk")
+                                            val resetMsg = when (currentLang) {
+                                                Language.RU -> "Оформление сброшено"
+                                                Language.UA -> "Оформлення скинуто"
+                                                Language.KK -> "Дизайн қалпына келтірілді"
+                                                Language.DE -> "Raster-Design zurückgesetzt."
+                                                Language.ZH -> "网格主题已重置"
+                                                else -> "Grid theme reset to cyberpunk."
+                                            }
+                                            triggerMessage(resetMsg)
+                                        } else {
+                                            purchaseSkin(skin.id, skin.cost)
+                                        }
+                                    }
                                     StoreItemCard(
                                         icon = Icons.Default.Palette,
                                         category = themeCategoryLabel,
@@ -3148,22 +3028,24 @@ fun ProfileScreen(
                                         cost = skin.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("SKIN", skin.id),
-                                        onAction = {
-                                            if (isEquipped) {
-                                                viewModel.setBoardColorSkin("cyberpunk")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Оформление сброшено"
-                                                    Language.UA -> "Оформлення скинуто"
-                                                    Language.KK -> "Дизайн қалпына келтірілді"
-                                                    Language.DE -> "Raster-Design zurückgesetzt."
-                                                    Language.ZH -> "网格主题已重置"
-                                                    else -> "Grid theme reset to cyberpunk."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else {
-                                                purchaseSkin(skin.id, skin.cost)
-                                            }
-                                        }
+                                        itemType = "SKIN",
+                                        itemId = skin.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "SKIN",
+                                                itemId = skin.id,
+                                                category = themeCategoryLabel,
+                                                title = skin.displayName,
+                                                description = skin.description,
+                                                cost = skin.cost,
+                                                isOwned = isOwned,
+                                                isActive = isEquipped,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("SKIN", skin.id),
+                                                onAction = skinAction
+                                            )
+                                        },
+                                        onAction = skinAction
                                     )
                                 }
                             }
@@ -3210,6 +3092,22 @@ fun ProfileScreen(
                                     else -> "Block Style"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val cSkinAction = {
+                                        if (isEquipped) {
+                                            viewModel.setBlockStyle("glass")
+                                            val resetMsg = when (currentLang) {
+                                                Language.RU -> "Стиль блоков сброшен"
+                                                Language.UA -> "Стиль блоків скинуто"
+                                                Language.KK -> "Блок стилі қалпына келтірілді"
+                                                Language.DE -> "Block-Design zurückgesetzt."
+                                                Language.ZH -> "方块样式已重置"
+                                                else -> "Cube style reset to glass."
+                                            }
+                                            triggerMessage(resetMsg)
+                                        } else {
+                                            purchaseCubeSkin(cSkin.id, cSkin.cost)
+                                        }
+                                    }
                                     StoreItemCard(
                                         icon = Icons.Default.Category,
                                         category = blockStyleCategoryLabel,
@@ -3220,22 +3118,24 @@ fun ProfileScreen(
                                         cost = cSkin.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("CUBE", cSkin.id),
-                                        onAction = {
-                                            if (isEquipped) {
-                                                viewModel.setBlockStyle("glass")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Стиль блоков сброшен"
-                                                    Language.UA -> "Стиль блоків скинуто"
-                                                    Language.KK -> "Блок стилі қалпына келтірілді"
-                                                    Language.DE -> "Block-Design zurückgesetzt."
-                                                    Language.ZH -> "方块样式已重置"
-                                                    else -> "Cube style reset to glass."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else {
-                                                purchaseCubeSkin(cSkin.id, cSkin.cost)
-                                            }
-                                        }
+                                        itemType = "BLOCK",
+                                        itemId = cSkin.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "BLOCK",
+                                                itemId = cSkin.id,
+                                                category = blockStyleCategoryLabel,
+                                                title = cSkin.displayName,
+                                                description = cSkin.description,
+                                                cost = cSkin.cost,
+                                                isOwned = isOwned,
+                                                isActive = isEquipped,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("CUBE", cSkin.id),
+                                                onAction = cSkinAction
+                                            )
+                                        },
+                                        onAction = cSkinAction
                                     )
                                 }
                             }
@@ -3281,6 +3181,7 @@ fun ProfileScreen(
                                     else -> "Game Mode"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val modeAction = { purchaseMode(pMode.id, pMode.cost) }
                                     StoreItemCard(
                                         icon = Icons.Default.PlayCircleOutline,
                                         category = modeCategoryLabel,
@@ -3291,7 +3192,24 @@ fun ProfileScreen(
                                         cost = pMode.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("MODE", pMode.id),
-                                        onAction = { purchaseMode(pMode.id, pMode.cost) }
+                                        itemType = "MODE",
+                                        itemId = pMode.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "MODE",
+                                                itemId = pMode.id,
+                                                category = modeCategoryLabel,
+                                                title = pMode.displayName,
+                                                description = pMode.description,
+                                                cost = pMode.cost,
+                                                isOwned = isOwned,
+                                                isActive = false,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("MODE", pMode.id),
+                                                onAction = modeAction
+                                            )
+                                        },
+                                        onAction = modeAction
                                     )
                                 }
                             }
@@ -3338,6 +3256,22 @@ fun ProfileScreen(
                                     else -> "Avatar Frame"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val frameAction = {
+                                        if (isEquipped) {
+                                            viewModel.setEquippedAvatarFrame("standard")
+                                            val resetMsg = when (currentLang) {
+                                                Language.RU -> "Рамка аватара сброшена"
+                                                Language.UA -> "Рамку аватара скинуто"
+                                                Language.KK -> "Аватар жақтауы қалпына келтірілді"
+                                                Language.DE -> "Avatar-Rahmen zurückgesetzt."
+                                                Language.ZH -> "头像相框已重置"
+                                                else -> "Avatar frame reset to standard."
+                                            }
+                                            triggerMessage(resetMsg)
+                                        } else {
+                                            selectAvatarFrame(frame.id, frame.cost)
+                                        }
+                                    }
                                     StoreItemCard(
                                         icon = Icons.Default.Portrait,
                                         category = frameCategoryLabel,
@@ -3348,22 +3282,24 @@ fun ProfileScreen(
                                         cost = frame.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("FRAME", frame.id),
-                                        onAction = {
-                                            if (isEquipped) {
-                                                viewModel.setEquippedAvatarFrame("standard")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Рамка аватара сброшена"
-                                                    Language.UA -> "Рамку аватара скинуто"
-                                                    Language.KK -> "Аватар жақтауы қалпына келтірілді"
-                                                    Language.DE -> "Avatar-Rahmen zurückgesetzt."
-                                                    Language.ZH -> "头像相框已重置"
-                                                    else -> "Avatar frame reset to standard."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else {
-                                                selectAvatarFrame(frame.id, frame.cost)
-                                            }
-                                        }
+                                        itemType = "FRAME",
+                                        itemId = frame.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "FRAME",
+                                                itemId = frame.id,
+                                                category = frameCategoryLabel,
+                                                title = frame.displayName,
+                                                description = frame.description,
+                                                cost = frame.cost,
+                                                isOwned = isOwned,
+                                                isActive = isEquipped,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("FRAME", frame.id),
+                                                onAction = frameAction
+                                            )
+                                        },
+                                        onAction = frameAction
                                     )
                                 }
                             }
@@ -3410,6 +3346,22 @@ fun ProfileScreen(
                                     else -> "Player Title"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val titleAction = {
+                                        if (isEquipped) {
+                                            viewModel.setEquippedTitle("none")
+                                            val resetMsg = when (currentLang) {
+                                                Language.RU -> "Титул сброшен"
+                                                Language.UA -> "Титул скинуто"
+                                                Language.KK -> "Атақ қалпына келтірілді"
+                                                Language.DE -> "Titel zurückgesetzt."
+                                                Language.ZH -> "称号已重置"
+                                                else -> "Title reset to none."
+                                            }
+                                            triggerMessage(resetMsg)
+                                        } else {
+                                            selectTitle(title.id, title.cost)
+                                        }
+                                    }
                                     StoreItemCard(
                                         icon = Icons.Default.WorkspacePremium,
                                         category = titleCategoryLabel,
@@ -3420,22 +3372,24 @@ fun ProfileScreen(
                                         cost = title.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("TITLE", title.id),
-                                        onAction = {
-                                            if (isEquipped) {
-                                                viewModel.setEquippedTitle("none")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Титул сброшен"
-                                                    Language.UA -> "Титул скинуто"
-                                                    Language.KK -> "Атақ қалпына келтірілді"
-                                                    Language.DE -> "Titel zurückgesetzt."
-                                                    Language.ZH -> "称号已重置"
-                                                    else -> "Title reset to none."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else {
-                                                selectTitle(title.id, title.cost)
-                                            }
-                                        }
+                                        itemType = "TITLE",
+                                        itemId = title.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "TITLE",
+                                                itemId = title.id,
+                                                category = titleCategoryLabel,
+                                                title = title.displayName,
+                                                description = title.description,
+                                                cost = title.cost,
+                                                isOwned = isOwned,
+                                                isActive = isEquipped,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("TITLE", title.id),
+                                                onAction = titleAction
+                                            )
+                                        },
+                                        onAction = titleAction
                                     )
                                 }
                             }
@@ -3482,6 +3436,22 @@ fun ProfileScreen(
                                     else -> "Button Design"
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
+                                    val btnStyleAction = {
+                                        if (isEquipped) {
+                                            viewModel.setControlButtonStyle("classic")
+                                            val resetMsg = when (currentLang) {
+                                                Language.RU -> "Стиль кнопок сброшен"
+                                                Language.UA -> "Стиль кнопок скинуто"
+                                                Language.KK -> "Батырмалар стилі қалпына келтірілді"
+                                                Language.DE -> "Tasten-Design zurückgesetzt."
+                                                Language.ZH -> "按键样式已重置"
+                                                else -> "Button style reset to classic."
+                                            }
+                                            triggerMessage(resetMsg)
+                                        } else {
+                                            selectControlButtonStyle(btnStyle.id, btnStyle.cost)
+                                        }
+                                    }
                                     StoreItemCard(
                                         icon = Icons.Default.Extension,
                                         category = buttonCategoryLabel,
@@ -3492,22 +3462,24 @@ fun ProfileScreen(
                                         cost = btnStyle.cost,
                                         currentLang = currentLang,
                                         rarity = ShopPrices.getCosmeticRarity("BUTTON", btnStyle.id),
-                                        onAction = {
-                                            if (isEquipped) {
-                                                viewModel.setControlButtonStyle("classic")
-                                                val resetMsg = when (currentLang) {
-                                                    Language.RU -> "Стиль кнопок сброшен"
-                                                    Language.UA -> "Стиль кнопок скинуто"
-                                                    Language.KK -> "Батырмалар стилі қалпына келтірілді"
-                                                    Language.DE -> "Tasten-Design zurückgesetzt."
-                                                    Language.ZH -> "按键样式已重置"
-                                                    else -> "Button style reset to classic."
-                                                }
-                                                triggerMessage(resetMsg)
-                                            } else {
-                                                selectControlButtonStyle(btnStyle.id, btnStyle.cost)
-                                            }
-                                        }
+                                        itemType = "BUTTON",
+                                        itemId = btnStyle.id,
+                                        onInspect = {
+                                            inspectItemData = StoreItemInspectData(
+                                                itemType = "BUTTON",
+                                                itemId = btnStyle.id,
+                                                category = buttonCategoryLabel,
+                                                title = btnStyle.displayName,
+                                                description = btnStyle.description,
+                                                cost = btnStyle.cost,
+                                                isOwned = isOwned,
+                                                isActive = isEquipped,
+                                                isLocked = false,
+                                                rarity = ShopPrices.getCosmeticRarity("BUTTON", btnStyle.id),
+                                                onAction = btnStyleAction
+                                            )
+                                        },
+                                        onAction = btnStyleAction
                                     )
                                 }
                             }
@@ -3582,6 +3554,35 @@ fun ProfileScreen(
                             }
                         }
 
+                        val p1Action = {
+                            if (isP1Active) {
+                                val activeMsg = when (currentLang) {
+                                    Language.RU -> "Престиж I уже активирован!"
+                                    Language.UA -> "Престиж I вже активовано!"
+                                    Language.KK -> "Престиж I белсендірілген!"
+                                    Language.DE -> "Prestige I ist bereits aktiv!"
+                                    Language.ZH -> "声望 I 已经处于激活状态！"
+                                    else -> "Prestige I is already active!"
+                                }
+                                triggerMessage(activeMsg)
+                            } else {
+                                if (credits >= ShopPrices.PRESTIGE_I_REQUIREMENT) {
+                                    confirmPrestigeTarget = 1
+                                } else {
+                                    viewModel.triggerAudioFeedback("error")
+                                    val needMsg = when (currentLang) {
+                                        Language.RU -> "Необходимо накопить 100,000 🪙"
+                                        Language.UA -> "Необхідно накопичити 100,000 🪙"
+                                        Language.KK -> "100,000 🪙 жинау қажет"
+                                        Language.DE -> "Es müssen zuerst 100.000 🪙 gespart werden"
+                                        Language.ZH -> "需要先攒够 100,000 🪙"
+                                        else -> "Need to save 100,000 🪙 first"
+                                    }
+                                    triggerMessage(needMsg, isError = true)
+                                }
+                            }
+                        }
+
                         StoreItemCard(
                             icon = Icons.Default.AutoAwesome,
                             category = prestigeCategoryLabel,
@@ -3592,34 +3593,25 @@ fun ProfileScreen(
                             cost = ShopPrices.PRESTIGE_I_REQUIREMENT,
                             currentLang = currentLang,
                             rarity = DropRarity.EPIC,
-                            onAction = {
-                                if (isP1Active) {
-                                    val activeMsg = when (currentLang) {
-                                        Language.RU -> "Престиж I уже активирован!"
-                                        Language.UA -> "Престиж I вже активовано!"
-                                        Language.KK -> "Престиж I белсендірілген!"
-                                        Language.DE -> "Prestige I ist bereits aktiv!"
-                                        Language.ZH -> "声望 I 已经处于激活状态！"
-                                        else -> "Prestige I is already active!"
-                                    }
-                                    triggerMessage(activeMsg)
-                                } else {
-                                    if (credits >= ShopPrices.PRESTIGE_I_REQUIREMENT) {
-                                        confirmPrestigeTarget = 1
-                                    } else {
-                                        viewModel.triggerAudioFeedback("error")
-                                        val needMsg = when (currentLang) {
-                                            Language.RU -> "Необходимо накопить 100,000 🪙"
-                                            Language.UA -> "Необхідно накопичити 100,000 🪙"
-                                            Language.KK -> "100,000 🪙 жинау қажет"
-                                            Language.DE -> "Es müssen zuerst 100.000 🪙 gespart werden"
-                                            Language.ZH -> "需要先攒够 100,000 🪙"
-                                            else -> "Need to save 100,000 🪙 first"
-                                        }
-                                        triggerMessage(needMsg, isError = true)
-                                    }
-                                }
-                            }
+                            itemType = "PRESTIGE",
+                            itemId = "prestige_1",
+                            isSquare = false,
+                            onInspect = {
+                                inspectItemData = StoreItemInspectData(
+                                    itemType = "PRESTIGE",
+                                    itemId = "prestige_1",
+                                    category = prestigeCategoryLabel,
+                                    title = p1Title,
+                                    description = p1Desc,
+                                    cost = ShopPrices.PRESTIGE_I_REQUIREMENT,
+                                    isOwned = isP1Active,
+                                    isActive = isP1Active,
+                                    isLocked = false,
+                                    rarity = DropRarity.EPIC,
+                                    onAction = p1Action
+                                )
+                            },
+                            onAction = p1Action
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -3654,6 +3646,46 @@ fun ProfileScreen(
                             }
                         }
 
+                        val p2Action = {
+                            if (isP2Active) {
+                                val activeMsg = when (currentLang) {
+                                    Language.RU -> "Престиж II уже активирован!"
+                                    Language.UA -> "Престиж II вже активовано!"
+                                    Language.KK -> "Престиж II белсендірілген!"
+                                    Language.DE -> "Prestige II ist bereits aktiv!"
+                                    Language.ZH -> "声望 II 已经处于激活状态！"
+                                    else -> "Prestige II is already active!"
+                                }
+                                triggerMessage(activeMsg)
+                            } else if (prestigeLvl < 1) {
+                                viewModel.triggerAudioFeedback("error")
+                                val reqMsg = when (currentLang) {
+                                    Language.RU -> "Сначала активируйте Престиж I!"
+                                    Language.UA -> "Спочатку активуйте Престиж I!"
+                                    Language.KK -> "Алдымен Престиж I белсендіріңіз!"
+                                    Language.DE -> "Aktiviere zuerst Prestige I!"
+                                    Language.ZH -> "请先激活声望 I！"
+                                    else -> "Activate Prestige I first!"
+                                }
+                                triggerMessage(reqMsg, isError = true)
+                            } else {
+                                if (credits >= ShopPrices.PRESTIGE_II_REQUIREMENT) {
+                                    confirmPrestigeTarget = 2
+                                } else {
+                                    viewModel.triggerAudioFeedback("error")
+                                    val needMsg = when (currentLang) {
+                                        Language.RU -> "Необходимо накопить 400,000 🪙"
+                                        Language.UA -> "Необхідно накопичити 400,000 🪙"
+                                        Language.KK -> "400,000 🪙 жинау қажет"
+                                        Language.DE -> "Es müssen zuerst 400.000 🪙 gespart werden"
+                                        Language.ZH -> "需要先攒够 400,000 🪙"
+                                        else -> "Need to save 400,000 🪙 first"
+                                    }
+                                    triggerMessage(needMsg, isError = true)
+                                }
+                            }
+                        }
+
                         StoreItemCard(
                             icon = Icons.Default.AutoAwesome,
                             category = prestigeCategoryLabel,
@@ -3664,45 +3696,25 @@ fun ProfileScreen(
                             cost = ShopPrices.PRESTIGE_II_REQUIREMENT,
                             currentLang = currentLang,
                             rarity = DropRarity.LEGENDARY,
-                            onAction = {
-                                if (isP2Active) {
-                                    val activeMsg = when (currentLang) {
-                                        Language.RU -> "Престиж II уже активирован!"
-                                        Language.UA -> "Престиж II вже активовано!"
-                                        Language.KK -> "Престиж II белсендірілген!"
-                                        Language.DE -> "Prestige II ist bereits aktiv!"
-                                        Language.ZH -> "声望 II 已经处于激活状态！"
-                                        else -> "Prestige II is already active!"
-                                    }
-                                    triggerMessage(activeMsg)
-                                } else if (prestigeLvl < 1) {
-                                    viewModel.triggerAudioFeedback("error")
-                                    val reqMsg = when (currentLang) {
-                                        Language.RU -> "Сначала активируйте Престиж I!"
-                                        Language.UA -> "Спочатку активуйте Престиж I!"
-                                        Language.KK -> "Алдымен Престиж I белсендіріңіз!"
-                                        Language.DE -> "Aktiviere zuerst Prestige I!"
-                                        Language.ZH -> "请先激活声望 I！"
-                                        else -> "Activate Prestige I first!"
-                                    }
-                                    triggerMessage(reqMsg, isError = true)
-                                } else {
-                                    if (credits >= ShopPrices.PRESTIGE_II_REQUIREMENT) {
-                                        confirmPrestigeTarget = 2
-                                    } else {
-                                        viewModel.triggerAudioFeedback("error")
-                                        val needMsg = when (currentLang) {
-                                            Language.RU -> "Необходимо накопить 400,000 🪙"
-                                            Language.UA -> "Необхідно накопичити 400,000 🪙"
-                                            Language.KK -> "400,000 🪙 жинау қажет"
-                                            Language.DE -> "Es müssen zuerst 400.000 🪙 gespart werden"
-                                            Language.ZH -> "需要先攒够 400,000 🪙"
-                                            else -> "Need to save 400,000 🪙 first"
-                                        }
-                                        triggerMessage(needMsg, isError = true)
-                                    }
-                                }
-                            }
+                            itemType = "PRESTIGE",
+                            itemId = "prestige_2",
+                            isSquare = false,
+                            onInspect = {
+                                inspectItemData = StoreItemInspectData(
+                                    itemType = "PRESTIGE",
+                                    itemId = "prestige_2",
+                                    category = prestigeCategoryLabel,
+                                    title = p2Title,
+                                    description = p2Desc,
+                                    cost = ShopPrices.PRESTIGE_II_REQUIREMENT,
+                                    isOwned = isP2Active,
+                                    isActive = isP2Active,
+                                    isLocked = prestigeLvl < 1,
+                                    rarity = DropRarity.LEGENDARY,
+                                    onAction = p2Action
+                                )
+                            },
+                            onAction = p2Action
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -3737,6 +3749,46 @@ fun ProfileScreen(
                             }
                         }
 
+                        val p3Action = {
+                            if (isP3Active) {
+                                val activeMsg = when (currentLang) {
+                                    Language.RU -> "Престиж III уже активирован! Множитель x8 активен."
+                                    Language.UA -> "Престиж III вже активовано! Множник x8 активний."
+                                    Language.KK -> "Престиж III белсендірілген! x8 көбейткіш жұмыс істеп тұр."
+                                    Language.DE -> "Prestige III ist bereits aktiv! Multiplikator x8 wird angewendet."
+                                    Language.ZH -> "声望 III 已经处于激活状态！8倍加成生效中。"
+                                    else -> "Prestige III is already active! Multiplier x8 is applied."
+                                }
+                                triggerMessage(activeMsg)
+                            } else if (prestigeLvl < 2) {
+                                viewModel.triggerAudioFeedback("error")
+                                val reqMsg = when (currentLang) {
+                                    Language.RU -> "Сначала активируйте Престиж II!"
+                                    Language.UA -> "Спочатку активуйте Престиж II!"
+                                    Language.KK -> "Алдымен Престиж II белсендіріңіз!"
+                                    Language.DE -> "Aktiviere zuerst Prestige II!"
+                                    Language.ZH -> "请先激活声望 II！"
+                                    else -> "Activate Prestige II first!"
+                                }
+                                triggerMessage(reqMsg, isError = true)
+                            } else {
+                                if (credits >= ShopPrices.PRESTIGE_III_REQUIREMENT) {
+                                    confirmPrestigeTarget = 3
+                                } else {
+                                    viewModel.triggerAudioFeedback("error")
+                                    val needMsg = when (currentLang) {
+                                        Language.RU -> "Необходимо накопить 1,000,000 🪙"
+                                        Language.UA -> "Необхідно накопичити 1,000,000 🪙"
+                                        Language.KK -> "1,000,000 🪙 жинау қажет"
+                                        Language.DE -> "Es müssen zuerst 1.000.000 🪙 gespart werden"
+                                        Language.ZH -> "需要先攒够 1,000,000 🪙"
+                                        else -> "Need to save 1,000,000 🪙 first"
+                                    }
+                                    triggerMessage(needMsg, isError = true)
+                                }
+                            }
+                        }
+
                         StoreItemCard(
                             icon = Icons.Default.AutoAwesome,
                             category = prestigeCategoryLabel,
@@ -3747,45 +3799,25 @@ fun ProfileScreen(
                             cost = ShopPrices.PRESTIGE_III_REQUIREMENT,
                             currentLang = currentLang,
                             rarity = DropRarity.RED,
-                            onAction = {
-                                if (isP3Active) {
-                                    val activeMsg = when (currentLang) {
-                                        Language.RU -> "Престиж III уже активирован! Множитель x8 активен."
-                                        Language.UA -> "Престиж III вже активовано! Множник x8 активний."
-                                        Language.KK -> "Престиж III белсендірілген! x8 көбейткіш жұмыс істеп тұр."
-                                        Language.DE -> "Prestige III ist bereits aktiv! Multiplikator x8 wird angewendet."
-                                        Language.ZH -> "声望 III 已经处于激活状态！8倍加成生效中。"
-                                        else -> "Prestige III is already active! Multiplier x8 is applied."
-                                    }
-                                    triggerMessage(activeMsg)
-                                } else if (prestigeLvl < 2) {
-                                    viewModel.triggerAudioFeedback("error")
-                                    val reqMsg = when (currentLang) {
-                                        Language.RU -> "Сначала активируйте Престиж II!"
-                                        Language.UA -> "Спочатку активуйте Престиж II!"
-                                        Language.KK -> "Алдымен Престиж II белсендіріңіз!"
-                                        Language.DE -> "Aktiviere zuerst Prestige II!"
-                                        Language.ZH -> "请先激活声望 II！"
-                                        else -> "Activate Prestige II first!"
-                                    }
-                                    triggerMessage(reqMsg, isError = true)
-                                } else {
-                                    if (credits >= ShopPrices.PRESTIGE_III_REQUIREMENT) {
-                                        confirmPrestigeTarget = 3
-                                    } else {
-                                        viewModel.triggerAudioFeedback("error")
-                                        val needMsg = when (currentLang) {
-                                            Language.RU -> "Необходимо накопить 1,000,000 🪙"
-                                            Language.UA -> "Необхідно накопичити 1,000,000 🪙"
-                                            Language.KK -> "1,000,000 🪙 жинау қажет"
-                                            Language.DE -> "Es müssen zuerst 1.000.000 🪙 gespart werden"
-                                            Language.ZH -> "需要先攒够 1,000,000 🪙"
-                                            else -> "Need to save 1,000,000 🪙 first"
-                                        }
-                                        triggerMessage(needMsg, isError = true)
-                                    }
-                                }
-                            }
+                            itemType = "PRESTIGE",
+                            itemId = "prestige_3",
+                            isSquare = false,
+                            onInspect = {
+                                inspectItemData = StoreItemInspectData(
+                                    itemType = "PRESTIGE",
+                                    itemId = "prestige_3",
+                                    category = prestigeCategoryLabel,
+                                    title = p3Title,
+                                    description = p3Desc,
+                                    cost = ShopPrices.PRESTIGE_III_REQUIREMENT,
+                                    isOwned = isP3Active,
+                                    isActive = isP3Active,
+                                    isLocked = prestigeLvl < 2,
+                                    rarity = DropRarity.RED,
+                                    onAction = p3Action
+                                )
+                            },
+                            onAction = p3Action
                         )
 
                         confirmPrestigeTarget?.let { targetLevel ->
@@ -3883,6 +3915,15 @@ fun ProfileScreen(
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
+            }
+
+            inspectItemData?.let { data ->
+                StoreItemInspectDialog(
+                    data = data,
+                    currentLang = currentLang,
+                    themeColor = themeColor,
+                    onDismiss = { inspectItemData = null }
+                )
             }
         }
         2 -> {
@@ -4196,7 +4237,7 @@ fun ProfileScreen(
                                     else -> "AVATAR FRAME"
                                 }
                                 val allFramesList = remember {
-                                    listOf("standard", "neon_frame", "gold_frame", "cyber_frame", "fire_frame", "ice_frame", "matrix_frame", "galaxy_frame", "rainbow_frame", "chrono_gl")
+                                    listOf("standard", "frame_white", "frame_blue", "frame_green", "frame_yellow", "frame_orange", "frame_red", "frame_purple", "frame_dark", "chrono_gl")
                                 }
                                 val availableFrames = remember(purchasedAvatarFrames) {
                                     allFramesList.filter { it == "standard" || purchasedAvatarFrames.contains(it) }
@@ -4765,7 +4806,6 @@ fun ProfileScreen(
                                     UnlockedItemInfo("reverse", Translations.getLobbyModeTitle("reverse", currentLang), purchasedModesSet.contains("reverse"), rarity = ShopPrices.getCosmeticRarity("MODE", "reverse")),
                                     UnlockedItemInfo("block_blast", Translations.getLobbyModeTitle("block_blast", currentLang), purchasedModesSet.contains("block_blast"), rarity = ShopPrices.getCosmeticRarity("MODE", "block_blast")),
                                     UnlockedItemInfo("pattern", Translations.getLobbyModeTitle("pattern", currentLang), purchasedModesSet.contains("pattern"), rarity = ShopPrices.getCosmeticRarity("MODE", "pattern")),
-                                    UnlockedItemInfo("sculptor", Translations.getLobbyModeTitle("sculptor", currentLang), purchasedModesSet.contains("sculptor"), rarity = ShopPrices.getCosmeticRarity("MODE", "sculptor")),
                                     UnlockedItemInfo("perfectionist", Translations.getLobbyModeTitle("perfectionist", currentLang), purchasedModesSet.contains("perfectionist"), rarity = ShopPrices.getCosmeticRarity("MODE", "perfectionist"))
                                 ),
                                 currentLang = currentLang
@@ -4782,7 +4822,7 @@ fun ProfileScreen(
                                 Language.ZH -> "头像框"
                                 else -> "Avatar Frames"
                             }
-                            val allFrames = listOf("standard", "neon_frame", "gold_frame", "cyber_frame", "fire_frame", "ice_frame", "matrix_frame", "galaxy_frame", "rainbow_frame", "chrono_gl")
+                            val allFrames = listOf("standard", "frame_white", "frame_blue", "frame_green", "frame_yellow", "frame_orange", "frame_red", "frame_purple", "frame_dark", "chrono_gl")
                             ProfileUnlockedCategoryCard(
                                 title = framesHeaderTitle,
                                 icon = Icons.Default.Portrait,
@@ -5059,6 +5099,720 @@ private fun StoreSectionHeader(
     }
 }
 
+fun getAvatarFrameBrush(equippedAvatarFrame: String, themeColor: Color, secondaryColor: Color): Brush {
+    return when (equippedAvatarFrame.lowercase()) {
+        "chrono_gl", "gradient_frame" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFFFF0055),
+                Color(0xFFFF7700),
+                Color(0xFFFFDD00),
+                Color(0xFF00DD77),
+                Color(0xFF0099FF),
+                Color(0xFF8800FF),
+                Color(0xFFFF0055)
+            )
+        )
+        "frame_white" -> Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFE0E0E0)))
+        "frame_blue" -> Brush.linearGradient(listOf(Color(0xFF2196F3), Color(0xFF1976D2)))
+        "frame_green" -> Brush.linearGradient(listOf(Color(0xFF4CAF50), Color(0xFF388E3C)))
+        "frame_yellow" -> Brush.linearGradient(listOf(Color(0xFFFFEB3B), Color(0xFFFDD835)))
+        "frame_orange" -> Brush.linearGradient(listOf(Color(0xFFFF9800), Color(0xFFF57C00)))
+        "frame_red" -> Brush.linearGradient(listOf(Color(0xFFF44336), Color(0xFFD32F2F)))
+        "frame_purple" -> Brush.linearGradient(listOf(Color(0xFF9C27B0), Color(0xFF7B1FA2)))
+        "frame_dark" -> Brush.linearGradient(listOf(Color(0xFF455A64), Color(0xFF263238)))
+        "standard" -> Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
+        // Legacy fallback
+        "neon_frame" -> Brush.linearGradient(listOf(Color(0xFF00FFCC), Color(0xFF00B0FF)))
+        "gold_frame" -> Brush.linearGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA000)))
+        "cyber_frame" -> Brush.linearGradient(listOf(Color(0xFFE040FB), Color(0xFF7C4DFF)))
+        "fire_frame" -> Brush.linearGradient(listOf(Color(0xFFFF5722), Color(0xFFFF9100)))
+        "ice_frame" -> Brush.linearGradient(listOf(Color(0xFF00E5FF), Color(0xFF00B0FF)))
+        "matrix_frame" -> Brush.linearGradient(listOf(Color(0xFF00FF66), Color(0xFF00C853)))
+        "galaxy_frame" -> Brush.linearGradient(listOf(Color(0xFF7C4DFF), Color(0xFF3D5AFE)))
+        "rainbow_frame" -> Brush.linearGradient(listOf(Color(0xFFFF0055), Color(0xFFFFDD00)))
+        else -> {
+            val isMonochrome = (themeColor.red < 0.22f && themeColor.green < 0.22f && themeColor.blue < 0.22f) ||
+                    (themeColor.red > 0.80f && themeColor.green > 0.80f && themeColor.blue > 0.80f)
+
+            if (isMonochrome) {
+                Brush.sweepGradient(listOf(Color(0xFFFFFFFF), Color(0xFFA0A5B5), Color(0xFFE8EDF8), Color(0xFF656A7A), Color(0xFFFFFFFF)))
+            } else {
+                val hsv = FloatArray(3)
+                android.graphics.Color.colorToHSV(
+                    android.graphics.Color.argb(
+                        (themeColor.alpha * 255).toInt(),
+                        (themeColor.red * 255).toInt(),
+                        (themeColor.green * 255).toInt(),
+                        (themeColor.blue * 255).toInt()
+                    ),
+                    hsv
+                )
+                val baseHue = hsv[0]
+                val sat = hsv[1].coerceIn(0.70f, 0.98f)
+                val value = hsv[2].coerceIn(0.85f, 1f)
+
+                val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+                val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+                val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c5 = c1
+
+                Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
+            }
+        }
+    }
+}
+
+fun getBoardSkinGridColor(skinId: String): Color = when (skinId.lowercase()) {
+    "cyberpunk" -> Color(0xFF00FFCC)
+    "matrix", "emerald_matrix" -> Color(0xFF00FF00)
+    "violet" -> Color(0xFF8A2BE2)
+    "ruby" -> Color(0xFFFF014C)
+    "monochrome", "carbon_neutral" -> Color(0xFF8E9297)
+    "retro_amber" -> Color(0xFFFFB300)
+    "vaporwave_pink" -> Color(0xFFFF4081)
+    "midnight_gold" -> Color(0xFFFFD700)
+    "plasma_storm" -> Color(0xFF7C4DFF)
+    "glacial_frost" -> Color(0xFF80D8FF)
+    else -> Color(0xFF00FFCC)
+}
+
+fun getControlBtnStyleBrush(styleId: String): Brush = when (styleId) {
+    "gold_legendary", "gold" -> Brush.verticalGradient(
+        listOf(Color(0xFFFFD54F).copy(alpha = 0.65f), Color(0xFFFF8F00).copy(alpha = 0.45f))
+    )
+    "plasma_legendary", "plasma" -> Brush.verticalGradient(
+        listOf(Color(0xFF7C4DFF).copy(alpha = 0.55f), Color(0xFF00E5FF).copy(alpha = 0.45f))
+    )
+    "glass" -> Brush.verticalGradient(
+        listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.12f))
+    )
+    "neon" -> Brush.verticalGradient(
+        listOf(Color(0xFF00E5FF).copy(alpha = 0.25f), Color(0xFF00B0FF).copy(alpha = 0.12f))
+    )
+    else -> Brush.verticalGradient(
+        listOf(Color(0xFF333A48), Color(0xFF222834))
+    )
+}
+
+fun getControlBtnBorderStroke(styleId: String): BorderStroke = when (styleId) {
+    "gold_legendary", "gold" -> BorderStroke(
+        1.5.dp,
+        Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFF9C4), Color(0xFFFFA000), Color(0xFFFFD700)))
+    )
+    "plasma_legendary", "plasma" -> BorderStroke(
+        1.5.dp,
+        Brush.sweepGradient(listOf(Color(0xFF00E5FF), Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00E5FF)))
+    )
+    "glass" -> BorderStroke(1.2.dp, Color.White.copy(alpha = 0.45f))
+    "neon" -> BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.8f))
+    else -> BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+}
+
+fun getRankColors(rankId: String): Triple<Color, Color, androidx.compose.ui.graphics.vector.ImageVector> = when (rankId.uppercase()) {
+    "BRONZE" -> Triple(Color(0xFFCD7F32), Color(0xFF8B4513), Icons.Default.Shield)
+    "SILVER" -> Triple(Color(0xFFC0C0C0), Color(0xFF708090), Icons.Default.Shield)
+    "GOLD" -> Triple(Color(0xFFFFD700), Color(0xFFFF8F00), Icons.Default.Star)
+    "PLATINUM" -> Triple(Color(0xFF00E5FF), Color(0xFF0097A7), Icons.Default.Diamond)
+    "DIAMOND" -> Triple(Color(0xFF00B0FF), Color(0xFF1565C0), Icons.Default.Diamond)
+    "MASTER" -> Triple(Color(0xFFA855F7), Color(0xFF6B21A8), Icons.Default.WorkspacePremium)
+    "GRANDMASTER" -> Triple(Color(0xFFEF4444), Color(0xFF991B1B), Icons.Default.MilitaryTech)
+    "CHALLENGER" -> Triple(Color(0xFFEC4899), Color(0xFF831843), Icons.Default.Whatshot)
+    else -> Triple(Color(0xFFFFD700), Color(0xFFFF8F00), Icons.Default.MilitaryTech)
+}
+
+fun getModeVisuals(modeId: String): Pair<List<Color>, androidx.compose.ui.graphics.vector.ImageVector> = when (modeId.lowercase()) {
+    "time_attack" -> Pair(listOf(Color(0xFFFF5722), Color(0xFFFF1744)), Icons.Default.Timer)
+    "fast_run" -> Pair(listOf(Color(0xFFFFD600), Color(0xFFFF9100)), Icons.Default.Speed)
+    "relax" -> Pair(listOf(Color(0xFF00E676), Color(0xFF00B0FF)), Icons.Default.Spa)
+    "mirror" -> Pair(listOf(Color(0xFF9C27B0), Color(0xFF00E5FF)), Icons.Default.Flip)
+    "extended" -> Pair(listOf(Color(0xFF3D5AFE), Color(0xFF00E5FF)), Icons.Default.Extension)
+    "reverse" -> Pair(listOf(Color(0xFF651FFF), Color(0xFFFF4081)), Icons.Default.SwapVert)
+    "block_blast" -> Pair(listOf(Color(0xFFFF9800), Color(0xFFFF5722)), Icons.Default.GridView)
+    "pattern" -> Pair(listOf(Color(0xFF00BCD4), Color(0xFF3F51B5)), Icons.Default.AutoFixHigh)
+    "perfectionist" -> Pair(listOf(Color(0xFFFFD700), Color(0xFFFF6D00)), Icons.Default.Stars)
+    else -> Pair(listOf(Color(0xFF7C4DFF), Color(0xFF00E5FF)), Icons.Default.PlayCircleOutline)
+}
+
+data class StoreItemInspectData(
+    val itemType: String,
+    val itemId: String,
+    val title: String,
+    val description: String,
+    val category: String,
+    val rarity: DropRarity,
+    val cost: Int,
+    val isOwned: Boolean,
+    val isActive: Boolean,
+    val isLocked: Boolean = false,
+    val onAction: () -> Unit
+)
+
+@Composable
+fun StoreItemVisualPreview(
+    itemType: String?,
+    itemId: String?,
+    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    rarityColor: Color,
+    isActive: Boolean,
+    modifier: Modifier = Modifier.size(46.dp),
+    themeColor: Color = MaterialTheme.colorScheme.primary,
+    onInspectClick: (() -> Unit)? = null
+) {
+    Surface(
+        modifier = modifier
+            .then(
+                if (onInspectClick != null) Modifier.clickable { onInspectClick() } else Modifier
+            ),
+        shape = RoundedCornerShape(13.dp),
+        color = Color(0xFF0D121B),
+        border = BorderStroke(
+            1.2.dp,
+            if (isActive) MaterialTheme.colorScheme.primary
+            else rarityColor.copy(alpha = 0.4f)
+        ),
+        tonalElevation = 2.dp
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            when (itemType?.uppercase()) {
+                "BLOCK" -> {
+                    val blockStyle = itemId ?: "flat"
+                    Canvas(modifier = Modifier.size(34.dp)) {
+                        val cellPx = size.width / 2.2f
+                        val startX = (size.width - cellPx * 2f) / 2f
+                        val startY = (size.height - cellPx * 2f) / 2f
+                        drawBlock(Color(0xFF00E5FF), startX, startY, cellPx, blockStyle)
+                        drawBlock(Color(0xFFE040FB), startX + cellPx, startY, cellPx, blockStyle)
+                        drawBlock(Color(0xFFFFD600), startX, startY + cellPx, cellPx, blockStyle)
+                        drawBlock(Color(0xFF00E676), startX + cellPx, startY + cellPx, cellPx, blockStyle)
+                    }
+                }
+                "FRAME" -> {
+                    val frameId = itemId ?: "standard"
+                    val brush = getAvatarFrameBrush(frameId, themeColor, MaterialTheme.colorScheme.secondary)
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF1E2430))
+                            .border(2.5.dp, brush, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.75f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                "SKIN" -> {
+                    val skinId = itemId ?: "cyberpunk"
+                    val gridColor = getBoardSkinGridColor(skinId)
+                    Canvas(modifier = Modifier.size(36.dp)) {
+                        val cols = 4
+                        val rows = 4
+                        val cSize = size.width / cols.toFloat()
+                        for (i in 0..cols) {
+                            val pos = i * cSize
+                            drawLine(gridColor.copy(alpha = 0.45f), Offset(pos, 0f), Offset(pos, size.height), strokeWidth = 1f)
+                            drawLine(gridColor.copy(alpha = 0.45f), Offset(0f, pos), Offset(size.width, pos), strokeWidth = 1f)
+                        }
+                        drawRoundRect(
+                            color = gridColor,
+                            topLeft = Offset(cSize * 1f + 1f, cSize * 2f + 1f),
+                            size = Size(cSize - 2f, cSize - 2f),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f)
+                        )
+                        drawRoundRect(
+                            color = Color(0xFFE040FB),
+                            topLeft = Offset(cSize * 2f + 1f, cSize * 2f + 1f),
+                            size = Size(cSize - 2f, cSize - 2f),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f)
+                        )
+                    }
+                }
+                "BUTTON" -> {
+                    val btnStyle = itemId ?: "classic"
+                    val bgBrush = getControlBtnStyleBrush(btnStyle)
+                    val border = getControlBtnBorderStroke(btnStyle)
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(bgBrush)
+                            .border(border, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDownward,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                "RANK" -> {
+                    val rankId = itemId ?: "BRONZE"
+                    val (c1, _, rankIcon) = getRankColors(rankId)
+                    val rankGrad = Brush.radialGradient(listOf(c1.copy(alpha = 0.35f), Color.Transparent))
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(rankGrad, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = rankIcon,
+                            contentDescription = null,
+                            tint = c1,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                "TITLE" -> {
+                    val titleId = itemId ?: "none"
+                    val (tagCol, tagIcon) = when (titleId) {
+                        "node" -> Pair(Color(0xFF00E5FF), Icons.Default.Hub)
+                        "lord" -> Pair(Color(0xFFFFD700), Icons.Default.Shield)
+                        "cosmic_overlord" -> Pair(Color(0xFFD500F9), Icons.Default.Public)
+                        "ai_consensus" -> Pair(Color(0xFF00FF66), Icons.Default.SmartToy)
+                        else -> Pair(Color.Gray, Icons.Default.Close)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(tagCol.copy(alpha = 0.16f))
+                            .border(1.dp, tagCol.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = tagIcon,
+                            contentDescription = null,
+                            tint = tagCol,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                "MODE" -> {
+                    val modeId = itemId ?: "classic"
+                    val (gradColors, modeIcon) = getModeVisuals(modeId)
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(Brush.linearGradient(gradColors))
+                            .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = modeIcon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                "PRESTIGE" -> {
+                    val pNum = when (itemId) {
+                        "prestige_1" -> "I"
+                        "prestige_2" -> "II"
+                        "prestige_3" -> "III"
+                        else -> "★"
+                    }
+                    val mult = when (itemId) {
+                        "prestige_1" -> "x2"
+                        "prestige_2" -> "x4"
+                        "prestige_3" -> "x8"
+                        else -> ""
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = pNum,
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp
+                            ),
+                            color = Color(0xFFFFD700)
+                        )
+                        if (mult.isNotEmpty()) {
+                            Text(
+                                text = mult,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 8.5.sp
+                                ),
+                                color = Color(0xFFFF5252)
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    Icon(
+                        imageVector = fallbackIcon,
+                        contentDescription = null,
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else rarityColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StoreItemInspectDialog(
+    data: StoreItemInspectData,
+    currentLang: Language,
+    themeColor: Color,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = data.category.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = data.rarity.color.copy(alpha = 0.18f)
+                    ) {
+                        Text(
+                            text = data.rarity.getLocalizedName(currentLang).uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                            color = data.rarity.color,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = data.title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFF090D14),
+                    border = BorderStroke(1.5.dp, data.rarity.color.copy(alpha = 0.5f))
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (data.itemType.uppercase()) {
+                            "BLOCK" -> {
+                                Canvas(modifier = Modifier.size(96.dp)) {
+                                    val cell = size.width / 4.4f
+                                    val tColor = Color(0xFFE040FB)
+                                    drawBlock(tColor, cell * 0.2f, cell * 0.2f, cell, data.itemId)
+                                    drawBlock(tColor, cell * 1.2f, cell * 0.2f, cell, data.itemId)
+                                    drawBlock(tColor, cell * 2.2f, cell * 0.2f, cell, data.itemId)
+                                    drawBlock(tColor, cell * 1.2f, cell * 1.2f, cell, data.itemId)
+
+                                    val oColor = Color(0xFFFFD600)
+                                    drawBlock(oColor, cell * 2.2f, cell * 2.2f, cell, data.itemId)
+                                    drawBlock(oColor, cell * 3.2f, cell * 2.2f, cell, data.itemId)
+                                    drawBlock(oColor, cell * 2.2f, cell * 3.2f, cell, data.itemId)
+                                    drawBlock(oColor, cell * 3.2f, cell * 3.2f, cell, data.itemId)
+
+                                    val iColor = Color(0xFF00E5FF)
+                                    drawBlock(iColor, cell * 0.2f, cell * 2.4f, cell, data.itemId)
+                                    drawBlock(iColor, cell * 0.2f, cell * 3.4f, cell, data.itemId)
+                                }
+                            }
+                            "FRAME" -> {
+                                val brush = getAvatarFrameBrush(data.itemId, themeColor, MaterialTheme.colorScheme.secondary)
+                                Box(
+                                    modifier = Modifier
+                                        .size(86.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF1B2230))
+                                        .border(4.dp, brush, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.85f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                }
+                            }
+                            "SKIN" -> {
+                                val gridColor = getBoardSkinGridColor(data.itemId)
+                                Canvas(modifier = Modifier.size(110.dp)) {
+                                    val cols = 6
+                                    val rows = 6
+                                    val cell = size.width / cols
+                                    for (i in 0..cols) {
+                                        val p = i * cell
+                                        drawLine(gridColor.copy(alpha = 0.45f), Offset(p, 0f), Offset(p, size.height), strokeWidth = 1.2f)
+                                        drawLine(gridColor.copy(alpha = 0.45f), Offset(0f, p), Offset(size.width, p), strokeWidth = 1.2f)
+                                    }
+                                    val colors = listOf(Color(0xFF00E5FF), Color(0xFFE040FB), Color(0xFFFFD600), Color(0xFF00E676))
+                                    for (c in 1..4) {
+                                        drawRoundRect(
+                                            color = colors[c - 1],
+                                            topLeft = Offset(c * cell + 1f, 4 * cell + 1f),
+                                            size = Size(cell - 2f, cell - 2f),
+                                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
+                                        )
+                                    }
+                                }
+                            }
+                            "BUTTON" -> {
+                                var demoPressed by remember { mutableStateOf(false) }
+                                val bgBrush = getControlBtnStyleBrush(data.itemId)
+                                val border = getControlBtnBorderStroke(data.itemId)
+                                Surface(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clickable { demoPressed = !demoPressed },
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = Color.Transparent,
+                                    border = border
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(bgBrush),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDownward,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            "RANK" -> {
+                                val (c1, _, rankIcon) = getRankColors(data.itemId)
+                                val rankGrad = Brush.radialGradient(listOf(c1.copy(alpha = 0.4f), Color.Transparent))
+                                Box(
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .background(rankGrad, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = rankIcon,
+                                        contentDescription = null,
+                                        tint = c1,
+                                        modifier = Modifier.size(54.dp)
+                                    )
+                                }
+                            }
+                            "TITLE" -> {
+                                val (tagCol, tagIcon) = when (data.itemId) {
+                                    "node" -> Pair(Color(0xFF00E5FF), Icons.Default.Hub)
+                                    "lord" -> Pair(Color(0xFFFFD700), Icons.Default.Shield)
+                                    "cosmic_overlord" -> Pair(Color(0xFFD500F9), Icons.Default.Public)
+                                    "ai_consensus" -> Pair(Color(0xFF00FF66), Icons.Default.SmartToy)
+                                    else -> Pair(Color.Gray, Icons.Default.Close)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = tagCol.copy(alpha = 0.18f),
+                                    border = BorderStroke(1.5.dp, tagCol.copy(alpha = 0.75f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(tagIcon, contentDescription = null, tint = tagCol, modifier = Modifier.size(24.dp))
+                                        Text(
+                                            text = data.title.uppercase(),
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                                            color = tagCol
+                                        )
+                                    }
+                                }
+                            }
+                            "MODE" -> {
+                                val (gradColors, modeIcon) = getModeVisuals(data.itemId)
+                                Box(
+                                    modifier = Modifier
+                                        .size(72.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Brush.linearGradient(gradColors))
+                                        .border(1.5.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(18.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = modeIcon,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                            }
+                            "PRESTIGE" -> {
+                                val pNum = when (data.itemId) {
+                                    "prestige_1" -> "I"
+                                    "prestige_2" -> "II"
+                                    "prestige_3" -> "III"
+                                    else -> "★"
+                                }
+                                val pMult = when (data.itemId) {
+                                    "prestige_1" -> "x2"
+                                    "prestige_2" -> "x4"
+                                    "prestige_3" -> "x8"
+                                    else -> ""
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = pNum,
+                                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+                                        color = Color(0xFFFFD700)
+                                    )
+                                    Text(
+                                        text = pMult,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color(0xFFFF5252)
+                                    )
+                                }
+                            }
+                            else -> {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = data.rarity.color,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Text(
+                    text = data.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+
+                if (data.cost > 0 && !data.isOwned) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "${data.cost} 🪙",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                                color = Color(0xFFFFD700)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+                    data.onAction()
+                },
+                enabled = !data.isLocked,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (data.isActive) MaterialTheme.colorScheme.primaryContainer
+                                     else MaterialTheme.colorScheme.primary,
+                    contentColor = if (data.isActive) MaterialTheme.colorScheme.onPrimaryContainer
+                                    else MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                val actionBtnText = when {
+                    data.isActive -> when (currentLang) {
+                        Language.RU -> "АКТИВНО"
+                        Language.UA -> "АКТИВНО"
+                        Language.KK -> "БЕЛСЕНДІ"
+                        Language.DE -> "AKTIV"
+                        Language.ZH -> "已启用"
+                        else -> "ACTIVE"
+                    }
+                    data.isOwned -> when (currentLang) {
+                        Language.RU -> "ВЫБРАТЬ"
+                        Language.UA -> "ОБРАТИ"
+                        Language.KK -> "ТАҢДАУ"
+                        Language.DE -> "WÄHLEN"
+                        Language.ZH -> "选择"
+                        else -> "EQUIP"
+                    }
+                    data.isLocked -> when (currentLang) {
+                        Language.RU -> "НЕДОСТУПНО"
+                        Language.UA -> "НЕДОСТУПНО"
+                        Language.KK -> "ҚОЛЖЕТІМСІЗ"
+                        Language.DE -> "GESPERRT"
+                        Language.ZH -> "锁定"
+                        else -> "LOCKED"
+                    }
+                    else -> when (currentLang) {
+                        Language.RU -> "РАЗБЛОКИРОВАТЬ"
+                        Language.UA -> "РОЗБЛОКУВАТИ"
+                        Language.KK -> "АШУ"
+                        Language.DE -> "KAUFEN"
+                        Language.ZH -> "解锁"
+                        else -> "UNLOCK"
+                    }
+                }
+                Text(actionBtnText, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(Translations.get("back", currentLang), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
 @Composable
 private fun StoreItemCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -5071,6 +5825,10 @@ private fun StoreItemCard(
     currentLang: Language,
     isLocked: Boolean = false,
     rarity: DropRarity? = null,
+    itemType: String? = null,
+    itemId: String? = null,
+    isSquare: Boolean = true,
+    onInspect: (() -> Unit)? = null,
     onAction: () -> Unit
 ) {
     val effectiveRarity = rarity ?: when {
@@ -5084,8 +5842,7 @@ private fun StoreItemCard(
     val rarityColor = effectiveRarity.color
 
     ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = (if (isSquare) Modifier.fillMaxWidth().height(172.dp) else Modifier.fillMaxWidth())
             .then(
                 if (isActive) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
                 else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
@@ -5101,42 +5858,52 @@ private fun StoreItemCard(
         )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = (if (isSquare) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
+                .padding(11.dp),
+            verticalArrangement = if (isSquare) Arrangement.SpaceBetween else Arrangement.spacedBy(8.dp)
         ) {
-            // Top Row: Icon + Badges
+            // Top Row: Visual Preview + Badges
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            else rarityColor.copy(alpha = 0.12f),
-                    border = if (isActive) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)) else null,
-                    tonalElevation = 1.dp
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = if (isActive) MaterialTheme.colorScheme.primary else rarityColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                StoreItemVisualPreview(
+                    itemType = itemType,
+                    itemId = itemId,
+                    fallbackIcon = icon,
+                    rarityColor = rarityColor,
+                    isActive = isActive,
+                    modifier = Modifier.size(42.dp),
+                    onInspectClick = onInspect
+                )
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (onInspect != null) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable { onInspect() }
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = "Inspect",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+
                     if (isActive) {
                         Surface(
                             shape = CircleShape,
@@ -5175,29 +5942,88 @@ private fun StoreItemCard(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
+                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 12.5.sp),
                     fontWeight = FontWeight.ExtraBold,
                     color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
+                    minLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = description,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
+                    minLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
-            // Bottom: Purchase Button (Only shown if NOT owned / NOT active)
+            // Bottom: Action Button / Status (Consistent 32.dp height on ALL cards)
             val isRank = category.equals("Rank", ignoreCase = true) || 
                          category.equals("Ранг", ignoreCase = true) ||
                          category.equals("Rang", ignoreCase = true) ||
                          category.equals("段位", ignoreCase = true)
 
-            if (!isOwned && !isActive && !(isRank && isOwned)) {
+            if (isActive) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth().height(32.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = when (currentLang) {
+                                Language.RU -> "АКТИВНО"
+                                Language.UA -> "АКТИВНО"
+                                Language.KK -> "БЕЛСЕНДІ"
+                                Language.DE -> "AKTIV"
+                                Language.ZH -> "已启用"
+                                else -> "ACTIVE"
+                            },
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            } else if (isOwned && !isRank) {
+                val ownedLabel = if (itemType == "MODE") {
+                    when (currentLang) {
+                        Language.RU -> "РАЗБЛОКИРОВАНО"
+                        Language.UA -> "РОЗБЛОКОВАНО"
+                        Language.KK -> "АШЫЛҒАН"
+                        Language.DE -> "FREIGESCHALTET"
+                        Language.ZH -> "已解锁"
+                        else -> "UNLOCKED"
+                    }
+                } else {
+                    when (currentLang) {
+                        Language.RU -> "ВЫБРАТЬ"
+                        Language.UA -> "ОБРАТИ"
+                        Language.KK -> "ТАҢДАУ"
+                        Language.DE -> "WÄHLEN"
+                        Language.ZH -> "选择"
+                        else -> "EQUIP"
+                    }
+                }
+                OutlinedButton(
+                    onClick = onAction,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = ownedLabel,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            } else {
                 val buttonEnabled = when {
                     isRank -> !isOwned
                     else -> !isLocked
@@ -5213,8 +6039,8 @@ private fun StoreItemCard(
                 Button(
                     onClick = onAction,
                     enabled = buttonEnabled,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(34.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(32.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainerHighest
@@ -5224,8 +6050,15 @@ private fun StoreItemCard(
                     )
                 ) {
                     Text(
-                        text = if (isLocked) lockBtnText else "$cost 🪙",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        text = if (isLocked) lockBtnText else if (cost <= 0) (when (currentLang) {
+                            Language.RU -> "БЕСПЛАТНО"
+                            Language.UA -> "БЕЗКОШТОВНО"
+                            Language.KK -> "ТЕГІН"
+                            Language.DE -> "GRATIS"
+                            Language.ZH -> "免费"
+                            else -> "FREE"
+                        }) else "$cost 🪙",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                         fontWeight = FontWeight.ExtraBold
                     )
                 }

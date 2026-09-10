@@ -7195,34 +7195,6 @@ fun ModeSelectionScreen(
             ShopPrices.getModeCost("relax"), Icons.Default.Spa, "FREE"
         ),
         ModeInfo(
-            com.example.game.GameMode.SCULPTOR, "sculptor",
-            when (currentLang) {
-                Language.RU -> "Скульптор"
-                Language.UA -> "Скульптор"
-                Language.KK -> "Мүсінші"
-                Language.DE -> "Bildhauer"
-                Language.ZH -> "雕刻大师"
-                else -> "Sculptor"
-            },
-            when (currentLang) {
-                Language.RU -> "Высекайте форму, очищая ненужные блоки."
-                Language.UA -> "Висікайте форму, очищаючи непотрібні блоки."
-                Language.KK -> "Қажет емес блоктарды тазарту арқылы пішінді жасаңыз."
-                Language.DE -> "Meißle die Zielform heraus durch gezieltes Linienlöschen."
-                Language.ZH -> "消除多余方块，雕刻出完美目标造型。"
-                else -> "Carve out the target shape by clearing surrounding rows."
-            },
-            when (currentLang) {
-                Language.RU -> "На поле уже размещена заготовка. Очищайте линии вокруг, чтобы освободить скрытую скульптуру!"
-                Language.UA -> "На полі вже розміщена заготовка. Очищайте лінії навколо, щоб звільнити приховану скульптуру!"
-                Language.KK -> "Өрісте дайындама орналасқан. Жасырын мүсінді босату үшін айналасындағы сызықтарды тазартыңыз!"
-                Language.DE -> "Ein Block-Monolith ist vorgegeben. Lösche gezielt Reihen, um die Skulptur freizulegen!"
-                Language.ZH -> "棋盘初始被杂乱方块填满。通过策略性消除横行剥离多余方块，完整雕琢出隐藏的目标雕塑！"
-                else -> "A pre-filled block structure is given. Clear specific rows to reveal and carve the hidden shape!"
-            },
-            ShopPrices.getModeCost("sculptor"), Icons.Default.Palette, "HARD"
-        ),
-        ModeInfo(
             com.example.game.GameMode.PERFECTIONIST, "perfectionist",
             when (currentLang) {
                 Language.RU -> "Идеал"
@@ -8166,55 +8138,11 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
 @Composable
 fun GoogleLogoIcon(modifier: Modifier = Modifier.size(20.dp)) {
-    androidx.compose.foundation.Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cx = w / 2f
-        val cy = h / 2f
-        val radius = w * 0.40f
-        val stroke = w * 0.18f
-
-        // Red arc (top)
-        drawArc(
-            color = Color(0xFFEA4335),
-            startAngle = 180f,
-            sweepAngle = 100f,
-            useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-        )
-        // Yellow arc (left / bottom-left)
-        drawArc(
-            color = Color(0xFFFBBC05),
-            startAngle = 120f,
-            sweepAngle = 60f,
-            useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-        )
-        // Green arc (bottom / bottom-right)
-        drawArc(
-            color = Color(0xFF34A853),
-            startAngle = 0f,
-            sweepAngle = 120f,
-            useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-        )
-        // Blue arc (top-right)
-        drawArc(
-            color = Color(0xFF4285F4),
-            startAngle = 280f,
-            sweepAngle = 80f,
-            useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-        )
-        // Blue horizontal crossbar
-        drawLine(
-            color = Color(0xFF4285F4),
-            start = androidx.compose.ui.geometry.Offset(cx - stroke * 0.5f, cy),
-            end = androidx.compose.ui.geometry.Offset(cx + radius + stroke * 0.5f, cy),
-            strokeWidth = stroke,
-            cap = androidx.compose.ui.graphics.StrokeCap.Square
-        )
-    }
+    androidx.compose.foundation.Image(
+        painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_google),
+        contentDescription = "Google Logo",
+        modifier = modifier
+    )
 }
 
 @Composable

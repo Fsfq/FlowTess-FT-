@@ -2547,7 +2547,7 @@ fun LobbyRoomView(
                     ElevatedCard(
                         modifier = Modifier
                             .weight(1f)
-                            .height(168.dp),
+                            .height(182.dp),
                         shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -2816,7 +2816,7 @@ fun RoomPlayerCard(
     isOnline: Boolean = true
 ) {
     ElevatedCard(
-        modifier = modifier.height(168.dp),
+        modifier = modifier.height(182.dp),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh

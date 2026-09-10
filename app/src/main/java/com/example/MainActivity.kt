@@ -44,7 +44,9 @@ class MainActivity : ComponentActivity() {
       val themeName by mainViewModel.themeColor.collectAsStateWithLifecycle()
       val fontKey by mainViewModel.customFontKey.collectAsStateWithLifecycle()
       MyApplicationTheme(themeName = themeName, fontKey = fontKey) {
-        TetrisApp(mainViewModel)
+        com.example.ui.AppPassLockGate {
+          TetrisApp(mainViewModel)
+        }
       }
     }
   }

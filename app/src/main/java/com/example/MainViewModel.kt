@@ -2621,7 +2621,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .putInt("bonus_xp", 50000)
                     .putStringSet("purchased_skins", setOf("cyberpunk", "retro_amber", "emerald_matrix", "vaporwave_pink", "midnight_gold", "carbon_neutral", "plasma_storm", "glacial_frost"))
                     .putStringSet("purchased_cube_skins", setOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"))
-                    .putStringSet("purchased_avatar_frames", setOf("standard", "neon_ae", "gold_ma", "chrono_gl", "omega_ti"))
+                    .putStringSet("purchased_avatar_frames", setOf("standard", "frame_white", "frame_blue", "chrono_gl"))
                     .putStringSet("purchased_sound_packs", setOf("arcade", "synthwave", "cyber_metal", "ai_voice"))
                     .putStringSet("purchased_themes", setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold"))
                     .putStringSet("purchased_fonts", setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin"))
@@ -2629,7 +2629,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .apply()
                 
                 _equippedAvatarFrame.value = "standard"
-                _purchasedAvatarFrames.value = setOf("standard", "neon_frame", "gold_frame", "cyber_frame", "chrono_gl")
+                _purchasedAvatarFrames.value = setOf("standard", "frame_white", "frame_blue", "chrono_gl")
                 _equippedSoundPack.value = "arcade"
                 _purchasedSoundPacks.value = setOf("arcade", "synthwave", "cyber_metal", "ai_voice")
                 _purchasedThemes.value = setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold")
@@ -2787,7 +2787,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun adminGiveAllCosmetics(username: String) {
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         val matchingUser = _firebaseUsers.value.find { (it["player_name"] as? String) == username }
-        val allFrames = setOf("standard", "neon_frame", "gold_frame", "cyber_frame", "chrono_gl")
+        val allFrames = setOf("standard", "frame_white", "frame_blue", "frame_green", "frame_yellow", "frame_orange", "frame_red", "frame_purple", "frame_dark", "chrono_gl")
         val allTitles = setOf("none", "node", "lord", "cosmic_overlord", "ai_consensus")
         val allThemes = ALL_THEMES
         val allFonts = setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin")
@@ -2883,16 +2883,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun placeBlockBlastFigure(idx: Int, r: Int, c: Int): Boolean {
+        var linesClearedCount = 0
         val ok = blockBlastEngine.placeFigure(idx, r, c) { linesCleared ->
+            linesClearedCount = linesCleared
             addCredits(linesCleared * 25)
         }
         if (ok) {
+            if (linesClearedCount > 0) {
+                when (linesClearedCount) {
+                    1 -> triggerAudioFeedback("clear_1")
+                    2 -> triggerAudioFeedback("clear_2")
+                    3 -> triggerAudioFeedback("clear_3")
+                    4 -> triggerAudioFeedback("clear_4")
+                    else -> triggerAudioFeedback("clear")
+                }
+            } else {
+                triggerAudioFeedback("land")
+            }
             val finalScore = blockBlastEngine.state.value.score
             prefs.edit().putInt("block_blast_high_score", blockBlastEngine.state.value.highScore).apply()
             onBlockBlastPlacement(finalScore)
             
             // Tiered gameover coins for Block Blast match completion
             if (blockBlastEngine.state.value.isGameOver) {
+                triggerAudioFeedback("gameover")
                 val basePassCoins = 45
                 val perfCoins = finalScore / 75
                 val modeBonusCoins = 80
@@ -3088,13 +3102,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val maxPScore = maxOf(prefs.getInt("stats_pattern_score", 0), score)
             prefs.edit().putInt("stats_pattern_score", maxPScore).apply()
         }
-        if (mode == com.example.game.GameMode.SCULPTOR) {
-            val sLvl = gameEngine.gameState.value.puzzleLevel
-            val maxSLvl = maxOf(prefs.getInt("stats_sculptor_level", 1), sLvl)
-            prefs.edit().putInt("stats_sculptor_level", maxSLvl).apply()
-            val maxSScore = maxOf(prefs.getInt("stats_sculptor_score", 0), score)
-            prefs.edit().putInt("stats_sculptor_score", maxSScore).apply()
-        }
         saveCurrentProfileToDb()
 
         // Tiered coin reward calculation for playing standard modes
@@ -3108,7 +3115,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 com.example.game.GameMode.EXTENDED, com.example.game.GameMode.FAST_RUN, 
                 com.example.game.GameMode.TIME_ATTACK, com.example.game.GameMode.MIRROR_DIMENSION -> 75
                 com.example.game.GameMode.BLOCK_BLAST, com.example.game.GameMode.SLIDE_PUZZLE -> 90
-                com.example.game.GameMode.PATTERN_PUZZLE, com.example.game.GameMode.MEMORY_PUZZLE, com.example.game.GameMode.SCULPTOR -> 100
+                com.example.game.GameMode.PATTERN_PUZZLE, com.example.game.GameMode.MEMORY_PUZZLE -> 100
                 else -> 25
             }
             val baseTotal = ((basePlayCoins + performanceCoins + linesBonus + tetrisBonus + modeBonus) * 1.25f).toInt()
@@ -3204,280 +3211,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun triggerAudioFeedback(type: String) {
+        // Audio feedback disabled - sounds removed until royalty-free audio is added
         if (!_soundEnabled.value) return
         if (playSoundEffect(type)) return
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            try {
-                val sampleRate = 44100
-                val durationMs = when (type) {
-                    "click" -> 50
-                    "rotate" -> 80
-                    "land" -> 100
-                    "clear" -> 250
-                    "gameover" -> 600
-                    "buy" -> 300
-                    "equip" -> 150
-                    "success" -> 400
-                    "error" -> 350
-                    else -> 50
-                }
-                val numSamples = (durationMs * sampleRate / 1000)
-                val samples = FloatArray(numSamples)
-                val pack = _equippedSoundPack.value
-
-                for (i in 0 until numSamples) {
-                    val t = i.toDouble() / sampleRate
-                    val progress = i.toDouble() / numSamples
-
-                    samples[i] = when (pack) {
-                        "synthwave" -> {
-                            when (type) {
-                                "click" -> {
-                                    val freq = 220.0
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "rotate" -> {
-                                    val freq = 200.0 + (300.0 * Math.sin(Math.PI * progress))
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f
-                                }
-                                "land" -> {
-                                    val freq = 80.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.5f * (1.0f - progress).toFloat()
-                                }
-                                "clear" -> {
-                                    val noteIndex = (progress * 4).toInt().coerceIn(0, 3)
-                                    val freq = when (noteIndex) {
-                                        0 -> 261.63
-                                        1 -> 329.63
-                                        2 -> 392.00
-                                        else -> 493.88
-                                    }
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "gameover" -> {
-                                    val freq = 196.00 * (1.0 - progress * 0.4)
-                                    (Math.sin(2.0 * Math.PI * freq * t) + 0.3 * Math.sin(4.0 * Math.PI * freq * t)).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "buy" -> {
-                                    val freq1 = 880.0
-                                    val freq2 = 1318.51
-                                    (Math.sin(2.0 * Math.PI * freq1 * t) + 0.5 * Math.sin(2.0 * Math.PI * freq2 * t)).toFloat() * 0.3f * (1.0f - progress).toFloat()
-                                }
-                                "equip" -> {
-                                    val freq = 440.0 + 220.0 * progress
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "success" -> {
-                                    val freq = 329.63 + 329.63 * progress
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f
-                                }
-                                "error" -> {
-                                    val carrier = 110.0
-                                    val modulator = 8.0
-                                    val index = 5.0
-                                    Math.sin(2.0 * Math.PI * carrier * t + index * Math.sin(2.0 * Math.PI * modulator * t)).toFloat() * 0.4f
-                                }
-                                else -> Math.sin(2.0 * Math.PI * 300.0 * t).toFloat() * 0.4f
-                            }
-                        }
-                        "cyber_metal" -> {
-                            val noise = (Math.sin(t * 123456.7) * 0.2).toFloat()
-                            when (type) {
-                                "click" -> {
-                                    val saw = ((t * 800.0) % 1.0 * 2.0 - 1.0).toFloat()
-                                    (saw * 0.3f + noise) * (1.0f - progress).toFloat()
-                                }
-                                "rotate" -> {
-                                    val freq = 400.0 - 150.0 * progress
-                                    val saw = ((t * freq) % 1.0 * 2.0 - 1.0).toFloat()
-                                    saw.coerceIn(-0.3f, 0.3f) * 1.5f
-                                }
-                                "land" -> {
-                                    val freq = 90.0
-                                    val saw = ((t * freq) % 1.0 * 2.0 - 1.0).toFloat()
-                                    (saw * 0.4f + noise * 0.6f) * (1.0f - progress).toFloat()
-                                }
-                                "clear" -> {
-                                    val freq1 = 293.66
-                                    val freq2 = 440.00
-                                    val saw1 = ((t * freq1) % 1.0 * 2.0 - 1.0)
-                                    val saw2 = ((t * freq2) % 1.0 * 2.0 - 1.0)
-                                    val mix = (saw1 + saw2).toFloat() * 0.3f + noise * 0.4f
-                                    mix.coerceIn(-0.4f, 0.4f) * 2.2f * (1.0f - progress).toFloat()
-                                }
-                                "gameover" -> {
-                                    val freq = 120.0 - 80.0 * progress
-                                    val saw = ((t * freq) % 1.0 * 2.0 - 1.0).toFloat()
-                                    (saw + noise).coerceIn(-0.4f, 0.4f) * 1.8f * (1.0f - progress).toFloat()
-                                }
-                                "buy" -> {
-                                    val freq = 2000.0 - 1500.0 * progress
-                                    val sq = if (((t * freq) % 1.0) > 0.5) 1.0f else -1.0f
-                                    (sq * 0.2f + noise * 0.8f) * (1.0f - progress).toFloat()
-                                }
-                                "equip" -> {
-                                    val sq = if (((t * 900.0) % 1.0) > 0.5) 0.3f else -0.3f
-                                    (sq + noise * 0.7f) * (1.0f - progress).toFloat()
-                                }
-                                "success" -> {
-                                    val noteIdx = (progress * 3).toInt().coerceIn(0, 2)
-                                    val freq = when (noteIdx) {
-                                        0 -> 196.00
-                                        1 -> 261.63
-                                        else -> 293.66
-                                    }
-                                    val saw = ((t * freq) % 1.0 * 2.0 - 1.0).toFloat()
-                                    saw.coerceIn(-0.4f, 0.4f) * 2.0f
-                                }
-                                "error" -> {
-                                    val saw = ((t * 85.0) % 1.0 * 2.0 - 1.0).toFloat()
-                                    (saw + noise * 0.5f).coerceIn(-0.4f, 0.4f) * 2.0f
-                                }
-                                else -> noise
-                            }
-                        }
-                        "ai_voice" -> {
-                            when (type) {
-                                "click" -> {
-                                    val freq = if (progress < 0.5) 1200.0 else 1800.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.3f * (1.0f - progress).toFloat()
-                                }
-                                "rotate" -> {
-                                    val carrier = 600.0 - 200.0 * progress
-                                    val modulator = 120.0
-                                    val index = 3.0
-                                    Math.sin(2.0 * Math.PI * carrier * t + index * Math.sin(2.0 * Math.PI * modulator * t)).toFloat() * 0.4f
-                                }
-                                "land" -> {
-                                    val carrier = 150.0
-                                    val modulator = 30.0
-                                    val index = 2.0
-                                    Math.sin(2.0 * Math.PI * carrier * t + index * Math.sin(2.0 * Math.PI * modulator * t)).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "clear" -> {
-                                    val carrier = 440.0 + 880.0 * progress
-                                    val modulator = 220.0
-                                    val index = 4.0
-                                    Math.sin(2.0 * Math.PI * carrier * t + index * Math.sin(2.0 * Math.PI * modulator * t)).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "gameover" -> {
-                                    val wave = Math.sin(2.0 * Math.PI * 4.0 * t)
-                                    val carrier = 330.0 + 100.0 * wave
-                                    Math.sin(2.0 * Math.PI * carrier * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "buy" -> {
-                                    val step = (progress * 6).toInt()
-                                    val freq = 800.0 + step * 200.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.3f
-                                }
-                                "equip" -> {
-                                    val freq = 1500.0 - 1000.0 * progress
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "success" -> {
-                                    val step = (progress * 3).toInt()
-                                    val freq = when (step) {
-                                        0 -> 523.25
-                                        1 -> 659.25
-                                        else -> 1046.50
-                                    }
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f
-                                }
-                                "error" -> {
-                                    val step = (progress * 2).toInt()
-                                    val freq = if (step == 0) 220.0 else 180.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.4f
-                                }
-                                else -> Math.sin(2.0 * Math.PI * 800.0 * t).toFloat() * 0.3f
-                            }
-                        }
-                        else -> {
-                            when (type) {
-                                "click" -> {
-                                    val freq = 400.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.5f
-                                }
-                                "rotate" -> {
-                                    val freq = 300.0 + (500.0 * progress)
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.5f
-                                }
-                                "land" -> {
-                                    val freq = 120.0
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.6f * (1.0f - progress).toFloat()
-                                }
-                                "clear" -> {
-                                    val freq1 = 600.0 - (300.0 * progress)
-                                    val freq2 = 800.0 - (400.0 * progress)
-                                    (Math.sin(2.0 * Math.PI * freq1 * t) + Math.sin(2.0 * Math.PI * freq2 * t)).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "gameover" -> {
-                                    val freq = 220.0 * Math.pow(2.0, -1.0 * progress)
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.5f * (1.1f - progress).toFloat()
-                                }
-                                "buy" -> {
-                                    val step = (progress * 2).toInt()
-                                    val freq = if (step == 0) 987.77 else 1318.51
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "equip" -> {
-                                    val freq = 659.25 + 329.63 * progress
-                                    kotlin.math.sin(2.0 * kotlin.math.PI * freq * t).toFloat() * 0.4f * (1.0f - progress).toFloat()
-                                }
-                                "success" -> {
-                                    val noteIndex = (progress * 4).toInt().coerceIn(0, 3)
-                                    val freq = when (noteIndex) {
-                                        0 -> 523.25
-                                        1 -> 659.25
-                                        2 -> 783.99
-                                        else -> 1046.50
-                                    }
-                                    Math.sin(2.0 * Math.PI * freq * t).toFloat() * 0.5f
-                                }
-                                "error" -> {
-                                    val freq = 130.0
-                                    val sq = if (((t * freq) % 1.0) > 0.5) 0.4f else -0.4f
-                                    sq * (1.0f - progress).toFloat()
-                                }
-                                else -> {
-                                    Math.sin(2.0 * Math.PI * 440.0 * t).toFloat() * 0.5f
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val buffer = ShortArray(numSamples)
-                for (i in 0 until numSamples) {
-                    buffer[i] = (samples[i].coerceIn(-1.0f, 1.0f) * 32767.0).toInt().toShort()
-                }
-
-                val audioTrack = android.media.AudioTrack.Builder()
-                    .setAudioAttributes(
-                        android.media.AudioAttributes.Builder()
-                            .setUsage(android.media.AudioAttributes.USAGE_GAME)
-                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                    .setAudioFormat(
-                        android.media.AudioFormat.Builder()
-                            .setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
-                            .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO)
-                            .build()
-                    )
-                    .setBufferSizeInBytes(numSamples * 2)
-                    .setTransferMode(android.media.AudioTrack.MODE_STATIC)
-                    .build()
-
-                audioTrack.write(buffer, 0, numSamples)
-                audioTrack.play()
-                delay(durationMs.toLong() + 50)
-                audioTrack.stop()
-                audioTrack.release()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
     }
 
     fun triggerLocalVibration(type: String) {
@@ -3535,38 +3271,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun initSoundPool() {
-        val context = getApplication<Application>()
-        val attributes = android.media.AudioAttributes.Builder()
-            .setUsage(android.media.AudioAttributes.USAGE_GAME)
-            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        soundPool = android.media.SoundPool.Builder()
-            .setMaxStreams(5)
-            .setAudioAttributes(attributes)
-            .build()
-
-        soundPool?.let { pool ->
-            val defaultBtnId = pool.load(context, R.raw.default_button, 1)
-            soundMap["click"] = defaultBtnId
-            soundMap["tap"] = defaultBtnId
-            soundMap["buy"] = pool.load(context, R.raw.buy_button, 1)
-            soundMap["equip"] = pool.load(context, R.raw.button_on_off, 1)
-            soundMap["error"] = pool.load(context, R.raw.error_no_money, 1)
-            soundMap["gameover"] = pool.load(context, R.raw.fail, 1)
-            soundMap["case_spin"] = pool.load(context, R.raw.case_spin, 1)
-            soundMap["selling"] = pool.load(context, R.raw.selling_item, 1)
-            soundMap["online_ready"] = pool.load(context, R.raw.online_readiness, 1)
-            soundMap["clear_1"] = pool.load(context, R.raw.one_line, 1)
-            soundMap["clear_2"] = pool.load(context, R.raw.two_line, 1)
-            soundMap["clear_3"] = pool.load(context, R.raw.three_line, 1)
-            soundMap["clear_4"] = pool.load(context, R.raw.four_line, 1)
-            soundMap["drop_common"] = pool.load(context, R.raw.drop_common_item, 1)
-            soundMap["drop_uncommon"] = pool.load(context, R.raw.drop_uncommon_item, 1)
-            soundMap["drop_rare"] = pool.load(context, R.raw.drop_rare_item, 1)
-            soundMap["drop_epic"] = pool.load(context, R.raw.drop_epic_item, 1)
-            soundMap["drop_legendary"] = pool.load(context, R.raw.drop_legendary_item, 1)
-            soundMap["drop_red"] = pool.load(context, R.raw.drop_red_item, 1)
-        }
+        // Audio resources removed - will be reloaded when non-copyrighted sounds are added
+        soundMap.clear()
     }
 
     private fun playSoundEffect(type: String): Boolean {
@@ -3577,28 +3283,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startLobbyMusic() {
-        if (!_soundEnabled.value || !_lobbyMusicEnabled.value || _isPlaying.value) {
-            stopLobbyMusic()
-            return
-        }
-        if (lobbyMusicPlayer == null) {
-            try {
-                lobbyMusicPlayer = android.media.MediaPlayer.create(getApplication(), R.raw.main_menu_ft).apply {
-                    isLooping = true
-                    val vol = _lobbyMusicVolume.value
-                    setVolume(vol, vol)
-                    start()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        } else if (lobbyMusicPlayer?.isPlaying == false) {
-            try {
-                lobbyMusicPlayer?.start()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        // Lobby music removed until non-copyrighted music is provided
     }
 
     private fun stopLobbyMusic() {
