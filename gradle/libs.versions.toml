@@ -42,6 +42,7 @@ googleServices = "4.4.2"
 playServicesAuth = "21.0.0"
 profileinstaller = "1.4.1"
 securityCrypto = "1.1.0-alpha06"
+yandexMobileAds = "8.4.0"
 
 [libraries]
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
@@ -98,6 +99,7 @@ firebase-database = { group = "com.google.firebase", name = "firebase-database" 
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+yandex-mobileads = { group = "com.yandex.android", name = "mobileads", version.ref = "yandexMobileAds" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

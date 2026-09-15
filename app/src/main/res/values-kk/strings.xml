@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Тетрис</string>
+    <string name="app_name">FlowTess</string>
     <string name="play">Ойнау</string>
     <string name="multiplayer">Көп ойыншы (Демо)</string>
     <string name="leaderboard">Рекордтар</string>

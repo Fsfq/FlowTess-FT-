@@ -13,12 +13,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && (
         request.auth.uid == 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' ||
-        (request.auth.token.email != null && (
-          request.auth.token.email == 'ezik02021@gmail.com' || 
-          request.auth.token.email == 'eziko04@gmail.com'
-        )) ||
-        (resource != null && 'player_name' in resource.data && resource.data.player_name == 'FsFq') ||
-        (resource != null && 'is_admin' in resource.data && resource.data.is_admin == true)
+        (request.auth.token.email != null && request.auth.token.email_verified == true && request.auth.token.email == 'ezik02021@gmail.com')
       );
     }
 
@@ -39,8 +34,20 @@ service cloud.firestore {
     // ════════════════════════════════════════════════
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
+      allow create: if (isOwner(userId)
+                        && (!('is_admin' in request.resource.data) || request.resource.data.is_admin != true)
+                        && (!('player_name' in request.resource.data) || !request.resource.data.player_name.matches('.*(?i)(fsfq|admin|administrator).*'))
+                        && (!('app_version_code' in request.resource.data) || request.resource.data.app_version_code >= 15)
+                       ) || isAdmin();
+      allow update: if (isOwner(userId)
+                        && (!('is_admin' in request.resource.data) || request.resource.data.is_admin != true)
+                        && (!('is_banned' in request.resource.data) || request.resource.data.is_banned == resource.data.is_banned)
+                        && (!('player_name' in request.resource.data) || !request.resource.data.player_name.matches('.*(?i)(fsfq|admin|administrator).*'))
+                        && (!('app_version_code' in request.resource.data) || (
+                              request.resource.data.app_version_code >= 15 &&
+                              (!('app_version_code' in resource.data) || request.resource.data.app_version_code >= resource.data.app_version_code)
+                           ))
+                       ) || isAdmin();
       allow delete: if isAdmin();
 
       // Подколлекция друзей: users/{userId}/friends/{friendId}
@@ -61,11 +68,18 @@ service cloud.firestore {
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.playerName is string
                     && request.resource.data.playerName.size() >= 1
-                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score));
+                    && (!request.resource.data.playerName.matches('.*(?i)(fsfq|admin|administrator).*') || isAdmin())
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score))
+                    && (!('app_version_code' in request.resource.data) || request.resource.data.app_version_code >= 15);
 
       allow update: if (isOwner(scoreId)
                     && (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid)
-                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score)))
+                    && (!('playerName' in request.resource.data) || !request.resource.data.playerName.matches('.*(?i)(fsfq|admin|administrator).*') || isAdmin())
+                    && (!('score' in request.resource.data) || isValidScore(request.resource.data.score))
+                    && (!('app_version_code' in request.resource.data) || (
+                          request.resource.data.app_version_code >= 15 &&
+                          (!('app_version_code' in resource.data) || request.resource.data.app_version_code >= resource.data.app_version_code)
+                       )))
                     || isAdmin();
 
       allow delete: if isOwner(scoreId) || isAdmin();
@@ -79,10 +93,13 @@ service cloud.firestore {
                     && request.resource.data.keys().hasAll(['uid', 'playerName', 'timestamp'])
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.playerName is string
+                    && request.resource.data.playerName.size() >= 1
+                    && (!request.resource.data.playerName.matches('.*(?i)(fsfq|admin|administrator).*') || isAdmin())
                     && (!('score' in request.resource.data) || isValidScore(request.resource.data.score));
 
       allow update: if (isOwner(scoreId)
                     && (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid)
+                    && (!('playerName' in request.resource.data) || !request.resource.data.playerName.matches('.*(?i)(fsfq|admin|administrator).*') || isAdmin())
                     && (!('score' in request.resource.data) || isValidScore(request.resource.data.score)))
                     || isAdmin();
 
@@ -159,6 +176,20 @@ service cloud.firestore {
     match /system_config/{configId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // 🏷️ NICKNAMES — уникальная привязка никнейма к аккаунту и почте
+    match /nicknames/{nickLower} {
+      allow read: if true;
+      allow create: if isVerifiedUser()
+                    && (!nickLower.matches('.*(?i)(fsfq|admin|administrator).*') || isAdmin())
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.nick_lower == nickLower;
+      allow update: if isVerifiedUser()
+                    && (resource.data.uid == request.auth.uid || isAdmin())
+                    && request.resource.data.uid == resource.data.uid;
+      allow delete: if isVerifiedUser()
+                    && (resource.data.uid == request.auth.uid || isAdmin());
     }
 
     // Запрет на любые другие коллекции

@@ -98,7 +98,7 @@ object FirebaseSync {
             "purchased_modes" to (profilePrefs.getStringSet("purchased_modes", setOf("classic"))?.toList() ?: listOf("classic")),
             "purchased_ranks" to (profilePrefs.getStringSet("purchased_ranks", setOf("BRONZE"))?.toList() ?: listOf("BRONZE")),
             "board_color_skin" to (tetrisPrefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk"),
-            "block_style" to (tetrisPrefs.getString("block_style", "glass") ?: "glass"),
+            "block_style" to (tetrisPrefs.getString("block_style", "material") ?: "material"),
             "has_nickname_gradient" to profilePrefs.getBoolean("has_nickname_gradient", false),
             "bonus_xp" to profilePrefs.getInt("bonus_xp", 0),
             "prestige_level" to profilePrefs.getInt("prestige_level", 0),
@@ -116,6 +116,7 @@ object FirebaseSync {
             "unlocked_achievements" to unlockedAchievements,
             "last_synced_timestamp" to System.currentTimeMillis(),
             "is_online" to true,
+            "app_version_code" to com.example.BuildConfig.VERSION_CODE,
             
             // Настройки UI/игры
             "setting_lang_code" to (tetrisPrefs.getString("lang_code", "en") ?: "en"),
@@ -162,8 +163,18 @@ object FirebaseSync {
 
         data["custom_avatar_base64"] = avatarBase64 ?: ""
         data["custom_background_base64"] = bgBase64 ?: ""
-        if (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || user.email == "ezik02021@gmail.com" || user.email == "eziko04@gmail.com" || playerName == "FsFq") {
+        val isTrueAdmin = (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
+            (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com"))
+
+        if (isTrueAdmin) {
             data["is_admin"] = true
+        } else {
+            data["is_admin"] = false
+            val pNameLower = playerName.lowercase()
+            if (pNameLower.contains("fsfq") || pNameLower.contains("admin") || pNameLower.contains("админ")) {
+                data["player_name"] = "Player 1"
+                tetrisPrefs.edit().putString("player_name", "Player 1").apply()
+            }
         }
 
         firestore.collection("users").document(user.uid).set(data, SetOptions.merge())
@@ -209,6 +220,15 @@ object FirebaseSync {
                     editorProfile.putBoolean("is_email_verified", true)
                 }
 
+                val cloudVerCode = (data["app_version_code"] as? Number)?.toInt() ?: 0
+                if (cloudVerCode > 0) {
+                    val secPrefs = context.getSharedPreferences("app_security_gate_prefs", Context.MODE_PRIVATE)
+                    val localHighest = secPrefs.getInt("highest_seen_version_code", 0)
+                    if (cloudVerCode > localHighest) {
+                        secPrefs.edit().putInt("highest_seen_version_code", cloudVerCode).apply()
+                    }
+                }
+
                 (data["equipped_avatar_frame"] as? String)?.let { editorProfile.putString("equipped_avatar_frame", it) }
                 val localFrames = profilePrefs.getStringSet("purchased_avatar_frames", setOf("standard")) ?: setOf("standard")
                 val cloudFrames = (data["purchased_avatar_frames"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
@@ -236,8 +256,16 @@ object FirebaseSync {
                 val cloudBtnStyles = (data["purchased_control_button_styles"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()
                 editorProfile.putStringSet("purchased_control_button_styles", localBtnStyles + cloudBtnStyles)
 
-                val resolvedName = (data["player_name"] as? String) ?: tetrisPrefs.getString("player_name", "Player 1") ?: "Player 1"
-                (data["player_name"] as? String)?.let { editorTetris.putString("player_name", it) }
+                var resolvedName = (data["player_name"] as? String) ?: tetrisPrefs.getString("player_name", "Player 1") ?: "Player 1"
+                val isPullAdmin = (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
+                    (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com"))
+                if (!isPullAdmin) {
+                    val rLower = resolvedName.lowercase()
+                    if (rLower.contains("fsfq") || rLower.contains("admin") || rLower.contains("админ")) {
+                        resolvedName = "Player 1"
+                    }
+                }
+                editorTetris.putString("player_name", resolvedName)
 
                 if (data.containsKey("custom_avatar_base64")) {
                     val base64 = data["custom_avatar_base64"] as? String

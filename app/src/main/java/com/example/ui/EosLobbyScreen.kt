@@ -96,10 +96,50 @@ fun EosLobbyScreen(
         }
     }
 
+    var showLeavePenaltyDialog by remember { mutableStateOf(false) }
+
+    fun executeLeaveEosRoom() {
+        val penalized = viewModel.recordRoomExitAndApplyPenaltyIfNeeded()
+        if (penalized) {
+            showLeavePenaltyDialog = true
+        }
+        EosManager.leaveRoom()
+    }
+
+    if (showLeavePenaltyDialog) {
+        val penTitle = when (currentLang) {
+            Language.RU -> "Штраф за частые выходы!"
+            Language.UA -> "Штраф за часті виходи!"
+            Language.KK -> "Жиі шығу үшін айыппұл!"
+            Language.DE -> "Strafe für häufiges Verlassen!"
+            Language.ZH -> "频繁退出房间惩罚"
+            else -> "Room Leaver Penalty!"
+        }
+        val penDesc = when (currentLang) {
+            Language.RU -> "Вы покинули комнаты более 3 раз за последний час. С вашего баланса списан штраф 100 монет за срыв подбора игроков."
+            Language.UA -> "Ви залишили кімнати більше 3 разів за останню годину. З вашого балансу списано штраф 100 монет за зрив підбору гравців."
+            Language.KK -> "Сіз соңғы бір сағатта бөлмеден 3 реттен көп шықтыңыз. Балансыңыздан 100 монета айыппұл ұсталды."
+            Language.DE -> "Du hast Räume mehr als 3 Mal in der letzten Stunde verlassen. 100 Münzen Strafe wurden abgezogen."
+            Language.ZH -> "您在最近1小时内退出房间超过3次。因影响正常联机匹配，系统已扣除 100 金币惩罚。"
+            else -> "You left rooms more than 3 times within an hour. A 100 coin penalty was deducted from your balance."
+        }
+        AlertDialog(
+            onDismissRequest = { showLeavePenaltyDialog = false },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(penTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(penDesc, style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = {
+                Button(onClick = { showLeavePenaltyDialog = false }) {
+                    Text("OK", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     // Back handler
     BackHandler {
         if (currentRoom != null) {
-            EosManager.leaveRoom()
+            executeLeaveEosRoom()
         } else {
             onBack()
         }
@@ -143,7 +183,7 @@ fun EosLobbyScreen(
                             viewModel.triggerAudioFeedback("click")
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             if (currentRoom != null) {
-                                EosManager.leaveRoom()
+                                executeLeaveEosRoom()
                             } else {
                                 onBack()
                             }
@@ -174,9 +214,11 @@ fun EosLobbyScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(
-                                text = "🪙",
-                                fontSize = 12.sp
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(15.dp)
                             )
                             Text(
                                 text = "$localCredits",
@@ -202,7 +244,8 @@ fun EosLobbyScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .imePadding(),
             contentAlignment = Alignment.TopCenter
         ) {
             if (currentRoom != null) {
@@ -481,6 +524,7 @@ private fun EosRoomsListTab(
     viewModel: MainViewModel
 ) {
     val haptic = LocalHapticFeedback.current
+    val localCredits by viewModel.credits.collectAsStateWithLifecycle()
     val filteredRooms = remember(rooms, searchQuery) {
         if (searchQuery.isBlank()) rooms
         else rooms.filter { it.name.contains(searchQuery, ignoreCase = true) || it.id.contains(searchQuery, ignoreCase = true) }
@@ -609,13 +653,24 @@ private fun EosRoomsListTab(
                                             shape = RoundedCornerShape(6.dp),
                                             color = Color(0xFFFFD700).copy(alpha = 0.18f)
                                         ) {
-                                            Text(
-                                                text = "🪙 ${room.bet}",
-                                                color = Color(0xFFFFD700),
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 10.sp,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                            )
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MonetizationOn,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFD700),
+                                                    modifier = Modifier.size(11.dp)
+                                                )
+                                                Text(
+                                                    text = "${room.bet}",
+                                                    color = Color(0xFFFFD700),
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 10.sp
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -626,12 +681,16 @@ private fun EosRoomsListTab(
                                 )
                             }
 
+                            val canAffordRoom = localCredits >= room.bet
                             Button(
                                 onClick = {
-                                    viewModel.triggerAudioFeedback("click")
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    EosManager.joinRoom(room.id)
+                                    if (canAffordRoom) {
+                                        viewModel.triggerAudioFeedback("click")
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        EosManager.joinRoom(room.id)
+                                    }
                                 },
+                                enabled = canAffordRoom,
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = themeColor,
@@ -639,13 +698,24 @@ private fun EosRoomsListTab(
                                 )
                             ) {
                                 Text(
-                                    text = when (currentLang) {
-                                        Language.RU -> "Войти"
-                                        Language.UA -> "Увійти"
-                                        Language.KK -> "Кіру"
-                                        Language.DE -> "Beitreten"
-                                        Language.ZH -> "加入"
-                                        else -> "Join"
+                                    text = if (canAffordRoom) {
+                                        when (currentLang) {
+                                            Language.RU -> "Войти"
+                                            Language.UA -> "Увійти"
+                                            Language.KK -> "Кіру"
+                                            Language.DE -> "Beitreten"
+                                            Language.ZH -> "加入"
+                                            else -> "Join"
+                                        }
+                                    } else {
+                                        when (currentLang) {
+                                            Language.RU -> "Мало монет"
+                                            Language.UA -> "Мало монет"
+                                            Language.KK -> "Аз монета"
+                                            Language.DE -> "Zu wenig Münzen"
+                                            Language.ZH -> "硬币不足"
+                                            else -> "Low coins"
+                                        }
                                     },
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                 )
@@ -1103,7 +1173,7 @@ private fun InsideEosRoomView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = "👑", fontSize = 20.sp)
+                    Icon(imageVector = Icons.Default.MilitaryTech, contentDescription = "Host", tint = Color(0xFFFFD700), modifier = Modifier.size(24.dp))
                     Text(
                         text = room.hostName,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
@@ -1139,7 +1209,7 @@ private fun InsideEosRoomView(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (room.guestPuid != null) {
-                        Text(text = "🎮", fontSize = 20.sp)
+                        Icon(imageVector = Icons.Default.SportsEsports, contentDescription = "Guest", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                         Text(
                             text = room.guestName ?: "Guest",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
@@ -1335,6 +1405,8 @@ private fun CreateEosRoomDialog(
     var roomName by remember { mutableStateOf("EOS Room #${(100..999).random()}") }
     var betAmount by remember { mutableStateOf("0") }
     var isPrivate by remember { mutableStateOf(false) }
+    val requestedBet = betAmount.toIntOrNull() ?: 0
+    val isOverBudget = requestedBet > localCredits
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1353,7 +1425,9 @@ private fun CreateEosRoomDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
@@ -1369,6 +1443,10 @@ private fun CreateEosRoomDialog(
                     value = betAmount,
                     onValueChange = { if (it.all { c -> c.isDigit() }) betAmount = it },
                     label = { Text("Ставка (монеты)") },
+                    isError = isOverBudget,
+                    supportingText = if (isOverBudget) {
+                        { Text("Максимум: $localCredits монет", color = MaterialTheme.colorScheme.error) }
+                    } else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -1394,9 +1472,10 @@ private fun CreateEosRoomDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val bet = betAmount.toIntOrNull() ?: 0
+                    val bet = requestedBet.coerceIn(0, localCredits)
                     onCreate(roomName.ifBlank { "EOS Room" }, bet, isPrivate)
                 },
+                enabled = !isOverBudget,
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = themeColor)
             ) {

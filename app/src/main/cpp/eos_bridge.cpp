@@ -24,6 +24,9 @@ static bool g_IsInitialized = false;
 static EOS_ProductUserId g_LocalProductUserId = nullptr;
 static std::string g_LocalProductUserIdStr = "";
 static EOS_NotificationId g_P2pNotificationId = EOS_INVALID_NOTIFICATIONID;
+static EOS_NotificationId g_P2pEstablishedNotificationId = EOS_INVALID_NOTIFICATIONID;
+static EOS_NotificationId g_P2pInterruptedNotificationId = EOS_INVALID_NOTIFICATIONID;
+static EOS_NotificationId g_P2pClosedNotificationId = EOS_INVALID_NOTIFICATIONID;
 static EOS_NotificationId g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
 static jobject g_MemberStatusCallbackRef = nullptr;
 
@@ -141,9 +144,23 @@ Java_com_example_eos_EosBridge_nativeShutdown(JNIEnv* env, jobject thiz) {
         }
 
         EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
-        if (P2pHandle != nullptr && g_P2pNotificationId != EOS_INVALID_NOTIFICATIONID) {
-            EOS_P2P_RemoveNotifyPeerConnectionRequest(P2pHandle, g_P2pNotificationId);
-            g_P2pNotificationId = EOS_INVALID_NOTIFICATIONID;
+        if (P2pHandle != nullptr) {
+            if (g_P2pEstablishedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+                EOS_P2P_RemoveNotifyPeerConnectionEstablished(P2pHandle, g_P2pEstablishedNotificationId);
+                g_P2pEstablishedNotificationId = EOS_INVALID_NOTIFICATIONID;
+            }
+            if (g_P2pInterruptedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+                EOS_P2P_RemoveNotifyPeerConnectionInterrupted(P2pHandle, g_P2pInterruptedNotificationId);
+                g_P2pInterruptedNotificationId = EOS_INVALID_NOTIFICATIONID;
+            }
+            if (g_P2pClosedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+                EOS_P2P_RemoveNotifyPeerConnectionClosed(P2pHandle, g_P2pClosedNotificationId);
+                g_P2pClosedNotificationId = EOS_INVALID_NOTIFICATIONID;
+            }
+            if (g_P2pNotificationId != EOS_INVALID_NOTIFICATIONID) {
+                EOS_P2P_RemoveNotifyPeerConnectionRequest(P2pHandle, g_P2pNotificationId);
+                g_P2pNotificationId = EOS_INVALID_NOTIFICATIONID;
+            }
         }
         EOS_Platform_Release(g_PlatformHandle);
         g_PlatformHandle = nullptr;
@@ -336,32 +353,130 @@ static void EOS_CALL OnIncomingPeerConnectionRequest(const EOS_P2P_OnIncomingCon
     LOGI("Auto-accepted P2P connection from remote user, result: %d", (int)Res);
 }
 
+static void EOS_CALL OnPeerConnectionEstablished(const EOS_P2P_OnPeerConnectionEstablishedInfo* Data) {
+    if (Data == nullptr) return;
+    char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+    int32_t bSize = sizeof(puidBuf);
+    std::string remotePuid = "";
+    if (Data->RemoteUserId && EOS_ProductUserId_ToString(Data->RemoteUserId, puidBuf, &bSize) == EOS_EResult::EOS_Success) {
+        remotePuid = puidBuf;
+    }
+    const char* netTypeStr = "UNKNOWN";
+    if (Data->NetworkType == EOS_ENetworkConnectionType::EOS_NCT_DirectConnection) {
+        netTypeStr = "DIRECT (LAN/WAN)";
+    } else if (Data->NetworkType == EOS_ENetworkConnectionType::EOS_NCT_RelayedConnection) {
+        netTypeStr = "RELAY (TURN/Epic Cloud)";
+    }
+    LOGI("P2P Connection ESTABLISHED with %s! Type: %s, Reconnection: %d",
+         remotePuid.c_str(), netTypeStr, (int)Data->ConnectionType);
+}
+
+static void EOS_CALL OnPeerConnectionInterrupted(const EOS_P2P_OnPeerConnectionInterruptedInfo* Data) {
+    if (Data == nullptr) return;
+    char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+    int32_t bSize = sizeof(puidBuf);
+    std::string remotePuid = "";
+    if (Data->RemoteUserId && EOS_ProductUserId_ToString(Data->RemoteUserId, puidBuf, &bSize) == EOS_EResult::EOS_Success) {
+        remotePuid = puidBuf;
+    }
+    LOGI("P2P Connection INTERRUPTED with %s! Automatic reconnect underway...", remotePuid.c_str());
+}
+
+static void EOS_CALL OnPeerConnectionClosed(const EOS_P2P_OnRemoteConnectionClosedInfo* Data) {
+    if (Data == nullptr) return;
+    char puidBuf[EOS_PRODUCTUSERID_MAX_LENGTH + 1];
+    int32_t bSize = sizeof(puidBuf);
+    std::string remotePuid = "";
+    if (Data->RemoteUserId && EOS_ProductUserId_ToString(Data->RemoteUserId, puidBuf, &bSize) == EOS_EResult::EOS_Success) {
+        remotePuid = puidBuf;
+    }
+    LOGI("P2P Connection CLOSED with %s, reason: %d", remotePuid.c_str(), (int)Data->Reason);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_example_eos_EosBridge_nativeSetRelayControl(JNIEnv* env, jobject thiz, jint relayControl) {
+    if (g_PlatformHandle == nullptr) return JNI_FALSE;
+    EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
+    if (P2pHandle == nullptr) return JNI_FALSE;
+
+    EOS_P2P_SetRelayControlOptions Opts = {};
+    Opts.ApiVersion = EOS_P2P_SETRELAYCONTROL_API_LATEST;
+    Opts.RelayControl = static_cast<EOS_ERelayControl>(relayControl);
+
+    EOS_EResult res = EOS_P2P_SetRelayControl(P2pHandle, &Opts);
+    LOGI("EOS_P2P_SetRelayControl(%d) result: %d", relayControl, (int)res);
+    return (res == EOS_EResult::EOS_Success) ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeSetupP2pNotification(JNIEnv* env, jobject thiz) {
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) return;
     EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
     if (P2pHandle == nullptr) return;
 
+    // 1. Force allow Epic TURN/Relay servers to bridge NAT / cross-city connections
+    EOS_P2P_SetRelayControlOptions RelayOpts = {};
+    RelayOpts.ApiVersion = EOS_P2P_SETRELAYCONTROL_API_LATEST;
+    RelayOpts.RelayControl = EOS_ERelayControl::EOS_RC_AllowRelays;
+    EOS_EResult RelayRes = EOS_P2P_SetRelayControl(P2pHandle, &RelayOpts);
+    LOGI("EOS_P2P_SetRelayControl(AllowRelays) applied, result: %d", (int)RelayRes);
+
+    // 2. Incoming connection request notification
     if (g_P2pNotificationId != EOS_INVALID_NOTIFICATIONID) {
         EOS_P2P_RemoveNotifyPeerConnectionRequest(P2pHandle, g_P2pNotificationId);
         g_P2pNotificationId = EOS_INVALID_NOTIFICATIONID;
     }
-
     EOS_P2P_AddNotifyPeerConnectionRequestOptions Opts = {};
     Opts.ApiVersion = EOS_P2P_ADDNOTIFYPEERCONNECTIONREQUEST_API_LATEST;
     Opts.LocalUserId = g_LocalProductUserId;
     Opts.SocketId = nullptr;
-
     g_P2pNotificationId = EOS_P2P_AddNotifyPeerConnectionRequest(P2pHandle, &Opts, nullptr, OnIncomingPeerConnectionRequest);
     LOGI("P2P Notification handler registered, ID: %llu", (unsigned long long)g_P2pNotificationId);
+
+    // 3. Established connection notification
+    if (g_P2pEstablishedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+        EOS_P2P_RemoveNotifyPeerConnectionEstablished(P2pHandle, g_P2pEstablishedNotificationId);
+        g_P2pEstablishedNotificationId = EOS_INVALID_NOTIFICATIONID;
+    }
+    EOS_P2P_AddNotifyPeerConnectionEstablishedOptions EstOpts = {};
+    EstOpts.ApiVersion = EOS_P2P_ADDNOTIFYPEERCONNECTIONESTABLISHED_API_LATEST;
+    EstOpts.LocalUserId = g_LocalProductUserId;
+    EstOpts.SocketId = nullptr;
+    g_P2pEstablishedNotificationId = EOS_P2P_AddNotifyPeerConnectionEstablished(P2pHandle, &EstOpts, nullptr, OnPeerConnectionEstablished);
+    LOGI("P2P Established notification registered, ID: %llu", (unsigned long long)g_P2pEstablishedNotificationId);
+
+    // 4. Interrupted connection notification (auto-reconnect trigger)
+    if (g_P2pInterruptedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+        EOS_P2P_RemoveNotifyPeerConnectionInterrupted(P2pHandle, g_P2pInterruptedNotificationId);
+        g_P2pInterruptedNotificationId = EOS_INVALID_NOTIFICATIONID;
+    }
+    EOS_P2P_AddNotifyPeerConnectionInterruptedOptions IntOpts = {};
+    IntOpts.ApiVersion = EOS_P2P_ADDNOTIFYPEERCONNECTIONINTERRUPTED_API_LATEST;
+    IntOpts.LocalUserId = g_LocalProductUserId;
+    IntOpts.SocketId = nullptr;
+    g_P2pInterruptedNotificationId = EOS_P2P_AddNotifyPeerConnectionInterrupted(P2pHandle, &IntOpts, nullptr, OnPeerConnectionInterrupted);
+    LOGI("P2P Interrupted notification registered, ID: %llu", (unsigned long long)g_P2pInterruptedNotificationId);
+
+    // 5. Closed connection notification
+    if (g_P2pClosedNotificationId != EOS_INVALID_NOTIFICATIONID) {
+        EOS_P2P_RemoveNotifyPeerConnectionClosed(P2pHandle, g_P2pClosedNotificationId);
+        g_P2pClosedNotificationId = EOS_INVALID_NOTIFICATIONID;
+    }
+    EOS_P2P_AddNotifyPeerConnectionClosedOptions ClosedOpts = {};
+    ClosedOpts.ApiVersion = EOS_P2P_ADDNOTIFYPEERCONNECTIONCLOSED_API_LATEST;
+    ClosedOpts.LocalUserId = g_LocalProductUserId;
+    ClosedOpts.SocketId = nullptr;
+    g_P2pClosedNotificationId = EOS_P2P_AddNotifyPeerConnectionClosed(P2pHandle, &ClosedOpts, nullptr, OnPeerConnectionClosed);
+    LOGI("P2P Closed notification registered, ID: %llu", (unsigned long long)g_P2pClosedNotificationId);
 }
 
 // ── P2P PACKET STREAMING ──
 
 JNIEXPORT jboolean JNICALL
-Java_com_example_eos_EosBridge_nativeSendPacket(
+Java_com_example_eos_EosBridge_nativeSendPacketFull(
     JNIEnv* env, jobject thiz,
-    jstring targetPuid, jstring socketName, jbyteArray data) {
+    jstring targetPuid, jstring socketName, jbyteArray data,
+    jint channel, jboolean isReliable) {
 
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         return JNI_FALSE;
@@ -393,15 +508,24 @@ Java_com_example_eos_EosBridge_nativeSendPacket(
     SendOptions.LocalUserId = g_LocalProductUserId;
     SendOptions.RemoteUserId = targetUserId;
     SendOptions.SocketId = &SocketId;
-    SendOptions.Channel = 0;
+    SendOptions.Channel = (uint8_t)channel;
     SendOptions.DataLengthBytes = (uint32_t)dataLen;
     SendOptions.Data = buffer.data();
-    SendOptions.bAllowDelayedDelivery = EOS_TRUE;
-    SendOptions.Reliability = EOS_EPacketReliability::EOS_PR_ReliableOrdered;
+    SendOptions.bAllowDelayedDelivery = (isReliable == JNI_TRUE) ? EOS_TRUE : EOS_FALSE;
+    SendOptions.Reliability = (isReliable == JNI_TRUE)
+        ? EOS_EPacketReliability::EOS_PR_ReliableOrdered
+        : EOS_EPacketReliability::EOS_PR_UnreliableUnordered;
     SendOptions.bDisableAutoAcceptConnection = EOS_FALSE;
 
     EOS_EResult Result = EOS_P2P_SendPacket(P2pHandle, &SendOptions);
     return (Result == EOS_EResult::EOS_Success) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_example_eos_EosBridge_nativeSendPacket(
+    JNIEnv* env, jobject thiz,
+    jstring targetPuid, jstring socketName, jbyteArray data) {
+    return Java_com_example_eos_EosBridge_nativeSendPacketFull(env, thiz, targetPuid, socketName, data, 0, JNI_TRUE);
 }
 
 JNIEXPORT jbyteArray JNICALL
@@ -424,8 +548,7 @@ Java_com_example_eos_EosBridge_nativeReceivePacket(
     EOS_P2P_GetNextReceivedPacketSizeOptions SizeOptions = {};
     SizeOptions.ApiVersion = EOS_P2P_GETNEXTRECEIVEDPACKETSIZE_API_LATEST;
     SizeOptions.LocalUserId = g_LocalProductUserId;
-    uint8_t channel = 0;
-    SizeOptions.RequestedChannel = &channel;
+    SizeOptions.RequestedChannel = nullptr; // Receive on ANY channel (0, 1, etc.)
 
     uint32_t packetSize = 0;
     EOS_EResult Result = EOS_P2P_GetNextReceivedPacketSize(P2pHandle, &SizeOptions, &packetSize);
@@ -441,9 +564,10 @@ Java_com_example_eos_EosBridge_nativeReceivePacket(
     ReceiveOptions.ApiVersion = EOS_P2P_RECEIVEPACKET_API_LATEST;
     ReceiveOptions.LocalUserId = g_LocalProductUserId;
     ReceiveOptions.MaxDataSizeBytes = packetSize;
-    ReceiveOptions.RequestedChannel = &channel;
+    ReceiveOptions.RequestedChannel = nullptr; // Receive on ANY channel
 
-    Result = EOS_P2P_ReceivePacket(P2pHandle, &ReceiveOptions, &remotePeerId, &SocketId, &channel, buffer.data(), &bytesWritten);
+    uint8_t outChannel = 0;
+    Result = EOS_P2P_ReceivePacket(P2pHandle, &ReceiveOptions, &remotePeerId, &SocketId, &outChannel, buffer.data(), &bytesWritten);
     if (Result == EOS_EResult::EOS_Success && bytesWritten > 0) {
         jbyteArray arr = env->NewByteArray(bytesWritten);
         env->SetByteArrayRegion(arr, 0, bytesWritten, reinterpret_cast<jbyte*>(buffer.data()));
@@ -503,6 +627,7 @@ struct JoinLobbyContext {
 struct SearchContext {
     jobject callbackRef;
     EOS_HLobbySearch searchHandle;
+    bool allowPrivate;
 };
 
 static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackInfo* Data) {
@@ -560,15 +685,61 @@ static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackIn
                 UpOpts.ApiVersion = EOS_LOBBY_UPDATELOBBY_API_LATEST;
                 UpOpts.LobbyModificationHandle = ModHandle;
 
-                EOS_Lobby_UpdateLobby(LobbyHandle, &UpOpts, nullptr, [](const EOS_Lobby_UpdateLobbyCallbackInfo* UpData) {
-                    LOGI("Lobby attributes update result: %d", (int)UpData->ResultCode);
+                struct LobbyUpdateContext {
+                    CreateLobbyContext* createCtx;
+                    std::string lobbyId;
+                };
+                LobbyUpdateContext* uCtx = new LobbyUpdateContext{ctx, lobbyId};
+
+                EOS_Lobby_UpdateLobby(LobbyHandle, &UpOpts, uCtx, [](const EOS_Lobby_UpdateLobbyCallbackInfo* UpData) {
+                    LOGI("Lobby attributes update finished: result=%d", (int)UpData->ResultCode);
+                    LobbyUpdateContext* uCtx = static_cast<LobbyUpdateContext*>(UpData->ClientData);
+                    if (!uCtx) return;
+                    CreateLobbyContext* ctx = uCtx->createCtx;
+                    std::string lobbyId = uCtx->lobbyId;
+                    delete uCtx;
+
+                    JNIEnv* env = GetEnv();
+                    bool success = (UpData->ResultCode == EOS_EResult::EOS_Success);
+
+                    if (ctx && ctx->callbackRef && env) {
+                        jclass cbClass = env->GetObjectClass(ctx->callbackRef);
+                        jmethodID methodId = env->GetMethodID(
+                            cbClass,
+                            "onLobbyResult",
+                            "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
+                        );
+                        if (methodId) {
+                            jstring idJStr = lobbyId.empty() ? nullptr : env->NewStringUTF(lobbyId.c_str());
+                            jstring puidJStr = g_LocalProductUserIdStr.empty() ? nullptr : env->NewStringUTF(g_LocalProductUserIdStr.c_str());
+                            jstring nameJStr = env->NewStringUTF(ctx->roomName.c_str());
+                            jstring hostNameJStr = env->NewStringUTF(ctx->hostName.c_str());
+                            jstring hostTierJStr = env->NewStringUTF(ctx->hostTier.c_str());
+
+                            env->CallVoidMethod(
+                                ctx->callbackRef, methodId,
+                                success ? JNI_TRUE : JNI_FALSE,
+                                idJStr, puidJStr, nameJStr, hostNameJStr, hostTierJStr, ctx->bet
+                            );
+
+                            if (idJStr) env->DeleteLocalRef(idJStr);
+                            if (puidJStr) env->DeleteLocalRef(puidJStr);
+                            if (nameJStr) env->DeleteLocalRef(nameJStr);
+                            if (hostNameJStr) env->DeleteLocalRef(hostNameJStr);
+                            if (hostTierJStr) env->DeleteLocalRef(hostTierJStr);
+                        }
+                        env->DeleteGlobalRef(ctx->callbackRef);
+                    }
+                    delete ctx;
                 });
 
                 EOS_LobbyModification_Release(ModHandle);
+                return; // Wait for UpdateLobby callback
             }
         }
     }
 
+    // Fallback if lobby creation failed or modification couldn't start
     if (ctx && ctx->callbackRef && env) {
         jclass cbClass = env->GetObjectClass(ctx->callbackRef);
         jmethodID methodId = env->GetMethodID(
@@ -577,23 +748,7 @@ static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackIn
             "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
         );
         if (methodId) {
-            jstring idJStr = lobbyId.empty() ? nullptr : env->NewStringUTF(lobbyId.c_str());
-            jstring puidJStr = g_LocalProductUserIdStr.empty() ? nullptr : env->NewStringUTF(g_LocalProductUserIdStr.c_str());
-            jstring nameJStr = env->NewStringUTF(ctx->roomName.c_str());
-            jstring hostNameJStr = env->NewStringUTF(ctx->hostName.c_str());
-            jstring hostTierJStr = env->NewStringUTF(ctx->hostTier.c_str());
-
-            env->CallVoidMethod(
-                ctx->callbackRef, methodId,
-                success ? JNI_TRUE : JNI_FALSE,
-                idJStr, puidJStr, nameJStr, hostNameJStr, hostTierJStr, ctx->bet
-            );
-
-            if (idJStr) env->DeleteLocalRef(idJStr);
-            if (puidJStr) env->DeleteLocalRef(puidJStr);
-            if (nameJStr) env->DeleteLocalRef(nameJStr);
-            if (hostNameJStr) env->DeleteLocalRef(hostNameJStr);
-            if (hostTierJStr) env->DeleteLocalRef(hostTierJStr);
+            env->CallVoidMethod(ctx->callbackRef, methodId, JNI_FALSE, nullptr, nullptr, nullptr, nullptr, nullptr, 0);
         }
         env->DeleteGlobalRef(ctx->callbackRef);
     }
@@ -990,7 +1145,7 @@ static void EOS_CALL OnLobbySearchFindCallback(const EOS_LobbySearch_FindCallbac
                     ReadInt("BET", bet);
                     ReadInt("IS_PRIVATE", isPriv);
 
-                    if (isPriv == 0 && !lobbyId.empty()) {
+                    if ((ctx->allowPrivate || isPriv == 0) && !lobbyId.empty()) {
                         if (!first) ss << ",";
                         first = false;
                         ss << "{";
@@ -1073,6 +1228,64 @@ Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jo
     SearchContext* ctx = new SearchContext();
     ctx->callbackRef = env->NewGlobalRef(callback);
     ctx->searchHandle = SearchHandle;
+    ctx->allowPrivate = false;
+
+    EOS_LobbySearch_FindOptions FindOpts = {};
+    FindOpts.ApiVersion = EOS_LOBBYSEARCH_FIND_API_LATEST;
+    FindOpts.LocalUserId = g_LocalProductUserId;
+
+    EOS_LobbySearch_Find(SearchHandle, &FindOpts, ctx, OnLobbySearchFindCallback);
+}
+
+JNIEXPORT void JNICALL
+Java_com_example_eos_EosBridge_nativeSearchLobbyByCode(JNIEnv* env, jobject thiz, jstring code, jobject callback) {
+    if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
+        if (callback) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
+        return;
+    }
+
+    EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+    if (LobbyHandle == nullptr) return;
+
+    const char* codeChars = env->GetStringUTFChars(code, nullptr);
+    std::string searchCode = codeChars ? codeChars : "";
+    if (codeChars) env->ReleaseStringUTFChars(code, codeChars);
+
+    EOS_Lobby_CreateLobbySearchOptions SearchOpts = {};
+    SearchOpts.ApiVersion = EOS_LOBBY_CREATELOBBYSEARCH_API_LATEST;
+    SearchOpts.MaxResults = 5;
+    EOS_HLobbySearch SearchHandle = nullptr;
+
+    if (EOS_Lobby_CreateLobbySearch(LobbyHandle, &SearchOpts, &SearchHandle) != EOS_EResult::EOS_Success || SearchHandle == nullptr) {
+        if (callback) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
+        return;
+    }
+
+    // Set CODE search filter directly in Epic Cloud search index
+    EOS_Lobby_AttributeData codeAttr = {};
+    codeAttr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
+    codeAttr.Key = "CODE";
+    codeAttr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+    codeAttr.Value.AsUtf8 = searchCode.c_str();
+
+    EOS_LobbySearch_SetParameterOptions ParamOpts = {};
+    ParamOpts.ApiVersion = EOS_LOBBYSEARCH_SETPARAMETER_API_LATEST;
+    ParamOpts.Parameter = &codeAttr;
+    ParamOpts.ComparisonOp = EOS_EComparisonOp::EOS_CO_EQUAL;
+    EOS_LobbySearch_SetParameter(SearchHandle, &ParamOpts);
+
+    SearchContext* ctx = new SearchContext();
+    ctx->callbackRef = env->NewGlobalRef(callback);
+    ctx->searchHandle = SearchHandle;
+    ctx->allowPrivate = true; // Joining by exact code allows joining private rooms!
 
     EOS_LobbySearch_FindOptions FindOpts = {};
     FindOpts.ApiVersion = EOS_LOBBYSEARCH_FIND_API_LATEST;

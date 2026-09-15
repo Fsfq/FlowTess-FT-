@@ -200,7 +200,7 @@ fun MultiplayerGameScreen(
                 } else {
                     viewModel.lobbyManager.sendGarbageToOpponent(garbageToSend)
                 }
-                attackBannerText = if (cleared == 4) "💥 TETRIS ATTACK! +4 💣" else "+$garbageToSend 💣"
+                attackBannerText = if (cleared == 4) "TETRIS ATTACK! +4" else "+$garbageToSend"
             }
         }
         prevLines = gameState.lines
@@ -967,7 +967,7 @@ fun MultiplayerGameScreen(
                                             color = if (isWinner) Color(0xFF00E676).copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
                                         ) {
                                             Text(
-                                                text = if (isWinner) "+25 ELO 📈" else if (isDraw) "±0 ELO" else "-15 ELO 📉",
+                                                text = if (isWinner) "+25 ELO" else if (isDraw) "±0 ELO" else "-15 ELO",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Black,
                                                 color = if (isWinner) Color(0xFF00E676) else if (isDraw) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,

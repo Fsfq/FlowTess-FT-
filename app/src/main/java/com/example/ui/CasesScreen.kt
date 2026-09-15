@@ -51,528 +51,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ── Drop Rarity Tiers (Tactical CS2 / Cyberpunk Grading) ──
-enum class DropRarity(val label: String, val labelRu: String, val color: Color, val tierIndex: Int) {
-    COMMON("Basic", "Базовый", Color(0xFF8E9297), 0),
-    UNCOMMON("Special", "Особый", Color(0xFF43B581), 1),
-    RARE("Rare", "Редкий", Color(0xFF00B0FF), 2),
-    EPIC("Epic", "Эпик", Color(0xFFAA00FF), 3),
-    LEGENDARY("Mythic", "Мифик", Color(0xFFFF6D00), 4),
-    RED("Relic", "Реликт", Color(0xFFFF1744), 5)
-}
 
-fun DropRarity.getLocalizedName(lang: Language): String = when (this) {
-    DropRarity.COMMON -> when (lang) {
-        Language.RU -> "Базовый"
-        Language.UA -> "Базовий"
-        Language.KK -> "Базалық"
-        Language.DE -> "Basis"
-        Language.ZH -> "基础"
-        else -> "Basic"
-    }
-    DropRarity.UNCOMMON -> when (lang) {
-        Language.RU -> "Особый"
-        Language.UA -> "Особливий"
-        Language.KK -> "Арнайы"
-        Language.DE -> "Spezial"
-        Language.ZH -> "特殊"
-        else -> "Special"
-    }
-    DropRarity.RARE -> when (lang) {
-        Language.RU -> "Редкий"
-        Language.UA -> "Рідкісний"
-        Language.KK -> "Сирек"
-        Language.DE -> "Selten"
-        Language.ZH -> "稀有"
-        else -> "Rare"
-    }
-    DropRarity.EPIC -> when (lang) {
-        Language.RU -> "Эпик"
-        Language.UA -> "Епічний"
-        Language.KK -> "Эпикалық"
-        Language.DE -> "Episch"
-        Language.ZH -> "史诗"
-        else -> "Epic"
-    }
-    DropRarity.LEGENDARY -> when (lang) {
-        Language.RU -> "Мифик"
-        Language.UA -> "Міфічний"
-        Language.KK -> "Мифтік"
-        Language.DE -> "Mythisch"
-        Language.ZH -> "神话"
-        else -> "Mythic"
-    }
-    DropRarity.RED -> when (lang) {
-        Language.RU -> "Реликт"
-        Language.UA -> "Релікт"
-        Language.KK -> "Реликт"
-        Language.DE -> "Relikt"
-        Language.ZH -> "遗物"
-        else -> "Relic"
-    }
-}
-
-// ── Loot Item Definition ──
-data class LootItem(
-    val id: String,
-    val type: String, // "skin", "cube_skin", "avatar_frame", "sound_pack", "credits", "nick_gradient", "bonus_xp"
-    val displayName: String,
-    val displayNameRu: String,
-    val rarity: DropRarity,
-    val creditValue: Int = 0
-)
-
-fun LootItem.getLocalizedName(lang: Language): String = when (type) {
-    "skin" -> Translations.getLocalizedSkinTitle(id, lang)
-    "cube_skin" -> when (id) {
-        "red_gradient" -> when (lang) {
-            Language.RU -> "Кровавый Пульс"
-            Language.UA -> "Кривавий Пульс"
-            Language.KK -> "Қанды Импульс"
-            Language.DE -> "Purpurroter Puls"
-            Language.ZH -> "猩红脉冲"
-            else -> displayName
-        }
-        "green_gradient" -> when (lang) {
-            Language.RU -> "Токсичный Пульс"
-            Language.UA -> "Токсичний Пульс"
-            Language.KK -> "Улы Импульс"
-            Language.DE -> "Toxischer Puls"
-            Language.ZH -> "剧毒脉冲"
-            else -> displayName
-        }
-        "blue_gradient" -> when (lang) {
-            Language.RU -> "Кобальтовый Пульс"
-            Language.UA -> "Кобальтовий Пульс"
-            Language.KK -> "Кобальт Импульсі"
-            Language.DE -> "Kobalt Puls"
-            Language.ZH -> "钴蓝脉冲"
-            else -> displayName
-        }
-        "purple_gradient" -> when (lang) {
-            Language.RU -> "Пульс Бездны"
-            Language.UA -> "Пульс Безодні"
-            Language.KK -> "Тұңғиық Импульсі"
-            Language.DE -> "Leere Puls"
-            Language.ZH -> "虚空脉冲"
-            else -> displayName
-        }
-        else -> Translations.getLocalizedCubeSkinTitle(id, lang)
-    }
-    "avatar_frame" -> Translations.getLocalizedAvatarFrameTitle(id, lang)
-    else -> when (id) {
-        "chrono_gl" -> when (lang) {
-            Language.RU -> "Сингулярность"
-            Language.UA -> "Сингулярність"
-            Language.KK -> "Сингулярлық"
-            Language.DE -> "Singularität"
-            Language.ZH -> "奇点渐变"
-            else -> displayName
-        }
-        "nick_gradient" -> when (lang) {
-            Language.RU -> "Градиент Ника"
-            Language.UA -> "Градієнт Ніка"
-            Language.KK -> "Ник Градиенті"
-            Language.DE -> "Spitznamen-Farbverlauf"
-            Language.ZH -> "昵称炫彩渐变"
-            else -> displayName
-        }
-        "bonus_xp_5000" -> when (lang) {
-            Language.RU -> "+5000 XP Опыта"
-            Language.UA -> "+5000 XP Досвіду"
-            Language.KK -> "+5000 XP Тәжірибе"
-            Language.DE -> "+5000 XP Erfahrung"
-            Language.ZH -> "+5000 XP 经验值"
-            else -> displayName
-        }
-        else -> when (lang) {
-            Language.RU -> displayNameRu
-            Language.UA -> displayNameRu
-            Language.KK -> displayNameRu
-            Language.DE -> displayName
-            Language.ZH -> displayName
-            else -> displayName
-        }
-    }
-}
-
-fun getLocalizedItemTypeName(type: String, lang: Language): String = when (type) {
-    "skin" -> when (lang) {
-        Language.RU -> "Скин игрового поля"
-        Language.UA -> "Скін ігрового поля"
-        Language.KK -> "Ойын алаңының скині"
-        Language.DE -> "Spielfeld-Skin"
-        Language.ZH -> "棋盘网格皮肤"
-        else -> "Board Skin"
-    }
-    "cube_skin" -> when (lang) {
-        Language.RU -> "Стиль блоков"
-        Language.UA -> "Стиль блоків"
-        Language.KK -> "Блоктар стилі"
-        Language.DE -> "Block-Stil"
-        Language.ZH -> "方块样式"
-        else -> "Block Skin"
-    }
-    "avatar_frame" -> when (lang) {
-        Language.RU -> "Рамка аватара"
-        Language.UA -> "Рамка аватара"
-        Language.KK -> "Аватар жақтауы"
-        Language.DE -> "Avatar-Rahmen"
-        Language.ZH -> "头像边框"
-        else -> "Avatar Frame"
-    }
-    "sound_pack" -> when (lang) {
-        Language.RU -> "Звуковой пакет"
-        Language.UA -> "Звуковий пакет"
-        Language.KK -> "Дыбыстық топтама"
-        Language.DE -> "Sound-Paket"
-        Language.ZH -> "音效包"
-        else -> "Sound Pack"
-    }
-    "button_skin" -> when (lang) {
-        Language.RU -> "Стиль кнопок"
-        Language.UA -> "Стиль кнопок"
-        Language.KK -> "Батырмалар стилі"
-        Language.DE -> "Tasten-Stil"
-        Language.ZH -> "按键样式"
-        else -> "Button Skin"
-    }
-    "nick_gradient" -> when (lang) {
-        Language.RU -> "Градиент никнейма"
-        Language.UA -> "Градієнт нікнейма"
-        Language.KK -> "Никнейм градиенті"
-        Language.DE -> "Spitznamen-Farbverlauf"
-        Language.ZH -> "昵称渐变"
-        else -> "Nickname Gradient"
-    }
-    "credits" -> when (lang) {
-        Language.RU -> "Золотые монеты"
-        Language.UA -> "Золоті монети"
-        Language.KK -> "Алтын тиындар"
-        Language.DE -> "Goldmünzen"
-        Language.ZH -> "金币奖励"
-        else -> "Credits Reward"
-    }
-    "bonus_xp" -> when (lang) {
-        Language.RU -> "Очки опыта"
-        Language.UA -> "Очки досвіду"
-        Language.KK -> "Тәжірибе ұпайлары"
-        Language.DE -> "Erfahrungspunkte"
-        Language.ZH -> "经验值奖励"
-        else -> "XP Reward"
-    }
-    else -> type
-}
-
-// ── Crate Definition ──
-data class LootCrate(
-    val id: String,
-    val name: String,
-    val nameRu: String,
-    val cost: Int,
-    val accentColor: Color,
-    val secondaryColor: Color,
-    val icon: ImageVector,
-    val dropChances: Map<DropRarity, Float>
-)
-
-fun LootCrate.getLocalizedName(lang: Language): String = when (id) {
-    "wooden" -> when (lang) {
-        Language.RU -> "Деревянный Кейс"
-        Language.UA -> "Дерев'яний Кейс"
-        Language.KK -> "Ағаш Кейс"
-        Language.DE -> "Holzkiste"
-        Language.ZH -> "木质箱"
-        else -> name
-    }
-    "iron" -> when (lang) {
-        Language.RU -> "Железный Кейс"
-        Language.UA -> "Залізний Кейс"
-        Language.KK -> "Темір Кейс"
-        Language.DE -> "Eisenkiste"
-        Language.ZH -> "铁质箱"
-        else -> name
-    }
-    "golden" -> when (lang) {
-        Language.RU -> "Золотой Кейс"
-        Language.UA -> "Золотий Кейс"
-        Language.KK -> "Алтын Кейс"
-        Language.DE -> "Goldkiste"
-        Language.ZH -> "黄金箱"
-        else -> name
-    }
-    "platinum" -> when (lang) {
-        Language.RU -> "Платиновый Кейс"
-        Language.UA -> "Платиновий Кейс"
-        Language.KK -> "Платина Кейс"
-        Language.DE -> "Platinkiste"
-        Language.ZH -> "铂金箱"
-        else -> name
-    }
-    "legendary" -> when (lang) {
-        Language.RU -> "Легендарный Кейс"
-        Language.UA -> "Легендарний Кейс"
-        Language.KK -> "Аңызға айналған Кейс"
-        Language.DE -> "Legendäre Kiste"
-        Language.ZH -> "传奇箱"
-        else -> name
-    }
-    "diamond" -> when (lang) {
-        Language.RU -> "Алмазный Кейс"
-        Language.UA -> "Діамантовий Кейс"
-        Language.KK -> "Гауһар Кейс"
-        Language.DE -> "Diamantkiste"
-        Language.ZH -> "钻石箱"
-        else -> name
-    }
-    "red_crate_lite" -> when (lang) {
-        Language.RU -> "Красный Лайт"
-        Language.UA -> "Червоний Лайт"
-        Language.KK -> "Қызыл Лайт"
-        Language.DE -> "Rote Kiste Lite"
-        Language.ZH -> "精简红箱"
-        else -> name
-    }
-    "red_crate" -> when (lang) {
-        Language.RU -> "Красный Кейс"
-        Language.UA -> "Червоний Кейс"
-        Language.KK -> "Қызыл Кейс"
-        Language.DE -> "Rote Kiste"
-        Language.ZH -> "红色箱"
-        else -> name
-    }
-    else -> when (lang) {
-        Language.RU -> nameRu
-        Language.UA -> nameRu
-        Language.KK -> nameRu
-        Language.DE -> name
-        Language.ZH -> name
-        else -> name
-    }
-}
-
-// ── Inventory Item with Tracking ──
-data class InventoryItem(
-    val uuid: String,
-    val item: LootItem,
-    val acquiredTimestamp: Long = System.currentTimeMillis(),
-    var isLocked: Boolean = false
-)
-
-// ── Master Loot Pool ──
-val allLootItems = listOf(
-    // Grid Skins
-    LootItem("retro_amber", "skin", "Gold", "Золото", DropRarity.COMMON),
-    LootItem("emerald_matrix", "skin", "Emerald", "Изумруд", DropRarity.COMMON),
-    LootItem("vaporwave_pink", "skin", "Synthwave", "Синтвейв", DropRarity.UNCOMMON),
-    LootItem("midnight_gold", "skin", "Obsidian", "Обсидиан", DropRarity.RARE),
-    LootItem("carbon_neutral", "skin", "Graphite", "Графит", DropRarity.RARE),
-    LootItem("plasma_storm", "skin", "Plasma", "Плазма", DropRarity.EPIC),
-    LootItem("glacial_frost", "skin", "Crystal", "Кристалл", DropRarity.LEGENDARY),
-
-    // Cube Skins
-    LootItem("glass", "cube_skin", "Glass", "Стекло", DropRarity.COMMON),
-    LootItem("retro", "cube_skin", "Retro", "Ретро", DropRarity.COMMON),
-    LootItem("flat", "cube_skin", "Flat", "Флэт", DropRarity.UNCOMMON),
-    LootItem("material", "cube_skin", "Material", "Материал", DropRarity.UNCOMMON),
-    LootItem("glowing_jewel", "cube_skin", "Sapphire", "Сапфир", DropRarity.RARE),
-    LootItem("steampunk", "cube_skin", "Brass", "Латунь", DropRarity.EPIC),
-    LootItem("red_gradient", "cube_skin", "Crimson Pulse", "Кровавый Пульс", DropRarity.RED),
-    LootItem("green_gradient", "cube_skin", "Toxic Pulse", "Токсичный Пульс", DropRarity.RED),
-    LootItem("blue_gradient", "cube_skin", "Cobalt Pulse", "Кобальтовый Пульс", DropRarity.RED),
-    LootItem("purple_gradient", "cube_skin", "Void Pulse", "Пульс Бездны", DropRarity.RED),
-
-    // Avatar Frames (Exclusive Red Crate Dynamic Rainbow Gradient Frame)
-    LootItem("chrono_gl", "avatar_frame", "Gradient", "Градиент", DropRarity.RED),
-
-    // Control Buttons
-    LootItem("gold_legendary", "button_skin", "Gold Buttons", "Золотые Кнопки", DropRarity.LEGENDARY),
-    LootItem("plasma_legendary", "button_skin", "Plasma Buttons", "Плазменные Кнопки", DropRarity.LEGENDARY),
-
-    // Special
-    LootItem("nick_gradient", "nick_gradient", "OVERDRIVE NICK", "Градиент Ника", DropRarity.RED)
-)
-
-// ── 8 Exact Crates (Strict original IDs, names & prices) ──
-val lootCrates = listOf(
-    LootCrate(
-        id = "wooden", name = "Wooden Crate", nameRu = "Деревянный Кейс",
-        cost = ShopPrices.getCrateCost("wooden"), accentColor = Color(0xFF8D6E63), secondaryColor = Color(0xFFA1887F),
-        icon = Icons.Default.Inventory2,
-        dropChances = mapOf(
-            DropRarity.COMMON to 88f,
-            DropRarity.UNCOMMON to 11f,
-            DropRarity.RARE to 1f
-        )
-    ),
-    LootCrate(
-        id = "iron", name = "Iron Crate", nameRu = "Железный Кейс",
-        cost = ShopPrices.getCrateCost("iron"), accentColor = Color(0xFF78909C), secondaryColor = Color(0xFF90A4AE),
-        icon = Icons.Default.Inventory2,
-        dropChances = mapOf(
-            DropRarity.COMMON to 68f,
-            DropRarity.UNCOMMON to 24f,
-            DropRarity.RARE to 7f,
-            DropRarity.EPIC to 1f
-        )
-    ),
-    LootCrate(
-        id = "golden", name = "Golden Crate", nameRu = "Золотой Кейс",
-        cost = ShopPrices.getCrateCost("golden"), accentColor = Color(0xFFFFB300), secondaryColor = Color(0xFFFFD54F),
-        icon = Icons.Default.CardGiftcard,
-        dropChances = mapOf(
-            DropRarity.COMMON to 52f,
-            DropRarity.UNCOMMON to 34f,
-            DropRarity.RARE to 10f,
-            DropRarity.EPIC to 3.2f,
-            DropRarity.LEGENDARY to 0.8f
-        )
-    ),
-    LootCrate(
-        id = "platinum", name = "Platinum Crate", nameRu = "Платиновый Кейс",
-        cost = ShopPrices.getCrateCost("platinum"), accentColor = Color(0xFF7E57C2), secondaryColor = Color(0xFFB39DDB),
-        icon = Icons.Default.AutoAwesome,
-        dropChances = mapOf(
-            DropRarity.COMMON to 42f,
-            DropRarity.UNCOMMON to 38f,
-            DropRarity.RARE to 13.5f,
-            DropRarity.EPIC to 5f,
-            DropRarity.LEGENDARY to 1.5f
-        )
-    ),
-    LootCrate(
-        id = "legendary", name = "Legendary Crate", nameRu = "Легендарный Кейс",
-        cost = ShopPrices.getCrateCost("legendary"), accentColor = Color(0xFFFF6F00), secondaryColor = Color(0xFFFFAB40),
-        icon = Icons.Default.EmojiEvents,
-        dropChances = mapOf(
-            DropRarity.COMMON to 35f,
-            DropRarity.UNCOMMON to 38f,
-            DropRarity.RARE to 17.5f,
-            DropRarity.EPIC to 7f,
-            DropRarity.LEGENDARY to 2.5f
-        )
-    ),
-    LootCrate(
-        id = "diamond", name = "Diamond Crate", nameRu = "Алмазный Кейс",
-        cost = ShopPrices.getCrateCost("diamond"), accentColor = Color(0xFF00E5FF), secondaryColor = Color(0xFF80D8FF),
-        icon = Icons.Default.Diamond,
-        dropChances = mapOf(
-            DropRarity.COMMON to 28f,
-            DropRarity.UNCOMMON to 40f,
-            DropRarity.RARE to 20f,
-            DropRarity.EPIC to 8.5f,
-            DropRarity.LEGENDARY to 3f,
-            DropRarity.RED to 0.5f
-        )
-    ),
-    LootCrate(
-        id = "red_crate_lite", name = "Lite Red Crate", nameRu = "Красный Лайт",
-        cost = ShopPrices.getCrateCost("red_crate_lite"), accentColor = Color(0xFFE57373), secondaryColor = Color(0xFFFFCDD2),
-        icon = Icons.Default.Whatshot,
-        dropChances = mapOf(
-            DropRarity.COMMON to 25f,
-            DropRarity.UNCOMMON to 42f,
-            DropRarity.RARE to 21.2f,
-            DropRarity.EPIC to 8f,
-            DropRarity.LEGENDARY to 2.8f,
-            DropRarity.RED to 1f
-        )
-    ),
-    LootCrate(
-        id = "red_crate", name = "Red Crate", nameRu = "Красный Кейс",
-        cost = ShopPrices.getCrateCost("red_crate"), accentColor = Color(0xFFD32F2F), secondaryColor = Color(0xFFFF5252),
-        icon = Icons.Default.Whatshot,
-        dropChances = mapOf(
-            DropRarity.COMMON to 15f,
-            DropRarity.UNCOMMON to 35f,
-            DropRarity.RARE to 31.5f,
-            DropRarity.EPIC to 12f,
-            DropRarity.LEGENDARY to 4.5f,
-            DropRarity.RED to 2f
-        )
-    )
-)
-
-fun rollDrop(crate: LootCrate): LootItem {
-    val roll = (0..10000).random() / 100f
-    var cumulative = 0f
-    var selectedRarity = DropRarity.COMMON
-
-    for ((rarity, chance) in crate.dropChances) {
-        cumulative += chance
-        if (roll <= cumulative) {
-            selectedRarity = rarity
-            break
-        }
-    }
-
-    val pool = allLootItems.filter { it.rarity == selectedRarity }
-    return if (pool.isNotEmpty()) pool.random() else allLootItems.filter { it.rarity == DropRarity.COMMON }.random()
-}
-
-fun iconForItemType(type: String): ImageVector = when (type) {
-    "credits" -> Icons.Default.AttachMoney
-    "skin" -> Icons.Default.GridOn
-    "cube_skin" -> Icons.Default.Widgets
-    "avatar_frame" -> Icons.Default.AccountBox
-    "button_skin" -> Icons.Default.SmartButton
-    "sound_pack" -> Icons.AutoMirrored.Filled.VolumeUp
-    "nick_gradient" -> Icons.Default.ElectricBolt
-    "bonus_xp" -> Icons.Default.MilitaryTech
-    else -> Icons.Default.Token
-}
-
-fun getItemSellPrice(rarity: DropRarity): Int = when (rarity) {
-    DropRarity.COMMON -> 100
-    DropRarity.UNCOMMON -> 300
-    DropRarity.RARE -> 1000
-    DropRarity.EPIC -> 3500
-    DropRarity.LEGENDARY -> 10000
-    DropRarity.RED -> 30000
-}
-
-fun deserializeInventoryItem(serialized: String): InventoryItem? {
-    val parts = serialized.split(";")
-    if (parts.size < 6) return null
-    val uuid = parts[0]
-    val id = parts[1]
-    val type = parts[2]
-    var displayName = parts[3]
-    var displayNameRu = parts[4]
-    val rarityName = parts[5]
-    val creditValue = parts.getOrNull(6)?.toIntOrNull() ?: 0
-    val ts = parts.getOrNull(7)?.toLongOrNull() ?: System.currentTimeMillis()
-    val isLocked = parts.getOrNull(8)?.toBooleanStrictOrNull() ?: false
-
-    val masterItem = allLootItems.find { it.id == id }
-    if (masterItem != null) {
-        displayName = masterItem.displayName
-        displayNameRu = masterItem.displayNameRu
-    }
-
-    val rarity = masterItem?.rarity ?: try {
-        DropRarity.valueOf(rarityName)
-    } catch (e: Exception) {
-        DropRarity.COMMON
-    }
-
-    return InventoryItem(
-        uuid = uuid,
-        item = LootItem(
-            id = id,
-            type = type,
-            displayName = displayName,
-            displayNameRu = displayNameRu,
-            rarity = rarity,
-            creditValue = if (masterItem != null && masterItem.creditValue > 0) masterItem.creditValue else creditValue
-        ),
-        acquiredTimestamp = ts,
-        isLocked = isLocked
-    )
-}
-
-fun serializeInventoryItem(inv: InventoryItem): String {
-    return "${inv.uuid};${inv.item.id};${inv.item.type};${inv.item.displayName};${inv.item.displayNameRu};${inv.item.rarity.name};${inv.item.creditValue};${inv.acquiredTimestamp};${inv.isLocked}"
+private fun getCoinsUnit(lang: Language): String = when (lang) {
+    Language.RU, Language.UA -> "монет"
+    Language.KK -> "тиын"
+    Language.DE -> "Münzen"
+    Language.ZH -> "金币"
+    else -> "coins"
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -599,9 +84,10 @@ fun CasesScreen(
     var previewCrate by remember { mutableStateOf<LootCrate?>(null) }
     var lastOpenedCrate by remember { mutableStateOf<LootCrate?>(null) }
     var fastOpenMode by remember { mutableStateOf(false) }
-    var inspectingItem by remember { mutableStateOf<InventoryItem?>(null) }
+    var inspectingStackedItemId by remember { mutableStateOf<String?>(null) }
     var showMassRecycleDialog by remember { mutableStateOf(false) }
     var lastDroppedInvItem by remember { mutableStateOf<InventoryItem?>(null) }
+    var isProcessingSale by remember { mutableStateOf(false) }
 
     // State of equipped cosmetics to show active badge in inventory
     val currentBoardSkin by viewModel.boardColorSkin.collectAsStateWithLifecycle()
@@ -624,22 +110,37 @@ fun CasesScreen(
         inventorySet.mapNotNull { deserializeInventoryItem(it) }
     }
 
+    val stackedInventoryItems = remember(inventoryItems) {
+        inventoryItems.groupBy { it.item.id }.values.map { group ->
+            val master = group.find { it.isLocked } ?: group.maxByOrNull { it.acquiredTimestamp } ?: group.first()
+            StackedInventoryItem(
+                masterItem = master,
+                items = group,
+                count = group.size
+            )
+        }
+    }
+
+    val inspectingStackedItem = remember(stackedInventoryItems, inspectingStackedItemId) {
+        stackedInventoryItems.find { it.masterItem.item.id == inspectingStackedItemId }
+    }
+
     // Inventory Filtering & Sorting
     var selectedInvCategory by remember { mutableStateOf("ALL") }
     var selectedSortMode by remember { mutableStateOf("RARITY_DESC") } // RARITY_DESC, PRICE_DESC, NEWEST
 
-    val filteredInventory = remember(inventoryItems, selectedInvCategory, selectedSortMode) {
+    val filteredInventory = remember(stackedInventoryItems, selectedInvCategory, selectedSortMode) {
         val list = when (selectedInvCategory) {
-            "SKINS" -> inventoryItems.filter { it.item.type == "skin" }
-            "BLOCKS" -> inventoryItems.filter { it.item.type == "cube_skin" }
-            "FRAMES" -> inventoryItems.filter { it.item.type == "avatar_frame" }
-            "SPECIAL" -> inventoryItems.filter { it.item.type in listOf("nick_gradient", "sound_pack", "bonus_xp", "button_skin") }
-            else -> inventoryItems
+            "SKINS" -> stackedInventoryItems.filter { it.masterItem.item.type == "skin" }
+            "BLOCKS" -> stackedInventoryItems.filter { it.masterItem.item.type == "cube_skin" }
+            "FRAMES" -> stackedInventoryItems.filter { it.masterItem.item.type == "avatar_frame" }
+            "SPECIAL" -> stackedInventoryItems.filter { it.masterItem.item.type in listOf("nick_gradient", "sound_pack", "bonus_xp", "button_skin") }
+            else -> stackedInventoryItems
         }
         when (selectedSortMode) {
-            "PRICE_DESC" -> list.sortedByDescending { getItemSellPrice(it.item.rarity) }
-            "NEWEST" -> list.sortedByDescending { it.acquiredTimestamp }
-            else -> list.sortedByDescending { it.item.rarity.ordinal }
+            "PRICE_DESC" -> list.sortedByDescending { getItemSellPrice(it.masterItem.item.rarity) }
+            "NEWEST" -> list.sortedByDescending { it.masterItem.acquiredTimestamp }
+            else -> list.sortedByDescending { it.masterItem.item.rarity.ordinal }
         }
     }
 
@@ -769,6 +270,7 @@ fun CasesScreen(
     }
 
     fun sellInventoryItem(invItem: InventoryItem) {
+        if (isProcessingSale) return
         if (invItem.isLocked) {
             toastMessage = when (currentLang) {
                 Language.RU -> "Предмет заблокирован от продажи!"
@@ -780,15 +282,101 @@ fun CasesScreen(
             }
             return
         }
-        val price = getItemSellPrice(invItem.item.rarity)
-        viewModel.addCredits(price)
-        viewModel.triggerAudioFeedback("selling")
-        toastMessage = "+$price 🪙"
+        if (isItemCurrentlyEquipped(invItem.item)) {
+            toastMessage = when (currentLang) {
+                Language.RU -> "Нельзя продать экипированный предмет!"
+                Language.UA -> "Не можна продати екіпірований предмет!"
+                Language.KK -> "Киілген затты сатуға болмайды!"
+                Language.DE -> "Ausgerüsteter Gegenstand kann nicht verkauft werden!"
+                Language.ZH -> "无法出售已装备的物品！"
+                else -> "Cannot sell currently equipped item!"
+            }
+            return
+        }
+        isProcessingSale = true
+        try {
+            val price = getItemSellPrice(invItem.item.rarity)
+            val updated = inventorySet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
+            persistInventory(updated)
+            viewModel.addRawCredits(price)
+            viewModel.triggerAudioFeedback("selling")
+            toastMessage = "+$price ${getCoinsUnit(currentLang)}"
 
-        val updated = inventorySet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
-        persistInventory(updated)
-        if (inspectingItem?.uuid == invItem.uuid) {
-            inspectingItem = null
+            val remainingCopies = inventoryItems.filter { it.uuid != invItem.uuid && it.item.id == invItem.item.id }
+            if (remainingCopies.isEmpty()) {
+                when (invItem.item.type) {
+                    "skin" -> {
+                        val current = sharedPrefs.getStringSet("purchased_skins", setOf("cyberpunk")) ?: setOf("cyberpunk")
+                        val set = current.toMutableSet().apply { remove(invItem.item.id) }
+                        if (!set.contains("cyberpunk")) set.add("cyberpunk")
+                        sharedPrefs.edit().putStringSet("purchased_skins", set).apply()
+                    }
+                    "cube_skin" -> {
+                        val current = sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+                        val set = current.toMutableSet().apply { remove(invItem.item.id) }
+                        if (!set.contains("neon")) set.add("neon")
+                        sharedPrefs.edit().putStringSet("purchased_cube_skins", set).apply()
+                    }
+                    "avatar_frame" -> {
+                        val current = viewModel.purchasedAvatarFrames.value.toMutableSet().apply { remove(invItem.item.id) }
+                        viewModel.setPurchasedAvatarFrames(current)
+                    }
+                    "button_skin" -> {
+                        val current = viewModel.purchasedControlButtonStyles.value.toMutableSet().apply { remove(invItem.item.id) }
+                        viewModel.setPurchasedControlButtonStyles(current)
+                    }
+                    "sound_pack" -> {
+                        val current = viewModel.purchasedSoundPacks.value.toMutableSet().apply { remove(invItem.item.id) }
+                        viewModel.setPurchasedSoundPacks(current)
+                    }
+                    "nick_gradient" -> {
+                        sharedPrefs.edit()
+                            .putBoolean("has_nickname_gradient", false)
+                            .putBoolean("has_nickname_gradient_unlocked", false)
+                            .apply()
+                        viewModel.setHasNicknameGradient(false)
+                    }
+                }
+            }
+        } finally {
+            isProcessingSale = false
+        }
+    }
+
+    fun sellDuplicates(stackedItem: StackedInventoryItem) {
+        if (isProcessingSale) return
+        val unlockedItems = stackedItem.items.filter { !it.isLocked }
+        if (unlockedItems.size <= 1) {
+            toastMessage = when (currentLang) {
+                Language.RU -> "Нет доступных дубликатов для продажи"
+                Language.UA -> "Немає доступних дублікатів для продажу"
+                Language.KK -> "Сатуға қолжетімді көшірмелер жоқ"
+                Language.DE -> "Keine Duplikate zum Verkaufen"
+                Language.ZH -> "没有可出售的重复物品"
+                else -> "No unlocked duplicates to sell"
+            }
+            return
+        }
+        val equippedItem = stackedItem.items.firstOrNull { isItemCurrentlyEquipped(it.item) }
+        val lockedItem = stackedItem.items.firstOrNull { it.isLocked }
+        val toKeep = equippedItem ?: lockedItem ?: unlockedItems.first()
+        val toSell = unlockedItems.filter { it.uuid != toKeep.uuid }
+        if (toSell.isEmpty()) return
+
+        isProcessingSale = true
+        try {
+            val price = getItemSellPrice(stackedItem.masterItem.item.rarity)
+            val totalEarned = price * toSell.size
+            val dupUuids = toSell.map { it.uuid }.toSet()
+            val remaining = inventoryItems.filter { !dupUuids.contains(it.uuid) }
+            val newSet = remaining.map { serializeInventoryItem(it) }.toSet()
+
+            persistInventory(newSet)
+            viewModel.addRawCredits(totalEarned)
+            viewModel.triggerAudioFeedback("selling")
+            toastMessage = "+$totalEarned ${getCoinsUnit(currentLang)} (${toSell.size})"
+        } finally {
+            isProcessingSale = false
         }
     }
 
@@ -798,9 +386,8 @@ fun CasesScreen(
         }
         val newSet = updatedList.map { serializeInventoryItem(it) }.toSet()
         persistInventory(newSet)
-        inspectingItem = updatedList.find { it.uuid == invItem.uuid }
         viewModel.triggerAudioFeedback("click")
-        toastMessage = if (inspectingItem?.isLocked == true) {
+        toastMessage = if (!invItem.isLocked) {
             when (currentLang) {
                 Language.RU -> "Предмет защищен от продажи"
                 Language.UA -> "Предмет захищено від продажу"
@@ -822,6 +409,7 @@ fun CasesScreen(
     }
 
     fun executeMassRecycle() {
+        if (isProcessingSale) return
         val recyclable = inventoryItems.filter { !it.isLocked && (it.item.rarity == DropRarity.COMMON || it.item.rarity == DropRarity.UNCOMMON) }
         if (recyclable.isEmpty()) {
             toastMessage = when (currentLang) {
@@ -835,16 +423,21 @@ fun CasesScreen(
             showMassRecycleDialog = false
             return
         }
-        val totalEarned = recyclable.sumOf { getItemSellPrice(it.item.rarity) }
-        val recyclableUuids = recyclable.map { it.uuid }.toSet()
-        val remaining = inventoryItems.filter { !recyclableUuids.contains(it.uuid) }
-        val newSet = remaining.map { serializeInventoryItem(it) }.toSet()
+        isProcessingSale = true
+        try {
+            val totalEarned = recyclable.sumOf { getItemSellPrice(it.item.rarity) }
+            val recyclableUuids = recyclable.map { it.uuid }.toSet()
+            val remaining = inventoryItems.filter { !recyclableUuids.contains(it.uuid) }
+            val newSet = remaining.map { serializeInventoryItem(it) }.toSet()
 
-        viewModel.addCredits(totalEarned)
-        viewModel.triggerAudioFeedback("selling")
-        persistInventory(newSet)
-        showMassRecycleDialog = false
-        toastMessage = "+$totalEarned 🪙 (${recyclable.size})"
+            viewModel.addRawCredits(totalEarned)
+            viewModel.triggerAudioFeedback("selling")
+            persistInventory(newSet)
+            showMassRecycleDialog = false
+            toastMessage = "+$totalEarned ${getCoinsUnit(currentLang)} (${recyclable.size})"
+        } finally {
+            isProcessingSale = false
+        }
     }
 
     // ── CS2 Roulette Engine Setup ──
@@ -904,6 +497,37 @@ fun CasesScreen(
             val winningItem = rollDrop(crate)
             droppedItem = winningItem
 
+            // Auto-grant credits & XP or add to inventory IMMEDIATELY to prevent loss on crash/exit
+            if (winningItem.type == "credits") {
+                viewModel.addCredits(winningItem.creditValue)
+                resultMessage = "+${winningItem.creditValue} ${getCoinsUnit(currentLang)}"
+                lastDroppedInvItem = null
+            } else if (winningItem.type == "bonus_xp") {
+                val xpAmount = if (winningItem.creditValue > 0) winningItem.creditValue else 15000
+                viewModel.addBonusXp(xpAmount)
+                resultMessage = "+$xpAmount XP"
+                lastDroppedInvItem = null
+            } else {
+                val newInvItem = InventoryItem(
+                    uuid = java.util.UUID.randomUUID().toString(),
+                    item = winningItem,
+                    acquiredTimestamp = System.currentTimeMillis()
+                )
+                lastDroppedInvItem = newInvItem
+                val updated = inventorySet.toMutableSet().apply {
+                    add(serializeInventoryItem(newInvItem))
+                }
+                persistInventory(updated)
+                resultMessage = when (currentLang) {
+                    Language.RU -> "Предмет добавлен в инвентарь"
+                    Language.UA -> "Предмет додано в інвентар"
+                    Language.KK -> "Зат инвентарьге қосылды"
+                    Language.DE -> "Item dem Inventar hinzugefügt"
+                    Language.ZH -> "物品已存入仓库"
+                    else -> "Item delivered to inventory"
+                }
+            }
+
             if (fastOpenMode) {
                 delay(200)
             } else {
@@ -954,40 +578,17 @@ fun CasesScreen(
             viewModel.triggerAudioFeedback(sound)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
-            // Auto-grant credits & XP or add to inventory
-            if (winningItem.type == "credits") {
-                viewModel.addCredits(winningItem.creditValue)
-                resultMessage = "+${winningItem.creditValue} 🪙"
-                lastDroppedInvItem = null
-            } else if (winningItem.type == "bonus_xp") {
-                val xpAmount = if (winningItem.creditValue > 0) winningItem.creditValue else 15000
-                viewModel.addBonusXp(xpAmount)
-                resultMessage = "+$xpAmount XP"
-                lastDroppedInvItem = null
-            } else {
-                val newInvItem = InventoryItem(
-                    uuid = java.util.UUID.randomUUID().toString(),
-                    item = winningItem,
-                    acquiredTimestamp = System.currentTimeMillis()
-                )
-                lastDroppedInvItem = newInvItem
-                val updated = inventorySet.toMutableSet().apply {
-                    add(serializeInventoryItem(newInvItem))
-                }
-                persistInventory(updated)
-                resultMessage = when (currentLang) {
-                    Language.RU -> "Предмет добавлен в инвентарь"
-                    Language.UA -> "Предмет додано в інвентар"
-                    Language.KK -> "Зат инвентарьге қосылды"
-                    Language.DE -> "Item dem Inventar hinzugefügt"
-                    Language.ZH -> "物品已存入仓库"
-                    else -> "Item delivered to inventory"
-                }
-            }
-
             isAnimating = false
             showResult = true
         }
+    }
+
+    BackHandler(enabled = isAnimating) {
+        // Block back button during case spin animation
+    }
+
+    BackHandler(enabled = !isAnimating) {
+        onBack()
     }
 
     Scaffold(
@@ -997,39 +598,96 @@ fun CasesScreen(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
+                navigationIcon = {
+                    IconButton(
+                        onClick = { if (!isAnimating) onBack() },
+                        enabled = !isAnimating
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = if (isAnimating) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
                 title = {},
                 actions = {
-                    Surface(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable {
-                                viewModel.triggerAudioFeedback("click")
-                                viewModel.openRewardedAdDialog()
-                            },
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    val totalKeys = remember(crateKeys) { crateKeys.values.sum() }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        // Keys Chip
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh
                         ) {
-                            Text(text = "🪙", fontSize = 13.sp)
-                            AdaptiveText(
-                                text = String.format(Locale.getDefault(), "%,d", credits),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = "Free Coins",
-                                tint = Color(0xFFFFB300),
-                                modifier = Modifier.size(14.dp)
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VpnKey,
+                                    contentDescription = "Keys",
+                                    tint = Color(0xFF64B5F6),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                AdaptiveText(
+                                    text = "$totalKeys",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Credits Chip
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MonetizationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                AdaptiveText(
+                                    text = String.format(Locale.getDefault(), "%,d", credits),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.AddCircle,
+                                    contentDescription = "Free Coins",
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1171,6 +829,22 @@ fun CasesScreen(
                                     )
                                 )
                             }
+
+                            // Key Inventory Shelf
+                            KeyInventoryShelf(
+                                crateKeys = crateKeys,
+                                currentLang = currentLang,
+                                onOpenCrate = { crateId ->
+                                    val targetCrate = lootCrates.find { it.id.equals(crateId, ignoreCase = true) }
+                                    if (targetCrate != null) {
+                                        startCrateOpening(targetCrate)
+                                    }
+                                },
+                                onGetKeys = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                }
+                            )
 
                             // Crates Grid
                             val colCount = if (widthDp >= 900.dp) 3 else if (widthDp >= 600.dp) 2 else 1
@@ -1352,16 +1026,19 @@ fun CasesScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
-                                            for (invItem in rowPair) {
+                                            for (stackedItem in rowPair) {
                                                 Box(modifier = Modifier.weight(1f)) {
                                                     InventoryTacticalCard(
-                                                        invItem = invItem,
-                                                        isEquipped = isItemCurrentlyEquipped(invItem.item),
+                                                        stackedItem = stackedItem,
+                                                        isEquipped = isItemCurrentlyEquipped(stackedItem.masterItem.item),
                                                         currentLang = currentLang,
                                                         modifier = Modifier.fillMaxWidth(),
-                                                        onInspect = { inspectingItem = invItem },
-                                                        onEquip = { equipInventoryItem(invItem) },
-                                                        onSell = { sellInventoryItem(invItem) }
+                                                        onInspect = { inspectingStackedItemId = stackedItem.masterItem.item.id },
+                                                        onEquip = { equipInventoryItem(stackedItem.masterItem) },
+                                                        onSell = {
+                                                            val itemToSell = stackedItem.items.firstOrNull { !it.isLocked } ?: stackedItem.masterItem
+                                                            sellInventoryItem(itemToSell)
+                                                        }
                                                     )
                                                 }
                                             }
@@ -1459,7 +1136,7 @@ fun CasesScreen(
                                                 Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(18.dp))
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
-                                                    text = "${Translations.get("open_for", currentLang)} ${crate.cost} 🪙",
+                                                    text = "${Translations.get("open_for", currentLang)} ${crate.cost} ${getCoinsUnit(currentLang)}",
                                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black)
                                                 )
                                             }
@@ -1608,7 +1285,7 @@ fun CasesScreen(
                                                     color = MaterialTheme.colorScheme.surfaceContainerHighest
                                                 ) {
                                                     Text(
-                                                        text = "≈ ${getItemSellPrice(item.rarity)} 🪙",
+                                                        text = "≈ ${getItemSellPrice(item.rarity)} ${getCoinsUnit(currentLang)}",
                                                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                                                         color = Color(0xFFFFD700),
                                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1905,19 +1582,25 @@ fun CasesScreen(
                                     if (item.type !in listOf("credits", "bonus_xp")) {
                                         FilledTonalButton(
                                             onClick = {
-                                                lastDroppedInvItem?.let { invItem ->
-                                                    val updated = inventorySet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
-                                                    persistInventory(updated)
+                                                if (isProcessingSale) return@FilledTonalButton
+                                                isProcessingSale = true
+                                                try {
+                                                    lastDroppedInvItem?.let { invItem ->
+                                                        val updated = inventorySet.filter { !it.startsWith(invItem.uuid + ";") }.toSet()
+                                                        persistInventory(updated)
+                                                    }
+                                                    viewModel.addRawCredits(dropSellPrice)
+                                                    viewModel.triggerAudioFeedback("selling")
+                                                    toastMessage = "+$dropSellPrice ${getCoinsUnit(currentLang)}"
+                                                    showResult = false
+                                                    openingCrate = null
+                                                    droppedItem = null
+                                                    lastDroppedInvItem = null
+                                                    resultMessage = null
+                                                    stripItems = emptyList()
+                                                } finally {
+                                                    isProcessingSale = false
                                                 }
-                                                viewModel.addCredits(dropSellPrice)
-                                                viewModel.triggerAudioFeedback("selling")
-                                                toastMessage = "+$dropSellPrice 🪙"
-                                                showResult = false
-                                                openingCrate = null
-                                                droppedItem = null
-                                                lastDroppedInvItem = null
-                                                resultMessage = null
-                                                stripItems = emptyList()
                                             },
                                             modifier = Modifier.fillMaxWidth().height(44.dp),
                                             shape = RoundedCornerShape(14.dp),
@@ -1934,12 +1617,12 @@ fun CasesScreen(
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 text = when (currentLang) {
-                                                    Language.RU -> "ПРОДАТЬ ЗА +$dropSellPrice 🪙"
-                                                    Language.UA -> "ПРОДАТИ ЗА +$dropSellPrice 🪙"
-                                                    Language.KK -> "+$dropSellPrice 🪙 САТУ"
-                                                    Language.DE -> "VERKAUFEN FÜR +$dropSellPrice 🪙"
-                                                    Language.ZH -> "立即出售 +$dropSellPrice 🪙"
-                                                    else -> "SELL FOR +$dropSellPrice 🪙"
+                                                    Language.RU -> "ПРОДАТЬ ЗА +$dropSellPrice МОНЕТ"
+                                                    Language.UA -> "ПРОДАТИ ЗА +$dropSellPrice МОНЕТ"
+                                                    Language.KK -> "+$dropSellPrice МОНЕТА САТУ"
+                                                    Language.DE -> "VERKAUFEN FÜR +$dropSellPrice MÜNZEN"
+                                                    Language.ZH -> "立即出售 +$dropSellPrice 代币"
+                                                    else -> "SELL FOR +$dropSellPrice CREDITS"
                                                 },
                                                 fontWeight = FontWeight.Black,
                                                 style = MaterialTheme.typography.labelMedium
@@ -1956,18 +1639,24 @@ fun CasesScreen(
             // ══════════════════════════════════════════════════════
             // ITEM INSPECTOR MODAL
             // ══════════════════════════════════════════════════════
-            inspectingItem?.let { invItem ->
+            inspectingStackedItem?.let { stacked ->
                 ItemInspectDialog(
-                    invItem = invItem,
-                    isEquipped = isItemCurrentlyEquipped(invItem.item),
+                    stackedItem = stacked,
+                    isEquipped = isItemCurrentlyEquipped(stacked.masterItem.item),
                     currentLang = currentLang,
-                    onDismiss = { inspectingItem = null },
+                    onDismiss = { inspectingStackedItemId = null },
                     onEquip = {
-                        equipInventoryItem(invItem)
-                        inspectingItem = null
+                        equipInventoryItem(stacked.masterItem)
+                        inspectingStackedItemId = null
                     },
-                    onToggleLock = { toggleLockItem(invItem) },
-                    onSell = { sellInventoryItem(invItem) }
+                    onToggleLock = { toggleLockItem(stacked.masterItem) },
+                    onSellOne = {
+                        val toSell = stacked.items.firstOrNull { !it.isLocked } ?: stacked.masterItem
+                        sellInventoryItem(toSell)
+                    },
+                    onSellDuplicates = {
+                        sellDuplicates(stacked)
+                    }
                 )
             }
 
@@ -1987,12 +1676,12 @@ fun CasesScreen(
                     text = {
                         Text(
                             text = when (currentLang) {
-                                Language.RU -> "Будет продано ${recyclable.size} предметов (Базовый / Особый, кроме заблокированных).\n\nВы получите: +$totalValue 🪙"
-                                Language.UA -> "Буде продано ${recyclable.size} предметів (Базовий / Особливий, крім заблокованих).\n\nВи отримаєте: +$totalValue 🪙"
-                                Language.KK -> "${recyclable.size} зат сатылады (Базалық / Арнайы, құлыпталғандардан басқа).\n\nСіз аласыз: +$totalValue 🪙"
-                                Language.DE -> "${recyclable.size} Items werden verwertet (Basis / Spezial, außer gesperrte).\n\nErtrag: +$totalValue 🪙"
-                                Language.ZH -> "将回收 ${recyclable.size} 件普通/特殊物品（不含已锁定物品）。\n\n您将获得: +$totalValue 🪙"
-                                else -> "Recycle ${recyclable.size} basic/special items (excluding locked items).\n\nYou will receive: +$totalValue 🪙"
+                                Language.RU -> "Будет продано ${recyclable.size} предметов (Базовый / Особый, кроме заблокированных).\n\nВы получите: +$totalValue монет"
+                                Language.UA -> "Буде продано ${recyclable.size} предметів (Базовий / Особливий, крім заблокованих).\n\nВи отримаєте: +$totalValue монет"
+                                Language.KK -> "${recyclable.size} зат сатылады (Базалық / Арнайы, құлыпталғандардан басқа).\n\nСіз аласыз: +$totalValue монета"
+                                Language.DE -> "${recyclable.size} Items werden verwertet (Basis / Spezial, außer gesperrte).\n\nErtrag: +$totalValue Münzen"
+                                Language.ZH -> "将回收 ${recyclable.size} 件普通/特殊物品（不含已锁定物品）。\n\n您将获得: +$totalValue 代币"
+                                else -> "Recycle ${recyclable.size} basic/special items (excluding locked items).\n\nYou will receive: +$totalValue credits"
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -2104,25 +1793,47 @@ private fun CrateTacticalCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "${crate.cost} 🪙",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            color = crate.accentColor
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text(
+                                text = "${crate.cost}",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = crate.accentColor
+                            )
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                         if (hasKey) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = MaterialTheme.colorScheme.primaryContainer
                             ) {
-                                Text(
-                                    text = "🔑 $keyCount",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VpnKey,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                    Text(
+                                        text = "$keyCount",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
                             }
                         }
                     }
@@ -2190,10 +1901,22 @@ private fun CrateTacticalCard(
                     ),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text(
-                        text = if (hasKey) "🔑 ${Translations.get("open", currentLang).uppercase()}" else Translations.get("open", currentLang).uppercase(),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (hasKey) {
+                            Icon(
+                                imageVector = Icons.Default.Key,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Text(
+                            text = Translations.get("open", currentLang).uppercase(),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
+                        )
+                    }
                 }
             }
         }
@@ -2205,7 +1928,7 @@ private fun CrateTacticalCard(
 // ══════════════════════════════════════════════════════════════════
 @Composable
 private fun InventoryTacticalCard(
-    invItem: InventoryItem,
+    stackedItem: StackedInventoryItem,
     isEquipped: Boolean,
     currentLang: Language,
     modifier: Modifier = Modifier,
@@ -2213,9 +1936,13 @@ private fun InventoryTacticalCard(
     onEquip: () -> Unit,
     onSell: () -> Unit
 ) {
+    val invItem = stackedItem.masterItem
     val item = invItem.item
     val rarityColor = item.rarity.color
     val sellPrice = getItemSellPrice(item.rarity)
+    val count = stackedItem.count
+    val isAnyLocked = stackedItem.items.any { it.isLocked }
+    val isAllLocked = stackedItem.items.all { it.isLocked }
 
     Card(
         modifier = modifier
@@ -2237,7 +1964,7 @@ private fun InventoryTacticalCard(
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header: Rarity & Lock/Equipped status
+            // Header: Rarity & Count Badge & Lock/Equipped status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2255,8 +1982,24 @@ private fun InventoryTacticalCard(
                     )
                 }
 
+                // Quantity Badge
+                if (count > 1) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.8f))
+                    ) {
+                        Text(
+                            text = formatItemQuantity(count, currentLang),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Black),
+                            color = Color(0xFFFFD700),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (invItem.isLocked) {
+                    if (isAnyLocked) {
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Locked",
@@ -2280,7 +2023,7 @@ private fun InventoryTacticalCard(
                 }
             }
 
-            // Thumbnail
+            // Thumbnail with top-right overlay tag if count > 1
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2288,17 +2031,36 @@ private fun InventoryTacticalCard(
                 shape = RoundedCornerShape(12.dp),
                 color = rarityColor.copy(alpha = 0.1f)
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = iconForItemType(item.type),
                         contentDescription = null,
                         tint = rarityColor,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(34.dp).align(Alignment.Center)
                     )
+
+                    if (count > 1) {
+                        Surface(
+                            shape = RoundedCornerShape(bottomStart = 8.dp, topEnd = 12.dp),
+                            color = Color(0xFF0F172A).copy(alpha = 0.9f),
+                            border = BorderStroke(0.8.dp, Color(0xFFFFD700).copy(alpha = 0.6f)),
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Text(
+                                text = formatItemQuantity(count, currentLang),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black
+                                ),
+                                color = Color(0xFFFFD700),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
             }
 
-            // Name
+            // Name & Price
             Column {
                 Text(
                     text = item.getLocalizedName(currentLang),
@@ -2307,11 +2069,24 @@ private fun InventoryTacticalCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = "≈ $sellPrice 🪙",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontFamily = FontFamily.Monospace),
-                    color = Color(0xFFFFD700)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "≈ $sellPrice ${getCoinsUnit(currentLang)}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontFamily = FontFamily.Monospace),
+                        color = Color(0xFFFFD700)
+                    )
+                    if (count > 1) {
+                        Text(
+                            text = formatItemQuantity(count, currentLang),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             // Actions
@@ -2337,7 +2112,7 @@ private fun InventoryTacticalCard(
 
                 FilledTonalButton(
                     onClick = onSell,
-                    enabled = !invItem.isLocked,
+                    enabled = !isAllLocked,
                     modifier = Modifier.weight(0.7f).height(30.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
@@ -2361,24 +2136,31 @@ private fun InventoryTacticalCard(
 // ══════════════════════════════════════════════════════════════════
 @Composable
 private fun ItemInspectDialog(
-    invItem: InventoryItem,
+    stackedItem: StackedInventoryItem,
     isEquipped: Boolean,
     currentLang: Language,
     onDismiss: () -> Unit,
     onEquip: () -> Unit,
     onToggleLock: () -> Unit,
-    onSell: () -> Unit
+    onSellOne: () -> Unit,
+    onSellDuplicates: () -> Unit
 ) {
+    val invItem = stackedItem.masterItem
     val item = invItem.item
     val rarityColor = item.rarity.color
     val sellPrice = getItemSellPrice(item.rarity)
+    val count = stackedItem.count
+    val unlockedCount = stackedItem.items.count { !it.isLocked }
     val dateStr = remember(invItem.acquiredTimestamp) {
         SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(invItem.acquiredTimestamp))
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(8.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -2389,6 +2171,7 @@ private fun ItemInspectDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -2399,16 +2182,36 @@ private fun ItemInspectDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = rarityColor.copy(alpha = 0.2f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = item.rarity.getLocalizedName(currentLang).uppercase(),
-                            color = rarityColor,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = rarityColor.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = item.rarity.getLocalizedName(currentLang).uppercase(),
+                                color = rarityColor,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        if (count > 1) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF1E293B),
+                                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.8f))
+                            ) {
+                                Text(
+                                    text = formatItemQuantity(count, currentLang),
+                                    color = Color(0xFFFFD700),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                     }
 
                     Row {
@@ -2482,7 +2285,40 @@ private fun ItemInspectDialog(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(text = "$sellPrice 🪙", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace), color = Color(0xFFFFD700))
+                            val totalWord = when (currentLang) {
+                                Language.RU -> "всего"
+                                Language.UA -> "всього"
+                                Language.KK -> "барлығы"
+                                Language.DE -> "gesamt"
+                                Language.ZH -> "共计"
+                                else -> "total"
+                            }
+                            Text(
+                                text = if (count > 1) "$sellPrice ${getCoinsUnit(currentLang)} ($totalWord: ${sellPrice * count} ${getCoinsUnit(currentLang)})" else "$sellPrice ${getCoinsUnit(currentLang)}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                                color = Color(0xFFFFD700)
+                            )
+                        }
+                        if (count > 1) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "В наличии"
+                                        Language.UA -> "В наявності"
+                                        Language.KK -> "Қолда бар"
+                                        Language.DE -> "Bestand"
+                                        Language.ZH -> "持有数量"
+                                        else -> "In Inventory"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formatItemQuantity(count, currentLang) + if (unlockedCount < count) " (${count - unlockedCount} заблокир.)" else "",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Color(0xFFFFD700)
+                                )
+                            }
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(
@@ -2529,41 +2365,269 @@ private fun ItemInspectDialog(
                 }
 
                 // Action Buttons
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
-                        onClick = onEquip,
-                        modifier = Modifier.weight(1.2f).height(44.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isEquipped) Color(0xFF00E676).copy(alpha = 0.2f) else rarityColor,
-                            contentColor = if (isEquipped) Color(0xFF00E676) else Color.White
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = if (isEquipped) Translations.get("active", currentLang) else Translations.get("equip", currentLang),
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
-                        )
+                        Button(
+                            onClick = onEquip,
+                            modifier = Modifier.weight(1.2f).height(44.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isEquipped) Color(0xFF00E676).copy(alpha = 0.2f) else rarityColor,
+                                contentColor = if (isEquipped) Color(0xFF00E676) else Color.White
+                            )
+                        ) {
+                            Text(
+                                text = if (isEquipped) Translations.get("active", currentLang) else Translations.get("equip", currentLang),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
+                            )
+                        }
+
+                        FilledTonalButton(
+                            onClick = onSellOne,
+                            enabled = unlockedCount > 0,
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Color(0xFFFF5252).copy(alpha = 0.15f),
+                                contentColor = Color(0xFFFF5252)
+                            )
+                        ) {
+                            val sellOneLabel = when (currentLang) {
+                                Language.RU -> "ПРОДАТЬ 1"
+                                Language.UA -> "ПРОДАТИ 1"
+                                Language.KK -> "1 САТУ"
+                                Language.DE -> "1 VERKAUFEN"
+                                Language.ZH -> "出售 1 件"
+                                else -> "SELL 1"
+                            }
+                            Text(
+                                text = if (count > 1) sellOneLabel else "${Translations.get("sell", currentLang)} $sellPrice ${getCoinsUnit(currentLang)}",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
+                            )
+                        }
                     }
 
-                    FilledTonalButton(
-                        onClick = onSell,
-                        enabled = !invItem.isLocked,
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Color(0xFFFF5252).copy(alpha = 0.15f),
-                            contentColor = Color(0xFFFF5252)
-                        )
+                    // Quick action: Sell all duplicates (keeping 1 item)
+                    if (count > 1 && unlockedCount > 1) {
+                        val dupesCount = unlockedCount - 1
+                        val dupesValue = dupesCount * sellPrice
+                        OutlinedButton(
+                            onClick = onSellDuplicates,
+                            modifier = Modifier.fillMaxWidth().height(40.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.6f)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFFF5252)
+                            )
+                        ) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = when (currentLang) {
+                                    Language.RU -> "Продать дубликаты ($dupesCount шт., +$dupesValue монет)"
+                                    Language.UA -> "Продати дублікати ($dupesCount шт., +$dupesValue монет)"
+                                    Language.KK -> "Көшірмелерді сату ($dupesCount дана, +$dupesValue тиын)"
+                                    Language.DE -> "Duplikate verkaufen ($dupesCount Stk., +$dupesValue Münzen)"
+                                    Language.ZH -> "出售多余重复件 ($dupesCount 件, +$dupesValue 金币)"
+                                    else -> "Sell duplicates ($dupesCount pcs, +$dupesValue coins)"
+                                },
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// KEY INVENTORY SHELF COMPOSABLE
+// ══════════════════════════════════════════════════════════════════
+@Composable
+private fun KeyInventoryShelf(
+    crateKeys: Map<String, Int>,
+    currentLang: Language,
+    onOpenCrate: (String) -> Unit,
+    onGetKeys: () -> Unit
+) {
+    val ownedCratesWithKeys = remember(crateKeys) {
+        lootCrates.mapNotNull { crate ->
+            val count = crateKeys[crate.id.lowercase()] ?: 0
+            if (count > 0) Pair(crate, count) else null
+        }
+    }
+    val totalKeys = remember(crateKeys) { crateKeys.values.sum() }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF64B5F6).copy(alpha = 0.18f),
+                        border = BorderStroke(1.dp, Color(0xFF64B5F6).copy(alpha = 0.4f)),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.VpnKey,
+                                contentDescription = null,
+                                tint = Color(0xFF64B5F6),
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Связка Ключей"
+                            Language.UA -> "Зв'язка Ключів"
+                            Language.KK -> "Кілттер жиынтығы"
+                            Language.DE -> "Schlüsselbund"
+                            Language.ZH -> "钥匙库"
+                            else -> "Key Ring"
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (totalKeys > 0) Color(0xFF64B5F6).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
-                            text = "${Translations.get("sell", currentLang)} $sellPrice🪙",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black)
+                            text = "$totalKeys",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = if (totalKeys > 0) Color(0xFF64B5F6) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }
+
+                FilledTonalButton(
+                    onClick = onGetKeys,
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Получить"
+                            Language.UA -> "Отримати"
+                            Language.KK -> "Алу"
+                            Language.DE -> "Holen"
+                            Language.ZH -> "获取"
+                            else -> "Get Keys"
+                        },
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+            }
+
+            if (ownedCratesWithKeys.isNotEmpty()) {
+                // Horizontal scrolling key badges
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ownedCratesWithKeys.forEach { (crate, count) ->
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            border = BorderStroke(1.2.dp, crate.accentColor.copy(alpha = 0.5f)),
+                            modifier = Modifier.clickable { onOpenCrate(crate.id) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VpnKey,
+                                    contentDescription = null,
+                                    tint = crate.accentColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Column {
+                                    Text(
+                                        text = crate.getLocalizedName(currentLang),
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "x$count",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                        color = crate.accentColor
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = crate.accentColor,
+                                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onOpenCrate(crate.id) }
+                                ) {
+                                    Text(
+                                        text = when (currentLang) {
+                                            Language.RU -> "ОТКРЫТЬ"
+                                            Language.UA -> "ВІДКРИТИ"
+                                            Language.KK -> "АШУ"
+                                            Language.DE -> "ÖFFNEN"
+                                            Language.ZH -> "开启"
+                                            else -> "OPEN"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = when (currentLang) {
+                        Language.RU -> "У вас пока нет ключей. Получайте ключи за повышение уровней или бесплатный просмотр спонсоров!"
+                        Language.UA -> "У вас ще немає ключів. Отримуйте ключі за підвищення рівнів або безкоштовний перегляд спонсорів!"
+                        Language.KK -> "Сізде әлі кілт жоқ. Деңгейді көтеру немесе демеушілерді көру арқылы кілттер алыңыз!"
+                        Language.DE -> "Noch keine Schlüssel. Steige im Level auf oder sieh dir Sponsor-Videos an!"
+                        Language.ZH -> "暂无可用钥匙。可通过提升等级或观看赞助视频免费获取！"
+                        else -> "No keys yet. Earn keys from level ups or watch sponsor videos!"
+                    },
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

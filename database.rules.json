@@ -17,7 +17,7 @@
         ".read": "auth !== null",
 
         // Писать: сам пользователь или администратор
-        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
 
         // Обязательные поля при регистрации
         ".validate": "newData.hasChildren(['player_name', 'credits', 'online_tier', 'bonus_xp', 'has_nickname_gradient'])",
@@ -29,17 +29,17 @@
         // Античит: кредиты не могут быть отрицательными
         // За одну запись нельзя прибавить более 100 000 (только не-Admin)
         "credits": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))) || data.val() === null || newData.val() - data.val() <= 100000)"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')) || data.val() === null || newData.val() - data.val() <= 100000)"
         },
 
         // Античит: только разрешённые тиры
         "online_tier": {
-          ".validate": "newData.isString() && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))) || newData.val() === 'BRONZE' || newData.val() === 'SILVER' || newData.val() === 'GOLD' || newData.val() === 'PLATINUM' || newData.val() === 'DIAMOND' || newData.val() === 'PRO BRONZE' || newData.val() === 'PRO SILVER' || newData.val() === 'PRO GOLD' || newData.val() === 'PRO PLATINUM' || newData.val() === 'PRO DIAMOND' || newData.val() === 'MASTER' || newData.val() === 'GRANDMASTER' || newData.val() === 'LEGEND')"
+          ".validate": "newData.isString() && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')) || newData.val() === 'BRONZE' || newData.val() === 'SILVER' || newData.val() === 'GOLD' || newData.val() === 'PLATINUM' || newData.val() === 'DIAMOND' || newData.val() === 'PRO BRONZE' || newData.val() === 'PRO SILVER' || newData.val() === 'PRO GOLD' || newData.val() === 'PRO PLATINUM' || newData.val() === 'PRO DIAMOND' || newData.val() === 'MASTER' || newData.val() === 'GRANDMASTER' || newData.val() === 'LEGEND')"
         },
 
         // XP не отрицательный, не безграничный
         "bonus_xp": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))) || newData.val() <= 50000000)"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')) || newData.val() <= 50000000)"
         },
 
         "prestige_level": {
@@ -138,6 +138,9 @@
         "is_banned": {
           ".validate": "!newData.exists() || newData.isBoolean()"
         },
+        "app_version_code": {
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 15 && (!data.exists() || newData.val() >= data.val()))"
+        },
 
         // Любое другое поле — запрещено (защита от вставки произвольных данных)
         "$other": { ".validate": false }
@@ -153,7 +156,7 @@
 
       "$uid": {
         // Писать только свой рекорд или администратор
-        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
 
         ".validate": "newData.hasChildren(['playerName', 'score', 'timestamp'])",
 
@@ -164,7 +167,7 @@
         // Anti-cheat: score must be between 0 and 9,999,999
         // Increase per session max 500,000
         "score": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999999 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))) || data.val() === null || newData.val() - data.val() <= 500000)"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999999 && ((auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')) || data.val() === null || newData.val() - data.val() <= 500000)"
         },
 
         "timestamp": {
@@ -176,6 +179,9 @@
         },
         "customTag": {
           ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 6)"
+        },
+        "app_version_code": {
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 15 && (!data.exists() || newData.val() >= data.val()))"
         },
         "$other": { ".validate": false }
       }
@@ -189,7 +195,7 @@
       "$modeId": {
         "scores": {
           "$uid": {
-            ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+            ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
             ".validate": "newData.hasChildren(['playerName', 'score', 'timestamp'])",
             "playerName": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 24" },
             "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999999" },
@@ -212,7 +218,7 @@
 
       "$uid": {
         // Писать только свой статус или администратор (для очистки)
-        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+        ".write": "auth !== null && (auth.uid === $uid || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
 
         ".validate": "!newData.exists() || newData.hasChildren(['uid', 'lastActive'])",
 
@@ -249,7 +255,7 @@
       "$msgId": {
         // Создать новое сообщение — любой авторизованный
         // Удалить/изменить — только администратор
-        ".write": "auth !== null && ((!data.exists() && newData.exists()) || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+        ".write": "auth !== null && ((!data.exists() && newData.exists()) || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
 
         ".validate": "newData.hasChildren(['senderName', 'senderId', 'text', 'timestamp'])",
 
@@ -288,7 +294,7 @@
         // Создать комнату — любой авторизованный
         // Обновить — только хост или участник (оба uid в players) или администратор
         // Удалить — хост или администратор
-        ".write": "auth !== null && (!data.exists() || data.child('hostId').val() === auth.uid || data.child('players').child(auth.uid).exists() || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && (auth.token.email === 'ezik02021@gmail.com' || auth.token.email === 'eziko04@gmail.com'))))",
+        ".write": "auth !== null && (!data.exists() || data.child('hostId').val() === auth.uid || data.child('players').child(auth.uid).exists() || (auth.uid === 'ge9Lzx5EkCfbINDZEG6I8vYcJCd2' || (auth.token.email != null && auth.token.email_verified === true && auth.token.email === 'ezik02021@gmail.com')))",
 
         ".validate": "!newData.exists() || newData.hasChildren(['roomId', 'name', 'hostId', 'hostName', 'players', 'status'])",
 
@@ -298,6 +304,7 @@
         "hostName": { ".validate": "!newData.exists() || newData.isString()" },
         "status":   { ".validate": "!newData.exists() || (newData.isString() && (newData.val() === 'waiting' || newData.val() === 'playing' || newData.val() === 'finished'))" },
         "password": { ".validate": "!newData.exists() || newData.isString()" },
+        "passwordHash": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 128)" },
         "isLocked": { ".validate": "!newData.exists() || newData.isBoolean()" },
         "createdAt":{ ".validate": "!newData.exists() || newData.isNumber()" },
         "winnerId": { ".validate": "!newData.exists() || newData.isString()" },
