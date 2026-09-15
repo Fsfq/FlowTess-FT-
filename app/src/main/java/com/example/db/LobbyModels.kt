@@ -7,6 +7,7 @@ data class LobbyRoom(
     val hostName: String = "",
     val hostTier: String = "BRONZE",
     val password: String = "",
+    val passwordHash: String = "",
     val isLocked: Boolean = false,
     val status: String = "waiting", // "waiting", "playing", "finished"
     val players: List<RoomPlayer> = emptyList(),
@@ -32,14 +33,18 @@ data class LobbyRoom(
 ) {
     fun toMap(): Map<String, Any> {
         val playersMap = players.associate { it.uid to it.toMap() }
+        val resolvedHash = passwordHash.ifEmpty {
+            if (password.isNotBlank()) PasswordHasher.hash(password) else ""
+        }
         return mapOf(
             "roomId" to roomId,
             "name" to name,
             "hostId" to hostId,
             "hostName" to hostName,
             "hostTier" to hostTier,
-            "password" to password,
-            "isLocked" to isLocked,
+            "password" to "", // Never store plaintext password in RTDB
+            "passwordHash" to resolvedHash,
+            "isLocked" to (isLocked || resolvedHash.isNotEmpty()),
             "status" to status,
             "players" to playersMap,
             "createdAt" to createdAt,
@@ -83,7 +88,8 @@ data class LobbyRoom(
                 hostName = map["hostName"] as? String ?: "",
                 hostTier = map["hostTier"] as? String ?: "BRONZE",
                 password = map["password"] as? String ?: "",
-                isLocked = map["isLocked"] as? Boolean ?: false,
+                passwordHash = map["passwordHash"] as? String ?: "",
+                isLocked = (map["isLocked"] as? Boolean) ?: ((map["passwordHash"] as? String)?.isNotEmpty() == true) ?: false,
                 status = map["status"] as? String ?: "waiting",
                 players = playersList,
                 createdAt = (map["createdAt"] as? Long) ?: (map["createdAt"] as? Number)?.toLong() ?: 0L,
@@ -325,7 +331,7 @@ data class PublicUserProfile(
     val customTag: String = "",
     val themeColor: String = "indigo",
     val boardSkin: String = "cyberpunk",
-    val blockStyle: String = "glass",
+    val blockStyle: String = "material",
     val unlockedAchievements: List<String> = emptyList()
 ) {
     companion object {
@@ -434,7 +440,7 @@ data class PublicUserProfile(
                     ?: "cyberpunk",
                 blockStyle = (map["block_style"] as? String)
                     ?: (map["blockStyle"] as? String)
-                    ?: "glass",
+                    ?: "material",
                 unlockedAchievements = achievementsList
             )
         }

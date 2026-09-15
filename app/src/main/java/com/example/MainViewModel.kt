@@ -12,9 +12,7 @@ import com.example.db.HighScore
 import com.example.db.ScoreRepository
 import com.example.game.GameEngine
 import com.example.game.GameMode
-import com.example.game.Position
 import com.example.game.BlockBlastEngine
-import com.example.game.SlidePuzzleEngine
 import com.example.ui.Language
 import com.example.ui.ShopPrices
 import kotlinx.coroutines.Job
@@ -57,7 +55,7 @@ object MasterySystem {
                     else -> "Matrix Legend"
                 },
                 color = 0xFFE040FB,
-                iconEmoji = "👑"
+                iconEmoji = ""
             )
             level >= 35 -> MasteryTitle(
                 title = when (lang) {
@@ -69,7 +67,7 @@ object MasterySystem {
                     else -> "Block Overlord"
                 },
                 color = 0xFFFF3D00,
-                iconEmoji = "🔥"
+                iconEmoji = ""
             )
             level >= 20 -> MasteryTitle(
                 title = when (lang) {
@@ -81,7 +79,7 @@ object MasterySystem {
                     else -> "Grandmaster"
                 },
                 color = 0xFF00E5FF,
-                iconEmoji = "💎"
+                iconEmoji = ""
             )
             level >= 10 -> MasteryTitle(
                 title = when (lang) {
@@ -93,7 +91,7 @@ object MasterySystem {
                     else -> "Block Master"
                 },
                 color = 0xFFFFD700,
-                iconEmoji = "🥇"
+                iconEmoji = ""
             )
             level >= 5 -> MasteryTitle(
                 title = when (lang) {
@@ -105,7 +103,7 @@ object MasterySystem {
                     else -> "Apprentice"
                 },
                 color = 0xFF80DEEA,
-                iconEmoji = "🥈"
+                iconEmoji = ""
             )
             else -> MasteryTitle(
                 title = when (lang) {
@@ -117,7 +115,7 @@ object MasterySystem {
                     else -> "Novice"
                 },
                 color = 0xFFCD7F32,
-                iconEmoji = "🥉"
+                iconEmoji = ""
             )
         }
     }
@@ -140,7 +138,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val gameEngine = GameEngine()
     val blockBlastEngine = BlockBlastEngine()
-    val slidePuzzleEngine = SlidePuzzleEngine()
     val lobbyManager = FirebaseLobbyManager(viewModelScope)
 
     private var soundPool: android.media.SoundPool? = null
@@ -238,7 +235,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _themeColor = MutableStateFlow("indigo")
     val themeColor = _themeColor.asStateFlow()
 
-    private val _blockStyle = MutableStateFlow("glass")
+    private val _blockStyle = MutableStateFlow("material")
     val blockStyle = _blockStyle.asStateFlow()
 
     private val _nextCount = MutableStateFlow(3)
@@ -352,6 +349,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _statsGamesPlayed = MutableStateFlow(0)
     val statsGamesPlayed = _statsGamesPlayed.asStateFlow()
 
+    private var hasAwardedCurrentGameReward = false
+    private var hasAwardedBlockBlastReward = false
+
     private val _achievementsList = MutableStateFlow<List<com.example.ui.Achievement>>(emptyList())
     val achievementsList = _achievementsList.asStateFlow()
 
@@ -396,12 +396,100 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _adminErrorMessage = MutableStateFlow<String?>(null)
     val adminErrorMessage = _adminErrorMessage.asStateFlow()
 
-    private val _isAdminSessionAuthenticated = MutableStateFlow(prefs.getBoolean("admin_session_persisted", false))
+    fun isCurrentUserAdmin(): Boolean {
+        val user = auth.currentUser ?: return false
+        val uid = user.uid
+        val email = user.email?.lowercase() ?: ""
+        return uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
+               (user.isEmailVerified && email == "ezik02021@gmail.com")
+    }
+
+    fun isReservedAdminNickname(name: String): Boolean {
+        val clean = name.trim().lowercase()
+        if (clean.isEmpty()) return false
+        val reserved = setOf(
+            "fsfq", "admin", "administrator", "админ", "администратор",
+            "system", "система", "moderator", "модератор", "developer",
+            "разработчик", "support", "поддержка", "owner", "владелец", "создатель"
+        )
+        if (clean in reserved) return true
+        if (clean.contains("fsfq") || clean.contains("админ") || clean.contains("admin")) {
+            return true
+        }
+        return false
+    }
+
+    private val _isAdminSessionAuthenticated = MutableStateFlow(
+        prefs.getBoolean("admin_session_persisted", false)
+    )
     val isAdminSessionAuthenticated = _isAdminSessionAuthenticated.asStateFlow()
 
     fun setAdminSessionAuthenticated(value: Boolean) {
+        if (value && !isCurrentUserAdmin()) {
+            _isAdminSessionAuthenticated.value = false
+            prefs.edit().putBoolean("admin_session_persisted", false).apply()
+            return
+        }
         _isAdminSessionAuthenticated.value = value
         prefs.edit().putBoolean("admin_session_persisted", value).apply()
+    }
+
+    private val _isMultiplayerUnlocked = MutableStateFlow(
+        prefs.getString("multiplayer_access_key_v2", "") == "FsFq"
+    )
+    val isMultiplayerUnlocked = _isMultiplayerUnlocked.asStateFlow()
+
+    fun unlockMultiplayerWithPassword(password: String): Boolean {
+        val clean = password.trim()
+        if (clean.isEmpty()) return false
+        if (clean == "FsFq" || clean.equals("FsFq", ignoreCase = true)) {
+            _isMultiplayerUnlocked.value = true
+            prefs.edit()
+                .putString("multiplayer_access_key_v2", "FsFq")
+                .remove("multiplayer_beta_unlocked")
+                .apply()
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Records an intentional room exit. If player exits > 3 times within 1 hour,
+     * imposes a 100 coin penalty to prevent room spam / dodging.
+     * Returns true if penalty was applied, false otherwise.
+     */
+    fun recordRoomExitAndApplyPenaltyIfNeeded(): Boolean {
+        val now = System.currentTimeMillis()
+        val oneHourAgo = now - 3600_000L
+        val historyStr = prefs.getString("mp_room_exit_timestamps", "") ?: ""
+        val timestamps = historyStr.split(",")
+            .mapNotNull { it.toLongOrNull() }
+            .filter { it > oneHourAgo }
+            .toMutableList()
+
+        timestamps.add(now)
+        val updatedHistory = timestamps.joinToString(",")
+        prefs.edit().putString("mp_room_exit_timestamps", updatedHistory).apply()
+
+        // If more than 3 exits in the past hour -> apply 100 coin penalty
+        if (timestamps.size > 3) {
+            val penalty = 100
+            deductCreditsForPenalty(penalty)
+            return true
+        }
+        return false
+    }
+
+    fun deductCreditsForPenalty(amount: Int) {
+        if (amount <= 0) return
+        if ((_credits.value xor CHECKSUM_MASK) != _creditsChecksum) {
+            val restored = prefs.getInt("credits", 0)
+            _credits.value = restored
+            _creditsChecksum = restored xor CHECKSUM_MASK
+        }
+        val newCredits = maxOf(0, _credits.value - amount)
+        setCreditsInternal(newCredits, syncToCloud = true)
+        saveCurrentProfileToDb()
     }
 
     private val _hasNicknameGradient = MutableStateFlow(false)
@@ -451,12 +539,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _showRewardedAdDialog = MutableStateFlow(false)
     val showRewardedAdDialog = _showRewardedAdDialog.asStateFlow()
 
+    // Ads SDK connection state (Yandex Mobile Ads SDK connected)
+    val isAdSdkConnected: Boolean = true
+    val isRewardedAdLoaded = com.example.ads.YandexAdsManager.isAdLoaded
+    val isAdLoading = com.example.ads.YandexAdsManager.isLoading
+
     fun openRewardedAdDialog() {
+        com.example.ads.YandexAdsManager.loadRewardedAd()
         _showRewardedAdDialog.value = true
     }
 
     fun closeRewardedAdDialog() {
         _showRewardedAdDialog.value = false
+    }
+
+    fun loadRewardedAd() {
+        com.example.ads.YandexAdsManager.loadRewardedAd()
+    }
+
+    fun showRewardedAd(
+        activity: android.app.Activity,
+        onRewarded: (amount: Int, type: String) -> Unit,
+        onDismissed: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        com.example.ads.YandexAdsManager.showRewardedAd(activity, onRewarded, onDismissed, onError)
     }
 
     private val _showSignOutConfirmDialog = MutableStateFlow(false)
@@ -519,10 +626,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return 500 + (level - 1) * 250
     }
 
+    fun addMatchXp(score: Int, lines: Int, modeBonus: Int = 40) {
+        val earnedXp = maxOf(15, (score / 40) + (lines * 12) + modeBonus)
+        val currentAccXp = prefs.getInt("stats_accumulated_xp", 0) + earnedXp
+        prefs.edit().putInt("stats_accumulated_xp", currentAccXp).apply()
+        evaluateAchievements()
+    }
+
     fun getPlayerTotalXp(): Int {
+        val accumulatedXp = prefs.getInt("stats_accumulated_xp", 0)
         val totalLines = prefs.getInt("stats_cleared_lines", 0)
         val highscore = prefs.getInt("stats_high_score", 0)
-        return (totalLines * 25) + (highscore / 10) + _bonusXp.value
+        return accumulatedXp + (totalLines * 25) + (highscore / 10) + _bonusXp.value
     }
 
     fun getPlayerLevel(totalXp: Int = getPlayerTotalXp()): Int {
@@ -651,14 +766,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val achievementDefs = listOf(
         AchievementDef("classic_novice", "Lines Master", "Мастер линий", "Clear 10 or more total lines in Classic Match mode", "Уберите 10 или более линий в классическом режиме", 10, "lines", rewardCredits = 150) { vm -> vm.prefs.getInt("stats_cleared_lines", 0) },
         AchievementDef("score_tycoon", "Sizable Score", "Финансовый магнат", "Score 5,000 points or more in a single Tetris match", "Наберите 5000 или более очков в одном матче", 5000, "score", crateKeyReward = "iron", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_high_score", 0) },
-        AchievementDef("extended_pioneer", "Pentamino Integrator", "Пионер Пентамино", "Launch a match in Extended Shapes mode to embrace 5-element blocks", "Начните хотя бы одну игру в расширенном режиме", 1, "crown", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_extended_pioneer_unlocked", false)) 1 else 0 },
-        AchievementDef("speed_runner", "Hyper-Speed", "Гиперскорость", "Survive a match under extreme starting speed in Hyper Blast mode", "Начните хотя бы один матч на уровне 10 в гипер-режиме", 1, "speed", rewardCredits = 150) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
+        AchievementDef("extended_pioneer", "Pentamino Integrator", "Пионер Пентамино", "Clear 20 lines or score 2,000 points in Extended mode", "Очистите 20 линий или наберите 2000 очков в расширенном режиме", 1, "crown", rewardCredits = 250, crateKeyReward = "iron", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_extended_pioneer_unlocked", false)) 1 else 0 },
+        AchievementDef("speed_runner", "Hyper-Speed Ace", "Ас Гиперскорости", "Score 3,000 points starting at speed 10 in Sprint mode", "Наберите 3000 очков на 10-й скорости в режиме Спринт", 1, "speed", rewardCredits = 250, crateKeyReward = "iron", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_speed_runner_unlocked", false)) 1 else 0 },
         AchievementDef("blast_tactician", "ZETA Expert", "Эксперт ZETA", "Earn 1,000 score points in ZETA mode", "Наберите 1000 очков в режиме ZETA", 1000, "blast", rewardCredits = 250) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
         AchievementDef("combo_king", "Combo 3x", "Комбо 3x", "Achieve a combo chain multiplier of 3x or higher in multiplayer simulator", "Достигните комбо-множителя 3x или выше в мультиплеере", 3, "combo", rewardCredits = 300) { vm -> if (vm.prefs.getBoolean("ach_combo_king_unlocked", false)) 1 else 0 },
         AchievementDef("grandmaster", "Grandmaster Tactician", "Гроссмейстер", "Score 15,000 points or more in Classic Match", "Наберите 15000 или более очков в классическом матче", 15000, "crown", rewardCredits = 500, crateKeyReward = "platinum", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_high_score", 0) },
         AchievementDef("blast_master", "ZETA Veteran", "Ветеран ZETA", "Earn 5,000 score points in ZETA mode", "Наберите 5000 очков в режиме ZETA", 5000, "blast", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
         AchievementDef("rich_player", "Elite Investor", "Элитный инвестор", "Save 2,000 credits in your balance", "Накопите не менее 2000 кредитов на балансе", 2000, "crown", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.credits.value },
-        AchievementDef("multiplayer_veteran", "Lobby Veteran", "Ветеран Лобби", "Initiate connection in PeerJS lobby 5 times", "Запустите подключение в лобби PeerJS не менее 5 раз", 5, "combo", crateKeyReward = "iron", crateKeyCount = 1) { vm -> vm.prefs.getInt("multiplayer_launches", 0) },
+        AchievementDef("multiplayer_veteran", "Arena Fighter", "Боец Арены", "Win 3 online multiplayer matches", "Победите в 3 онлайн-матчах мультиплеера", 3, "combo", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_multiplayer_wins", 0) },
         AchievementDef("color_skin_collector", "Theme Collector", "Новая Тема", "Purchase your first custom board visual theme skin", "Приобретите свою первую уникальную тему оформления", 1, "crown", rewardCredits = 300) { vm -> if (vm.prefs.getBoolean("ach_color_skin_collector_unlocked", false)) 1 else 0 },
         AchievementDef("rank_conqueror", "New Rank", "Новый Ранг", "Upgrade your security node rank tier using credits", "Повысьте категорию своего узла за кредиты", 1, "crown", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_rank_conqueror_unlocked", false)) 1 else 0 },
         
@@ -681,24 +796,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         AchievementDef("tetrises_cleared_25", "Quadro Champion", "Чемпион Квадро", "Perform 4-line clears (Quadro) 25 times", "Выполните очистку 4-х линий (Квадро) 25 раз", 25, "lines", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
         AchievementDef("tetrises_cleared_100", "Quadro Master", "Мастер Квадро", "Perform 4-line clears (Quadro) 100 times", "Выполните очистку 4-х линий (Квадро) 100 раз", 100, "lines", rewardCredits = 500, crateKeyReward = "legendary", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_tetrises_count", 0) },
         AchievementDef("blast_score_3000", "ZETA Professional", "Профессионал ZETA", "Reach 3,000 score in ZETA mode", "Наберите 3000 очков в режиме ZETA", 3000, "blast", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
-        AchievementDef("blast_score_10000", "ZETA Master", "Мастер ZETA", "Reach 10,000 score in ZETA mode", "Наберите 1000 очков в режиме ZETA", 10000, "blast", crateKeyReward = "legendary", crateKeyCount = 1) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
+        AchievementDef("blast_score_10000", "ZETA Master", "Мастер ZETA", "Reach 10,000 score in ZETA mode", "Наберите 10000 очков в режиме ZETA", 10000, "blast", crateKeyReward = "legendary", crateKeyCount = 1) { vm -> vm.prefs.getInt("block_blast_high_score", 0) },
         AchievementDef("combo_multiplier_4", "Combo 4x", "Комбо 4x", "Achieve a combo chain multiplier of 4x in multiplayer simulator", "Достигните комбо-множителя 4x в мультиплеере", 4, "combo", crateKeyReward = "golden", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_4_unlocked", false)) 1 else 0 },
         AchievementDef("combo_multiplier_5", "Combo 5x", "Комбо 5x", "Achieve a combo chain multiplier of 5x in multiplayer simulator", "Достигните комбо-множителя 5x в мультиплеере", 5, "combo", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_combo_multiplier_5_unlocked", false)) 1 else 0 },
         AchievementDef("avatar_changes_5", "Fashion Stylist", "Модный стилист", "Change your avatar emoji or color 5 times", "Измените эмодзи или цвет аватара 5 раз", 5, "crown", rewardCredits = 150) { vm -> vm.prefs.getInt("stats_avatar_changes", 0) },
         AchievementDef("title_purchases_3", "Title Collector", "Коллекционер титулов", "Purchase 3 different profile titles in store", "Приобретите 3 разных титула в магазине", 3, "crown", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.purchasedTitles.value.size },
         AchievementDef("frame_purchases_3", "Frame Collector", "Коллекционер рамок", "Purchase 3 different avatar frames in store", "Приобретите 3 разных рамки в магазине", 3, "crown", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.purchasedAvatarFrames.value.size },
         AchievementDef("cosmetics_collector", "Cosmetics Fan", "Икона стиля", "Purchase or unlock 3 themes or button styles", "Приобретите 3 темы или стиля кнопок", 3, "crown", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> vm.purchasedThemes.value.size + vm.purchasedControlButtonStyles.value.size },
-        AchievementDef("xp_earned_500", "Experience 500", "Опыт 500", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", rewardCredits = 200) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_2000", "Experience 2000", "Опыт 2000", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", crateKeyReward = "golden", crateKeyCount = 1) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
-        AchievementDef("xp_earned_10000", "Experience 10000", "Опыт 10000", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", crateKeyReward = "legendary", crateKeyCount = 1) { vm -> (vm.prefs.getInt("stats_cleared_lines", 0) * 25) + (vm.prefs.getInt("stats_high_score", 0) / 10) + vm.bonusXp.value },
+        AchievementDef("xp_earned_500", "Experience 500", "Опыт 500", "Earn 500 total Experience Points (XP)", "Наберите 500 очков опыта (XP) суммарно", 500, "speed", rewardCredits = 200) { vm -> vm.getPlayerTotalXp() },
+        AchievementDef("xp_earned_2000", "Experience 2000", "Опыт 2000", "Earn 2,000 total Experience Points (XP)", "Наберите 2000 очков опыта (XP) суммарно", 2000, "speed", crateKeyReward = "golden", crateKeyCount = 1) { vm -> vm.getPlayerTotalXp() },
+        AchievementDef("xp_earned_10000", "Experience 10000", "Опыт 10000", "Earn 10,000 total Experience Points (XP)", "Наберите 10000 очков опыта (XP) суммарно", 10000, "speed", crateKeyReward = "legendary", crateKeyCount = 1) { vm -> vm.getPlayerTotalXp() },
         AchievementDef("player_level_5", "Level 5", "Уровень 5", "Reach Player Level 5", "Достигните 5-го уровня", 5, "speed", rewardCredits = 250) { vm -> vm.getPlayerLevel() },
         AchievementDef("player_level_15", "Level 15", "Уровень 15", "Reach Player Level 15", "Достигните 15-го уровня", 15, "speed", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> vm.getPlayerLevel() },
         AchievementDef("player_level_30", "Level 30", "Уровень 30", "Reach Player Level 30", "Достигните 30-го уровня", 30, "speed", crateKeyReward = "legendary", crateKeyCount = 1) { vm -> vm.getPlayerLevel() },
-        AchievementDef("mode_time_attack", "Time Attack Mode", "Режим Тайм-Атак", "Launch a game in Time Attack mode", "Начните игру в режиме Тайм-Атак", 1, "speed", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_reverse", "Reverse Mode", "Режим Реверс", "Launch a game in Inversion mode", "Начните игру в режиме Инверсия", 1, "speed", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_mirror", "Mirror Mode", "Зеркальный режим", "Launch a game in Mirror Dimension mode", "Начните игру в режиме Зеркальный Мир", 1, "speed", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_relax", "Sandbox Mode", "Режим Песочница", "Launch a game in Sandbox mode", "Начните игру в режиме Песочница", 1, "speed", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_mode_relax_unlocked", false)) 1 else 0 },
-        AchievementDef("mode_extended", "Extended Mode", "Расширенный режим", "Launch a game in Extended mode", "Начните игру в Расширенном режиме", 1, "speed", rewardCredits = 100) { vm -> if (vm.prefs.getBoolean("ach_mode_extended_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_time_attack", "Blitz Ace", "Ас Блица", "Score 2,500 points in Time Attack mode", "Наберите 2500 очков в режиме Блиц", 1, "speed", rewardCredits = 250, crateKeyReward = "iron", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_mode_time_attack_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_reverse", "Inversion Tactician", "Тактик Инверсии", "Clear 15 lines in Inversion mode", "Очистите 15 линий в режиме Инверсия", 1, "speed", rewardCredits = 250, crateKeyReward = "iron", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_mode_reverse_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_mirror", "Mirror Mind", "Зеркальный Разум", "Score 3,000 points in Mirror Dimension mode", "Наберите 3000 очков в Зеркальном Мире", 1, "speed", rewardCredits = 250, crateKeyReward = "iron", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_mode_mirror_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_relax", "Zen Master", "Мастер Дзен", "Clear 30 lines in Sandbox mode", "Очистите 30 линий в режиме Песочница", 1, "speed", rewardCredits = 200, crateKeyReward = "wooden", crateKeyCount = 2) { vm -> if (vm.prefs.getBoolean("ach_mode_relax_unlocked", false)) 1 else 0 },
+        AchievementDef("mode_extended", "Blueprint Architect", "Архитектор Схем", "Solve 5 stages in Pattern Puzzle mode", "Пройдите 5 этапов в режиме Шаблон", 1, "speed", rewardCredits = 300, crateKeyReward = "golden", crateKeyCount = 1) { vm -> if (vm.prefs.getBoolean("ach_pattern_solver_unlocked", false) || vm.prefs.getInt("stats_pattern_solved", 0) >= 5) 1 else 0 },
         AchievementDef("speed_level_max", "Speed Master", "Мастер скорости", "Reach game level speed 15 in standard match modes", "Достигните 15-го игрового уровня скорости в матче", 15, "speed", crateKeyReward = "platinum", crateKeyCount = 1) { vm -> vm.prefs.getInt("stats_max_speed_reached", 0) },
         
         // Final epic 50th achievement
@@ -988,7 +1103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Reset local preferences
         prefs.edit()
             .putString("theme_color", "indigo")
-            .putString("block_style", "glass")
+            .putString("block_style", "material")
             .putInt("next_count", 3)
             .putBoolean("ghost_visible", true)
             .putString("control_style", "buttons")
@@ -1019,7 +1134,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Update active StateFlows
         _themeColor.value = "indigo"
-        _blockStyle.value = "glass"
+        _blockStyle.value = "material"
         _nextCount.value = 3
         _ghostVisible.value = true
         _ghostOutlineOnly.value = true
@@ -1596,7 +1711,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         lastLocalCreditsChangeTime = System.currentTimeMillis()
         _credits.value = safeAmount
         _creditsChecksum = safeAmount xor CHECKSUM_MASK
-        prefs.edit().putInt("credits", safeAmount).commit()
+        prefs.edit().putInt("credits", safeAmount).apply()
         if (syncToCloud) {
             syncCreditsToCloud(safeAmount)
         }
@@ -1629,7 +1744,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         evaluateAchievements()
     }
 
+    fun addRawCredits(amount: Int) {
+        if (amount <= 0) return
+        if ((_credits.value xor CHECKSUM_MASK) != _creditsChecksum) {
+            val restored = prefs.getInt("credits", 0)
+            _credits.value = restored
+            _creditsChecksum = restored xor CHECKSUM_MASK
+        }
+        val safeAmount = amount.coerceIn(1, 1000000)
+        setCreditsInternal(_credits.value + safeAmount, syncToCloud = true)
+        saveCurrentProfileToDb()
+        evaluateAchievements()
+    }
+
     fun activatePrestige(targetLevel: Int) {
+        val req = when (targetLevel) {
+            1 -> com.example.ui.ShopPrices.PRESTIGE_I_REQUIREMENT
+            2 -> com.example.ui.ShopPrices.PRESTIGE_II_REQUIREMENT
+            3 -> com.example.ui.ShopPrices.PRESTIGE_III_REQUIREMENT
+            else -> Int.MAX_VALUE
+        }
+        if (_credits.value < req) return
+
         setCreditsInternal(0, syncToCloud = true)
         if (targetLevel >= 3) {
             setCustomTagUnlocked(true)
@@ -1672,8 +1808,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setPlayerName(name: String) {
-        _playerName.update { name }
-        prefs.edit().putString("player_name", name).apply()
+        val trimmed = name.trim()
+        val safeName = if (isReservedAdminNickname(trimmed) && !isCurrentUserAdmin()) {
+            "Player 1"
+        } else {
+            trimmed
+        }
+        _playerName.update { safeName }
+        prefs.edit().putString("player_name", safeName).apply()
         saveCurrentProfileToDb()
     }
 
@@ -1720,7 +1862,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         "title" to _equippedTitle.value,
                         "credits" to _credits.value,
                         "last_synced_timestamp" to System.currentTimeMillis(),
-                        "is_online" to true
+                        "is_online" to true,
+                        "app_version_code" to com.example.BuildConfig.VERSION_CODE
                     )
                     firestore.collection("high_scores").document(currentUser.uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
                 }
@@ -1803,11 +1946,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             _isAuthLoading.value = true
 
-            // Local DB login check
+            // Local DB login check (support hashed and legacy plain)
             val localAcc = accountRepo.getAccount(trimmedName)
             val inputHashed = com.example.db.PasswordHasher.hash(trimmedPass)
             
-            if (localAcc != null && localAcc.password == inputHashed) {
+            if (localAcc != null && (localAcc.password == inputHashed || localAcc.password == trimmedPass)) {
+                if (localAcc.password == trimmedPass) {
+                    accountRepo.insert(localAcc.copy(password = inputHashed))
+                }
                 _isEmailVerified.value = true
                 _showVerificationBanner.value = false
                 switchAccount(localAcc.username, localAcc.onlineTier, localAcc.credits, localAcc.hasGradient, localAcc.bonusXp)
@@ -1816,81 +1962,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
 
-            val email = if (trimmedName.contains("@")) {
-                trimmedName
-            } else {
-                val hexName = trimmedName.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
-                "${hexName}@blocktetris.com"
-            }
-            auth.signInWithEmailAndPassword(email, trimmedPass)
-                .addOnSuccessListener { authResult ->
-                    val user = authResult.user
-                    if (user != null) {
-                        try { user.reload() } catch (_: Exception) {}
-                        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                        firestore.collection("users").document(user.uid).get()
-                            .addOnSuccessListener { doc ->
-                                val cloudVerified = (doc.getBoolean("email_verified") == true) ||
-                                        (doc.getBoolean("is_verified") == true) ||
-                                        (doc.getBoolean("emailVerified") == true)
-                                val isVerified = user.isEmailVerified || cloudVerified
+            // Resolve email: if user entered an email, use it directly. Otherwise query nicknames collection for registered email.
+            val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            val attemptAuthWithEmail = { targetEmail: String ->
+                auth.signInWithEmailAndPassword(targetEmail, trimmedPass)
+                    .addOnSuccessListener { authResult ->
+                        val user = authResult.user
+                        if (user != null) {
+                            try { user.reload() } catch (_: Exception) {}
+                            firestore.collection("users").document(user.uid).get()
+                                .addOnSuccessListener { doc ->
+                                    val cloudVerified = (doc.getBoolean("email_verified") == true) ||
+                                            (doc.getBoolean("is_verified") == true) ||
+                                            (doc.getBoolean("emailVerified") == true)
+                                    val isVerified = user.isEmailVerified || cloudVerified
 
-                                if (!isVerified) {
-                                    _isEmailVerified.value = false
-                                    _showVerificationBanner.value = true
-                                    _loginError.value = "Подтвердите почту! Проверьте входящие."
-                                    auth.signOut()
-                                    _isAuthLoading.value = false
-                                    return@addOnSuccessListener
-                                }
-
-                                viewModelScope.launch {
-                                    _isEmailVerified.value = true
-                                    _showVerificationBanner.value = false
-                                    profilePrefs.edit().putBoolean("is_email_verified", true).apply()
-
-                                    firestore.collection("users").document(user.uid).set(
-                                        mapOf(
-                                            "email" to (user.email ?: ""),
-                                            "email_verified" to true,
-                                            "is_verified" to true,
-                                            "emailVerified" to true
-                                        ),
-                                        com.google.firebase.firestore.SetOptions.merge()
-                                    )
-
-                                    val data = com.example.db.FirebaseSync.pullUserData(getApplication())
-                                    val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
-                                    val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
-                                        ?: if (_playerName.value == "Player 1") _credits.value else prefs.getInt("credits", 750)
-                                    val resolvedTier = (data?.get("online_tier") as? String)
-                                        ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
-                                    val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
-                                    val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
-
-                                    val resolvedHighScore = (data?.get("stats_high_score") as? Number)?.toInt() ?: 0
-                                    if (resolvedHighScore > 0) {
-                                        scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                                    if (!isVerified) {
+                                        _isEmailVerified.value = false
+                                        _showVerificationBanner.value = true
+                                        _loginError.value = "Подтвердите почту! Проверьте входящие."
+                                        auth.signOut()
+                                        _isAuthLoading.value = false
+                                        return@addOnSuccessListener
                                     }
 
-                                    switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
-                                    startUserDocListener(user.uid)
-                                    _loginSuccessMessage.value = "Успешный вход!"
-                                    _isAuthLoading.value = false
-                                }
-                            }
-                            .addOnFailureListener {
-                                if (!user.isEmailVerified) {
-                                    _isEmailVerified.value = false
-                                    _showVerificationBanner.value = true
-                                    _loginError.value = "Подтвердите почту! Проверьте входящие."
-                                    auth.signOut()
-                                    _isAuthLoading.value = false
-                                } else {
                                     viewModelScope.launch {
                                         _isEmailVerified.value = true
                                         _showVerificationBanner.value = false
                                         profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+
+                                        firestore.collection("users").document(user.uid).set(
+                                            mapOf(
+                                                "email" to (user.email ?: ""),
+                                                "email_verified" to true,
+                                                "is_verified" to true,
+                                                "emailVerified" to true
+                                            ),
+                                            com.google.firebase.firestore.SetOptions.merge()
+                                        )
+
                                         val data = com.example.db.FirebaseSync.pullUserData(getApplication())
                                         val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
                                         val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
@@ -1900,22 +2010,76 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
                                         val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
 
+                                        val resolvedHighScore = (data?.get("stats_high_score") as? Number)?.toInt() ?: 0
+                                        if (resolvedHighScore > 0) {
+                                            scoreRepo.insert(HighScore(playerName = resolvedUsername, score = resolvedHighScore))
+                                        }
+
                                         switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
                                         startUserDocListener(user.uid)
                                         _loginSuccessMessage.value = "Успешный вход!"
                                         _isAuthLoading.value = false
                                     }
                                 }
-                            }
-                    } else {
-                        _loginError.value = "Ошибка авторизации!"
+                                .addOnFailureListener {
+                                    if (!user.isEmailVerified) {
+                                        _isEmailVerified.value = false
+                                        _showVerificationBanner.value = true
+                                        _loginError.value = "Подтвердите почту! Проверьте входящие."
+                                        auth.signOut()
+                                        _isAuthLoading.value = false
+                                    } else {
+                                        viewModelScope.launch {
+                                            _isEmailVerified.value = true
+                                            _showVerificationBanner.value = false
+                                            profilePrefs.edit().putBoolean("is_email_verified", true).apply()
+                                            val data = com.example.db.FirebaseSync.pullUserData(getApplication())
+                                            val resolvedUsername = user.displayName ?: user.email?.substringBefore("@") ?: trimmedName
+                                            val resolvedCredits = (data?.get("credits") as? Number)?.toInt()
+                                                ?: if (_playerName.value == "Player 1") _credits.value else prefs.getInt("credits", 750)
+                                            val resolvedTier = (data?.get("online_tier") as? String)
+                                                ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+                                            val resolvedHasGradient = data?.get("has_nickname_gradient") as? Boolean ?: false
+                                            val resolvedBonusXp = (data?.get("bonus_xp") as? Number)?.toInt() ?: 0
+
+                                            switchAccount(resolvedUsername, resolvedTier, resolvedCredits, resolvedHasGradient, resolvedBonusXp)
+                                            startUserDocListener(user.uid)
+                                            _loginSuccessMessage.value = "Успешный вход!"
+                                            _isAuthLoading.value = false
+                                        }
+                                    }
+                                }
+                        } else {
+                            _loginError.value = "Ошибка авторизации!"
+                            _isAuthLoading.value = false
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        _loginError.value = e.localizedMessage ?: "Неверные учетные данные!"
                         _isAuthLoading.value = false
                     }
-                }
-                .addOnFailureListener { e ->
-                    _loginError.value = e.localizedMessage ?: "Неверные учетные данные!"
-                    _isAuthLoading.value = false
-                }
+            }
+
+            if (trimmedName.contains("@")) {
+                attemptAuthWithEmail(trimmedName.lowercase())
+            } else {
+                val nickLower = trimmedName.lowercase()
+                firestore.collection("nicknames").document(nickLower).get()
+                    .addOnSuccessListener { nickDoc ->
+                        val emailFromNick = nickDoc.getString("email")
+                        if (!emailFromNick.isNullOrEmpty()) {
+                            attemptAuthWithEmail(emailFromNick)
+                        } else {
+                            // Fallback to legacy hex email
+                            val hexName = trimmedName.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
+                            attemptAuthWithEmail("${hexName}@blocktetris.com")
+                        }
+                    }
+                    .addOnFailureListener {
+                        val hexName = trimmedName.toByteArray(Charsets.UTF_8).joinToString("") { "%02x".format(it) }
+                        attemptAuthWithEmail("${hexName}@blocktetris.com")
+                    }
+            }
         }
     }
 
@@ -1930,10 +2094,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             clearLoginMessages()
             val trimmedName = usernameEntered.trim()
-            val trimmedEmail = emailEntered.trim()
+            val trimmedEmail = emailEntered.trim().lowercase()
             val trimmedPass = passwordEntered.trim()
             if (trimmedName.isEmpty()) {
                 _loginError.value = "Никнейм пустой!"
+                return@launch
+            }
+            val isTargetEmailAdmin = (trimmedEmail == "ezik02021@gmail.com")
+            if (isReservedAdminNickname(trimmedName) && !isTargetEmailAdmin) {
+                _loginError.value = "Этот никнейм защищен и зарезервирован администрацией!"
                 return@launch
             }
             if (trimmedEmail.isEmpty() || !trimmedEmail.contains("@")) {
@@ -1953,46 +2122,85 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Preserve guest progress: if active user is "Player 1", keep their stats!
             val finalCredits = initialCredits ?: if (_playerName.value == "Player 1") _credits.value else 750
             val finalTier = initialTier ?: if (_playerName.value == "Player 1") _onlineTier.value else "BRONZE"
+            val nameLower = trimmedName.lowercase()
+            val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
-            // Регистрация + отправка письма верификации / register + send verification email
-            auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
-                .addOnSuccessListener { authResult ->
-                    viewModelScope.launch {
-                        val user = authResult.user
-                        if (user != null) {
-                            val profileUpdates = userProfileChangeRequest {
-                                displayName = trimmedName
-                            }
-                            user.updateProfile(profileUpdates)
-                            
-                            // Отправляем письмо подтверждения / send verification email
-                            try {
-                                user.sendEmailVerification()
-                            } catch (_: Exception) {}
-                            
-                            val acc = com.example.db.UserAccount(
-                                username = trimmedName,
-                                password = trimmedPass,
-                                onlineTier = finalTier,
-                                credits = finalCredits
-                            )
-                            accountRepo.insert(acc)
-                            switchAccount(trimmedName, finalTier, finalCredits)
-                            
-                            // Инициализируем Firestore запись / init Firestore record
-                            com.example.db.FirebaseSync.pushUserData(getApplication())
-                            
-                            _isEmailVerified.value = false
-                            _showVerificationBanner.value = true
-                            _loginSuccessMessage.value = "Письмо подтверждения отправлено! Проверьте почту."
-                        } else {
-                            _loginError.value = "Ошибка создания аккаунта!"
-                        }
+            // 1. Проверяем занятость никнейма перед регистрацией
+            firestore.collection("nicknames").document(nameLower).get()
+                .addOnSuccessListener { nickDoc ->
+                    if (nickDoc.exists()) {
+                        _loginError.value = "Никнейм '$trimmedName' уже занят другим игроком!"
                         _isAuthLoading.value = false
+                        return@addOnSuccessListener
                     }
+
+                    firestore.collection("users").whereEqualTo("player_name", trimmedName).get()
+                        .addOnSuccessListener { userDocs ->
+                            if (!userDocs.isEmpty) {
+                                _loginError.value = "Никнейм '$trimmedName' уже занят другим игроком!"
+                                _isAuthLoading.value = false
+                                return@addOnSuccessListener
+                            }
+
+                            // Никнейм свободен -> регистрируем в Firebase Auth
+                            auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
+                                .addOnSuccessListener { authResult ->
+                                    viewModelScope.launch {
+                                        val user = authResult.user
+                                        if (user != null) {
+                                            val profileUpdates = userProfileChangeRequest {
+                                                displayName = trimmedName
+                                            }
+                                            user.updateProfile(profileUpdates)
+                                            
+                                            // Отправляем письмо подтверждения / send verification email
+                                            try {
+                                                user.sendEmailVerification()
+                                            } catch (_: Exception) {}
+                                            
+                                            // Бронируем уникальный никнейм в коллекции nicknames
+                                            val nickData = mapOf(
+                                                "uid" to user.uid,
+                                                "email" to trimmedEmail,
+                                                "player_name" to trimmedName,
+                                                "nick_lower" to nameLower,
+                                                "created_at" to System.currentTimeMillis()
+                                            )
+                                            firestore.collection("nicknames").document(nameLower).set(nickData)
+
+                                            val acc = com.example.db.UserAccount(
+                                                username = trimmedName,
+                                                password = com.example.db.PasswordHasher.hash(trimmedPass),
+                                                onlineTier = finalTier,
+                                                credits = finalCredits
+                                            )
+                                            accountRepo.insert(acc)
+                                            switchAccount(trimmedName, finalTier, finalCredits)
+                                            
+                                            // Инициализируем Firestore запись / init Firestore record
+                                            com.example.db.FirebaseSync.pushUserData(getApplication())
+                                            
+                                            _isEmailVerified.value = false
+                                            _showVerificationBanner.value = true
+                                            _loginSuccessMessage.value = "Письмо подтверждения отправлено! Проверьте почту."
+                                        } else {
+                                            _loginError.value = "Ошибка создания аккаунта!"
+                                        }
+                                        _isAuthLoading.value = false
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    _loginError.value = e.localizedMessage ?: "Ошибка при регистрации!"
+                                    _isAuthLoading.value = false
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            _loginError.value = "Ошибка проверки доступности ника: ${e.localizedMessage}"
+                            _isAuthLoading.value = false
+                        }
                 }
                 .addOnFailureListener { e ->
-                    _loginError.value = e.localizedMessage ?: "Ошибка при регистрации!"
+                    _loginError.value = "Ошибка проверки доступности ника: ${e.localizedMessage}"
                     _isAuthLoading.value = false
                 }
         }
@@ -2004,30 +2212,105 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _nicknameUpdateError.value = "Никнейм должен быть от 2 до 20 символов!"
             return
         }
-        viewModelScope.launch {
-            _nicknameUpdateError.value = null
-            _nicknameUpdateSuccess.value = null
-            val user = auth.currentUser
-            if (user != null) {
-                val profileUpdates = userProfileChangeRequest {
-                    displayName = trimmed
+        if (isReservedAdminNickname(trimmed) && !isCurrentUserAdmin()) {
+            _nicknameUpdateError.value = "Этот никнейм защищен и зарезервирован разработчиком!"
+            return
+        }
+
+        val user = auth.currentUser
+        if (user == null) {
+            _nicknameUpdateError.value = "Войдите в подтвержденный аккаунт для смены никнейма!"
+            return
+        }
+
+        // Проверка: реальный человек с подтвержденной почтой
+        val isVerified = user.isEmailVerified || _isEmailVerified.value
+        if (!isVerified && !isCurrentUserAdmin()) {
+            _nicknameUpdateError.value = "Смена ника доступна только для подтвержденной почты! Подтвердите почту."
+            return
+        }
+
+        val oldNick = _playerName.value.trim()
+        if (oldNick.equals(trimmed, ignoreCase = true)) {
+            _nicknameUpdateError.value = "Этот никнейм уже установлен!"
+            return
+        }
+
+        val newNickLower = trimmed.lowercase()
+        val oldNickLower = oldNick.lowercase()
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+        _nicknameUpdateError.value = null
+        _nicknameUpdateSuccess.value = null
+
+        // 1. Проверяем коллекцию уникальных никнеймов
+        firestore.collection("nicknames").document(newNickLower).get()
+            .addOnSuccessListener { nickDoc ->
+                if (nickDoc.exists()) {
+                    val ownerUid = nickDoc.getString("uid") ?: ""
+                    if (ownerUid.isNotEmpty() && ownerUid != user.uid) {
+                        _nicknameUpdateError.value = "Этот никнейм уже занят другим игроком!"
+                        return@addOnSuccessListener
+                    }
                 }
-                user.updateProfile(profileUpdates)
-                    .addOnSuccessListener {
-                        viewModelScope.launch {
-                            switchAccount(trimmed, _onlineTier.value, _credits.value, _hasNicknameGradient.value, _bonusXp.value)
-                            com.example.db.FirebaseSync.pushUserData(getApplication())
-                            _nicknameUpdateSuccess.value = "Никнейм успешно изменен!"
+
+                // 2. Дополнительная проверка по коллекции users
+                firestore.collection("users").whereEqualTo("player_name", trimmed).get()
+                    .addOnSuccessListener { userDocs ->
+                        val hasOtherOwner = userDocs.documents.any { it.id != user.uid }
+                        if (hasOtherOwner) {
+                            _nicknameUpdateError.value = "Этот никнейм уже занят другим игроком!"
+                            return@addOnSuccessListener
                         }
+
+                        // 3. Ник свободен — резервируем и привязываем к пользователю и почте
+                        val nickData = mapOf(
+                            "uid" to user.uid,
+                            "email" to (user.email ?: ""),
+                            "player_name" to trimmed,
+                            "nick_lower" to newNickLower,
+                            "updated_at" to System.currentTimeMillis()
+                        )
+
+                        firestore.collection("nicknames").document(newNickLower).set(nickData)
+                            .addOnSuccessListener {
+                                // Удаляем старый ник из брони, если он отличался и был зарегистрирован
+                                if (oldNickLower.isNotEmpty() && oldNickLower != "player 1" && oldNickLower != newNickLower) {
+                                    firestore.collection("nicknames").document(oldNickLower).get()
+                                        .addOnSuccessListener { oldDoc ->
+                                            if (oldDoc.exists() && oldDoc.getString("uid") == user.uid) {
+                                                oldDoc.reference.delete()
+                                            }
+                                        }
+                                }
+
+                                // Обновляем Firebase Auth профиль
+                                val profileUpdates = userProfileChangeRequest {
+                                    displayName = trimmed
+                                }
+                                user.updateProfile(profileUpdates)
+                                    .addOnSuccessListener {
+                                        viewModelScope.launch {
+                                            switchAccount(trimmed, _onlineTier.value, _credits.value, _hasNicknameGradient.value, _bonusXp.value)
+                                            com.example.db.FirebaseSync.pushUserData(getApplication())
+                                            _nicknameUpdateSuccess.value = "Никнейм успешно изменен и привязан к вашей почте!"
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        _nicknameUpdateError.value = e.localizedMessage ?: "Ошибка при обновлении профиля!"
+                                    }
+                            }
+                            .addOnFailureListener { e ->
+                                _nicknameUpdateError.value = "Ошибка привязки никнейма: ${e.localizedMessage}"
+                            }
                     }
                     .addOnFailureListener { e ->
-                        _nicknameUpdateError.value = e.localizedMessage ?: "Ошибка при изменении никнейма!"
+                        _nicknameUpdateError.value = "Ошибка проверки никнейма: ${e.localizedMessage}"
                     }
-            } else {
-                switchAccount(trimmed, _onlineTier.value, _credits.value, _hasNicknameGradient.value, _bonusXp.value)
-                _nicknameUpdateSuccess.value = "Никнейм успешно изменен!"
             }
-        }
+            .addOnFailureListener { e ->
+                _nicknameUpdateError.value = "Ошибка проверки никнейма: ${e.localizedMessage}"
+            }
     }
 
     fun updateEmail(newEmail: String) {
@@ -2041,15 +2324,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _emailUpdateSuccess.value = null
             val user = auth.currentUser
             if (user != null) {
-                user.updateEmail(trimmed)
+                user.verifyBeforeUpdateEmail(trimmed)
                     .addOnSuccessListener {
-                        _emailUpdateSuccess.value = "Почта успешно обновлена!"
+                        _emailUpdateSuccess.value = "Письмо подтверждения отправлено на новый адрес! Подтвердите его для смены."
                         viewModelScope.launch {
                             com.example.db.FirebaseSync.pushUserData(getApplication())
                         }
                     }
                     .addOnFailureListener { e ->
-                        _emailUpdateError.value = e.localizedMessage ?: "Ошибка при обновлении почты!"
+                        // Fallback to updateEmail if verifyBeforeUpdateEmail not supported or fails
+                        @Suppress("DEPRECATION")
+                        user.updateEmail(trimmed)
+                            .addOnSuccessListener {
+                                _emailUpdateSuccess.value = "Почта успешно обновлена!"
+                                viewModelScope.launch {
+                                    com.example.db.FirebaseSync.pushUserData(getApplication())
+                                }
+                            }
+                            .addOnFailureListener { fallbackErr ->
+                                _emailUpdateError.value = fallbackErr.localizedMessage ?: e.localizedMessage ?: "Ошибка при обновлении почты!"
+                            }
                     }
             } else {
                 _emailUpdateError.value = "Войдите в аккаунт, чтобы изменить почту!"
@@ -2116,12 +2410,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun switchAccount(username: String, tier: String, creditsAmount: Int, hasGradient: Boolean = false, bonusXpAmount: Int = 0) {
-        _playerName.update { username }
+        val safeName = if (isReservedAdminNickname(username) && !isCurrentUserAdmin()) {
+            "Player 1"
+        } else {
+            username
+        }
+        _playerName.update { safeName }
         _onlineTier.update { tier }
         setCreditsInternal(creditsAmount, syncToCloud = false)
         _hasNicknameGradient.update { hasGradient }
         _bonusXp.update { bonusXpAmount }
-        prefs.edit().putString("player_name", username).apply()
+        prefs.edit().putString("player_name", safeName).apply()
         prefs.edit().putString("online_tier", tier).apply()
         profilePrefs.edit().putString("online_tier", tier).apply()
         profilePrefs.edit().putBoolean("has_nickname_gradient", hasGradient).apply()
@@ -2169,6 +2468,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout() {
+        userDocSnapshotListener?.remove()
+        userDocSnapshotListener = null
         viewModelScope.launch {
             try {
                 auth.signOut()
@@ -2445,8 +2746,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .addOnSuccessListener { snapshot ->
                 val batch = firestore.batch()
                 for (doc in snapshot.documents) {
-                    val pName = doc.getString("player_name")
-                    if (pName != "FsFq") {
+                    val uid = doc.id
+                    val email = doc.getString("email")?.lowercase() ?: ""
+                    val isProtectedAdminDoc = (uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
+                        email == "ezik02021@gmail.com")
+                    if (!isProtectedAdminDoc) {
                         batch.delete(doc.reference)
                         firestore.collection("high_scores").document(doc.id).delete()
                     }
@@ -2461,7 +2765,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun adminGiveCredits(uid: String = "", username: String = "", amount: Int, isDelta: Boolean = false) {
         val currentUid = auth.currentUser?.uid ?: ""
         val currentPName = _playerName.value
-        val isTargetMe = (uid.isNotEmpty() && uid == currentUid) || (username.isNotEmpty() && (username == currentPName || username == "FsFq"))
+        val isTargetMe = (uid.isNotEmpty() && uid == currentUid) || (username.isNotEmpty() && username == currentPName && isCurrentUserAdmin())
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
         if (isTargetMe) {
@@ -2733,7 +3037,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "stats_avatar_changes" to 0,
             "multiplayer_launches" to 0,
             "board_color_skin" to "cyberpunk",
-            "block_style" to "glass",
+            "block_style" to "material",
             "custom_avatar_base64" to "",
             "custom_background_base64" to ""
         )
@@ -2884,7 +3188,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .putInt("stats_avatar_changes", 0)
                     .putInt("multiplayer_launches", 0)
                     .putString("board_color_skin", "cyberpunk")
-                    .putString("block_style", "glass")
+                    .putString("block_style", "material")
                     .apply()
                     
                 profilePrefs.edit()
@@ -2980,12 +3284,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Also broadcast to lobby chat as system alert
         val systemChatMessage = mapOf(
             "senderId" to "system_broadcast",
-            "senderName" to "🛡️ [СИСТЕМА / SYSTEM]",
-            "text" to if (title.isNotBlank()) "📢 $title: $message" else "📢 $message",
+            "senderName" to "[СИСТЕМА / SYSTEM]",
+            "text" to if (title.isNotBlank()) "$title: $message" else message,
             "timestamp" to System.currentTimeMillis(),
             "hasGradient" to true,
             "senderTier" to "ADMIN",
-            "senderAvatarEmoji" to "👑",
+            "senderAvatarEmoji" to "",
             "senderAvatarBgColor" to "FFD700",
             "senderAvatarFrame" to "gold_ma"
         )
@@ -3083,9 +3387,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").get().addOnSuccessListener { snapshot ->
             val batch = firestore.batch()
             for (doc in snapshot.documents) {
-                val pName = doc.getString("player_name") ?: ""
                 val uid = doc.id
-                if (pName != "FsFq" && uid != "ge9Lzx5EkCfbINDZEG6I8vYcJCd2") {
+                val email = doc.getString("email")?.lowercase() ?: ""
+                val isProtectedAdminDoc = (uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
+                    email == "ezik02021@gmail.com")
+                if (!isProtectedAdminDoc) {
                     batch.delete(doc.reference)
                 }
             }
@@ -3097,70 +3403,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startGame(mode: GameMode = GameMode.CLASSIC) {
+        hasAwardedCurrentGameReward = false
         gameEngine.startGame(mode, startingLevel = _customStartLevel.value)
-        
-        // Track games played and starting modes
-        val totalGames = prefs.getInt("stats_games_played", 0) + 1
-        prefs.edit().putInt("stats_games_played", totalGames).apply()
-        
-        when (mode) {
-            GameMode.EXTENDED -> {
-                prefs.edit().putBoolean("ach_extended_pioneer_unlocked", true).apply()
-                prefs.edit().putBoolean("ach_mode_extended_unlocked", true).apply()
-            }
-            GameMode.FAST_RUN -> prefs.edit().putBoolean("ach_speed_runner_unlocked", true).apply()
-            GameMode.TIME_ATTACK -> prefs.edit().putBoolean("ach_mode_time_attack_unlocked", true).apply()
-            GameMode.MIRROR_DIMENSION -> prefs.edit().putBoolean("ach_mode_mirror_unlocked", true).apply()
-            GameMode.RELAX -> prefs.edit().putBoolean("ach_mode_relax_unlocked", true).apply()
-            else -> {}
-        }
-        
-        evaluateAchievements()
-        
         _isPlaying.update { true }
         startGameLoop()
     }
 
-    fun startSlidePuzzle() {
-        slidePuzzleEngine.startNewGame()
-        val totalGames = prefs.getInt("stats_games_played", 0) + 1
-        prefs.edit().putInt("stats_games_played", totalGames).apply()
-        evaluateAchievements()
-    }
-
-    fun moveSlideBlock(blockId: String, targetCol: Int): Boolean {
-        val prevCleared = slidePuzzleEngine.state.value.linesCleared
-        val moved = slidePuzzleEngine.moveBlock(blockId, targetCol)
-        if (moved) {
-            val newlyCleared = slidePuzzleEngine.state.value.linesCleared - prevCleared
-            if (newlyCleared > 0) {
-                triggerAudioFeedback("clear")
-                addCredits(newlyCleared * 30)
-            } else {
-                triggerAudioFeedback("drop")
-            }
-            if (slidePuzzleEngine.state.value.isGameOver) {
-                val finalScore = slidePuzzleEngine.state.value.score
-                val basePassCoins = 50
-                val perfCoins = finalScore / 60
-                addCredits(basePassCoins + perfCoins)
-            }
-        }
-        return moved
-    }
-
     fun startBlockBlast() {
+        hasAwardedBlockBlastReward = false
         blockBlastEngine.startGame(prefs.getInt("block_blast_high_score", 0))
-        val totalGames = prefs.getInt("stats_games_played", 0) + 1
-        prefs.edit().putInt("stats_games_played", totalGames).apply()
-        evaluateAchievements()
     }
 
     fun placeBlockBlastFigure(idx: Int, r: Int, c: Int): Boolean {
         var linesClearedCount = 0
         val ok = blockBlastEngine.placeFigure(idx, r, c) { linesCleared ->
             linesClearedCount = linesCleared
-            addCredits(linesCleared * 25)
         }
         if (ok) {
             if (linesClearedCount > 0) {
@@ -3178,16 +3435,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.edit().putInt("block_blast_high_score", blockBlastEngine.state.value.highScore).apply()
             onBlockBlastPlacement(finalScore)
             
-            // Tiered gameover coins for Block Blast match completion
-            if (blockBlastEngine.state.value.isGameOver) {
+            // Rebalanced gameover coins & XP for Block Blast (equal with Classic match)
+            if (blockBlastEngine.state.value.isGameOver && !hasAwardedBlockBlastReward) {
+                hasAwardedBlockBlastReward = true
                 triggerAudioFeedback("gameover")
-                val basePassCoins = 45
-                val perfCoins = finalScore / 75
-                val modeBonusCoins = 80
-                addCredits(basePassCoins + perfCoins + modeBonusCoins)
+                val finalScore = blockBlastEngine.state.value.score
+                val blastLines = blockBlastEngine.state.value.linesClearedTotal
+                
+                val totalGames = prefs.getInt("stats_games_played", 0) + 1
+                prefs.edit().putInt("stats_games_played", totalGames).apply()
+                _statsGamesPlayed.value = totalGames
+
+                val totalClearedLines = prefs.getInt("stats_cleared_lines", 0) + blastLines
+                prefs.edit().putInt("stats_cleared_lines", totalClearedLines).apply()
+                _statsClearedLines.value = totalClearedLines
+                
+                val rewardCoins = calculateBlockBlastReward(finalScore, blastLines)
+                if (rewardCoins > 0) {
+                    addCredits(rewardCoins)
+                }
+                addMatchXp(score = finalScore, lines = blastLines, modeBonus = 40)
+                evaluateAchievements()
             }
         }
         return ok
+    }
+
+    fun calculateBlockBlastReward(finalScore: Int, blastLines: Int): Int {
+        if (finalScore >= 500) {
+            val basePlayCoins = 45
+            val performanceCoins = (finalScore / 120).coerceAtMost(120)
+            val linesBonus = blastLines * 4
+            val baseTotal = ((basePlayCoins + performanceCoins + linesBonus) * 1.25f).toInt()
+            val levelBonusPercent = (getPlayerLevel() / 2)
+            return (baseTotal * (1f + levelBonusPercent / 100f)).toInt()
+        } else if (finalScore >= 200) {
+            return 20
+        }
+        return 0
     }
 
     fun pauseGame() {
@@ -3203,22 +3488,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun exitGameToMenu(onExit: () -> Unit) {
-        if (!gameEngine.gameState.value.isGameOver) {
-            saveHighScore()
-        }
         pauseGame()
         _isPlaying.update { false }
         prefs.edit().putBoolean("has_saved_game", false).apply()
         _hasSavedGame.update { false }
         onExit()
-    }
-
-    fun saveCurrentGame(): Boolean {
-        return false
-    }
-
-    fun loadSavedGame(): Boolean {
-        return false
     }
 
     private fun startGameLoop() {
@@ -3303,7 +3577,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     if (stateAfter.puzzleLevel > prevPuzzleLvl) {
                         triggerAudioFeedback("clear_4")
-                        addCredits(150)
+                        addCredits(30)
+                        val curSolved = prefs.getInt("stats_pattern_solved", 0) + 1
+                        prefs.edit().putInt("stats_pattern_solved", curSolved).apply()
+                        addMatchXp(score = 150, lines = 1, modeBonus = 25)
                     } else if (stateAfter.lines > prevLines) {
                         val cleared = stateAfter.lines - prevLines
                         when (cleared) {
@@ -3324,8 +3601,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun awardMultiplayerCredits(playerScore: Int, opponentScore: Int, won: Boolean, isDraw: Boolean = false) {
-        val basePlayCoins = 80
-        val performanceCoins = (playerScore / 3).coerceAtMost(500)
         val levelBonusPercent = (getPlayerLevel() / 2)
         val levelMultiplier = 1f + (levelBonusPercent / 100f)
         
@@ -3334,23 +3609,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _winStreak.value = currentStreak
             val newRating = _onlineRating.value + 25
             _onlineRating.value = newRating
-            prefs.edit().putInt("win_streak", currentStreak).putInt("online_rating", newRating).apply()
+            val totalWins = prefs.getInt("stats_multiplayer_wins", 0) + 1
+            prefs.edit().putInt("win_streak", currentStreak)
+                .putInt("online_rating", newRating)
+                .putInt("stats_multiplayer_wins", totalWins)
+                .apply()
 
-            val winBonus = 350
-            val streakCoins = (currentStreak * 30).coerceAtMost(300)
-            val total = (((basePlayCoins + performanceCoins + winBonus) * 1.5f).toInt() + streakCoins)
-            addCredits((total * levelMultiplier).toInt())
+            // Minimum score requirement: 1000 points to prevent forfeit farming
+            if (playerScore >= 1000) {
+                val basePlayCoins = 40
+                val performanceCoins = (playerScore / 100).coerceAtMost(80)
+                val winBonus = 60
+                val streakCoins = (currentStreak * 10).coerceAtMost(100)
+                val total = (((basePlayCoins + performanceCoins + winBonus) * 1.2f).toInt() + streakCoins)
+                addCredits((total * levelMultiplier).toInt())
+            }
+            addMatchXp(score = playerScore, lines = (playerScore / 200).coerceAtLeast(1), modeBonus = 60)
         } else if (isDraw) {
-            val total = ((basePlayCoins + performanceCoins + 100) * 1.5f).toInt()
-            addCredits((total * levelMultiplier).toInt())
+            if (playerScore >= 1000) {
+                val basePlayCoins = 20
+                val performanceCoins = (playerScore / 120).coerceAtMost(50)
+                val total = ((basePlayCoins + performanceCoins + 20) * 1.1f).toInt()
+                addCredits((total * levelMultiplier).toInt())
+            }
+            addMatchXp(score = playerScore, lines = (playerScore / 250).coerceAtLeast(1), modeBonus = 40)
         } else {
             _winStreak.value = 0
             val newRating = maxOf(100, _onlineRating.value - 15)
             _onlineRating.value = newRating
             prefs.edit().putInt("win_streak", 0).putInt("online_rating", newRating).apply()
 
-            val total = ((basePlayCoins + performanceCoins + 50) * 1.2f).toInt()
-            addCredits((total * levelMultiplier).toInt())
+            if (playerScore >= 1000) {
+                val basePlayCoins = 15
+                val performanceCoins = (playerScore / 150).coerceAtMost(40)
+                val total = (basePlayCoins + performanceCoins + 10)
+                addCredits((total * levelMultiplier).toInt())
+            }
+            addMatchXp(score = playerScore, lines = (playerScore / 300).coerceAtLeast(1), modeBonus = 30)
         }
 
         // Sync rating & winStreak to Firestore if logged in
@@ -3360,18 +3655,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 .collection("users").document(user.uid)
                 .set(mapOf("online_rating" to _onlineRating.value, "win_streak" to _winStreak.value), com.google.firebase.firestore.SetOptions.merge())
         }
+        evaluateAchievements()
     }
 
     private fun saveHighScore() {
         val mode = gameEngine.gameState.value.gameMode
-        if (mode == com.example.game.GameMode.RELAX) {
-            // Relax mode scores are not saved to databases or leaderboards!
-            return
-        }
         val score = gameEngine.gameState.value.score
         val lines = gameEngine.gameState.value.lines
         
-        // Track stats
+        // Track stats (only if user actually played)
+        if (score >= 200 || lines >= 1) {
+            val totalGames = prefs.getInt("stats_games_played", 0) + 1
+            prefs.edit().putInt("stats_games_played", totalGames).apply()
+            _statsGamesPlayed.value = totalGames
+        }
+
         val totalClearedLines = prefs.getInt("stats_cleared_lines", 0) + lines
         prefs.edit().putInt("stats_cleared_lines", totalClearedLines).apply()
         _statsClearedLines.value = totalClearedLines
@@ -3395,20 +3693,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val maxPScore = maxOf(prefs.getInt("stats_pattern_score", 0), score)
             prefs.edit().putInt("stats_pattern_score", maxPScore).apply()
         }
+
+        // Mode specific achievement evaluations
+        when (mode) {
+            com.example.game.GameMode.EXTENDED -> {
+                if (lines >= 20 || score >= 2000) {
+                    prefs.edit().putBoolean("ach_extended_pioneer_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.FAST_RUN -> {
+                if (score >= 3000 || lines >= 15) {
+                    prefs.edit().putBoolean("ach_speed_runner_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.TIME_ATTACK -> {
+                if (score >= 2500 || lines >= 15) {
+                    prefs.edit().putBoolean("ach_mode_time_attack_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.MIRROR_DIMENSION -> {
+                if (score >= 3000 || lines >= 20) {
+                    prefs.edit().putBoolean("ach_mode_mirror_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.RELAX -> {
+                if (lines >= 30) {
+                    prefs.edit().putBoolean("ach_mode_relax_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.PATTERN_PUZZLE -> {
+                val pLvl = gameEngine.gameState.value.puzzleLevel
+                if (pLvl >= 5 || prefs.getInt("stats_pattern_solved", 0) >= 5) {
+                    prefs.edit().putBoolean("ach_pattern_solver_unlocked", true).apply()
+                }
+            }
+            com.example.game.GameMode.MEMORY_PUZZLE -> {
+                val pLvl = gameEngine.gameState.value.puzzleLevel
+                if (pLvl >= 5 || prefs.getInt("stats_memory_solved", 0) >= 5) {
+                    prefs.edit().putBoolean("ach_memory_master_unlocked", true).apply()
+                }
+            }
+            else -> {}
+        }
+
         saveCurrentProfileToDb()
 
-        // Tiered coin reward calculation for playing standard modes
-        if (score > 50) {
+        // Equal and balanced payout
+        if (score >= 500 && !hasAwardedCurrentGameReward) {
+            hasAwardedCurrentGameReward = true
             val basePlayCoins = 50
-            val performanceCoins = score / 75
-            val linesBonus = lines * 8
-            val tetrisBonus = tetrisesInGame * 50
+            val performanceCoins = score / 120
+            val linesBonus = lines * 4
+            val tetrisBonus = tetrisesInGame * 25
             val modeBonus = when (mode) {
                 com.example.game.GameMode.CLASSIC, com.example.game.GameMode.RELAX -> 25
                 com.example.game.GameMode.EXTENDED, com.example.game.GameMode.FAST_RUN, 
                 com.example.game.GameMode.TIME_ATTACK, com.example.game.GameMode.MIRROR_DIMENSION -> 75
-                com.example.game.GameMode.BLOCK_BLAST, com.example.game.GameMode.SLIDE_PUZZLE -> 90
-                com.example.game.GameMode.PATTERN_PUZZLE, com.example.game.GameMode.MEMORY_PUZZLE -> 100
+                com.example.game.GameMode.BLOCK_BLAST -> 80
+                com.example.game.GameMode.PATTERN_PUZZLE, com.example.game.GameMode.MEMORY_PUZZLE -> 90
                 else -> 25
             }
             val baseTotal = ((basePlayCoins + performanceCoins + linesBonus + tetrisBonus + modeBonus) * 1.25f).toInt()
@@ -3416,6 +3758,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val total = (baseTotal * (1f + levelBonusPercent / 100f)).toInt()
             val finalCredits = if (mode == com.example.game.GameMode.PERFECTIONIST) maxOf(1, total / 15) else total
             addCredits(finalCredits)
+        } else if (score >= 200 && !hasAwardedCurrentGameReward) {
+            hasAwardedCurrentGameReward = true
+            addCredits(20)
+        }
+
+        addMatchXp(score = score, lines = lines, modeBonus = 40)
+        evaluateAchievements()
+
+        if (mode == com.example.game.GameMode.RELAX) {
+            // Relax mode scores are not saved to databases or leaderboards!
+            return
         }
 
         if (score > 0) {
@@ -3462,7 +3815,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "onlineTier" to _onlineTier.value,
                                 "title" to _equippedTitle.value,
                                 "is_online" to true,
-                                "last_synced_timestamp" to System.currentTimeMillis()
+                                "last_synced_timestamp" to System.currentTimeMillis(),
+                                "app_version_code" to com.example.BuildConfig.VERSION_CODE
                             )
                             firestore.collection("high_scores").document(currentUser.uid).set(scoreMap, com.google.firebase.firestore.SetOptions.merge())
                         }
@@ -3490,7 +3844,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 "onlineTier" to _onlineTier.value,
                                 "title" to _equippedTitle.value,
                                 "is_online" to true,
-                                "last_synced_timestamp" to System.currentTimeMillis()
+                                "last_synced_timestamp" to System.currentTimeMillis(),
+                                "app_version_code" to com.example.BuildConfig.VERSION_CODE
                             )
                             firestore.collection("high_scores_by_mode").document(modeCode)
                                 .collection("scores").document(currentUser.uid).set(scoreMap, com.google.firebase.firestore.SetOptions.merge())
@@ -3504,9 +3859,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun triggerAudioFeedback(type: String) {
-        // Audio feedback disabled - sounds removed until royalty-free audio is added
-        if (!_soundEnabled.value) return
-        if (playSoundEffect(type)) return
+        // Sounds completely disabled per user request
+        return
     }
 
     fun triggerLocalVibration(type: String) {
@@ -3569,10 +3923,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun playSoundEffect(type: String): Boolean {
-        val soundId = soundMap[type] ?: return false
-        val vol = _soundVolume.value
-        soundPool?.play(soundId, vol, vol, 1, 0, 1.0f)
-        return true
+        return false
     }
 
     private fun startLobbyMusic() {

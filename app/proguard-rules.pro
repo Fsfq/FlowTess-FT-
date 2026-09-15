@@ -12,9 +12,9 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve line number information for debugging stack traces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
 -optimizationpasses 5
 -allowaccessmodification
@@ -38,3 +38,7 @@
 # AndroidX Security Crypto (required by EOS SDK Keychain)
 -keep class androidx.security.crypto.** { *; }
 -keepclassmembers class androidx.security.crypto.** { *; }
+
+# Yandex Mobile Ads SDK (РСЯ)
+-keep class com.yandex.mobile.ads.** { *; }
+-dontwarn com.yandex.mobile.ads.**

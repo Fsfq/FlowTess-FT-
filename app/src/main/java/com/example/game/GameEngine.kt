@@ -57,8 +57,7 @@ enum class GameMode(val code: String, val displayNameEn: String, val displayName
     RELAX("relax", "Sandbox", "Песочница"),
     PERFECTIONIST("perfectionist", "Perfection", "Идеал"),
     PATTERN_PUZZLE("pattern", "Blueprint", "Шаблон"),
-    MEMORY_PUZZLE("memory", "Memory", "Память"),
-    SLIDE_PUZZLE("slide", "Slide", "Слайдер")
+    MEMORY_PUZZLE("memory", "Memory", "Память")
 }
 
 data class PlacementHint(
@@ -524,10 +523,10 @@ class GameEngine {
         val startingLevel = maxOf(1, state.level - state.lines / 10)
         val newLevel = startingLevel + newLines / 10
         val basePoints = when (cleared) {
-            1 -> if (lineClearChallenge) 0 else 100
-            2 -> 300
-            3 -> 500
-            4 -> 800
+            1 -> if (lineClearChallenge) 0 else 50
+            2 -> 150
+            3 -> 250
+            4 -> 400
             else -> 0
         }
         val addedScore = basePoints * state.level
@@ -563,7 +562,7 @@ class GameEngine {
                 _gameState.update {
                     it.copy(
                         grid = newGrid,
-                        score = it.score + (state.puzzleLevel * 2000),
+                        score = it.score + (state.puzzleLevel * 1000),
                         puzzleLevel = nextLvl,
                         patternTargets = nextTargets,
                         puzzleGoalDescription = nextTitle,

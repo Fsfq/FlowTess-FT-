@@ -66,6 +66,132 @@ fun MultiplayerSelectScreen(
             else -> Color(0xFF6366F1)
         }
     }
+    val isMultiplayerUnlocked by viewModel.isMultiplayerUnlocked.collectAsStateWithLifecycle()
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var passwordInput by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf(false) }
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    fun requestMultiplayerAccess(onAuthorized: () -> Unit) {
+        if (isMultiplayerUnlocked || viewModel.isCurrentUserAdmin()) {
+            onAuthorized()
+        } else {
+            pendingAction = onAuthorized
+            passwordInput = ""
+            passwordError = false
+            showPasswordDialog = true
+        }
+    }
+
+    if (showPasswordDialog) {
+        val dialogTitle = when (currentLang) {
+            Language.RU -> "Бета-Тест: Онлайн Доступ"
+            Language.UA -> "Бета-Тест: Онлайн Доступ"
+            Language.KK -> "Бета-тест: Онлайн қолжетімділік"
+            Language.DE -> "Beta-Test: Online-Zugang"
+            Language.ZH -> "内测阶段：在线模式密码验证"
+            else -> "Beta Test: Online Access"
+        }
+        val dialogDesc = when (currentLang) {
+            Language.RU -> "Сетевой режим находится в закрытом тестировании для защиты от ботов. Введите ключ допуска для игры онлайн:"
+            Language.UA -> "Мережевий режим перебуває в закритому тестуванні для захисту від ботів. Введіть ключ допуску для гри онлайн:"
+            Language.KK -> "Желілік режим боттардан қорғау үшін жабық тестілеуде. Онлайн ойнау үшін кілт сөзді енгізіңіз:"
+            Language.DE -> "Der Mehrspielermodus befindet sich im geschlossenen Betatest. Bitte Zugangsschlüssel eingeben:"
+            Language.ZH -> "在线联机当前处于封闭测试阶段（防止非授权访问与脚本机器人）。请输入测试访问密钥："
+            else -> "Multiplayer is in closed beta test to prevent bot abuse. Enter access key to join online:"
+        }
+        val passLabel = when (currentLang) {
+            Language.RU -> "Ключ доступа"
+            Language.UA -> "Ключ доступу"
+            Language.KK -> "Қолжетімділік кілті"
+            Language.DE -> "Zugangsschlüssel"
+            Language.ZH -> "访问密钥"
+            else -> "Access Key"
+        }
+        val errorText = when (currentLang) {
+            Language.RU -> "Неверный ключ доступа!"
+            Language.UA -> "Невірний ключ доступу!"
+            Language.KK -> "Кілт қате!"
+            Language.DE -> "Ungültiger Schlüssel!"
+            Language.ZH -> "密钥无效！"
+            else -> "Invalid access key!"
+        }
+        val enterBtnText = when (currentLang) {
+            Language.RU -> "ПОДТВЕРДИТЬ"
+            Language.UA -> "ПІДТВЕРДИТИ"
+            Language.KK -> "РАСТАУ"
+            Language.DE -> "BESTÄTIGEN"
+            Language.ZH -> "确认验证"
+            else -> "CONFIRM"
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                showPasswordDialog = false
+                pendingAction = null
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(26.dp),
+            icon = {
+                Icon(Icons.Default.VpnKey, contentDescription = null, tint = themeColor, modifier = Modifier.size(32.dp))
+            },
+            title = {
+                Text(dialogTitle, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(dialogDesc, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = {
+                            passwordInput = it
+                            passwordError = false
+                        },
+                        label = { Text(passLabel) },
+                        singleLine = true,
+                        isError = passwordError,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (passwordError) {
+                        Text(errorText, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val ok = viewModel.unlockMultiplayerWithPassword(passwordInput)
+                        if (ok) {
+                            showPasswordDialog = false
+                            viewModel.triggerAudioFeedback("success")
+                            val action = pendingAction
+                            pendingAction = null
+                            action?.invoke()
+                        } else {
+                            passwordError = true
+                            viewModel.triggerAudioFeedback("error")
+                        }
+                    },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(enterBtnText, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPasswordDialog = false
+                        pendingAction = null
+                    },
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(Translations.get("cancel", currentLang).uppercase())
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -149,7 +275,7 @@ fun MultiplayerSelectScreen(
                         .clickable {
                             viewModel.triggerAudioFeedback("click")
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onSelectServer()
+                            requestMultiplayerAccess { onSelectServer() }
                         },
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.elevatedCardColors(
@@ -214,7 +340,7 @@ fun MultiplayerSelectScreen(
                             onClick = {
                                 viewModel.triggerAudioFeedback("click")
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onSelectServer()
+                                requestMultiplayerAccess { onSelectServer() }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -253,7 +379,7 @@ fun MultiplayerSelectScreen(
                         .clickable {
                             viewModel.triggerAudioFeedback("click")
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onSelectEosP2p()
+                            requestMultiplayerAccess { onSelectEosP2p() }
                         },
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.elevatedCardColors(
@@ -311,7 +437,7 @@ fun MultiplayerSelectScreen(
                             onClick = {
                                 viewModel.triggerAudioFeedback("click")
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onSelectEosP2p()
+                                requestMultiplayerAccess { onSelectEosP2p() }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

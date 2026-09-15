@@ -1,11 +1,5 @@
 package com.example.ui
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-
 enum class Language(val code: String, val displayName: String) {
     EN("EN", "English"),
     RU("RU", "Русский"),
@@ -1199,14 +1193,6 @@ object Translations {
                 Language.DE -> "Muster"
                 Language.ZH -> "图形模板"
                 else -> "Blueprint"
-            }
-            "slide", "slide_puzzle" -> when (lang) {
-                Language.RU -> "Слайдер"
-                Language.UA -> "Слайдер"
-                Language.KK -> "Слайдер"
-                Language.DE -> "Schieberätsel"
-                Language.ZH -> "滑块"
-                else -> "Slide Puzzle"
             }
             "memory", "memory_puzzle" -> when (lang) {
                 Language.RU -> "Память"

@@ -124,14 +124,33 @@ object EosBridge {
         nativeSearchLobbies(callback)
     }
 
+    fun searchLobbyByCode(code: String, callback: EosSearchCallback) {
+        if (!isNativeLoaded) {
+            callback.onSearchResult(false, null)
+            return
+        }
+        nativeSearchLobbyByCode(code, callback)
+    }
+
+    fun setRelayControl(relayMode: Int): Boolean {
+        if (!isNativeLoaded) return false
+        return nativeSetRelayControl(relayMode)
+    }
+
     fun setupMemberStatusNotification(callback: EosMemberStatusCallback?) {
         if (!isNativeLoaded) return
         nativeSetupMemberStatusNotification(callback)
     }
 
-    fun sendPacket(targetPuid: String, socketName: String, data: ByteArray): Boolean {
+    fun sendPacket(
+        targetPuid: String,
+        socketName: String,
+        data: ByteArray,
+        channel: Int = 0,
+        isReliable: Boolean = true
+    ): Boolean {
         if (!isNativeLoaded) return false
-        return nativeSendPacket(targetPuid, socketName, data)
+        return nativeSendPacketFull(targetPuid, socketName, data, channel, isReliable)
     }
 
     fun receivePacket(socketName: String): ByteArray? {
@@ -158,6 +177,7 @@ object EosBridge {
     private external fun nativeLoginAnonymous(displayName: String, callback: EosLoginCallback)
     private external fun nativeGetLocalProductUserId(): String?
     private external fun nativeSetupP2pNotification()
+    private external fun nativeSetRelayControl(relayControl: Int): Boolean
     private external fun nativeCreateLobby(
         roomName: String,
         bet: Int,
@@ -170,8 +190,9 @@ object EosBridge {
     private external fun nativeJoinLobby(lobbyId: String, callback: EosLobbyCallback)
     private external fun nativeLeaveLobby(lobbyId: String)
     private external fun nativeSearchLobbies(callback: EosSearchCallback)
+    private external fun nativeSearchLobbyByCode(code: String, callback: EosSearchCallback)
     private external fun nativeSetupMemberStatusNotification(callback: EosMemberStatusCallback?)
-    private external fun nativeSendPacket(targetPuid: String, socketName: String, data: ByteArray): Boolean
+    private external fun nativeSendPacketFull(targetPuid: String, socketName: String, data: ByteArray, channel: Int, isReliable: Boolean): Boolean
     private external fun nativeReceivePacket(socketName: String): ByteArray?
     private external fun nativeAcceptConnection(remotePuid: String, socketName: String): Boolean
 }

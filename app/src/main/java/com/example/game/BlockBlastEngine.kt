@@ -319,17 +319,17 @@ class BlockBlastEngine {
             }
         }
 
-        val placementScore = figure.blocks.size * 10
+        val placementScore = figure.blocks.size * 5
         val lineClearScore = when (totalCleared) {
             0 -> 0
-            1 -> 150
-            2 -> 400
-            3 -> 800
-            4 -> 1400
-            else -> totalCleared * 400
+            1 -> 75
+            2 -> 200
+            3 -> 400
+            4 -> 700
+            else -> totalCleared * 200
         }
         val currentCombo = if (totalCleared > 0) s.combo + 1 else 0
-        val comboBonus = if (currentCombo > 1) (currentCombo - 1) * 40 else 0
+        val comboBonus = if (currentCombo > 1) (currentCombo - 1) * 20 else 0
         val addedScore = placementScore + lineClearScore + comboBonus
         val finalScore = s.score + addedScore
 

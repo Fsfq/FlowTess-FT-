@@ -56,7 +56,6 @@ object ShopPrices {
     const val MODE_MIRROR = 1200
     const val MODE_EXTENDED = 1500
     const val MODE_BLOCK_BLAST = 2000
-    const val MODE_SLIDE = 1500
     const val MODE_PATTERN = 2500
     const val MODE_MEMORY = 2000
     const val MODE_PERFECTIONIST = 5000
@@ -69,7 +68,6 @@ object ShopPrices {
         "mirror" -> MODE_MIRROR
         "extended" -> MODE_EXTENDED
         "block_blast" -> MODE_BLOCK_BLAST
-        "slide", "slide_puzzle" -> MODE_SLIDE
         "pattern", "pattern_puzzle" -> MODE_PATTERN
         "memory", "memory_puzzle" -> MODE_MEMORY
         "perfectionist" -> MODE_PERFECTIONIST
@@ -172,9 +170,9 @@ object ShopPrices {
     const val PRESTIGE_III_REQUIREMENT = 1000000
 
     // ── Loot Crates / Cases ──
-    const val CRATE_WOODEN = 125
-    const val CRATE_IRON = 375
-    const val CRATE_GOLDEN = 750
+    const val CRATE_WOODEN = 250
+    const val CRATE_IRON = 500
+    const val CRATE_GOLDEN = 1000
     const val CRATE_PLATINUM = 1250
     const val CRATE_LEGENDARY = 2500
     const val CRATE_DIAMOND = 4500
@@ -245,7 +243,7 @@ object ShopPrices {
                 "classic", "time_attack" -> DropRarity.COMMON
                 "fast_run", "hyper", "relax" -> DropRarity.UNCOMMON
                 "mirror", "extended" -> DropRarity.RARE
-                "block_blast", "pattern", "pattern_puzzle", "slide", "slide_puzzle", "memory", "memory_puzzle" -> DropRarity.EPIC
+                "block_blast", "pattern", "pattern_puzzle", "memory", "memory_puzzle" -> DropRarity.EPIC
                 "perfectionist" -> DropRarity.LEGENDARY
                 else -> DropRarity.COMMON
             }

@@ -55,6 +55,7 @@ object EosManager {
     private var packetPollJob: Job? = null
     private var searchLoopJob: Job? = null
     private var joinHandshakeJob: Job? = null
+    private var disconnectTimeoutJob: Job? = null
 
     private val isInitialized = AtomicBoolean(false)
 
@@ -217,30 +218,57 @@ object EosManager {
                         )
                         _currentRoom.value = updated
 
-                        // Proactively send JOIN_ACCEPTED
-                        val acceptPayload = JSONObject().apply {
-                            put("type", "JOIN_ACCEPTED")
-                            put("roomName", room.name)
-                            put("hostPuid", room.hostPuid)
-                            put("hostName", room.hostName)
-                            put("hostTier", room.hostTier)
-                            put("bet", room.bet)
-                        }.toString()
-                        EosBridge.sendPacket(memberPuid, EosConstants.P2P_SOCKET_NAME, acceptPayload.toByteArray(Charsets.UTF_8))
+                        // Proactively send JOIN_ACCEPTED with retries to ensure delivery over WAN/Relay
+                        coroutineScope.launch {
+                            val acceptPayload = JSONObject().apply {
+                                put("type", "JOIN_ACCEPTED")
+                                put("roomName", room.name)
+                                put("hostPuid", room.hostPuid)
+                                put("hostName", room.hostName)
+                                put("hostTier", room.hostTier)
+                                put("bet", room.bet)
+                            }.toString()
+                            val bytes = acceptPayload.toByteArray(Charsets.UTF_8)
+                            var retries = 0
+                            while (isActive && retries < 8 && _currentRoom.value?.guestPuid == memberPuid) {
+                                retries++
+                                EosBridge.sendPacket(memberPuid, EosConstants.P2P_SOCKET_NAME, bytes)
+                                delay(450)
+                            }
+                        }
                     }
-                } else if (status == "LEFT" || status == "DISCONNECTED" || status == "CLOSED") {
+                } else if (status == "LEFT" || status == "CLOSED") {
+                    // Definitive leave — clear immediately
+                    disconnectTimeoutJob?.cancel()
                     if (room.hostPuid == local) {
-                        // Guest left host room
                         _currentRoom.value = room.copy(guestPuid = null, guestName = null, isGuestReady = false)
                         _roomChat.value = _roomChat.value + EosChatMessage(
                             senderName = "System",
                             senderPuid = "SYSTEM",
-                            text = "Соперник отключился от лобби"
+                            text = "Соперник покинул лобби"
                         )
                     } else if (memberPuid == room.hostPuid) {
-                        // Host left
                         _currentRoom.value = null
                         _roomChat.value = emptyList()
+                    }
+                } else if (status == "DISCONNECTED") {
+                    // Transient — give 8s grace period before wiping
+                    disconnectTimeoutJob?.cancel()
+                    disconnectTimeoutJob = coroutineScope.launch {
+                        Log.w(TAG, "Peer $memberPuid disconnected, waiting 8s for reconnect...")
+                        delay(8000)
+                        val curRoom = _currentRoom.value ?: return@launch
+                        if (curRoom.hostPuid == local && curRoom.guestPuid == memberPuid) {
+                            _currentRoom.value = curRoom.copy(guestPuid = null, guestName = null, isGuestReady = false)
+                            _roomChat.value = _roomChat.value + EosChatMessage(
+                                senderName = "System",
+                                senderPuid = "SYSTEM",
+                                text = "Соперник отключился (таймаут)"
+                            )
+                        } else if (memberPuid == curRoom.hostPuid) {
+                            _currentRoom.value = null
+                            _roomChat.value = emptyList()
+                        }
                     }
                 }
             }
@@ -388,18 +416,47 @@ object EosManager {
             return
         }
 
-        // Check if user input is a short code (e.g. 6 chars) matching an existing known room
+        // 1. Check local list first
         val matchingRoom = _availableRooms.value.firstOrNull {
             it.code.equals(clean, ignoreCase = true) || it.id.endsWith(clean, ignoreCase = true)
         }
 
-        val targetLobbyId = if (matchingRoom != null) {
-            matchingRoom.id
+        if (matchingRoom != null) {
+            executeJoinLobby(matchingRoom.id, clean, puid, onComplete)
+        } else if (clean.length in 4..8 && !clean.contains("-")) {
+            // 2. Query Epic Cloud Search Index directly by CODE (works across cities & private rooms)
+            Log.i(TAG, "Searching Epic Cloud for room code: $clean")
+            EosBridge.searchLobbyByCode(clean.uppercase(), object : EosSearchCallback {
+                override fun onSearchResult(success: Boolean, roomsJson: String?) {
+                    if (success && !roomsJson.isNullOrBlank()) {
+                        try {
+                            val arr = JSONArray(roomsJson)
+                            if (arr.length() > 0) {
+                                val obj = arr.getJSONObject(0)
+                                val realLobbyId = obj.getString("id")
+                                Log.i(TAG, "Found Epic lobby $realLobbyId for code $clean")
+                                executeJoinLobby(realLobbyId, clean, puid, onComplete)
+                                return
+                            }
+                        } catch (e: Throwable) {
+                            Log.e(TAG, "Error parsing search by code result: ${e.message}")
+                        }
+                    }
+                    onComplete(false, "Комната с кодом $clean не найдена")
+                }
+            })
         } else {
-            // Direct ID join: preserve lowercase for EOS UUIDs
-            clean.lowercase()
+            // 3. Direct UUID join
+            executeJoinLobby(clean.lowercase(), clean, puid, onComplete)
         }
+    }
 
+    private fun executeJoinLobby(
+        targetLobbyId: String,
+        clean: String,
+        puid: String,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
         EosBridge.joinLobby(targetLobbyId, object : EosLobbyCallback {
             override fun onLobbyResult(
                 success: Boolean,
@@ -434,12 +491,12 @@ object EosManager {
                         )
                     )
 
-                    // Launch persistent P2P join request handshake
+                    // Launch persistent P2P join request handshake across WAN/Relay
                     startJoinHandshake(hostPuid, puid)
 
                     onComplete(true, lobbyId)
                 } else {
-                    onComplete(false, "Failed to join EOS Lobby $clean")
+                    onComplete(false, "Не удалось подключиться к лобби $clean")
                 }
             }
         })
@@ -455,13 +512,15 @@ object EosManager {
                 put("guestTier", _localPlayerTier.value)
             }.toString()
 
+            // Over WAN/Relay across cities, TURN allocation takes 2-5s. Attempt up to 25 times (~11s).
             var attempts = 0
-            while (isActive && attempts < 8) {
+            while (isActive && attempts < 25) {
                 attempts++
                 EosBridge.sendPacket(hostPuid, EosConstants.P2P_SOCKET_NAME, joinPayload.toByteArray(Charsets.UTF_8))
-                delay(400)
-                // If already accepted, stop sending handshake
+                delay(450)
+                // If host acknowledged and sent accepted payload, stop handshake
                 if (_currentRoom.value?.hostName != "Host" && _currentRoom.value?.hostName != null) {
+                    Log.i(TAG, "Join handshake completed successfully with host $hostPuid")
                     break
                 }
             }
@@ -586,7 +645,7 @@ object EosManager {
         broadcastP2p(payload)
     }
 
-    fun broadcastP2p(jsonPayload: String) {
+    fun broadcastP2p(jsonPayload: String, channel: Int = 0, isReliable: Boolean = true) {
         val room = _currentRoom.value
         val myPuid = _localPuid.value ?: return
         val targetPuid = if (room != null) {
@@ -594,7 +653,7 @@ object EosManager {
         } else null
 
         if (targetPuid != null && targetPuid.isNotBlank() && targetPuid.length >= 16) {
-            EosBridge.sendPacket(targetPuid, EosConstants.P2P_SOCKET_NAME, jsonPayload.toByteArray(Charsets.UTF_8))
+            EosBridge.sendPacket(targetPuid, EosConstants.P2P_SOCKET_NAME, jsonPayload.toByteArray(Charsets.UTF_8), channel, isReliable)
         }
     }
 
@@ -603,8 +662,15 @@ object EosManager {
         packetPollJob = coroutineScope.launch {
             while (isActive) {
                 try {
-                    val packet = EosBridge.receivePacket(EosConstants.P2P_SOCKET_NAME)
-                    if (packet != null && packet.isNotEmpty()) {
+                    // Drain ALL pending packets per tick to avoid backlog lag
+                    var drained = 0
+                    while (drained < 200) { // safety cap
+                        val packet = EosBridge.receivePacket(EosConstants.P2P_SOCKET_NAME)
+                        if (packet == null || packet.isEmpty()) break
+                        drained++
+                        // Any packet from peer means they're alive — cancel disconnect timeout
+                        disconnectTimeoutJob?.cancel()
+                        disconnectTimeoutJob = null
                         handleIncomingPacket(packet)
                     }
                 } catch (e: Throwable) {
@@ -630,7 +696,7 @@ object EosManager {
                     put("type", "BATTLE_PONG")
                     put("t", t)
                 }.toString()
-                broadcastP2p(pong)
+                broadcastP2p(pong, channel = 1, isReliable = false)
                 return
             } else if (type == "BATTLE_PONG") {
                 val t = json.optLong("t")
@@ -748,8 +814,11 @@ object EosManager {
                 }
 
                 "GARBAGE_LINES" -> {
-                    val count = json.optInt("count", 0)
-                    _pendingGarbage.value = _pendingGarbage.value + count
+                    val rawCount = json.optInt("count", 0)
+                    val count = rawCount.coerceIn(0, 4)
+                    if (count > 0) {
+                        _pendingGarbage.value = (_pendingGarbage.value + count).coerceAtMost(20)
+                    }
                 }
 
                 "GAME_OVER" -> {

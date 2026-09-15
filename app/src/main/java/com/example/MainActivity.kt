@@ -31,6 +31,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     // Initialize Epic Online Services SDK early
     com.example.eos.EosManager.init(this)
+    // Initialize Yandex Mobile Ads SDK early
+    com.example.ads.YandexAdsManager.init(this)
 
     requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     enableEdgeToEdge()
@@ -44,9 +46,7 @@ class MainActivity : ComponentActivity() {
       val themeName by mainViewModel.themeColor.collectAsStateWithLifecycle()
       val fontKey by mainViewModel.customFontKey.collectAsStateWithLifecycle()
       MyApplicationTheme(themeName = themeName, fontKey = fontKey) {
-        com.example.ui.AppPassLockGate {
-          TetrisApp(mainViewModel)
-        }
+        TetrisApp(mainViewModel)
       }
     }
   }

@@ -16,8 +16,8 @@ android {
     applicationId = "com.FsFq.Tetris"
     minSdk = 24
     targetSdk = 36
-    versionCode = 14
-    versionName = "0.95.4 Alpha"
+    versionCode = 18
+    versionName = "0.96.2 Alpha"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -121,8 +121,8 @@ androidComponents {
     variant.outputs.forEach { output ->
       val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
       val abiCode = abiCodes[abi] ?: 0
-      output.versionCode.set((14 * 10) + abiCode)
-      (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("FT-0.95.4-Alpha-$abi.apk")
+      output.versionCode.set((16 * 10) + abiCode)
+      (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("FT-0.96.0-Alpha-$abi.apk")
     }
   }
 }
@@ -191,6 +191,8 @@ dependencies {
   // Epic Online Services (EOS) SDK
   implementation(libs.androidx.security.crypto)
   implementation(files("SDK/Bin/Android/static-stdc++/aar/eossdk-StaticSTDC-release.aar"))
+  // Yandex Mobile Ads SDK (РСЯ)
+  implementation(libs.yandex.mobileads)
 
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)

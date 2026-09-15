@@ -1,5 +1,6 @@
 package com.example.ui
 
+import android.app.Activity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -18,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,8 +28,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.MainViewModel
-import com.example.ads.YandexAdsManager
-import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -36,338 +35,316 @@ fun RewardedAdDialog(
     viewModel: MainViewModel,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
     val credits by viewModel.credits.collectAsStateWithLifecycle()
+    val isAdConnected = viewModel.isAdSdkConnected
+    val isAdLoaded by viewModel.isRewardedAdLoaded.collectAsStateWithLifecycle()
+    val isAdLoading by viewModel.isAdLoading.collectAsStateWithLifecycle()
+
+    var isPlayingAd by remember { mutableStateOf(false) }
+    var adStatusText by remember { mutableStateOf("") }
+    var completedRewardCoins by remember { mutableStateOf<Int?>(null) }
+
+    // Auto load ad when dialog opens if needed
+    LaunchedEffect(Unit) {
+        if (!isAdLoaded && !isAdLoading) {
+            viewModel.loadRewardedAd()
+        }
+    }
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (!isPlayingAd) {
+                onDismiss()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .wrapContentHeight()
-                .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(28.dp),
+                .widthIn(max = 320.dp)
+                .fillMaxWidth(0.84f)
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Row
+                // Header: Title + Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                            modifier = Modifier.size(42.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.ShoppingBag,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = when (currentLang) {
-                                Language.RU -> "Магазин"
-                                Language.UA -> "Магазин"
-                                Language.KK -> "Дүкен"
-                                Language.DE -> "Shop"
-                                Language.ZH -> "商店"
-                                else -> "Shop"
-                            },
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Text(
+                        text = when (currentLang) {
+                            Language.RU -> "Награда"
+                            Language.UA -> "Нагорода"
+                            Language.KK -> "Сыйлық"
+                            Language.DE -> "Belohnung"
+                            Language.ZH -> "福利奖励"
+                            else -> "Reward"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
                     IconButton(
                         onClick = {
-                            viewModel.triggerAudioFeedback("click")
-                            onDismiss()
+                            if (!isPlayingAd) {
+                                viewModel.triggerAudioFeedback("click")
+                                onDismiss()
+                            }
                         },
-                        modifier = Modifier.size(36.dp)
+                        enabled = !isPlayingAd,
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Current Balance Card
+                // Minimal Icon Badge
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.35f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = when (currentLang) {
-                                Language.RU -> "Баланс"
-                                Language.UA -> "Баланс"
-                                Language.KK -> "Баланс"
-                                Language.DE -> "Guthaben"
-                                Language.ZH -> "账户余额"
-                                else -> "Balance"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MonetizationOn,
-                                contentDescription = null,
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = String.format(Locale.getDefault(), "%,d", credits),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFFFFD700)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val watchButtonText = when (currentLang) {
-                    Language.RU -> "СМОТРЕТЬ"
-                    Language.UA -> "ДИВИТИСЬ"
-                    Language.KK -> "КӨРУ"
-                    Language.DE -> "ANSEHEN"
-                    Language.ZH -> "观看"
-                    else -> "WATCH"
-                }
-
-                // Offers List
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Offer 1: Short Video (+250 coins)
-                    ModernOfferCard(
-                        icon = Icons.Default.PlayArrow,
-                        title = when (currentLang) {
-                            Language.RU -> "Видеоролик"
-                            Language.UA -> "Відеоролик"
-                            Language.KK -> "Бейнеролик"
-                            Language.DE -> "Werbevideo"
-                            Language.ZH -> "视频广告"
-                            else -> "Video Ad"
-                        },
-                        description = when (currentLang) {
-                            Language.RU -> "Награда за просмотр"
-                            Language.UA -> "Винагорода за перегляд"
-                            Language.KK -> "Көру үшін сыйлық"
-                            Language.DE -> "Belohnung für das Ansehen"
-                            Language.ZH -> "观看获取奖励"
-                            else -> "Reward for watching"
-                        },
-                        rewardBadge = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MonetizationOn,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Text(
-                                    text = "+250",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFFD700)
-                                )
-                            }
-                        },
-                        durationLabel = "~15s",
-                        buttonText = watchButtonText,
-                        onWatch = {
-                            viewModel.triggerAudioFeedback("click")
-                        }
-                    )
-
-                    // Offer 2: Crate Key
-                    ModernOfferCard(
-                        icon = Icons.Default.Key,
-                        title = when (currentLang) {
-                            Language.RU -> "Ключ к кейсу"
-                            Language.UA -> "Ключ до кейсу"
-                            Language.KK -> "Кейс кілті"
-                            Language.DE -> "Kistenschlüssel"
-                            Language.ZH -> "宝箱钥匙"
-                            else -> "Crate Key"
-                        },
-                        description = when (currentLang) {
-                            Language.RU -> "Железный ключ для кейсов"
-                            Language.UA -> "Залізний ключ для кейсів"
-                            Language.KK -> "Кейстерге арналған темір кілт"
-                            Language.DE -> "Eisenschlüssel für Kisten"
-                            Language.ZH -> "开启武器箱的钥匙"
-                            else -> "Iron key for crates"
-                        },
-                        rewardBadge = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Key,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Text(
-                                    text = "1x Iron Key",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        },
-                        durationLabel = "~30s",
-                        buttonText = watchButtonText,
-                        onWatch = {
-                            viewModel.triggerAudioFeedback("click")
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ModernOfferCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    rewardBadge: @Composable () -> Unit,
-    durationLabel: String,
-    buttonText: String,
-    onWatch: () -> Unit
-) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                    modifier = Modifier.size(42.dp)
+                    shape = CircleShape,
+                    color = Color(0xFFFFD700).copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.3f)),
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = icon,
+                            imageVector = Icons.Default.MonetizationOn,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(30.dp)
                         )
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            Text(
-                                text = durationLabel,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // +300
+                Text(
+                    text = "+300",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFFFD700)
+                )
+
+                // Current balance text
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
                     Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        text = when (currentLang) {
+                            Language.RU -> "Баланс:"
+                            Language.UA -> "Баланс:"
+                            Language.KK -> "Баланс:"
+                            Language.DE -> "Guthaben:"
+                            Language.ZH -> "余额:"
+                            else -> "Balance:"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    rewardBadge()
+                    Text(
+                        text = String.format(Locale.getDefault(), "%,d", credits),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.width(10.dp))
+                // Reward Confirmation Banner
+                AnimatedVisibility(
+                    visible = completedRewardCoins != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    completedRewardCoins?.let { coins ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF00E676).copy(alpha = 0.12f),
+                            modifier = Modifier.padding(top = 10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00E676),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "+$coins получено"
+                                        Language.UA -> "+$coins отримано"
+                                        Language.KK -> "+$coins алынды"
+                                        Language.DE -> "+$coins erhalten"
+                                        Language.ZH -> "+$coins 已到账"
+                                        else -> "+$coins received"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF00E676)
+                                )
+                            }
+                        }
+                    }
+                }
 
-            Button(
-                onClick = onWatch,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = buttonText,
-                    fontWeight = FontWeight.Black,
-                    style = MaterialTheme.typography.labelMedium
-                )
+                // Error or Status text with Retry
+                AnimatedVisibility(
+                    visible = adStatusText.isNotEmpty() && completedRewardCoins == null && !isPlayingAd,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = adStatusText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                        if (!isAdLoading) {
+                            TextButton(
+                                onClick = {
+                                    viewModel.triggerAudioFeedback("click")
+                                    adStatusText = ""
+                                    viewModel.loadRewardedAd()
+                                },
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Retry",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = when (currentLang) {
+                                        Language.RU -> "Повторить"
+                                        Language.UA -> "Повторити"
+                                        Language.KK -> "Қайталау"
+                                        Language.DE -> "Wiederholen"
+                                        Language.ZH -> "重试"
+                                        else -> "Retry"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Compact MD3 Button (not full width)
+                Button(
+                    onClick = {
+                        if (isAdConnected && !isPlayingAd) {
+                            val activity = context as? Activity
+                            if (activity != null) {
+                                viewModel.triggerAudioFeedback("click")
+                                isPlayingAd = true
+                                adStatusText = ""
+                                viewModel.showRewardedAd(
+                                    activity = activity,
+                                    onRewarded = { rewardCoins, _ ->
+                                        val finalReward = if (rewardCoins > 0) rewardCoins else 300
+                                        viewModel.addCredits(finalReward)
+                                        viewModel.triggerAudioFeedback("buy")
+                                        completedRewardCoins = finalReward
+                                        isPlayingAd = false
+                                    },
+                                    onDismissed = {
+                                        isPlayingAd = false
+                                    },
+                                    onError = { errorMsg ->
+                                        isPlayingAd = false
+                                        adStatusText = errorMsg
+                                    }
+                                )
+                            }
+                        }
+                    },
+                    enabled = isAdConnected && !isPlayingAd && !isAdLoading,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    if (isPlayingAd || isAdLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = when (currentLang) {
+                                Language.RU -> "Загрузка..."
+                                Language.UA -> "Завантаження..."
+                                Language.KK -> "Жүктелуде..."
+                                Language.DE -> "Laden..."
+                                Language.ZH -> "加载中..."
+                                else -> "Loading..."
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (currentLang) {
+                                Language.RU -> "Смотреть"
+                                Language.UA -> "Дивитись"
+                                Language.KK -> "Көру"
+                                Language.DE -> "Ansehen"
+                                Language.ZH -> "观看"
+                                else -> "Watch"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }

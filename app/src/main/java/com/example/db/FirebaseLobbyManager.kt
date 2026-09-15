@@ -442,14 +442,16 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
             customTag = customTag
         )
 
+        val passHash = if (passwordInput.isNotBlank()) PasswordHasher.hash(passwordInput) else ""
         val room = LobbyRoom(
             roomId = roomId,
             name = name,
             hostId = uid,
             hostName = hostName,
             hostTier = hostTier,
-            password = passwordInput,
-            isLocked = passwordInput.isNotBlank(),
+            password = "",
+            passwordHash = passHash,
+            isLocked = passHash.isNotBlank(),
             status = "waiting",
             gameMode = gameMode,
             garbageIntensity = garbageIntensity,
@@ -497,9 +499,17 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
                 val map = snapshot.value as? Map<String, Any> ?: return
                 val room = LobbyRoom.fromMap(map + mapOf("roomId" to roomId))
 
-                if (room.isLocked && room.password != passwordInput) {
-                    onFailure("Неверный пароль")
-                    return
+                if (room.isLocked) {
+                    val inputHash = if (passwordInput.isNotBlank()) PasswordHasher.hash(passwordInput) else ""
+                    val isPassValid = when {
+                        room.passwordHash.isNotEmpty() -> room.passwordHash == inputHash
+                        room.password.isNotEmpty() -> room.password == passwordInput || room.password == inputHash
+                        else -> true
+                    }
+                    if (!isPassValid) {
+                        onFailure("Неверный пароль")
+                        return
+                    }
                 }
                 if (room.players.size >= 2 && room.players.none { it.uid == uid }) {
                     onFailure("Комната заполнена")
@@ -707,12 +717,13 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         val isHost = room.hostId == uid
         val targetNode = if (isHost) "opponent" else "host"
 
-        val scaledLines = maxOf(1, (linesCount * room.garbageIntensity).toInt())
+        val clampedLines = linesCount.coerceIn(1, 4)
+        val scaledLines = maxOf(1, (clampedLines * room.garbageIntensity).toInt()).coerceAtMost(20)
         val garbageRef = database.getReference("rooms/${room.roomId}/live/$targetNode/garbageToSend")
         garbageRef.runTransaction(object : Transaction.Handler {
             override fun doTransaction(currentData: MutableData): Transaction.Result {
                 val current = (currentData.value as? Number)?.toInt() ?: 0
-                currentData.value = current + scaledLines
+                currentData.value = (current + scaledLines).coerceAtMost(20)
                 return Transaction.success(currentData)
             }
             override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {}
