@@ -101,7 +101,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         allPresenceRef.addValueEventListener(presenceCountListener!!)
 
         // Periodic Heartbeat loop (every 30 seconds update RTDB & Firestore)
-        presenceJob = CoroutineScope(Dispatchers.IO).launch {
+        presenceJob = externalScope.launch(Dispatchers.IO) {
             while (isActive) {
                 try {
                     val currentUid = auth.currentUser?.uid
@@ -906,5 +906,9 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
         liveHostListener = null
         liveOpponentListener = null
         liveEmoteListener = null
+    }
+
+    fun cleanup() {
+        cleanUpAllListeners()
     }
 }

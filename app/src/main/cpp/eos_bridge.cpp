@@ -29,6 +29,34 @@ static EOS_NotificationId g_P2pInterruptedNotificationId = EOS_INVALID_NOTIFICAT
 static EOS_NotificationId g_P2pClosedNotificationId = EOS_INVALID_NOTIFICATIONID;
 static EOS_NotificationId g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
 static jobject g_MemberStatusCallbackRef = nullptr;
+static std::mutex g_CallbackMutex;
+
+struct JniThreadGuard {
+    JNIEnv* env = nullptr;
+    bool attached = false;
+
+    JniThreadGuard() {
+        if (!g_JavaVM) return;
+        jint res = g_JavaVM->GetEnv((void**)&env, JNI_VERSION_1_6);
+        if (res != JNI_OK) {
+            res = g_JavaVM->AttachCurrentThread(&env, nullptr);
+            if (res == JNI_OK) {
+                attached = true;
+            } else {
+                env = nullptr;
+            }
+        }
+    }
+
+    ~JniThreadGuard() {
+        if (attached && g_JavaVM) {
+            g_JavaVM->DetachCurrentThread();
+        }
+    }
+
+    JNIEnv* get() const { return env; }
+    JNIEnv* operator->() const { return env; }
+};
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     g_JavaVM = vm;
@@ -37,7 +65,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
 static JNIEnv* GetEnv() {
     JNIEnv* env = nullptr;
-    if (g_JavaVM->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+    if (g_JavaVM && g_JavaVM->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
         g_JavaVM->AttachCurrentThread(&env, nullptr);
     }
     return env;
@@ -138,9 +166,12 @@ Java_com_example_eos_EosBridge_nativeShutdown(JNIEnv* env, jobject thiz) {
             EOS_Lobby_RemoveNotifyLobbyMemberStatusReceived(LobbyHandle, g_LobbyMemberStatusNotificationId);
             g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
         }
-        if (g_MemberStatusCallbackRef != nullptr) {
-            env->DeleteGlobalRef(g_MemberStatusCallbackRef);
-            g_MemberStatusCallbackRef = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(g_CallbackMutex);
+            if (g_MemberStatusCallbackRef != nullptr) {
+                env->DeleteGlobalRef(g_MemberStatusCallbackRef);
+                g_MemberStatusCallbackRef = nullptr;
+            }
         }
 
         EOS_HP2P P2pHandle = EOS_Platform_GetP2PInterface(g_PlatformHandle);
@@ -184,13 +215,29 @@ static void EOS_CALL ConnectLoginCallback(const EOS_Connect_LoginCallbackInfo* D
 static void DoConnectLogin(LoginContext* ctx) {
     if (g_PlatformHandle == nullptr) {
         LOGE("g_PlatformHandle is null in DoConnectLogin");
-        delete ctx;
+        if (ctx) {
+            JniThreadGuard guard;
+            JNIEnv* env = guard.get();
+            if (env && ctx->callbackRef) {
+                env->DeleteGlobalRef(ctx->callbackRef);
+                ctx->callbackRef = nullptr;
+            }
+            delete ctx;
+        }
         return;
     }
     EOS_HConnect ConnectHandle = EOS_Platform_GetConnectInterface(g_PlatformHandle);
     if (ConnectHandle == nullptr) {
         LOGE("ConnectHandle is null in DoConnectLogin");
-        delete ctx;
+        if (ctx) {
+            JniThreadGuard guard;
+            JNIEnv* env = guard.get();
+            if (env && ctx->callbackRef) {
+                env->DeleteGlobalRef(ctx->callbackRef);
+                ctx->callbackRef = nullptr;
+            }
+            delete ctx;
+        }
         return;
     }
 
@@ -478,6 +525,11 @@ Java_com_example_eos_EosBridge_nativeSendPacketFull(
     jstring targetPuid, jstring socketName, jbyteArray data,
     jint channel, jboolean isReliable) {
 
+    if (!targetPuid || !socketName || !data) {
+        LOGE("Invalid null argument in nativeSendPacketFull");
+        return JNI_FALSE;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         return JNI_FALSE;
     }
@@ -486,6 +538,7 @@ Java_com_example_eos_EosBridge_nativeSendPacketFull(
     if (P2pHandle == nullptr) return JNI_FALSE;
 
     const char* targetStr = env->GetStringUTFChars(targetPuid, nullptr);
+    if (!targetStr) return JNI_FALSE;
     EOS_ProductUserId targetUserId = EOS_ProductUserId_FromString(targetStr);
     env->ReleaseStringUTFChars(targetPuid, targetStr);
 
@@ -494,6 +547,7 @@ Java_com_example_eos_EosBridge_nativeSendPacketFull(
     }
 
     const char* socketStr = env->GetStringUTFChars(socketName, nullptr);
+    if (!socketStr) return JNI_FALSE;
     EOS_P2P_SocketId SocketId = {};
     SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
     strncpy(SocketId.SocketName, socketStr, sizeof(SocketId.SocketName) - 1);
@@ -532,6 +586,11 @@ JNIEXPORT jbyteArray JNICALL
 Java_com_example_eos_EosBridge_nativeReceivePacket(
     JNIEnv* env, jobject thiz, jstring socketName) {
 
+    if (!socketName) {
+        LOGE("Invalid null socketName in nativeReceivePacket");
+        return nullptr;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         return nullptr;
     }
@@ -540,6 +599,7 @@ Java_com_example_eos_EosBridge_nativeReceivePacket(
     if (P2pHandle == nullptr) return nullptr;
 
     const char* socketStr = env->GetStringUTFChars(socketName, nullptr);
+    if (!socketStr) return nullptr;
     EOS_P2P_SocketId SocketId = {};
     SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
     strncpy(SocketId.SocketName, socketStr, sizeof(SocketId.SocketName) - 1);
@@ -581,6 +641,11 @@ JNIEXPORT jboolean JNICALL
 Java_com_example_eos_EosBridge_nativeAcceptConnection(
     JNIEnv* env, jobject thiz, jstring remotePuid, jstring socketName) {
 
+    if (!remotePuid || !socketName) {
+        LOGE("Invalid null argument in nativeAcceptConnection");
+        return JNI_FALSE;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         return JNI_FALSE;
     }
@@ -589,10 +654,12 @@ Java_com_example_eos_EosBridge_nativeAcceptConnection(
     if (P2pHandle == nullptr) return JNI_FALSE;
 
     const char* targetStr = env->GetStringUTFChars(remotePuid, nullptr);
+    if (!targetStr) return JNI_FALSE;
     EOS_ProductUserId targetUserId = EOS_ProductUserId_FromString(targetStr);
     env->ReleaseStringUTFChars(remotePuid, targetStr);
 
     const char* socketStr = env->GetStringUTFChars(socketName, nullptr);
+    if (!socketStr) return JNI_FALSE;
     EOS_P2P_SocketId SocketId = {};
     SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
     strncpy(SocketId.SocketName, socketStr, sizeof(SocketId.SocketName) - 1);
@@ -933,6 +1000,11 @@ JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeJoinLobby(
     JNIEnv* env, jobject thiz, jstring lobbyId, jobject callback) {
 
+    if (!lobbyId || !callback) {
+        LOGE("Invalid null argument in nativeJoinLobby");
+        return;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) return;
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
     if (LobbyHandle == nullptr) return;
@@ -959,6 +1031,11 @@ static void EOS_CALL OnLeaveLobbyCallback(const EOS_Lobby_LeaveLobbyCallbackInfo
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeLeaveLobby(JNIEnv* env, jobject thiz, jstring lobbyId) {
+    if (!lobbyId) {
+        LOGE("Invalid null lobbyId in nativeLeaveLobby");
+        return;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) return;
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
     if (LobbyHandle == nullptr) return;
@@ -1018,19 +1095,27 @@ static void EOS_CALL OnLobbyMemberStatusReceived(const EOS_Lobby_LobbyMemberStat
 
     LOGI("EOS Member status changed: lobby=%s, member=%s, status=%s", lobbyId.c_str(), puidStr.c_str(), statusStr.c_str());
 
-    if (g_MemberStatusCallbackRef != nullptr) {
-        JNIEnv* env = GetEnv();
+    {
+        JniThreadGuard guard;
+        JNIEnv* env = guard.get();
         if (env) {
-            jclass cbClass = env->GetObjectClass(g_MemberStatusCallbackRef);
-            jmethodID methodId = env->GetMethodID(cbClass, "onMemberStatusChanged", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-            if (methodId) {
-                jstring lId = env->NewStringUTF(lobbyId.c_str());
-                jstring pId = env->NewStringUTF(puidStr.c_str());
-                jstring sId = env->NewStringUTF(statusStr.c_str());
-                env->CallVoidMethod(g_MemberStatusCallbackRef, methodId, lId, pId, sId);
-                if (lId) env->DeleteLocalRef(lId);
-                if (pId) env->DeleteLocalRef(pId);
-                if (sId) env->DeleteLocalRef(sId);
+            std::lock_guard<std::mutex> lock(g_CallbackMutex);
+            if (g_MemberStatusCallbackRef != nullptr) {
+                jobject localRef = env->NewLocalRef(g_MemberStatusCallbackRef);
+                if (localRef) {
+                    jclass cbClass = env->GetObjectClass(localRef);
+                    jmethodID methodId = env->GetMethodID(cbClass, "onMemberStatusChanged", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                    if (methodId) {
+                        jstring lId = env->NewStringUTF(lobbyId.c_str());
+                        jstring pId = env->NewStringUTF(puidStr.c_str());
+                        jstring sId = env->NewStringUTF(statusStr.c_str());
+                        env->CallVoidMethod(localRef, methodId, lId, pId, sId);
+                        if (lId) env->DeleteLocalRef(lId);
+                        if (pId) env->DeleteLocalRef(pId);
+                        if (sId) env->DeleteLocalRef(sId);
+                    }
+                    env->DeleteLocalRef(localRef);
+                }
             }
         }
     }
@@ -1046,17 +1131,21 @@ Java_com_example_eos_EosBridge_nativeSetupMemberStatusNotification(JNIEnv* env, 
         EOS_Lobby_RemoveNotifyLobbyMemberStatusReceived(LobbyHandle, g_LobbyMemberStatusNotificationId);
         g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
     }
-    if (g_MemberStatusCallbackRef != nullptr) {
-        env->DeleteGlobalRef(g_MemberStatusCallbackRef);
-        g_MemberStatusCallbackRef = nullptr;
-    }
 
-    if (callback != nullptr) {
-        g_MemberStatusCallbackRef = env->NewGlobalRef(callback);
-        EOS_Lobby_AddNotifyLobbyMemberStatusReceivedOptions Opts = {};
-        Opts.ApiVersion = EOS_LOBBY_ADDNOTIFYLOBBYMEMBERSTATUSRECEIVED_API_LATEST;
-        g_LobbyMemberStatusNotificationId = EOS_Lobby_AddNotifyLobbyMemberStatusReceived(LobbyHandle, &Opts, nullptr, OnLobbyMemberStatusReceived);
-        LOGI("Lobby member status notification registered, ID: %llu", (unsigned long long)g_LobbyMemberStatusNotificationId);
+    {
+        std::lock_guard<std::mutex> lock(g_CallbackMutex);
+        if (g_MemberStatusCallbackRef != nullptr) {
+            env->DeleteGlobalRef(g_MemberStatusCallbackRef);
+            g_MemberStatusCallbackRef = nullptr;
+        }
+
+        if (callback != nullptr) {
+            g_MemberStatusCallbackRef = env->NewGlobalRef(callback);
+            EOS_Lobby_AddNotifyLobbyMemberStatusReceivedOptions Opts = {};
+            Opts.ApiVersion = EOS_LOBBY_ADDNOTIFYLOBBYMEMBERSTATUSRECEIVED_API_LATEST;
+            g_LobbyMemberStatusNotificationId = EOS_Lobby_AddNotifyLobbyMemberStatusReceived(LobbyHandle, &Opts, nullptr, OnLobbyMemberStatusReceived);
+            LOGI("Lobby member status notification registered, ID: %llu", (unsigned long long)g_LobbyMemberStatusNotificationId);
+        }
     }
 }
 
@@ -1239,12 +1328,15 @@ Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jo
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeSearchLobbyByCode(JNIEnv* env, jobject thiz, jstring code, jobject callback) {
+    if (!code || !callback) {
+        LOGE("Invalid null argument in nativeSearchLobbyByCode");
+        return;
+    }
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
-        if (callback) {
-            jclass cbClass = env->GetObjectClass(callback);
-            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
-            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
-        }
+        jclass cbClass = env->GetObjectClass(callback);
+        jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+        if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
         return;
     }
 

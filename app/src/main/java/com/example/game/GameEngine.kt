@@ -500,19 +500,33 @@ class GameEngine {
         val piece = state.currentPiece ?: return
         val grid = state.grid.map { it.clone() }
         
+        var lockedOut = false
         for (p in piece.shape) {
             val nx = state.currentPos.x + p.x
             val ny = state.currentPos.y + p.y
-            if (ny in 0 until grid.size && nx in 0 until grid[ny].size) {
+            if (ny < 0) {
+                lockedOut = true
+            } else if (ny in 0 until grid.size && nx in 0 until grid[ny].size) {
                 grid[ny][nx] = piece.colorIndex
             }
         }
 
-        // Удаляем заполненные ряды, добавляем пустые сверху / remove full rows, add empty on top
-        val newGrid = grid.filter { row -> row.any { it == 0 } }.toMutableList()
-        val cleared = maxOf(0, 22 - newGrid.size)
-        for (i in 0 until cleared) {
-            newGrid.add(0, IntArray(10))
+        // В режимах головоломок (PATTERN_PUZZLE, MEMORY_PUZZLE) очистка линий не производится,
+        // чтобы не разрушать статичные координаты целей patternTargets
+        val isPuzzleMode = state.gameMode == GameMode.PATTERN_PUZZLE || state.gameMode == GameMode.MEMORY_PUZZLE
+        val newGrid: MutableList<IntArray>
+        val cleared: Int
+        if (!isPuzzleMode) {
+            // Удаляем заполненные ряды, добавляем пустые сверху / remove full rows, add empty on top
+            val filteredGrid = grid.filter { row -> row.any { it == 0 } }.toMutableList()
+            cleared = maxOf(0, 22 - filteredGrid.size)
+            for (i in 0 until cleared) {
+                filteredGrid.add(0, IntArray(10))
+            }
+            newGrid = filteredGrid
+        } else {
+            newGrid = grid.toMutableList()
+            cleared = 0
         }
 
         val newPiecesPlaced = state.piecesPlaced + 1
@@ -532,12 +546,12 @@ class GameEngine {
         val addedScore = basePoints * state.level
         val addedTime = if (state.gameMode == GameMode.TIME_ATTACK) cleared * 10 else 0
 
-        // Проверка смерти — блоки в top-3 рядах = game over (кроме Relax)
-        // death check: blocks in top 3 rows = game over (except Relax)
+        // Проверка смерти — Lock Out (блок зафиксирован выше поля ny < 0) или Block Out (спавн заблокирован)
+        // death check: Lock Out (mino locked above ceiling ny < 0) or Block Out (spawn collision)
         var isOver = false
         val nextP = state.nextPieces.firstOrNull() ?: nextPiece(state.isExtendedMode)
-        val blocksAtTop = newGrid[0].any { it != 0 } || newGrid[1].any { it != 0 } || newGrid[2].any { it != 0 }
-        if (!isValidMove(Position(4, 0), nextP, newGrid) || blocksAtTop) {
+        val spawnBlocked = !isValidMove(Position(4, 0), nextP, newGrid)
+        if (lockedOut || spawnBlocked) {
             if (state.gameMode == GameMode.RELAX && relaxImmortal) {
                 // Relax бессмертие — очищаем поле при заполнении / immortal: clear board on fill
                 newGrid.clear()

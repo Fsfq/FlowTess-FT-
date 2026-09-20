@@ -45,6 +45,15 @@ fun RewardedAdDialog(
     var isPlayingAd by remember { mutableStateOf(false) }
     var adStatusText by remember { mutableStateOf("") }
     var completedRewardCoins by remember { mutableStateOf<Int?>(null) }
+    var lastClickTimestamp by remember { mutableLongStateOf(0L) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            isPlayingAd = false
+            adStatusText = ""
+            completedRewardCoins = null
+        }
+    }
 
     // Auto load ad when dialog opens if needed
     LaunchedEffect(Unit) {
@@ -268,9 +277,15 @@ fun RewardedAdDialog(
                 // Compact MD3 Button (not full width)
                 Button(
                     onClick = {
-                        if (isAdConnected && !isPlayingAd) {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastClickTimestamp < 1000L) {
+                            return@Button
+                        }
+                        lastClickTimestamp = currentTime
+
+                        if (isAdConnected && !isPlayingAd && !isAdLoading) {
                             val activity = context as? Activity
-                            if (activity != null) {
+                            if (activity != null && !activity.isFinishing && !activity.isDestroyed) {
                                 viewModel.triggerAudioFeedback("click")
                                 isPlayingAd = true
                                 adStatusText = ""
@@ -278,10 +293,9 @@ fun RewardedAdDialog(
                                     activity = activity,
                                     onRewarded = { rewardCoins, _ ->
                                         val finalReward = if (rewardCoins > 0) rewardCoins else 300
-                                        viewModel.addCredits(finalReward)
+                                        viewModel.addRawCredits(finalReward)
                                         viewModel.triggerAudioFeedback("buy")
                                         completedRewardCoins = finalReward
-                                        isPlayingAd = false
                                     },
                                     onDismissed = {
                                         isPlayingAd = false

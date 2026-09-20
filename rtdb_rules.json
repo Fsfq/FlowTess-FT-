@@ -321,7 +321,12 @@
         "hostGarbageToSend":    { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)" },
         "opponentGarbageToSend":{ ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)" },
 
-        "players": { ".validate": "newData.exists()" },
+        "players": {
+          ".validate": "newData.exists()",
+          "$uid": {
+            ".write": "auth !== null && (auth.uid === $uid || data.parent().parent().child('hostId').val() === auth.uid)"
+          }
+        },
 
         "live": {
           ".read": "auth !== null",

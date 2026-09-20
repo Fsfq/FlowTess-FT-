@@ -858,11 +858,10 @@ object EosManager {
     }
 
     fun onDestroy() {
+        leaveRoom()
         tickJob?.cancel()
         packetPollJob?.cancel()
         searchLoopJob?.cancel()
         joinHandshakeJob?.cancel()
-        EosBridge.shutdown()
-        isInitialized.set(false)
     }
 }
