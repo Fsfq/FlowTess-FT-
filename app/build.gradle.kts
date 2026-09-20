@@ -117,6 +117,12 @@ android {
 
 androidComponents {
   onVariants { variant ->
+    if (variant.buildType == "release") {
+      variant.applicationId.set("FsFqX.FlowTess")
+    } else {
+      variant.applicationId.set("com.FsFq.Tetris")
+    }
+
     val abiCodes = mapOf("universal" to 0, "armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
     variant.outputs.forEach { output ->
       val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"

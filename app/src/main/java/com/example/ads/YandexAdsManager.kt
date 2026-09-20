@@ -2,6 +2,8 @@ package com.example.ads
 
 import android.app.Activity
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -16,11 +18,16 @@ import com.yandex.mobile.ads.rewarded.RewardedAdLoadResult
 import com.yandex.mobile.ads.rewarded.RewardedAdLoader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
  * Менеджер рекламы Yandex Mobile Ads SDK (РСЯ).
@@ -38,9 +45,16 @@ object YandexAdsManager {
     const val DEMO_AD_UNIT_ID = "demo-rewarded-yandex"
     const val REWARD_COIN_AMOUNT = 300
 
+    private val isInitializing = AtomicBoolean(false)
     private var isInitialized = false
+    private var appContext: Context? = null
     private var rewardedAdLoader: RewardedAdLoader? = null
     private var currentRewardedAd: RewardedAd? = null
+
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var retryJob: Job? = null
+    private var retryAttempt = 0
+    private const val MAX_RETRY_ATTEMPTS = 4
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -53,31 +67,46 @@ object YandexAdsManager {
 
     /**
      * Инициализация Yandex Mobile Ads SDK.
-     * Вызывается один раз при старте приложения (в MainActivity.onCreate или Application).
+     * Вызывается при старте приложения (в MainActivity.onCreate или Application).
      */
     fun init(context: Context) {
         if (isInitialized) return
-        val appContext = context.applicationContext
+        if (!isInitializing.compareAndSet(false, true)) return
 
+        val appCtx = context.applicationContext
+        appContext = appCtx
+
+        registerNetworkCallback(appCtx)
+
+        YandexAds.initialize(appCtx) {
+            Log.i(TAG, "Yandex Mobile Ads SDK successfully initialized")
+            isInitialized = true
+            isInitializing.set(false)
+            rewardedAdLoader = RewardedAdLoader(appCtx)
+            retryAttempt = 0
+            loadRewardedAd()
+        }
+    }
+
+    private fun registerNetworkCallback(context: Context) {
+        if (networkCallback != null) return
         try {
-            val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-            cm?.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: android.net.Network) {
-                    Log.i(TAG, "Network became available, auto-retrying ad load")
-                    if (!_isAdLoaded.value && !_isLoading.value && isInitialized) {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val callback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    Log.i(TAG, "Network became available, auto-retrying ad load / init")
+                    if (!isInitialized) {
+                        appContext?.let { init(it) }
+                    } else if (!_isAdLoaded.value && !_isLoading.value) {
+                        retryAttempt = 0
                         loadRewardedAd()
                     }
                 }
-            })
+            }
+            cm?.registerDefaultNetworkCallback(callback)
+            networkCallback = callback
         } catch (e: Throwable) {
             Log.w(TAG, "Could not register network callback: ${e.message}")
-        }
-
-        YandexAds.initialize(appContext) {
-            Log.i(TAG, "Yandex Mobile Ads SDK successfully initialized")
-            isInitialized = true
-            rewardedAdLoader = RewardedAdLoader(appContext)
-            loadRewardedAd()
         }
     }
 
@@ -88,6 +117,7 @@ object YandexAdsManager {
         if (_isLoading.value || _isAdLoaded.value) return
         val loader = rewardedAdLoader ?: return
 
+        retryJob?.cancel()
         _isLoading.value = true
         Log.i(TAG, "Requesting rewarded ad with unit ID: $REWARDED_AD_UNIT_ID")
 
@@ -105,6 +135,7 @@ object YandexAdsManager {
                         currentRewardedAd = result.ad
                         _isAdLoaded.value = true
                         _isLoading.value = false
+                        retryAttempt = 0
                     }
                     is RewardedAdLoadResult.Failure -> {
                         Log.w(TAG, "Failed to load rewarded ad: ${result.error.description}")
@@ -125,10 +156,18 @@ object YandexAdsManager {
     }
 
     private fun scheduleRetry() {
-        scope.launch {
-            kotlinx.coroutines.delay(15000L)
+        if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
+            Log.w(TAG, "Max ad load retry attempts ($MAX_RETRY_ATTEMPTS) reached. Waiting for next user/network trigger.")
+            return
+        }
+        val delayMillis = min(60000L, (2000.0 * 2.0.pow(retryAttempt.toDouble())).toLong())
+        retryAttempt++
+        Log.i(TAG, "Scheduling ad load retry #$retryAttempt in ${delayMillis}ms")
+
+        retryJob?.cancel()
+        retryJob = scope.launch {
+            delay(delayMillis)
             if (!_isAdLoaded.value && !_isLoading.value && isInitialized) {
-                Log.i(TAG, "Auto-retrying ad load after delay...")
                 loadRewardedAd()
             }
         }
@@ -138,7 +177,7 @@ object YandexAdsManager {
      * Показ видео за вознаграждение пользователю.
      *
      * @param activity Текущая Activity для отображения полноэкранного видео.
-     * @param onRewarded Колбэк успешного завершения просмотра пользователем (выдача монет / ключей).
+     * @param onRewarded Колбэк успешного завершения просмотра пользователем.
      * @param onDismissed Колбэк закрытия диалога рекламы.
      * @param onError Колбэк в случае сбоя или отсутствия готовой рекламы.
      */
@@ -157,6 +196,18 @@ object YandexAdsManager {
                 return@runOnMainThread
             }
 
+            // CRIT-ADS-01: Сразу зануляем текущую ссылку в синглтоне перед показом
+            currentRewardedAd = null
+            _isAdLoaded.value = false
+
+            // CRIT-ADS-02: Валидация жизненного цикла Activity
+            if (activity.isFinishing || activity.isDestroyed) {
+                Log.w(TAG, "Cannot show ad: Activity is finishing or destroyed")
+                ad.setAdEventListener(null)
+                onError("Activity is no longer valid")
+                return@runOnMainThread
+            }
+
             var rewardGranted = false
 
             ad.setAdEventListener(object : RewardedAdEventListener {
@@ -167,8 +218,6 @@ object YandexAdsManager {
                 override fun onAdFailedToShow(adError: AdError) {
                     Log.e(TAG, "Failed to show rewarded ad: ${adError.description}")
                     ad.setAdEventListener(null)
-                    currentRewardedAd = null
-                    _isAdLoaded.value = false
                     onError("Не удалось показать рекламу: ${adError.description}")
                     loadRewardedAd()
                 }
@@ -176,10 +225,7 @@ object YandexAdsManager {
                 override fun onAdDismissed() {
                     Log.i(TAG, "Rewarded ad dismissed by user")
                     ad.setAdEventListener(null)
-                    currentRewardedAd = null
-                    _isAdLoaded.value = false
                     onDismissed()
-                    // Автоматически подгружаем следующее видео в фоне
                     loadRewardedAd()
                 }
 
@@ -192,14 +238,38 @@ object YandexAdsManager {
                 }
 
                 override fun onRewarded(reward: Reward) {
-                    Log.i(TAG, "Reward earned: amount=${reward.amount}, type=${reward.type}")
+                    // MAJ-ADS-03: Защита от повторной выдачи наград
+                    if (rewardGranted) return
                     rewardGranted = true
+                    Log.i(TAG, "Reward earned: amount=${reward.amount}, type=${reward.type}")
                     val coinAmount = if (reward.amount > 1) reward.amount else REWARD_COIN_AMOUNT
                     onRewarded(coinAmount, "coins")
                 }
             })
 
-            ad.show(activity)
+            // CRIT-ADS-02: try-catch вокруг ad.show
+            try {
+                ad.show(activity)
+            } catch (t: Throwable) {
+                Log.e(TAG, "Exception during ad.show(): ${t.message}", t)
+                ad.setAdEventListener(null)
+                onError(t.message ?: "Failed to show ad")
+                loadRewardedAd()
+            }
+        }
+    }
+
+    /**
+     * Очистка слушателей и освобождение сильных ссылок при уничтожении Activity.
+     * [CRIT-ADS-01]
+     */
+    fun clearListeners() {
+        runOnMainThread {
+            currentRewardedAd?.setAdEventListener(null)
+            currentRewardedAd = null
+            _isAdLoaded.value = false
+            retryJob?.cancel()
+            retryJob = null
         }
     }
 

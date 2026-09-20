@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
 
   override fun onDestroy() {
     super.onDestroy()
+    com.example.ads.YandexAdsManager.clearListeners()
     com.example.eos.EosManager.onDestroy()
   }
 }

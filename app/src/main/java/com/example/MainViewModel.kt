@@ -3901,7 +3901,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         userDocSnapshotListener?.remove()
         userDocSnapshotListener = null
-        lobbyManager.cleanUpAllListeners()
+        lobbyManager.cleanup()
         try {
             lobbyMusicPlayer?.stop()
             lobbyMusicPlayer?.release()

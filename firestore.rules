@@ -38,6 +38,11 @@ service cloud.firestore {
                         && (!('is_admin' in request.resource.data) || request.resource.data.is_admin != true)
                         && (!('player_name' in request.resource.data) || !request.resource.data.player_name.matches('.*(?i)(fsfq|admin|administrator).*'))
                         && (!('app_version_code' in request.resource.data) || request.resource.data.app_version_code >= 15)
+                        && (!('credits' in request.resource.data) || (
+                              request.resource.data.credits is int &&
+                              request.resource.data.credits >= 0 &&
+                              request.resource.data.credits <= 5000000
+                           ))
                        ) || isAdmin();
       allow update: if (isOwner(userId)
                         && (!('is_admin' in request.resource.data) || request.resource.data.is_admin != true)
@@ -46,6 +51,11 @@ service cloud.firestore {
                         && (!('app_version_code' in request.resource.data) || (
                               request.resource.data.app_version_code >= 15 &&
                               (!('app_version_code' in resource.data) || request.resource.data.app_version_code >= resource.data.app_version_code)
+                           ))
+                        && (!('credits' in request.resource.data) || (
+                              request.resource.data.credits is int &&
+                              request.resource.data.credits >= 0 &&
+                              (!('credits' in resource.data) || request.resource.data.credits - resource.data.credits <= 50000)
                            ))
                        ) || isAdmin();
       allow delete: if isAdmin();
