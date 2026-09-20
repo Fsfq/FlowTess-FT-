@@ -11,11 +11,7 @@ class FirebaseLobbyManager(private val externalScope: CoroutineScope) {
 
     private val auth = FirebaseAuth.getInstance()
     private val database: FirebaseDatabase by lazy {
-        try {
-            FirebaseDatabase.getInstance("https://fsfq-b840f-default-rtdb.europe-west1.firebasedatabase.app")
-        } catch (e: Exception) {
-            FirebaseDatabase.getInstance()
-        }
+        FirebaseDatabase.getInstance()
     }
 
     private var presenceJob: Job? = null

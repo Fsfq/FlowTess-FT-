@@ -163,8 +163,7 @@ object FirebaseSync {
 
         data["custom_avatar_base64"] = avatarBase64 ?: ""
         data["custom_background_base64"] = bgBase64 ?: ""
-        val isTrueAdmin = (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
-            (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com"))
+        val isTrueAdmin = (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com")
 
         if (isTrueAdmin) {
             data["is_admin"] = true
@@ -257,8 +256,7 @@ object FirebaseSync {
                 editorProfile.putStringSet("purchased_control_button_styles", localBtnStyles + cloudBtnStyles)
 
                 var resolvedName = (data["player_name"] as? String) ?: tetrisPrefs.getString("player_name", "Player 1") ?: "Player 1"
-                val isPullAdmin = (user.uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
-                    (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com"))
+                val isPullAdmin = (user.isEmailVerified && user.email?.lowercase() == "ezik02021@gmail.com")
                 if (!isPullAdmin) {
                     val rLower = resolvedName.lowercase()
                     if (rLower.contains("fsfq") || rLower.contains("admin") || rLower.contains("админ")) {
