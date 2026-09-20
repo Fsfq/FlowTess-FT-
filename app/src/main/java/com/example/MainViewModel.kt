@@ -398,10 +398,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isCurrentUserAdmin(): Boolean {
         val user = auth.currentUser ?: return false
-        val uid = user.uid
         val email = user.email?.lowercase() ?: ""
-        return uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
-               (user.isEmailVerified && email == "ezik02021@gmail.com")
+        return user.isEmailVerified && email == "ezik02021@gmail.com"
     }
 
     fun isReservedAdminNickname(name: String): Boolean {
@@ -2748,8 +2746,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 for (doc in snapshot.documents) {
                     val uid = doc.id
                     val email = doc.getString("email")?.lowercase() ?: ""
-                    val isProtectedAdminDoc = (uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
-                        email == "ezik02021@gmail.com")
+                    val isProtectedAdminDoc = (email == "ezik02021@gmail.com")
                     if (!isProtectedAdminDoc) {
                         batch.delete(doc.reference)
                         firestore.collection("high_scores").document(doc.id).delete()
@@ -3387,10 +3384,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         firestore.collection("users").get().addOnSuccessListener { snapshot ->
             val batch = firestore.batch()
             for (doc in snapshot.documents) {
-                val uid = doc.id
                 val email = doc.getString("email")?.lowercase() ?: ""
-                val isProtectedAdminDoc = (uid == "ge9Lzx5EkCfbINDZEG6I8vYcJCd2" || 
-                    email == "ezik02021@gmail.com")
+                val isProtectedAdminDoc = (email == "ezik02021@gmail.com")
                 if (!isProtectedAdminDoc) {
                     batch.delete(doc.reference)
                 }

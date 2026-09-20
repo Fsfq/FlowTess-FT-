@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "fsfq-b840f"
+    "default": "fsfq-b840f",
+    "release": "ft-release"
   }
 }
