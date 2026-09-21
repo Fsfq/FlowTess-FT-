@@ -1,7 +1,0 @@
-
-if (file("settings_internal.gradle").exists()) {
-	apply from: "settings_internal.gradle"
-}
-
-rootProject.name='Login'
-include ':app'

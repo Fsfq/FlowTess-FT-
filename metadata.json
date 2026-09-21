@@ -1,6 +1,0 @@
-{
-  "name": "FsFq Tetris",
-  "description": "Premium multi-flow system featuring classic, extended, hyper speed and reverse chaos modes with local Room profile accounts.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
