@@ -264,12 +264,6 @@ class BlockBlastEngine {
             newGrid[targetRow + pos.r][targetCol + pos.c] = figure.colorIndex
         }
 
-        val newPool = s.pool.toMutableList()
-        newPool[idx] = null
-
-        val isPoolEmpty = newPool.all { it == null }
-        val finalPool = if (isPoolEmpty) generateNewPool(newGrid) else newPool
-
         val rowsToClear = mutableListOf<Int>()
         val colsToClear = mutableListOf<Int>()
 
@@ -318,6 +312,11 @@ class BlockBlastEngine {
                 newGrid[r][c] = 0
             }
         }
+
+        val newPool = s.pool.toMutableList()
+        newPool[idx] = null
+        val isPoolEmpty = newPool.all { it == null }
+        val finalPool = if (isPoolEmpty) generateNewPool(newGrid) else newPool
 
         val placementScore = figure.blocks.size * 5
         val lineClearScore = when (totalCleared) {

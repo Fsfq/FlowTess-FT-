@@ -72,40 +72,51 @@ fun RewardedAdDialog(
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 320.dp)
-                .fillMaxWidth(0.84f)
+                .widthIn(max = 360.dp)
+                .fillMaxWidth(0.90f)
                 .wrapContentHeight(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header: Title + Close Button
+                // Header: Balance pill + close button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = when (currentLang) {
-                            Language.RU -> "Награда"
-                            Language.UA -> "Нагорода"
-                            Language.KK -> "Сыйлық"
-                            Language.DE -> "Belohnung"
-                            Language.ZH -> "福利奖励"
-                            else -> "Reward"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = String.format(Locale.getDefault(), "%,d", credits),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
 
                     IconButton(
                         onClick = {
@@ -115,73 +126,46 @@ fun RewardedAdDialog(
                             }
                         },
                         enabled = !isPlayingAd,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Clean MD3 Icon Badge
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(80.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.MonetizationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(44.dp)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Minimal Icon Badge
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFFFFD700).copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.3f)),
-                    modifier = Modifier.size(52.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.MonetizationOn,
-                            contentDescription = null,
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // +300
+                // Value Text (+300)
                 Text(
                     text = "+300",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFFFD700)
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Current balance text
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Text(
-                        text = when (currentLang) {
-                            Language.RU -> "Баланс:"
-                            Language.UA -> "Баланс:"
-                            Language.KK -> "Баланс:"
-                            Language.DE -> "Guthaben:"
-                            Language.ZH -> "余额:"
-                            else -> "Balance:"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = String.format(Locale.getDefault(), "%,d", credits),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // Reward Confirmation Banner
+                // Reward Received Toast Banner
                 AnimatedVisibility(
                     visible = completedRewardCoins != null,
                     enter = fadeIn() + expandVertically(),
@@ -189,12 +173,13 @@ fun RewardedAdDialog(
                 ) {
                     completedRewardCoins?.let { coins ->
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFF00E676).copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF00E676).copy(alpha = 0.14f),
+                            border = BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.35f)),
                             modifier = Modifier.padding(top = 10.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
@@ -202,18 +187,11 @@ fun RewardedAdDialog(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
                                     tint = Color(0xFF00E676),
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = when (currentLang) {
-                                        Language.RU -> "+$coins получено"
-                                        Language.UA -> "+$coins отримано"
-                                        Language.KK -> "+$coins алынды"
-                                        Language.DE -> "+$coins erhalten"
-                                        Language.ZH -> "+$coins 已到账"
-                                        else -> "+$coins received"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = "+$coins",
+                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF00E676)
                                 )
@@ -230,7 +208,7 @@ fun RewardedAdDialog(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 10.dp)
                     ) {
                         Text(
                             text = adStatusText,
@@ -239,42 +217,28 @@ fun RewardedAdDialog(
                             textAlign = TextAlign.Center
                         )
                         if (!isAdLoading) {
-                            TextButton(
+                            IconButton(
                                 onClick = {
                                     viewModel.triggerAudioFeedback("click")
                                     adStatusText = ""
                                     viewModel.loadRewardedAd()
                                 },
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Retry",
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = when (currentLang) {
-                                        Language.RU -> "Повторить"
-                                        Language.UA -> "Повторити"
-                                        Language.KK -> "Қайталау"
-                                        Language.DE -> "Wiederholen"
-                                        Language.ZH -> "重试"
-                                        else -> "Retry"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Compact MD3 Button (not full width)
+                // Large action button
                 Button(
                     onClick = {
                         val currentTime = System.currentTimeMillis()
@@ -309,42 +273,31 @@ fun RewardedAdDialog(
                         }
                     },
                     enabled = isAdConnected && !isPlayingAd && !isAdLoading,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     ),
-                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
-                    modifier = Modifier.height(40.dp)
+                    contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.88f)
+                        .height(52.dp)
                 ) {
                     if (isPlayingAd || isAdLoading) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(20.dp),
                             color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = when (currentLang) {
-                                Language.RU -> "Загрузка..."
-                                Language.UA -> "Завантаження..."
-                                Language.KK -> "Жүктелуде..."
-                                Language.DE -> "Laden..."
-                                Language.ZH -> "加载中..."
-                                else -> "Loading..."
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
+                            strokeWidth = 2.5.dp
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = when (currentLang) {
                                 Language.RU -> "Смотреть"
@@ -354,7 +307,7 @@ fun RewardedAdDialog(
                                 Language.ZH -> "观看"
                                 else -> "Watch"
                             },
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold
                         )
                     }

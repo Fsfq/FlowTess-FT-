@@ -46,6 +46,8 @@ import com.example.game.Position
 import com.example.game.Tetromino
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 
@@ -98,17 +100,6 @@ fun GameBoardView(
         label = "SmoothSliding"
     )
 
-    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "GradientAnimation")
-    val gradientOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween<Float>(durationMillis = 6000, easing = androidx.compose.animation.core.LinearEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
-        ),
-        label = "Offset"
-    )
-
     // Smooth Angular Motion Blur on rotation for High/Ultra graphics
     var prevPieceShape by remember { mutableStateOf<List<Position>?>(null) }
     var prevPieceColor by remember { mutableIntStateOf(0) }
@@ -134,24 +125,26 @@ fun GameBoardView(
     }
 
     val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
-    val perfectionistHint = remember(
-        isPerfectionistMode,
-        gameState.grid,
-        gameState.currentPiece,
-        gameState.holdPiece,
-        gameState.hasHeldThisTurn,
-        gameState.nextPieces.firstOrNull(),
-        viewModel
+    val perfectionistHint by produceState<com.example.game.PlacementHint?>(
+        initialValue = null,
+        key1 = isPerfectionistMode,
+        key2 = gameState.currentPiece,
+        key3 = gameState.grid
     ) {
         if (isPerfectionistMode && viewModel != null && gameState.currentPiece != null) {
-            viewModel.gameEngine.calculateOptimalPlacement(
-                grid = gameState.grid,
-                piece = gameState.currentPiece!!,
-                holdPiece = gameState.holdPiece,
-                nextPiece = gameState.nextPieces.firstOrNull(),
-                canHold = !gameState.hasHeldThisTurn
-            )
-        } else null
+            value = withContext(Dispatchers.Default) {
+                viewModel.gameEngine.calculateOptimalPlacement(
+                    grid = gameState.grid,
+                    piece = gameState.currentPiece!!,
+                    holdPiece = gameState.holdPiece,
+                    nextPiece = gameState.nextPieces.firstOrNull(),
+                    canHold = !gameState.hasHeldThisTurn,
+                    secondNextPiece = gameState.nextPieces.getOrNull(1)
+                )
+            }
+        } else {
+            value = null
+        }
     }
 
     Canvas(
@@ -425,236 +418,327 @@ internal fun DrawScope.drawBlock(
 
     when {
         style == "flat" -> {
+            // Clean flat minimal block with crisp inset border
             drawRoundRect(
                 color = color,
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
+            )
+            drawRoundRect(
+                color = Color.Black.copy(alpha = 0.22f),
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
+                style = Stroke(width = 1.2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.18f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f),
+                style = Stroke(width = 0.8f)
+            )
+        }
+        style == "glass" -> {
+            // Frosted matte surface with smooth soft highlight edge
+            drawRoundRect(
+                color = color.copy(alpha = 0.85f),
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+            )
+            // Soft inner surface sheen
+            drawRoundRect(
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.28f), Color.Transparent, Color.Black.copy(alpha = 0.18f)),
+                    start = Offset(x + pad, y + pad),
+                    end = Offset(x + pad + bSize, y + pad + bSize)
+                ),
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
             )
             drawRoundRect(
-                color = Color.Black.copy(alpha = 0.25f),
-                topLeft = Offset(x + pad, y + pad),
-                size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
+                color = Color.White.copy(alpha = 0.35f),
+                topLeft = Offset(x + pad + 0.8f, y + pad + 0.8f),
+                size = Size(bSize - 1.6f, bSize - 1.6f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.5f, 3.5f),
                 style = Stroke(width = 1f)
             )
-        }
-        style == "glass" -> {
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(x + pad, y + pad),
-                size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.2f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f),
-                style = Stroke(width = 1f)
-            )
-        }
-        style == "retro" -> {
-            drawRect(color = color, topLeft = Offset(x, y), size = Size(size, size))
-            drawRect(color = Color.White.copy(alpha = 0.45f), topLeft = Offset(x + 2f, y + 2f), size = Size(size - 4f, size - 4f), style = Stroke(width = 1.5f))
-            drawRect(color = Color.Black.copy(alpha = 0.45f), topLeft = Offset(x + 5f, y + 5f), size = Size(size - 10f, size - 10f))
         }
         style == "material" -> {
+            // Glass / Crystal Prism: Translucent glossy jewel with realistic top diagonal flare & refraction
             drawRoundRect(
-                color = color,
+                color = color.copy(alpha = 0.82f),
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
             )
+            // Soft inner glass gradient (bright at top-left, depth shadow at bottom-right)
             drawRoundRect(
-                color = Color.White.copy(alpha = 0.3f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f),
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.45f),
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.30f)
+                    ),
+                    start = Offset(x + pad, y + pad),
+                    end = Offset(x + pad + bSize, y + pad + bSize)
+                ),
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+            )
+            // Top-left diagonal glass light sheen
+            val flarePath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(x + pad + 1.5f, y + pad + 1.5f)
+                lineTo(x + pad + bSize * 0.75f, y + pad + 1.5f)
+                lineTo(x + pad + 1.5f, y + pad + bSize * 0.75f)
+                close()
+            }
+            drawPath(flarePath, color = Color.White.copy(alpha = 0.32f))
+
+            // Thin crisp perimeter bevel
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.40f),
+                topLeft = Offset(x + pad + 0.8f, y + pad + 0.8f),
+                size = Size(bSize - 1.6f, bSize - 1.6f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.5f, 3.5f),
                 style = Stroke(width = 1f)
             )
         }
         style == "glowing_jewel" -> {
+            // Segmented 2x2 waffle / grid texture
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.6f),
-                topLeft = Offset(x + pad + 1.5f, y + pad + 1.5f),
-                size = Size(bSize - 3f, bSize - 3f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.5f)
+            val half = (bSize - 1.5f) / 2f
+            val qSize = Size(half, half)
+            val subPad = 0.5f
+            // 4 mini square segments inside block
+            val qOffsets = listOf(
+                Offset(x + pad + subPad, y + pad + subPad),
+                Offset(x + pad + half + subPad + 0.5f, y + pad + subPad),
+                Offset(x + pad + subPad, y + pad + half + subPad + 0.5f),
+                Offset(x + pad + half + subPad + 0.5f, y + pad + half + subPad + 0.5f)
             )
+            for (offset in qOffsets) {
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.2f),
+                    topLeft = offset,
+                    size = qSize,
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1.5f, 1.5f)
+                )
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.2f),
+                    topLeft = offset,
+                    size = qSize,
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1.5f, 1.5f),
+                    style = Stroke(width = 0.8f)
+                )
+            }
         }
         style == "steampunk" -> {
+            // Carbon / Chiseled Plate: Precision brushed texture with metallic chamfer border
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
+            )
+            // Fine horizontal texture scanlines
+            val linesCount = 4
+            val step = bSize / (linesCount + 1)
+            for (i in 1..linesCount) {
+                val ly = y + pad + i * step
+                drawLine(
+                    color = Color.Black.copy(alpha = 0.16f),
+                    start = Offset(x + pad + 2f, ly),
+                    end = Offset(x + pad + bSize - 2f, ly),
+                    strokeWidth = 1f
+                )
+            }
+            // Crisp double frame
+            drawRoundRect(
+                color = Color.Black.copy(alpha = 0.32f),
+                topLeft = Offset(x + pad, y + pad),
+                size = Size(bSize, bSize),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
+                style = Stroke(width = 1.2f)
             )
             drawRoundRect(
-                color = Color(0xFFD4AF37).copy(alpha = 0.85f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
-                style = Stroke(width = 1.5f)
+                color = Color.White.copy(alpha = 0.28f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f),
+                style = Stroke(width = 0.8f)
             )
         }
         style == "red_gradient" -> {
-            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                colors = listOf(Color(0xFFFF1744), Color(0xFFFF5252), Color(0xFFB71C1C)),
-                start = Offset(x + pad, y + pad),
-                end = Offset(x + pad + bSize, y + pad + bSize)
+            // Structured crimson gradient with clean inner frame
+            val brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(Color(0xFFE53935), Color(0xFFC62828)),
+                startY = y + pad,
+                endY = y + pad + bSize
             )
             drawRoundRect(
                 brush = brush,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
             drawRoundRect(
-                color = Color(0xFFFF8A80).copy(alpha = 0.85f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.2f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.45f),
-                topLeft = Offset(x + pad + 2f, y + pad + 2f),
-                size = Size(bSize / 2.8f, bSize / 2.8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+                color = Color.White.copy(alpha = 0.28f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.2f, 2.2f),
+                style = Stroke(width = 1f)
             )
         }
         style == "green_gradient" -> {
-            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                colors = listOf(Color(0xFF00E676), Color(0xFF69F0AE), Color(0xFF1B5E20)),
-                start = Offset(x + pad, y + pad),
-                end = Offset(x + pad + bSize, y + pad + bSize)
+            // Structured emerald gradient with clean inner frame
+            val brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(Color(0xFF43A047), Color(0xFF2E7D32)),
+                startY = y + pad,
+                endY = y + pad + bSize
             )
             drawRoundRect(
                 brush = brush,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
             drawRoundRect(
-                color = Color(0xFFB9F6CA).copy(alpha = 0.85f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.2f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.45f),
-                topLeft = Offset(x + pad + 2f, y + pad + 2f),
-                size = Size(bSize / 2.8f, bSize / 2.8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+                color = Color.White.copy(alpha = 0.28f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.2f, 2.2f),
+                style = Stroke(width = 1f)
             )
         }
         style == "blue_gradient" -> {
-            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                colors = listOf(Color(0xFF00B0FF), Color(0xFF40C4FF), Color(0xFF0D47A1)),
-                start = Offset(x + pad, y + pad),
-                end = Offset(x + pad + bSize, y + pad + bSize)
+            // Structured cobalt gradient with clean inner frame
+            val brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(Color(0xFF1E88E5), Color(0xFF1565C0)),
+                startY = y + pad,
+                endY = y + pad + bSize
             )
             drawRoundRect(
                 brush = brush,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
             drawRoundRect(
-                color = Color(0xFF80D8FF).copy(alpha = 0.85f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.2f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.45f),
-                topLeft = Offset(x + pad + 2f, y + pad + 2f),
-                size = Size(bSize / 2.8f, bSize / 2.8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+                color = Color.White.copy(alpha = 0.28f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.2f, 2.2f),
+                style = Stroke(width = 1f)
             )
         }
         style == "purple_gradient" -> {
-            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                colors = listOf(Color(0xFFD500F9), Color(0xFFE040FB), Color(0xFF4A148C)),
-                start = Offset(x + pad, y + pad),
-                end = Offset(x + pad + bSize, y + pad + bSize)
+            // Structured amethyst gradient with clean inner frame
+            val brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(Color(0xFF8E24AA), Color(0xFF6A1B9A)),
+                startY = y + pad,
+                endY = y + pad + bSize
             )
             drawRoundRect(
                 brush = brush,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
             drawRoundRect(
-                color = Color(0xFFEA80FC).copy(alpha = 0.85f),
-                topLeft = Offset(x + pad + 1f, y + pad + 1f),
-                size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.2f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.45f),
-                topLeft = Offset(x + pad + 2f, y + pad + 2f),
-                size = Size(bSize / 2.8f, bSize / 2.8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+                color = Color.White.copy(alpha = 0.28f),
+                topLeft = Offset(x + pad + 1.2f, y + pad + 1.2f),
+                size = Size(bSize - 2.4f, bSize - 2.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.2f, 2.2f),
+                style = Stroke(width = 1f)
             )
         }
         style.contains("gradient") -> {
-            val hsv = FloatArray(3)
-            android.graphics.Color.colorToHSV(
-                android.graphics.Color.argb(255, (color.red * 255).toInt(), (color.green * 255).toInt(), (color.blue * 255).toInt()),
-                hsv
-            )
-            val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], (hsv[1] * 0.7f).coerceIn(0.2f, 1f), 1f)))
-            val c2 = color
-            val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], 1f, (hsv[2] * 0.6f).coerceIn(0.15f, 1f))))
-            val brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                colors = listOf(c1, c2, c3),
-                start = Offset(x + pad, y + pad),
-                end = Offset(x + pad + bSize, y + pad + bSize)
+            val brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(color, color.copy(alpha = 0.72f)),
+                startY = y + pad,
+                endY = y + pad + bSize
             )
             drawRoundRect(
                 brush = brush,
                 topLeft = Offset(x + pad, y + pad),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f, 5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
             )
             drawRoundRect(
-                color = c1.copy(alpha = 0.85f),
+                color = Color.White.copy(alpha = 0.25f),
                 topLeft = Offset(x + pad + 1f, y + pad + 1f),
                 size = Size(bSize - 2f, bSize - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
-                style = Stroke(width = 1.2f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.45f),
-                topLeft = Offset(x + pad + 2f, y + pad + 2f),
-                size = Size(bSize / 2.8f, bSize / 2.8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f)
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f, 2.5f),
+                style = Stroke(width = 1f)
             )
         }
-        else -> { // "neon" / default
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(x + pad, y + pad),
+        else -> {
+            // Classic Guideline Bevel: Authentic Tetris block with lighter top/left edge and darker bottom/right edge
+            val b = bSize * 0.15f
+            val left = x + pad
+            val top = y + pad
+            val right = left + bSize
+            val bottom = top + bSize
+
+            // Base center fill
+            drawRect(color = color, topLeft = Offset(left, top), size = Size(bSize, bSize))
+
+            // Top bevel trapezoid (lighter)
+            val topPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(left, top)
+                lineTo(right, top)
+                lineTo(right - b, top + b)
+                lineTo(left + b, top + b)
+                close()
+            }
+            drawPath(topPath, color = Color.White.copy(alpha = 0.38f))
+
+            // Left bevel trapezoid (lighter)
+            val leftPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(left, top)
+                lineTo(left + b, top + b)
+                lineTo(left + b, bottom - b)
+                lineTo(left, bottom)
+                close()
+            }
+            drawPath(leftPath, color = Color.White.copy(alpha = 0.22f))
+
+            // Bottom bevel trapezoid (darker)
+            val bottomPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(left, bottom)
+                lineTo(left + b, bottom - b)
+                lineTo(right - b, bottom - b)
+                lineTo(right, bottom)
+                close()
+            }
+            drawPath(bottomPath, color = Color.Black.copy(alpha = 0.32f))
+
+            // Right bevel trapezoid (darker)
+            val rightPath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(right, top)
+                lineTo(right, bottom)
+                lineTo(right - b, bottom - b)
+                lineTo(right - b, top + b)
+                close()
+            }
+            drawPath(rightPath, color = Color.Black.copy(alpha = 0.22f))
+
+            // Subtle outer outline
+            drawRect(
+                color = Color.Black.copy(alpha = 0.25f),
+                topLeft = Offset(left, top),
                 size = Size(bSize, bSize),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
-            )
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.75f),
-                topLeft = Offset(x + pad + 1.5f, y + pad + 1.5f),
-                size = Size(bSize - 3f, bSize - 3f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f),
-                style = Stroke(width = 1.2f)
+                style = Stroke(width = 0.8f)
             )
         }
     }

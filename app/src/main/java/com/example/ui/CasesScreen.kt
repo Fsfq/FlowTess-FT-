@@ -598,18 +598,7 @@ fun CasesScreen(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
-                navigationIcon = {
-                    IconButton(
-                        onClick = { if (!isAnimating) onBack() },
-                        enabled = !isAnimating
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = if (isAnimating) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
+
                 title = {},
                 actions = {
                     val totalKeys = remember(crateKeys) { crateKeys.values.sum() }
@@ -652,42 +641,37 @@ fun CasesScreen(
                         }
 
                         // Credits Chip
-                        Surface(
+                        Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     viewModel.triggerAudioFeedback("click")
                                     viewModel.openRewardedAdDialog()
-                                },
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MonetizationOn,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                AdaptiveText(
-                                    text = String.format(Locale.getDefault(), "%,d", credits),
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = 0.5.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.AddCircle,
-                                    contentDescription = "Free Coins",
-                                    tint = Color(0xFFFFB300),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(15.dp)
+                            )
+                            AdaptiveText(
+                                text = String.format(Locale.getDefault(), "%,d", credits),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = "Free Coins",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(14.dp)
+                            )
                         }
                     }
                 }

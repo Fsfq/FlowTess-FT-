@@ -31,7 +31,6 @@ object ShopPrices {
     // ── Cube / Block Skins ──
     const val CUBE_NEON = 0
     const val CUBE_GLASS = 200
-    const val CUBE_RETRO = 300
     const val CUBE_FLAT = 400
     const val CUBE_MATERIAL = 500
     const val CUBE_GLOWING_JEWEL = 700
@@ -40,7 +39,6 @@ object ShopPrices {
     fun getCubeSkinCost(cubeSkinId: String): Int = when (cubeSkinId.lowercase()) {
         "neon" -> CUBE_NEON
         "glass" -> CUBE_GLASS
-        "retro" -> CUBE_RETRO
         "flat" -> CUBE_FLAT
         "material" -> CUBE_MATERIAL
         "glowing_jewel" -> CUBE_GLOWING_JEWEL
@@ -127,15 +125,11 @@ object ShopPrices {
     const val BUTTON_CLASSIC = 0
     const val BUTTON_NEON = 0
     const val BUTTON_GLASS = 600
-    const val BUTTON_GOLD = 2500
-    const val BUTTON_PLASMA = 2500
 
     fun getButtonCost(buttonStyleId: String): Int = when (buttonStyleId.lowercase()) {
         "classic" -> BUTTON_CLASSIC
         "neon" -> BUTTON_NEON
         "glass" -> BUTTON_GLASS
-        "gold_legendary", "gold" -> BUTTON_GOLD
-        "plasma_legendary", "plasma" -> BUTTON_PLASMA
         else -> 0
     }
 
@@ -206,7 +200,7 @@ object ShopPrices {
                 else -> DropRarity.COMMON
             }
             "CUBE", "CUBE_SKIN", "BLOCKS" -> when (lowerId) {
-                "neon", "glass", "retro" -> DropRarity.COMMON
+                "neon", "glass" -> DropRarity.COMMON
                 "flat", "material" -> DropRarity.UNCOMMON
                 "glowing_jewel" -> DropRarity.RARE
                 "steampunk" -> DropRarity.EPIC
@@ -229,7 +223,6 @@ object ShopPrices {
             "BUTTON", "BUTTONS", "BUTTON_SKIN" -> when (lowerId) {
                 "classic", "neon" -> DropRarity.COMMON
                 "glass" -> DropRarity.UNCOMMON
-                "gold_legendary", "gold", "plasma_legendary", "plasma" -> DropRarity.LEGENDARY
                 else -> DropRarity.COMMON
             }
             "TITLE", "TITLES", "PLAYER_BADGES" -> when (lowerId) {

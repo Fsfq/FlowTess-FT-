@@ -174,20 +174,7 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                         )
                     )
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            viewModel.triggerAudioFeedback("click")
-                            onBack()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
+
                 actions = {
                     IconButton(
                         onClick = {
@@ -331,43 +318,21 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                                 color = themeColorVal
                             )
                             Spacer(modifier = Modifier.height(10.dp))
-                            val context = androidx.compose.ui.platform.LocalContext.current
-                            val purchasedCubeSkinsSet = remember {
-                                val sharedPrefs = context.getSharedPreferences("block_tetris_prefs", android.content.Context.MODE_PRIVATE)
-                                sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
-                            }
                             val styles = listOf(
                                 "neon" to Translations.getLocalizedCubeSkinTitle("neon", currentLang),
                                 "glass" to Translations.getLocalizedCubeSkinTitle("glass", currentLang),
-                                "retro" to Translations.getLocalizedCubeSkinTitle("retro", currentLang),
+                                "material" to Translations.getLocalizedCubeSkinTitle("material", currentLang),
                                 "flat" to Translations.getLocalizedCubeSkinTitle("flat", currentLang),
-                                "material" to Translations.getLocalizedCubeSkinTitle("material", currentLang)
+                                "steampunk" to Translations.getLocalizedCubeSkinTitle("steampunk", currentLang),
+                                "glowing_jewel" to Translations.getLocalizedCubeSkinTitle("glowing_jewel", currentLang)
                             )
-                            val purchaseStyleToast = when (currentLang) {
-                                Language.RU -> "Купите этот стиль в магазине!"
-                                Language.UA -> "Придбайте цей стиль у магазині!"
-                                Language.KK -> "Бұл стильді дүкеннен сатып алыңыз!"
-                                Language.DE -> "Kaufe diesen Stil im Shop!"
-                                Language.ZH -> "请在商店中购买此皮肤风格！"
-                                else -> "Purchase this style in the store!"
-                            }
                             styles.forEach { (key, title) ->
-                                val isOwned = purchasedCubeSkinsSet.contains(key) || key == "neon"
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable {
-                                            if (isOwned) {
-                                                viewModel.setBlockStyle(key)
-                                            } else {
-                                                viewModel.triggerAudioFeedback("error")
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    purchaseStyleToast,
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
+                                            viewModel.setBlockStyle(key)
                                         }
                                         .padding(vertical = 6.dp, horizontal = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -375,35 +340,16 @@ fun SettingsScreen(viewModel: MainViewModel, onBack: () -> Unit, onCustomizeCont
                                     RadioButton(
                                         selected = blockStyle == key,
                                         onClick = {
-                                            if (isOwned) {
-                                                viewModel.setBlockStyle(key)
-                                            } else {
-                                                viewModel.triggerAudioFeedback("error")
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    purchaseStyleToast,
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
+                                            viewModel.setBlockStyle(key)
                                         },
-                                        enabled = isOwned,
                                         colors = RadioButtonDefaults.colors(selectedColor = themeColorVal)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     AdaptiveText(
                                         text = title,
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = if (isOwned) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    if (!isOwned) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        Icon(
-                                            imageVector = Icons.Default.Lock,
-                                            contentDescription = "Locked",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
                                 }
                             }
                         }

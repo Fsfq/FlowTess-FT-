@@ -169,37 +169,41 @@ fun PlayerAvatarView(
 
     val hasAnimatedFrame = avatarFrame != "standard" && avatarFrame != "none" && avatarFrame.isNotBlank()
 
-    val frameBrush = remember(parsedBgColor, secondaryColor) {
-        val isMetallic = (parsedBgColor.red < 0.22f && parsedBgColor.green < 0.22f && parsedBgColor.blue < 0.22f) ||
-                (parsedBgColor.red > 0.80f && parsedBgColor.green > 0.80f && parsedBgColor.blue > 0.80f)
-
-        if (isMetallic) {
-            androidx.compose.ui.graphics.Brush.sweepGradient(
-                listOf(
-                    Color(0xFFFFFFFF),
-                    Color(0xFFA0A5B5),
-                    Color(0xFFE8EDF8),
-                    Color(0xFF656A7A),
-                    Color(0xFFFFFFFF)
-                )
-            )
+    val frameBrush = remember(avatarFrame, themeColor, secondaryColor, parsedBgColor) {
+        if (hasAnimatedFrame) {
+            getAvatarFrameBrush(avatarFrame, themeColor, secondaryColor)
         } else {
-            val hsv = FloatArray(3)
-            android.graphics.Color.colorToHSV(
-                android.graphics.Color.argb(255, (parsedBgColor.red * 255).toInt(), (parsedBgColor.green * 255).toInt(), (parsedBgColor.blue * 255).toInt()),
-                hsv
-            )
-            val baseHue = hsv[0]
-            val sat = hsv[1].coerceIn(0.70f, 0.98f)
-            val value = hsv[2].coerceIn(0.85f, 1f)
+            val isMetallic = (parsedBgColor.red < 0.22f && parsedBgColor.green < 0.22f && parsedBgColor.blue < 0.22f) ||
+                    (parsedBgColor.red > 0.80f && parsedBgColor.green > 0.80f && parsedBgColor.blue > 0.80f)
 
-            val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
-            val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-            val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
-            val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
-            val c5 = c1
+            if (isMetallic) {
+                androidx.compose.ui.graphics.Brush.sweepGradient(
+                    listOf(
+                        Color(0xFFFFFFFF),
+                        Color(0xFFA0A5B5),
+                        Color(0xFFE8EDF8),
+                        Color(0xFF656A7A),
+                        Color(0xFFFFFFFF)
+                    )
+                )
+            } else {
+                val hsv = FloatArray(3)
+                android.graphics.Color.colorToHSV(
+                    android.graphics.Color.argb(255, (parsedBgColor.red * 255).toInt(), (parsedBgColor.green * 255).toInt(), (parsedBgColor.blue * 255).toInt()),
+                    hsv
+                )
+                val baseHue = hsv[0]
+                val sat = hsv[1].coerceIn(0.70f, 0.98f)
+                val value = hsv[2].coerceIn(0.85f, 1f)
 
-            androidx.compose.ui.graphics.Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
+                val c1 = Color(android.graphics.Color.HSVToColor(floatArrayOf(baseHue, sat, value)))
+                val c2 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c3 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 70f) % 360f, (sat * 0.85f).coerceIn(0.55f, 1f), value)))
+                val c4 = Color(android.graphics.Color.HSVToColor(floatArrayOf((baseHue + 35f) % 360f, sat, value)))
+                val c5 = c1
+
+                androidx.compose.ui.graphics.Brush.sweepGradient(listOf(c1, c2, c3, c4, c5))
+            }
         }
     }
 
@@ -208,8 +212,8 @@ fun PlayerAvatarView(
             customBitmap
         } else if (!avatarBase64.isNullOrBlank()) {
             try {
-                val clean = avatarBase64.substringAfter("base64,")
-                val bytes = android.util.Base64.decode(clean, android.util.Base64.NO_WRAP)
+                val clean = avatarBase64.substringAfter("base64,").trim()
+                val bytes = android.util.Base64.decode(clean, android.util.Base64.DEFAULT)
                 android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
             } catch (e: Exception) {
                 null
@@ -1040,11 +1044,12 @@ fun FriendsDialog(
                 .safeDrawingPadding(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
                 // Top App Bar
                 val friendsDialogTitle = when (currentLang) {
                     Language.RU -> "ДРУЗЬЯ И СОЮЗНИКИ"
@@ -1513,13 +1518,18 @@ fun FriendsDialog(
                                                 Row(
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                    modifier = Modifier.weight(1f)
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable {
+                                                            viewModel.openUserProfile(req.uid, req.username)
+                                                        }
                                                 ) {
                                                     PlayerAvatarView(
                                                         playerName = req.username,
                                                         avatarEmoji = req.avatarEmoji,
                                                         avatarBgColorHex = req.avatarBgColor,
                                                         avatarFrame = req.avatarFrame,
+                                                        avatarBase64 = req.avatarBase64,
                                                         size = 46.dp,
                                                         themeColor = themeColor
                                                     )
@@ -1700,13 +1710,18 @@ fun FriendsDialog(
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                        modifier = Modifier.weight(1f)
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clickable {
+                                                                viewModel.openUserProfile(user.uid, user.username)
+                                                            }
                                                     ) {
                                                         PlayerAvatarView(
                                                             playerName = user.username,
                                                             avatarEmoji = user.avatarEmoji,
                                                             avatarBgColorHex = user.avatarBgColor,
                                                             avatarFrame = user.avatarFrame,
+                                                            avatarBase64 = user.avatarBase64,
                                                             size = 46.dp,
                                                             themeColor = themeColor
                                                         )
@@ -1750,7 +1765,69 @@ fun FriendsDialog(
                         }
                     }
                 }
+
+                // Public Profile Overlay INSIDE FriendsDialog
+                val selectedProfile by viewModel.selectedPublicProfile.collectAsStateWithLifecycle()
+                AnimatedVisibility(
+                    visible = selectedProfile != null,
+                    enter = fadeIn(animationSpec = tween(220)) + slideInVertically(initialOffsetY = { it / 4 }, animationSpec = tween(250)),
+                    exit = fadeOut(animationSpec = tween(180)) + slideOutVertically(targetOffsetY = { it / 4 }, animationSpec = tween(200))
+                ) {
+                    val prof = selectedProfile
+                    if (prof != null) {
+                        val localPlayerName by viewModel.playerName.collectAsStateWithLifecycle()
+                        val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                        val isSelf = (myUid != null && prof.uid == myUid) ||
+                                (prof.username.isNotEmpty() && prof.username.equals(localPlayerName, ignoreCase = true))
+                        val isFriend = remember(friendsList, prof.uid, prof.username) {
+                            friendsList.any { it.uid == prof.uid || (it.username.isNotEmpty() && it.username.equals(prof.username, ignoreCase = true)) }
+                        }
+                        val context = androidx.compose.ui.platform.LocalContext.current
+
+                        OtherUserProfileDialog(
+                            profile = prof,
+                            currentLang = currentLang,
+                            themeColor = themeColor,
+                            isFriend = isFriend,
+                            isSelf = isSelf,
+                            onDismiss = { viewModel.closeUserProfile() },
+                            onAddFriend = {
+                                viewModel.sendFriendRequest(prof.username) { ok, msg ->
+                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onInviteToDuel = {
+                                val currentRoom = viewModel.lobbyManager.currentRoom.value
+                                if (currentRoom != null) {
+                                    viewModel.lobbyManager.sendRoomInvite(
+                                        targetUid = prof.uid,
+                                        roomId = currentRoom.roomId,
+                                        roomName = currentRoom.name,
+                                        hostName = localPlayerName,
+                                        avatarEmoji = viewModel.customAvatarEmoji.value,
+                                        avatarBgColor = viewModel.customAvatarBgColor.value,
+                                        avatarFrame = viewModel.equippedAvatarFrame.value,
+                                        hostTier = viewModel.onlineTier.value
+                                    )
+                                    val sentMsg = when (currentLang) {
+                                        Language.RU -> "Приглашение на дуэль отправлено!"
+                                        Language.UA -> "Запрошення на дуель надіслано!"
+                                        Language.KK -> "Дуэльге шақыру жіберілді!"
+                                        Language.DE -> "Duell-Einladung gesendet!"
+                                        Language.ZH -> "对决邀请已发送！"
+                                        else -> "Duel invitation sent!"
+                                    }
+                                    android.widget.Toast.makeText(context, sentMsg, android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.closeUserProfile()
+                                    onOpenLobby()
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
     }
+}
 }

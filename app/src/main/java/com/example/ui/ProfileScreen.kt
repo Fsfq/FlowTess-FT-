@@ -276,7 +276,6 @@ fun ProfileScreen(
         listOf(
             CubeSkinStoreData("neon", ShopPrices.getCubeSkinCost("neon"), Translations.getLocalizedCubeSkinTitle("neon", currentLang), Translations.getLocalizedCubeSkinDesc("neon", currentLang), ""),
             CubeSkinStoreData("glass", ShopPrices.getCubeSkinCost("glass"), Translations.getLocalizedCubeSkinTitle("glass", currentLang), Translations.getLocalizedCubeSkinDesc("glass", currentLang), ""),
-            CubeSkinStoreData("retro", ShopPrices.getCubeSkinCost("retro"), Translations.getLocalizedCubeSkinTitle("retro", currentLang), Translations.getLocalizedCubeSkinDesc("retro", currentLang), ""),
             CubeSkinStoreData("flat", ShopPrices.getCubeSkinCost("flat"), Translations.getLocalizedCubeSkinTitle("flat", currentLang), Translations.getLocalizedCubeSkinDesc("flat", currentLang), ""),
             CubeSkinStoreData("material", ShopPrices.getCubeSkinCost("material"), Translations.getLocalizedCubeSkinTitle("material", currentLang), Translations.getLocalizedCubeSkinDesc("material", currentLang), ""),
             CubeSkinStoreData("glowing_jewel", ShopPrices.getCubeSkinCost("glowing_jewel"), Translations.getLocalizedCubeSkinTitle("glowing_jewel", currentLang), Translations.getLocalizedCubeSkinDesc("glowing_jewel", currentLang), ""),
@@ -288,9 +287,7 @@ fun ProfileScreen(
         listOf(
             ControlButtonStyleStoreData("classic", ShopPrices.getButtonCost("classic"), Translations.getLocalizedButtonTitle("classic", currentLang), Translations.getLocalizedButtonDesc("classic", currentLang)),
             ControlButtonStyleStoreData("neon", ShopPrices.getButtonCost("neon"), Translations.getLocalizedButtonTitle("neon", currentLang), Translations.getLocalizedButtonDesc("neon", currentLang)),
-            ControlButtonStyleStoreData("glass", ShopPrices.getButtonCost("glass"), Translations.getLocalizedButtonTitle("glass", currentLang), Translations.getLocalizedButtonDesc("glass", currentLang)),
-            ControlButtonStyleStoreData("gold_legendary", ShopPrices.getButtonCost("gold_legendary"), Translations.getLocalizedButtonTitle("gold_legendary", currentLang), Translations.getLocalizedButtonDesc("gold_legendary", currentLang)),
-            ControlButtonStyleStoreData("plasma_legendary", ShopPrices.getButtonCost("plasma_legendary"), Translations.getLocalizedButtonTitle("plasma_legendary", currentLang), Translations.getLocalizedButtonDesc("plasma_legendary", currentLang))
+            ControlButtonStyleStoreData("glass", ShopPrices.getButtonCost("glass"), Translations.getLocalizedButtonTitle("glass", currentLang), Translations.getLocalizedButtonDesc("glass", currentLang))
         )
     }
 
@@ -410,40 +407,57 @@ fun ProfileScreen(
     }
 
     fun saveCustomImage(ctx: Context, uri: Uri, type: String) {
-        try {
-            val inputStream = ctx.contentResolver.openInputStream(uri) ?: return
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream.close()
-            if (originalBitmap == null) return
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val maxDim = if (type == "avatar") 256 else 1024
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                ctx.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, options)
+                }
 
-            val maxDim = if (type == "avatar") 256 else 1024
-            val width = originalBitmap.width
-            val height = originalBitmap.height
-            val scaledBitmap = if (width > maxDim || height > maxDim) {
-                val ratio = width.toFloat() / height.toFloat()
-                val newWidth = if (ratio > 1) maxDim else (maxDim * ratio).toInt()
-                val newHeight = if (ratio > 1) (maxDim / ratio).toInt() else maxDim
-                Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
-            } else {
-                originalBitmap
+                var sampleSize = 1
+                while (options.outWidth / (sampleSize * 2) >= maxDim && options.outHeight / (sampleSize * 2) >= maxDim) {
+                    sampleSize *= 2
+                }
+
+                val decodeOptions = BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = Bitmap.Config.RGB_565
+                }
+                val sampledBitmap = ctx.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, decodeOptions)
+                } ?: return@launch
+
+                val width = sampledBitmap.width
+                val height = sampledBitmap.height
+                val scaledBitmap = if (width > maxDim || height > maxDim) {
+                    val ratio = width.toFloat() / height.toFloat()
+                    val newWidth = if (ratio > 1) maxDim else (maxDim * ratio).toInt()
+                    val newHeight = if (ratio > 1) (maxDim / ratio).toInt() else maxDim
+                    Bitmap.createScaledBitmap(sampledBitmap, newWidth, newHeight, true)
+                } else {
+                    sampledBitmap
+                }
+
+                val file = File(ctx.filesDir, "custom_${type}_${playerName}.jpg")
+                FileOutputStream(file).use { outputStream ->
+                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+                    outputStream.flush()
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (type == "avatar") {
+                        sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", true).apply()
+                        avatarChangeCounter++
+                    } else {
+                        sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", true).apply()
+                        bgChangeCounter++
+                    }
+                    viewModel.saveCurrentProfileToDb()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-            val file = File(ctx.filesDir, "custom_${type}_${playerName}.jpg")
-            val outputStream = FileOutputStream(file)
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-            outputStream.flush()
-            outputStream.close()
-
-            if (type == "avatar") {
-                sharedPrefs.edit().putBoolean("has_custom_avatar_${playerName}", true).apply()
-                avatarChangeCounter++
-            } else {
-                sharedPrefs.edit().putBoolean("has_custom_background_${playerName}", true).apply()
-                bgChangeCounter++
-            }
-            viewModel.saveCurrentProfileToDb()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -487,12 +501,26 @@ fun ProfileScreen(
         return true
     }
 
+    val allCubeSkinIds = remember {
+        setOf("neon", "glass", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient")
+    }
+
     val purchasedCubeSkinsSet = remember(blockStyle, credits) {
-        sharedPrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
+        val stored = sharedPrefs.getStringSet("purchased_cube_skins", null)
+        if (stored == null) {
+            sharedPrefs.edit().putStringSet("purchased_cube_skins", allCubeSkinIds).apply()
+            allCubeSkinIds
+        } else {
+            val combined = stored + allCubeSkinIds
+            if (combined.size > stored.size) {
+                sharedPrefs.edit().putStringSet("purchased_cube_skins", combined).apply()
+            }
+            combined
+        }
     }
 
     fun purchaseCubeSkin(styleId: String, cost: Int) {
-        if (purchasedCubeSkinsSet.contains(styleId)) {
+        if (purchasedCubeSkinsSet.contains(styleId) || allCubeSkinIds.contains(styleId)) {
             viewModel.setBlockStyle(styleId)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.triggerAudioFeedback("equip")
@@ -910,89 +938,81 @@ fun ProfileScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Surface(
-                        shape = RoundedCornerShape(22.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                        tonalElevation = 3.dp,
-                        shadowElevation = 1.dp
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
+                        // Primary Currency (Credits / Coins)
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                }
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            // Primary Currency (Credits / Coins)
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        viewModel.triggerAudioFeedback("click")
-                                        viewModel.openRewardedAdDialog()
-                                    }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Credits",
-                                    tint = Color(0xFFFFB300),
-                                    modifier = Modifier.size(18.dp)
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Credits",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            AdaptiveText(
+                                text = "$credits",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    letterSpacing = 0.5.sp
                                 )
-                                AdaptiveText(
-                                    text = "$credits",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Free Coins",
-                                    tint = Color(0xFFFFB300),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Free Coins",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
 
-                            // Elegant Gradient Vertical Divider
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 10.dp)
-                                    .height(18.dp)
-                                    .width(1.5.dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.outlineVariant,
-                                                Color.Transparent
-                                            )
+                        // Elegant Gradient Vertical Divider
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 10.dp)
+                                .height(18.dp)
+                                .width(1.5.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.outlineVariant,
+                                            Color.Transparent
                                         )
                                     )
-                            )
+                                )
+                        )
 
-                            // Secondary Visual Cosmetic Currency (Gems / Crystals)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Diamond,
-                                    contentDescription = "Gems",
-                                    tint = Color(0xFF00E5FF),
-                                    modifier = Modifier.size(17.dp)
+                        // Secondary Visual Cosmetic Currency (Gems / Crystals)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Diamond,
+                                contentDescription = "Gems",
+                                tint = Color(0xFF00E5FF),
+                                modifier = Modifier.size(17.dp)
+                            )
+                            AdaptiveText(
+                                text = "0",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    letterSpacing = 0.5.sp
                                 )
-                                AdaptiveText(
-                                    text = "0",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Black,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                )
-                            }
+                            )
                         }
                     }
                 },
@@ -1824,7 +1844,7 @@ fun ProfileScreen(
                                         if (hasNicknameGradient) {
                                             val nicknameBrush = rememberAnimatedNicknameBrush(baseColor = themeColor)
                                             Text(
-                                                text = playerName.uppercase(),
+                                                text = playerName,
                                                 style = MaterialTheme.typography.titleLarge.copy(
                                                     fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp,
                                                     brush = nicknameBrush
@@ -1835,7 +1855,7 @@ fun ProfileScreen(
                                             )
                                         } else {
                                             Text(
-                                                text = playerName.uppercase(),
+                                                text = playerName,
                                                 style = MaterialTheme.typography.titleLarge.copy(
                                                     fontSize = if (playerName.length > 15) 15.sp else if (playerName.length > 10) 18.sp else 22.sp
                                                 ),

@@ -390,23 +390,18 @@ val allLootItems = listOf(
     LootItem("glacial_frost", "skin", "Crystal", "Кристалл", DropRarity.LEGENDARY),
 
     // Cube Skins
-    LootItem("glass", "cube_skin", "Glass", "Стекло", DropRarity.COMMON),
-    LootItem("retro", "cube_skin", "Retro", "Ретро", DropRarity.COMMON),
-    LootItem("flat", "cube_skin", "Flat", "Флэт", DropRarity.UNCOMMON),
-    LootItem("material", "cube_skin", "Material", "Материал", DropRarity.UNCOMMON),
-    LootItem("glowing_jewel", "cube_skin", "Sapphire", "Сапфир", DropRarity.RARE),
-    LootItem("steampunk", "cube_skin", "Brass", "Латунь", DropRarity.EPIC),
-    LootItem("red_gradient", "cube_skin", "Crimson Pulse", "Кровавый Пульс", DropRarity.RED),
-    LootItem("green_gradient", "cube_skin", "Toxic Pulse", "Токсичный Пульс", DropRarity.RED),
-    LootItem("blue_gradient", "cube_skin", "Cobalt Pulse", "Кобальтовый Пульс", DropRarity.RED),
-    LootItem("purple_gradient", "cube_skin", "Void Pulse", "Пульс Бездны", DropRarity.RED),
+    LootItem("glass", "cube_skin", "Matte", "Матовый", DropRarity.COMMON),
+    LootItem("flat", "cube_skin", "Flat", "Плоский", DropRarity.UNCOMMON),
+    LootItem("material", "cube_skin", "Crystal", "Кристалл", DropRarity.UNCOMMON),
+    LootItem("glowing_jewel", "cube_skin", "Grid", "Сетка", DropRarity.RARE),
+    LootItem("steampunk", "cube_skin", "Carbon", "Карбон", DropRarity.EPIC),
+    LootItem("red_gradient", "cube_skin", "Crimson", "Красный", DropRarity.RED),
+    LootItem("green_gradient", "cube_skin", "Emerald", "Изумруд", DropRarity.RED),
+    LootItem("blue_gradient", "cube_skin", "Cobalt", "Кобальт", DropRarity.RED),
+    LootItem("purple_gradient", "cube_skin", "Amethyst", "Аметист", DropRarity.RED),
 
     // Avatar Frames (Exclusive Red Crate Dynamic Rainbow Gradient Frame)
     LootItem("chrono_gl", "avatar_frame", "Gradient", "Градиент", DropRarity.RED),
-
-    // Control Buttons
-    LootItem("gold_legendary", "button_skin", "Gold Buttons", "Золотые Кнопки", DropRarity.LEGENDARY),
-    LootItem("plasma_legendary", "button_skin", "Plasma Buttons", "Плазменные Кнопки", DropRarity.LEGENDARY),
 
     // Special
     LootItem("nick_gradient", "nick_gradient", "OVERDRIVE NICK", "Градиент Ника", DropRarity.RED)

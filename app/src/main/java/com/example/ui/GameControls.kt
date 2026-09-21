@@ -324,24 +324,6 @@ fun ControlButton(
     val buttonCorner = (buttonSize / 2f)
 
     val backgroundBrush = when (buttonStyle) {
-        "gold_legendary", "gold" -> {
-            androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = if (isPressed) {
-                    listOf(Color(0xFFFFB300), Color(0xFFFF8F00))
-                } else {
-                    listOf(Color(0xFFFFD54F).copy(alpha = 0.55f), Color(0xFFFF8F00).copy(alpha = 0.35f))
-                }
-            )
-        }
-        "plasma_legendary", "plasma" -> {
-            androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = if (isPressed) {
-                    listOf(Color(0xFF7C4DFF).copy(alpha = 0.65f), Color(0xFF00E5FF).copy(alpha = 0.55f))
-                } else {
-                    listOf(Color(0xFF7C4DFF).copy(alpha = 0.35f), Color(0xFF00E5FF).copy(alpha = 0.25f))
-                }
-            )
-        }
         "glass" -> {
             androidx.compose.ui.graphics.Brush.verticalGradient(
                 colors = listOf(
@@ -372,18 +354,6 @@ fun ControlButton(
     }
 
     val borderStroke = when (buttonStyle) {
-        "gold_legendary", "gold" -> {
-            androidx.compose.foundation.BorderStroke(
-                width = if (isPressed) 2.5.dp else 1.8.dp,
-                brush = androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFF9C4), Color(0xFFFFA000), Color(0xFFFFD700)))
-            )
-        }
-        "plasma_legendary", "plasma" -> {
-            androidx.compose.foundation.BorderStroke(
-                width = if (isPressed) 2.5.dp else 1.8.dp,
-                brush = androidx.compose.ui.graphics.Brush.sweepGradient(listOf(Color(0xFF00E5FF), Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00E5FF)))
-            )
-        }
         "glass" -> {
             androidx.compose.foundation.BorderStroke(
                 width = 1.2.dp,
@@ -418,18 +388,19 @@ fun ControlButton(
                 if (isPlaying) {
                     detectTapGestures(
                         onPress = {
-                            isPressed = true
-                            onClick()
-                            tryAwaitRelease()
-                            isPressed = false
+                            try {
+                                isPressed = true
+                                onClick()
+                                tryAwaitRelease()
+                            } finally {
+                                isPressed = false
+                            }
                         }
                     )
                 }
             }
     ) {
         val iconColor = when (buttonStyle) {
-            "gold_legendary", "gold" -> Color(0xFFFFD700)
-            "plasma_legendary", "plasma" -> Color(0xFF00E5FF)
             "classic" -> if (isPrimary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.primary
         }

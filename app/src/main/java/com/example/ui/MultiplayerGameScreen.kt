@@ -135,11 +135,11 @@ fun MultiplayerGameScreen(
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 1. Rock-Solid Realtime State Sync to RTDB (100ms throttle + 20-row full height)
+    // 1. Rock-Solid Realtime State Sync to RTDB (150ms throttle + critical event push)
     // ─────────────────────────────────────────────────────────────
     LaunchedEffect(room?.roomId) {
         while (true) {
-            delay(100)
+            delay(150)
             if (room != null && room?.status == "playing") {
                 val flatGrid = getDisplayGridWithActivePiece(gameState)
                 viewModel.lobbyManager.updatePlayerLiveState(
@@ -153,8 +153,8 @@ fun MultiplayerGameScreen(
         }
     }
 
-    // Immediate dispatch on line clears, piece movements, rotations, drops, or game over
-    LaunchedEffect(gameState.score, gameState.lines, gameState.isGameOver, gameState.currentPos, gameState.currentPiece) {
+    // Critical instant dispatch only on line clears or game over
+    LaunchedEffect(gameState.lines, gameState.isGameOver) {
         if (room != null && room?.status == "playing") {
             val flatGrid = getDisplayGridWithActivePiece(gameState)
             viewModel.lobbyManager.updatePlayerLiveState(
@@ -431,7 +431,7 @@ fun MultiplayerGameScreen(
                             Column(horizontalAlignment = Alignment.Start) {
                                 val myNickBrush = if (hasNicknameGradient) rememberAnimatedNicknameBrush(baseColor = themeColor) else null
                                 Text(
-                                    text = playerName.uppercase(),
+                                    text = playerName,
                                     style = if (myNickBrush != null) {
                                         MaterialTheme.typography.labelSmall.copy(brush = myNickBrush, fontWeight = FontWeight.Black)
                                     } else {
@@ -521,7 +521,7 @@ fun MultiplayerGameScreen(
                                     opponent?.name ?: defaultOpponentLabel
                                 }
                                 Text(
-                                    text = oppDisplayName.uppercase(),
+                                    text = oppDisplayName,
                                     style = if (oppNickBrush != null) {
                                         MaterialTheme.typography.labelSmall.copy(brush = oppNickBrush, fontWeight = FontWeight.Black)
                                     } else {

@@ -104,23 +104,119 @@ fun getAvatarFrameBrush(equippedAvatarFrame: String, themeColor: Color, secondar
     return when (equippedAvatarFrame.lowercase()) {
         "chrono_gl", "gradient_frame" -> Brush.sweepGradient(
             listOf(
-                Color(0xFFFF0055),
-                Color(0xFFFF7700),
-                Color(0xFFFFDD00),
-                Color(0xFF00DD77),
-                Color(0xFF0099FF),
-                Color(0xFF8800FF),
-                Color(0xFFFF0055)
+                Color(0xFFF472B6), // Soft rose iris
+                Color(0xFFFBBF24), // Subtle gold
+                Color(0xFF34D399), // Seafoam crystal
+                Color(0xFF38BDF8), // Celestial sky
+                Color(0xFF818CF8), // Ethereal periwinkle
+                Color(0xFFC084FC), // Lavender opal
+                Color(0xFFF472B6)  // Seamless loop
             )
         )
-        "frame_white" -> Brush.linearGradient(listOf(Color(0xFFFFFFFF), Color(0xFFE0E0E0)))
-        "frame_blue" -> Brush.linearGradient(listOf(Color(0xFF2196F3), Color(0xFF1976D2)))
-        "frame_green" -> Brush.linearGradient(listOf(Color(0xFF4CAF50), Color(0xFF388E3C)))
-        "frame_yellow" -> Brush.linearGradient(listOf(Color(0xFFFFEB3B), Color(0xFFFDD835)))
-        "frame_orange" -> Brush.linearGradient(listOf(Color(0xFFFF9800), Color(0xFFF57C00)))
-        "frame_red" -> Brush.linearGradient(listOf(Color(0xFFF44336), Color(0xFFD32F2F)))
-        "frame_purple" -> Brush.linearGradient(listOf(Color(0xFF9C27B0), Color(0xFF7B1FA2)))
-        "frame_dark" -> Brush.linearGradient(listOf(Color(0xFF455A64), Color(0xFF263238)))
+        // Platinum / Pure Silver (bright reflective chrome/silver gradient)
+        "frame_white" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFCBD5E1),
+                Color(0xFF7B8794),
+                Color(0xFFF8FAFC),
+                Color(0xFFFFFFFF),
+                Color(0xFF94A3B8),
+                Color(0xFFE2E8F0),
+                Color(0xFFFFFFFF)
+            )
+        )
+        // Sapphire Titanium (cobalt/sapphire deep polished metal)
+        "frame_blue" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFF1A56DB),
+                Color(0xFF60A5FA),
+                Color(0xFF0F2042),
+                Color(0xFF38BDF8),
+                Color(0xFF1E3A8A),
+                Color(0xFF93C5FD),
+                Color(0xFF172554),
+                Color(0xFF1A56DB)
+            )
+        )
+        // Emerald Jade (rich emerald mineral luster)
+        "frame_green" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFF059669),
+                Color(0xFF6EE7B7),
+                Color(0xFF022C22),
+                Color(0xFF34D399),
+                Color(0xFF064E3B),
+                Color(0xFFA7F3D0),
+                Color(0xFF065F46),
+                Color(0xFF059669)
+            )
+        )
+        // Polished Gold (rich warm gold gradient)
+        "frame_yellow" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFFFFD700),
+                Color(0xFFFFF7C2),
+                Color(0xFFB45309),
+                Color(0xFFFDE047),
+                Color(0xFF78350F),
+                Color(0xFFFEF08A),
+                Color(0xFFD97706),
+                Color(0xFFFFD700)
+            )
+        )
+        // Amber Copper (warm brushed copper / amber glow)
+        "frame_orange" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFFEA580C),
+                Color(0xFFFED7AA),
+                Color(0xFF7C2D12),
+                Color(0xFFFB923C),
+                Color(0xFF431407),
+                Color(0xFFFFEDD5),
+                Color(0xFFC2410C),
+                Color(0xFFEA580C)
+            )
+        )
+        // Crimson Ruby (deep jewel refraction)
+        "frame_red" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFFE11D48),
+                Color(0xFFFDA4AF),
+                Color(0xFF4C0519),
+                Color(0xFFF43F5E),
+                Color(0xFF881337),
+                Color(0xFFFECDD3),
+                Color(0xFFBE123C),
+                Color(0xFFE11D48)
+            )
+        )
+        // Royal Amethyst (deep prism purple)
+        "frame_purple" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFF9333EA),
+                Color(0xFFE9D5FF),
+                Color(0xFF3B0764),
+                Color(0xFFC084FC),
+                Color(0xFF581C87),
+                Color(0xFFF3E8FF),
+                Color(0xFFA855F7),
+                Color(0xFF9333EA)
+            )
+        )
+        // Obsidian Titanium (dark matte metal / carbon)
+        "frame_dark" -> Brush.sweepGradient(
+            listOf(
+                Color(0xFF334155),
+                Color(0xFF94A3B8),
+                Color(0xFF0F172A),
+                Color(0xFF64748B),
+                Color(0xFF020617),
+                Color(0xFFCBD5E1),
+                Color(0xFF1E293B),
+                Color(0xFF334155)
+            )
+        )
         "standard" -> Brush.sweepGradient(listOf(themeColor, secondaryColor, themeColor))
         // Legacy fallback
         "neon_frame" -> Brush.linearGradient(listOf(Color(0xFF00FFCC), Color(0xFF00B0FF)))
@@ -179,12 +275,6 @@ fun getBoardSkinGridColor(skinId: String): Color = when (skinId.lowercase()) {
 }
 
 fun getControlBtnStyleBrush(styleId: String): Brush = when (styleId) {
-    "gold_legendary", "gold" -> Brush.verticalGradient(
-        listOf(Color(0xFFFFD54F).copy(alpha = 0.65f), Color(0xFFFF8F00).copy(alpha = 0.45f))
-    )
-    "plasma_legendary", "plasma" -> Brush.verticalGradient(
-        listOf(Color(0xFF7C4DFF).copy(alpha = 0.55f), Color(0xFF00E5FF).copy(alpha = 0.45f))
-    )
     "glass" -> Brush.verticalGradient(
         listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.12f))
     )
@@ -197,14 +287,6 @@ fun getControlBtnStyleBrush(styleId: String): Brush = when (styleId) {
 }
 
 fun getControlBtnBorderStroke(styleId: String): BorderStroke = when (styleId) {
-    "gold_legendary", "gold" -> BorderStroke(
-        1.5.dp,
-        Brush.sweepGradient(listOf(Color(0xFFFFD700), Color(0xFFFFF9C4), Color(0xFFFFA000), Color(0xFFFFD700)))
-    )
-    "plasma_legendary", "plasma" -> BorderStroke(
-        1.5.dp,
-        Brush.sweepGradient(listOf(Color(0xFF00E5FF), Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFF00E5FF)))
-    )
     "glass" -> BorderStroke(1.2.dp, Color.White.copy(alpha = 0.45f))
     "neon" -> BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.8f))
     else -> BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))

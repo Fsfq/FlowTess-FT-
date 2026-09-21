@@ -15,6 +15,7 @@ import com.example.game.GameMode
 import com.example.game.BlockBlastEngine
 import com.example.ui.Language
 import com.example.ui.ShopPrices
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -144,18 +145,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val soundMap = mutableMapOf<String, Int>()
     private var lobbyMusicPlayer: android.media.MediaPlayer? = null
 
-    // Relax/Sandbox Mode settings
-    private val _relaxImmortal = MutableStateFlow(true)
-    val relaxImmortal = _relaxImmortal.asStateFlow()
+    // Sandbox (RELAX) Mode settings - isolated in 'sandbox_settings_prefs'
+    private val _sandboxImmortal = MutableStateFlow(true)
+    val sandboxImmortal = _sandboxImmortal.asStateFlow()
 
+    private val _sandboxGravitySpeed = MutableStateFlow(3) // 0..7 index (default 3: 1.5s)
+    val sandboxGravitySpeed = _sandboxGravitySpeed.asStateFlow()
+
+    private val _sandboxLockDelay = MutableStateFlow("500ms") // instant, 200ms, 500ms, 1000ms, 2000ms, infinite
+    val sandboxLockDelay = _sandboxLockDelay.asStateFlow()
+
+    private val _sandboxGhostEnabled = MutableStateFlow(true)
+    val sandboxGhostEnabled = _sandboxGhostEnabled.asStateFlow()
+
+    private val _sandboxGridLinesEnabled = MutableStateFlow(true)
+    val sandboxGridLinesEnabled = _sandboxGridLinesEnabled.asStateFlow()
+
+    private val _sandboxBagGenerator = MutableStateFlow("standard_7") // standard_7, full_random, single_piece, pentaminoes, ideal
+    val sandboxBagGenerator = _sandboxBagGenerator.asStateFlow()
+
+    private val _sandboxSinglePieceIdx = MutableStateFlow(0) // 0=I, 1=J, 2=L, 3=O, 4=S, 5=T, 6=Z
+    val sandboxSinglePieceIdx = _sandboxSinglePieceIdx.asStateFlow()
+
+    // Backward compatibility delegates
+    val relaxImmortal = _sandboxImmortal.asStateFlow()
     private val _relaxSpeed = MutableStateFlow("slow")
     val relaxSpeed = _relaxSpeed.asStateFlow()
-
-    private val _relaxBlockSet = MutableStateFlow("ideal")
-    val relaxBlockSet = _relaxBlockSet.asStateFlow()
-
-    private val _relaxGhostEnabled = MutableStateFlow(true)
-    val relaxGhostEnabled = _relaxGhostEnabled.asStateFlow()
+    val relaxBlockSet = _sandboxBagGenerator.asStateFlow()
+    val relaxGhostEnabled = _sandboxGhostEnabled.asStateFlow()
 
     // Lobby music separate toggle
     private val _lobbyMusicEnabled = MutableStateFlow(true)
@@ -176,6 +193,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val lobbyMusicVolume = _lobbyMusicVolume.asStateFlow()
 
     private var gameLoopJob: Job? = null
+    private var gameTimerJob: Job? = null
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying = _isPlaying.asStateFlow()
 
@@ -188,6 +206,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("tetris_prefs", Context.MODE_PRIVATE)
     private val profilePrefs = application.getSharedPreferences("block_tetris_prefs", Context.MODE_PRIVATE)
+    val sandboxPrefs = application.getSharedPreferences("sandbox_settings_prefs", Context.MODE_PRIVATE)
 
     // Customization variables
     private val _equippedAvatarFrame = MutableStateFlow("standard")
@@ -832,7 +851,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _playerName.update { prefs.getString("player_name", "Player 1") ?: "Player 1" }
         _hasSavedGame.update { prefs.getBoolean("has_saved_game", false) }
         _themeColor.update { prefs.getString("theme_color", "indigo") ?: "indigo" }
-        _blockStyle.update { prefs.getString("block_style", "neon") ?: "neon" }
+        _blockStyle.update {
+            val s = prefs.getString("block_style", "neon") ?: "neon"
+            if (s == "retro") {
+                prefs.edit().putString("block_style", "neon").apply()
+                "neon"
+            } else s
+        }
         _nextCount.update { prefs.getInt("next_count", 3) }
         _ghostVisible.update { prefs.getBoolean("ghost_visible", true) }
         _ghostOutlineOnly.update { prefs.getBoolean("ghost_outline_only", true) }
@@ -871,12 +896,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _showNewSection.update { prefs.getBoolean("show_new_section", true) }
         _newGameUiEnabled.update { prefs.getBoolean("new_game_ui_enabled", false) }
 
-        // Relax settings
-        _relaxImmortal.update { prefs.getBoolean("relax_immortal", true) }
-        _relaxSpeed.update { prefs.getString("relax_speed", "slow") ?: "slow" }
-        _relaxBlockSet.update { prefs.getString("relax_block_set", "ideal") ?: "ideal" }
-        _relaxGhostEnabled.update { prefs.getBoolean("relax_ghost_enabled", true) }
-        _relaxAmbientSound.update { prefs.getString("relax_ambient_sound", "cosmic") ?: "cosmic" }
+        // Sandbox (RELAX) settings - loaded from sandbox_settings_prefs
+        _sandboxImmortal.update { sandboxPrefs.getBoolean("sandbox_immortal", prefs.getBoolean("relax_immortal", true)) }
+        _sandboxGravitySpeed.update { sandboxPrefs.getInt("sandbox_gravity_speed", 3) }
+        _sandboxLockDelay.update { sandboxPrefs.getString("sandbox_lock_delay", "500ms") ?: "500ms" }
+        _sandboxGhostEnabled.update { sandboxPrefs.getBoolean("sandbox_ghost_enabled", prefs.getBoolean("relax_ghost_enabled", true)) }
+        _sandboxGridLinesEnabled.update { sandboxPrefs.getBoolean("sandbox_grid_lines_enabled", true) }
+        _sandboxBagGenerator.update { sandboxPrefs.getString("sandbox_bag_generator", "standard_7") ?: "standard_7" }
+        _sandboxSinglePieceIdx.update { sandboxPrefs.getInt("sandbox_single_piece_idx", 0) }
+        syncSandboxSettingsToEngine()
         _lobbyMusicEnabled.update { prefs.getBoolean("lobby_music_enabled", true) }
 
         // Custom Tag settings
@@ -937,6 +965,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 userDocSnapshotListener?.remove()
                 userDocSnapshotListener = null
+                currentListeningUid = null
             }
         }
 
@@ -992,9 +1021,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var currentListeningUid: String? = null
+
     private fun startUserDocListener(uid: String) {
         if (uid.isEmpty()) return
+        if (currentListeningUid == uid && userDocSnapshotListener != null) return
         userDocSnapshotListener?.remove()
+        currentListeningUid = uid
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
         userDocSnapshotListener = firestore.collection("users").document(uid)
             .addSnapshotListener { snapshot, error ->
@@ -1007,10 +1040,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val cloudCredits = (data["credits"] as? Number)?.toInt()
                 if (cloudCredits != null && cloudCredits != _credits.value) {
                     // Do not overwrite if local credit transaction occurred recently (within 20 seconds)
-                    if (System.currentTimeMillis() - lastLocalCreditsChangeTime < 20000L) {
-                        return@addSnapshotListener
+                    if (System.currentTimeMillis() - lastLocalCreditsChangeTime >= 20000L) {
+                        setCreditsInternal(cloudCredits, syncToCloud = false)
                     }
-                    setCreditsInternal(cloudCredits, syncToCloud = false)
                 }
 
                 // 2. Prestige level
@@ -1170,27 +1202,117 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         startLobbyMusic()
     }
 
-    fun setRelaxImmortal(enabled: Boolean) {
-        _relaxImmortal.value = enabled
-        prefs.edit().putBoolean("relax_immortal", enabled).apply()
-        // Sync to engine
+    fun syncSandboxSettingsToEngine() {
+        gameEngine.relaxImmortal = _sandboxImmortal.value
+        gameEngine.relaxBlockSet = _sandboxBagGenerator.value
+        gameEngine.relaxSinglePieceIndex = _sandboxSinglePieceIdx.value
+        gameEngine.relaxLockDelay = when (_sandboxLockDelay.value) {
+            "instant" -> 0L
+            "200ms" -> 200L
+            "500ms" -> 500L
+            "1000ms" -> 1000L
+            "2000ms" -> 2000L
+            "infinite" -> -1L
+            else -> 500L
+        }
+    }
+
+    fun setSandboxImmortal(enabled: Boolean) {
+        _sandboxImmortal.value = enabled
+        sandboxPrefs.edit().putBoolean("sandbox_immortal", enabled).apply()
         gameEngine.relaxImmortal = enabled
+    }
+
+    fun setSandboxGravitySpeed(speedIdx: Int) {
+        val safeIdx = speedIdx.coerceIn(0, 7)
+        _sandboxGravitySpeed.value = safeIdx
+        sandboxPrefs.edit().putInt("sandbox_gravity_speed", safeIdx).apply()
+    }
+
+    fun setSandboxLockDelay(delayKey: String) {
+        _sandboxLockDelay.value = delayKey
+        sandboxPrefs.edit().putString("sandbox_lock_delay", delayKey).apply()
+        gameEngine.relaxLockDelay = when (delayKey) {
+            "instant" -> 0L
+            "200ms" -> 200L
+            "500ms" -> 500L
+            "1000ms" -> 1000L
+            "2000ms" -> 2000L
+            "infinite" -> -1L
+            else -> 500L
+        }
+    }
+
+    fun setSandboxGhostEnabled(enabled: Boolean) {
+        _sandboxGhostEnabled.value = enabled
+        sandboxPrefs.edit().putBoolean("sandbox_ghost_enabled", enabled).apply()
+    }
+
+    fun setSandboxGridLinesEnabled(enabled: Boolean) {
+        _sandboxGridLinesEnabled.value = enabled
+        sandboxPrefs.edit().putBoolean("sandbox_grid_lines_enabled", enabled).apply()
+    }
+
+    fun setSandboxBagGenerator(generator: String) {
+        _sandboxBagGenerator.value = generator
+        sandboxPrefs.edit().putString("sandbox_bag_generator", generator).apply()
+        gameEngine.relaxBlockSet = generator
+    }
+
+    fun setSandboxSinglePieceIdx(idx: Int) {
+        val safeIdx = idx.coerceIn(0, 6)
+        _sandboxSinglePieceIdx.value = safeIdx
+        sandboxPrefs.edit().putInt("sandbox_single_piece_idx", safeIdx).apply()
+        gameEngine.relaxSinglePieceIndex = safeIdx
+    }
+
+    fun spawnRelaxPiece(index: Int) {
+        gameEngine.spawnPieceByIndex(index)
+    }
+
+    fun fillRelaxBottomRandomLines() {
+        gameEngine.fillBottomRandomLines(2)
+    }
+
+    fun invertRelaxField() {
+        gameEngine.invertField()
+    }
+
+    fun cutRelaxLowerRows(count: Int) {
+        gameEngine.clearLowerRows(count)
+    }
+
+    fun resetSandboxSettingsToDefaults() {
+        setSandboxImmortal(true)
+        setSandboxGravitySpeed(3)
+        setSandboxLockDelay("500ms")
+        setSandboxGhostEnabled(true)
+        setSandboxGridLinesEnabled(true)
+        setSandboxBagGenerator("standard_7")
+        setSandboxSinglePieceIdx(0)
+    }
+
+    fun setRelaxImmortal(enabled: Boolean) {
+        setSandboxImmortal(enabled)
     }
 
     fun setRelaxSpeed(speed: String) {
         _relaxSpeed.value = speed
-        prefs.edit().putString("relax_speed", speed).apply()
+        val idx = when (speed) {
+            "static" -> 0
+            "slow" -> 3
+            "flow", "normal" -> 5
+            else -> 3
+        }
+        setSandboxGravitySpeed(idx)
     }
 
     fun setRelaxBlockSet(blockSet: String) {
-        _relaxBlockSet.value = blockSet
-        prefs.edit().putString("relax_block_set", blockSet).apply()
-        gameEngine.relaxBlockSet = blockSet
+        setSandboxBagGenerator(blockSet)
     }
 
     fun setRelaxGhostEnabled(enabled: Boolean) {
-        _relaxGhostEnabled.value = enabled
-        prefs.edit().putBoolean("relax_ghost_enabled", enabled).apply()
+        setSandboxGhostEnabled(enabled)
     }
 
     fun setLobbyMusicEnabled(enabled: Boolean) {
@@ -1358,8 +1480,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setBlockStyle(style: String) {
-        _blockStyle.value = style
-        prefs.edit().putString("block_style", style).apply()
+        val safeStyle = if (style == "retro") "neon" else style
+        _blockStyle.value = safeStyle
+        prefs.edit().putString("block_style", safeStyle).apply()
     }
 
     fun setNextCount(count: Int) {
@@ -1535,7 +1658,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (json.has("btn")) {
                 val btn = json.getString("btn")
-                val validBtnStyles = setOf("neon", "classic", "glass", "gold", "plasma")
+                val validBtnStyles = setOf("neon", "classic", "glass")
                 setControlButtonStyle(if (btn in validBtnStyles) btn else "neon")
             }
             if (json.has("pos")) {
@@ -1806,11 +1929,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setPlayerName(name: String) {
-        val trimmed = name.trim()
-        val safeName = if (isReservedAdminNickname(trimmed) && !isCurrentUserAdmin()) {
+        val sanitized = com.example.util.NicknameValidator.sanitize(name).ifBlank { "Player 1" }
+        val safeName = if (isReservedAdminNickname(sanitized) && !isCurrentUserAdmin()) {
             "Player 1"
         } else {
-            trimmed
+            sanitized
         }
         _playerName.update { safeName }
         prefs.edit().putString("player_name", safeName).apply()
@@ -1818,7 +1941,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveCurrentProfileToDb() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _isSyncingDb.value = true
             val pName = _playerName.value.trim()
             val currentUser = auth.currentUser
@@ -2090,14 +2213,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun registerAccount(usernameEntered: String, emailEntered: String, passwordEntered: String, initialTier: String? = null, initialCredits: Int? = null) {
         viewModelScope.launch {
-            clearLoginMessages()
+            val validationErr = com.example.util.NicknameValidator.validate(usernameEntered)
+            if (validationErr != null) {
+                _loginError.value = validationErr
+                return@launch
+            }
             val trimmedName = usernameEntered.trim()
             val trimmedEmail = emailEntered.trim().lowercase()
             val trimmedPass = passwordEntered.trim()
-            if (trimmedName.isEmpty()) {
-                _loginError.value = "Никнейм пустой!"
-                return@launch
-            }
             val isTargetEmailAdmin = (trimmedEmail == "ezik02021@gmail.com")
             if (isReservedAdminNickname(trimmedName) && !isTargetEmailAdmin) {
                 _loginError.value = "Этот никнейм защищен и зарезервирован администрацией!"
@@ -2205,11 +2328,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateNickname(newNick: String) {
-        val trimmed = newNick.trim()
-        if (trimmed.isEmpty() || trimmed.length < 2 || trimmed.length > 20) {
-            _nicknameUpdateError.value = "Никнейм должен быть от 2 до 20 символов!"
+        val validationErr = com.example.util.NicknameValidator.validate(newNick)
+        if (validationErr != null) {
+            _nicknameUpdateError.value = validationErr
             return
         }
+        val trimmed = newNick.trim()
         if (isReservedAdminNickname(trimmed) && !isCurrentUserAdmin()) {
             _nicknameUpdateError.value = "Этот никнейм защищен и зарезервирован разработчиком!"
             return
@@ -2554,14 +2678,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _customAvatarBgColor.update { profilePrefs.getString("custom_avatar_bg_color", "3A3C44") ?: "3A3C44" }
         
         _themeColor.update { prefs.getString("theme_color", "indigo") ?: "indigo" }
-        _blockStyle.update { prefs.getString("block_style", "neon") ?: "neon" }
+        _blockStyle.update {
+            val s = prefs.getString("block_style", "neon") ?: "neon"
+            if (s == "retro") {
+                prefs.edit().putString("block_style", "neon").apply()
+                "neon"
+            } else s
+        }
         _boardColorSkin.update { prefs.getString("board_color_skin", "cyberpunk") ?: "cyberpunk" }
 
-        // Relax settings
-        _relaxImmortal.update { prefs.getBoolean("relax_immortal", true) }
-        _relaxSpeed.update { prefs.getString("relax_speed", "slow") ?: "slow" }
-        _relaxBlockSet.update { prefs.getString("relax_block_set", "ideal") ?: "ideal" }
-        _relaxGhostEnabled.update { prefs.getBoolean("relax_ghost_enabled", true) }
+        // Sandbox (RELAX) settings - loaded from sandbox_settings_prefs
+        _sandboxImmortal.update { sandboxPrefs.getBoolean("sandbox_immortal", prefs.getBoolean("relax_immortal", true)) }
+        _sandboxGravitySpeed.update { sandboxPrefs.getInt("sandbox_gravity_speed", 3) }
+        _sandboxLockDelay.update { sandboxPrefs.getString("sandbox_lock_delay", "500ms") ?: "500ms" }
+        _sandboxGhostEnabled.update { sandboxPrefs.getBoolean("sandbox_ghost_enabled", prefs.getBoolean("relax_ghost_enabled", true)) }
+        _sandboxGridLinesEnabled.update { sandboxPrefs.getBoolean("sandbox_grid_lines_enabled", true) }
+        _sandboxBagGenerator.update { sandboxPrefs.getString("sandbox_bag_generator", "standard_7") ?: "standard_7" }
+        _sandboxSinglePieceIdx.update { sandboxPrefs.getInt("sandbox_single_piece_idx", 0) }
+        syncSandboxSettingsToEngine()
         _lobbyMusicEnabled.update { prefs.getBoolean("lobby_music_enabled", true) }
 
         // Custom Tag settings
@@ -2983,7 +3117,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "purchased_themes" to listOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold"),
             "purchased_fonts" to listOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin"),
             "purchased_control_button_styles" to listOf("classic", "neon", "glass"),
-            "purchased_cube_skins" to listOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"),
+            "purchased_cube_skins" to listOf("neon", "glass", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"),
             "purchased_skins" to listOf("cyberpunk", "retro_amber", "emerald_matrix", "vaporwave_pink", "midnight_gold", "carbon_neutral", "plasma_storm", "glacial_frost")
         )
         firestore.collection("users").document(uid).update(updates)
@@ -3129,7 +3263,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     .putBoolean("has_nickname_gradient", true)
                     .putInt("bonus_xp", 50000)
                     .putStringSet("purchased_skins", setOf("cyberpunk", "retro_amber", "emerald_matrix", "vaporwave_pink", "midnight_gold", "carbon_neutral", "plasma_storm", "glacial_frost"))
-                    .putStringSet("purchased_cube_skins", setOf("neon", "glass", "retro", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"))
+                    .putStringSet("purchased_cube_skins", setOf("neon", "glass", "flat", "material", "glowing_jewel", "steampunk", "red_gradient", "green_gradient", "blue_gradient", "purple_gradient"))
                     .putStringSet("purchased_avatar_frames", setOf("standard", "frame_white", "frame_blue", "chrono_gl"))
                     .putStringSet("purchased_sound_packs", setOf("arcade", "synthwave", "cyber_metal", "ai_voice"))
                     .putStringSet("purchased_themes", setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold"))
@@ -3143,7 +3277,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _purchasedSoundPacks.value = setOf("arcade", "synthwave", "cyber_metal", "ai_voice")
                 _purchasedThemes.value = setOf("indigo", "neon", "red", "emerald", "amber", "rose", "sky", "orange", "toxic_green", "cyber_pink", "gold")
                 _purchasedFonts.value = setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin")
-                _purchasedControlButtonStyles.value = setOf("classic", "neon", "glass", "gold_legendary", "plasma_legendary")
+                _purchasedControlButtonStyles.value = setOf("classic", "neon", "glass")
                 
                 saveCurrentProfileToDb()
             } else {
@@ -3300,7 +3434,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val allTitles = setOf("none", "node", "lord", "cosmic_overlord", "ai_consensus")
         val allThemes = ALL_THEMES
         val allFonts = setOf("default", "monospace", "serif", "sans-serif", "cursive", "condensed", "black", "thin")
-        val allButtons = setOf("classic", "neon", "glass", "gold_legendary", "plasma_legendary")
+        val allButtons = setOf("classic", "neon", "glass")
 
         if (matchingUser != null) {
             val uid = matchingUser["uid"] as? String ?: ""
@@ -3473,6 +3607,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun pauseGame() {
         _isPlaying.update { false }
         gameLoopJob?.cancel()
+        gameTimerJob?.cancel()
     }
 
     fun resumeGame() {
@@ -3492,17 +3627,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun startGameLoop() {
         gameLoopJob?.cancel()
+        gameTimerJob?.cancel()
+
+        // Dedicated 1-second interval timer for accurate countdown without drift
+        gameTimerJob = viewModelScope.launch {
+            while (_isPlaying.value) {
+                delay(1000L)
+                if (!_isPlaying.value) break
+                val curMode = gameEngine.gameState.value.gameMode
+                if (curMode == com.example.game.GameMode.TIME_ATTACK || curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
+                    val prevMem = gameEngine.gameState.value.memoryCountdownSeconds
+                    gameEngine.decrementTime(1)
+                    val postMem = gameEngine.gameState.value.memoryCountdownSeconds
+                    if (curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
+                        if (prevMem > 0 && postMem > 0) {
+                            triggerAudioFeedback("select")
+                        } else if (prevMem > 0 && postMem == 0) {
+                            triggerAudioFeedback("start")
+                        }
+                    }
+                }
+            }
+        }
+
         gameLoopJob = viewModelScope.launch {
             try {
-                var lastTimeTick = System.currentTimeMillis()
                 while (_isPlaying.value) {
                     val delayTime = if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.RELAX) {
-                        when (_relaxSpeed.value) {
-                            "static" -> 1000L
-                            "slow" -> 1500L
-                            "normal" -> 800L
-                            "fast" -> 300L
-                            else -> 800L
+                        when (_sandboxGravitySpeed.value) {
+                            0 -> 1000L // Zero gravity (manual drop)
+                            1 -> 3000L // 3.0s
+                            2 -> 2000L // 2.0s
+                            3 -> 1500L // 1.5s
+                            4 -> 1000L // 1.0s
+                            5 -> 500L  // 0.5s
+                            6 -> 200L  // 0.2s
+                            7 -> 50L   // 0.05s
+                            else -> 1500L
                         }
                     } else {
                         val level = gameEngine.gameState.value.level
@@ -3520,28 +3681,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     delay(delayTime)
                     if (!_isPlaying.value) break
                     
-                    if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.RELAX && _relaxSpeed.value == "static") {
+                    if (gameEngine.gameState.value.gameMode == com.example.game.GameMode.RELAX && _sandboxGravitySpeed.value == 0) {
                         continue
                     }
                     
-                    val now = System.currentTimeMillis()
                     val curMode = gameEngine.gameState.value.gameMode
-                    if (curMode == com.example.game.GameMode.TIME_ATTACK || curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
-                        if (now - lastTimeTick >= 1000) {
-                            val elapsedSec = ((now - lastTimeTick) / 1000).toInt()
-                            lastTimeTick = now
-                            val prevMem = gameEngine.gameState.value.memoryCountdownSeconds
-                            gameEngine.decrementTime(elapsedSec)
-                            val postMem = gameEngine.gameState.value.memoryCountdownSeconds
-                            if (curMode == com.example.game.GameMode.MEMORY_PUZZLE) {
-                                if (prevMem > 0 && postMem > 0) {
-                                    triggerAudioFeedback("select")
-                                } else if (prevMem > 0 && postMem == 0) {
-                                    triggerAudioFeedback("start")
-                                }
-                            }
-                        }
-                    }
 
                     // During Memory mode memorization countdown, do not drop pieces
                     if (curMode == com.example.game.GameMode.MEMORY_PUZZLE && gameEngine.gameState.value.memoryCountdownSeconds > 0) {
@@ -3669,9 +3813,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putInt("stats_cleared_lines", totalClearedLines).apply()
         _statsClearedLines.value = totalClearedLines
         
-        val maxScore = maxOf(prefs.getInt("stats_high_score", 0), score)
-        prefs.edit().putInt("stats_high_score", maxScore).apply()
-        _statsHighScore.value = maxScore
+        if (mode != com.example.game.GameMode.RELAX) {
+            val maxScore = maxOf(prefs.getInt("stats_high_score", 0), score)
+            prefs.edit().putInt("stats_high_score", maxScore).apply()
+            _statsHighScore.value = maxScore
+        }
 
         val level = gameEngine.gameState.value.level
         val maxSpeed = maxOf(prefs.getInt("stats_max_speed_reached", 0), level)
@@ -3896,7 +4042,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         userDocSnapshotListener?.remove()
         userDocSnapshotListener = null
+        currentListeningUid = null
         lobbyManager.cleanup()
+        gameLoopJob?.cancel()
+        gameTimerJob?.cancel()
         try {
             lobbyMusicPlayer?.stop()
             lobbyMusicPlayer?.release()
@@ -4059,6 +4208,55 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } ?: emptyList()
                 _friendsList.value = list.filter { it.status == "accepted" }
                 _friendRequests.value = list.filter { it.status == "pending_incoming" }
+
+                // Fetch latest friend avatar & profile info from users/{uid}
+                list.forEach { friend ->
+                    if (friend.uid.isNotBlank()) {
+                        firestore.collection("users").document(friend.uid).get()
+                            .addOnSuccessListener { userDoc ->
+                                if (userDoc != null && userDoc.exists()) {
+                                    val emoji = userDoc.getString("custom_avatar_emoji") ?: userDoc.getString("avatarEmoji") ?: userDoc.getString("avatar_emoji") ?: ""
+                                    val bg = userDoc.getString("custom_avatar_bg_color") ?: userDoc.getString("avatarBgColor") ?: userDoc.getString("avatar_bg_color") ?: ""
+                                    val frame = userDoc.getString("equipped_avatar_frame") ?: userDoc.getString("avatarFrame") ?: userDoc.getString("avatar_frame") ?: "standard"
+                                    val base64 = userDoc.getString("custom_avatar_base64") ?: userDoc.getString("avatarBase64") ?: userDoc.getString("avatar_base64") ?: ""
+                                    val grad = userDoc.getBoolean("has_nickname_gradient") ?: false
+                                    val tier = userDoc.getString("online_tier") ?: userDoc.getString("rank") ?: friend.onlineTier
+                                    val pName = userDoc.getString("player_name") ?: userDoc.getString("playerName") ?: friend.username
+
+                                    _friendsList.update { current ->
+                                        current.map { f ->
+                                            if (f.uid == friend.uid) {
+                                                f.copy(
+                                                    username = pName.ifEmpty { f.username },
+                                                    avatarEmoji = emoji.ifEmpty { f.avatarEmoji },
+                                                    avatarBgColor = bg.ifEmpty { f.avatarBgColor },
+                                                    avatarFrame = if (frame != "standard") frame else f.avatarFrame,
+                                                    avatarBase64 = base64.ifEmpty { f.avatarBase64 },
+                                                    hasGradient = grad,
+                                                    onlineTier = tier
+                                                )
+                                            } else f
+                                        }
+                                    }
+                                    _friendRequests.update { current ->
+                                        current.map { f ->
+                                            if (f.uid == friend.uid) {
+                                                f.copy(
+                                                    username = pName.ifEmpty { f.username },
+                                                    avatarEmoji = emoji.ifEmpty { f.avatarEmoji },
+                                                    avatarBgColor = bg.ifEmpty { f.avatarBgColor },
+                                                    avatarFrame = if (frame != "standard") frame else f.avatarFrame,
+                                                    avatarBase64 = base64.ifEmpty { f.avatarBase64 },
+                                                    hasGradient = grad,
+                                                    onlineTier = tier
+                                                )
+                                            } else f
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                }
             }
     }
 
@@ -4087,9 +4285,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val targetUid = targetDoc.id
                 val targetName = targetDoc.getString("player_name") ?: trimmed
                 val targetTier = targetDoc.getString("online_tier") ?: "BRONZE"
-                val targetEmoji = targetDoc.getString("custom_avatar_emoji") ?: ""
-                val targetBg = targetDoc.getString("custom_avatar_bg_color") ?: ""
-                val targetFrame = targetDoc.getString("equipped_avatar_frame") ?: "standard"
+                val targetEmoji = targetDoc.getString("custom_avatar_emoji") ?: targetDoc.getString("avatarEmoji") ?: ""
+                val targetBg = targetDoc.getString("custom_avatar_bg_color") ?: targetDoc.getString("avatarBgColor") ?: ""
+                val targetFrame = targetDoc.getString("equipped_avatar_frame") ?: targetDoc.getString("avatarFrame") ?: "standard"
+                val targetBase64 = targetDoc.getString("custom_avatar_base64") ?: targetDoc.getString("avatarBase64") ?: ""
                 val targetGradient = targetDoc.getBoolean("has_nickname_gradient") ?: false
 
                 val outgoing = FriendUser(
@@ -4099,11 +4298,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     avatarEmoji = targetEmoji,
                     avatarBgColor = targetBg,
                     avatarFrame = targetFrame,
+                    avatarBase64 = targetBase64,
                     hasGradient = targetGradient,
                     status = "pending_outgoing",
                     lastSeen = System.currentTimeMillis()
                 )
                 firestore.collection("users").document(myUser.uid).collection("friends").document(targetUid).set(outgoing.toMap())
+
+                val myAvatarBase64 = try {
+                    val file = java.io.File(getApplication<android.app.Application>().filesDir, "custom_avatar_${_playerName.value}.jpg")
+                    if (file.exists() && file.length() > 0) {
+                        android.util.Base64.encodeToString(file.readBytes(), android.util.Base64.NO_WRAP)
+                    } else ""
+                } catch (e: Exception) { "" }
 
                 val incoming = FriendUser(
                     uid = myUser.uid,
@@ -4112,6 +4319,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     avatarEmoji = _customAvatarEmoji.value,
                     avatarBgColor = _customAvatarBgColor.value,
                     avatarFrame = _equippedAvatarFrame.value,
+                    avatarBase64 = myAvatarBase64,
                     hasGradient = _hasNicknameGradient.value,
                     status = "pending_incoming",
                     lastSeen = System.currentTimeMillis()
@@ -4175,9 +4383,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val list = snap.documents.mapNotNull { doc ->
                     val name = doc.getString("player_name") ?: return@mapNotNull null
                     val tier = doc.getString("online_tier") ?: "BRONZE"
-                    val emoji = doc.getString("custom_avatar_emoji") ?: ""
-                    val bg = doc.getString("custom_avatar_bg_color") ?: ""
-                    val frame = doc.getString("equipped_avatar_frame") ?: "standard"
+                    val emoji = doc.getString("custom_avatar_emoji") ?: doc.getString("avatarEmoji") ?: doc.getString("avatar_emoji") ?: ""
+                    val bg = doc.getString("custom_avatar_bg_color") ?: doc.getString("avatarBgColor") ?: doc.getString("avatar_bg_color") ?: ""
+                    val frame = doc.getString("equipped_avatar_frame") ?: doc.getString("avatarFrame") ?: doc.getString("avatar_frame") ?: "standard"
+                    val avatarBase64 = doc.getString("custom_avatar_base64") ?: doc.getString("avatarBase64") ?: doc.getString("avatar_base64") ?: ""
                     val grad = doc.getBoolean("has_nickname_gradient") ?: false
                     val isOnline = doc.getBoolean("is_online") ?: false
                     FriendUser(
@@ -4187,6 +4396,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         avatarEmoji = emoji,
                         avatarBgColor = bg,
                         avatarFrame = frame,
+                        avatarBase64 = avatarBase64,
                         hasGradient = grad,
                         isOnline = isOnline,
                         status = "none"

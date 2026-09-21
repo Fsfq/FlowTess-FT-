@@ -84,6 +84,16 @@ fun ModernGameLayout(
         gameState.grid.take(5).any { row -> row.any { it != 0 } }
     }
 
+    var showRelaxSettings by remember { mutableStateOf(false) }
+
+    if (showRelaxSettings) {
+        RelaxSettingsScreen(
+            viewModel = viewModel,
+            onBack = { showRelaxSettings = false }
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -184,11 +194,10 @@ fun ModernGameLayout(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             if (gameState.gameMode == com.example.game.GameMode.RELAX) {
-                                var showRelaxDialog by remember { mutableStateOf(false) }
                                 FilledTonalIconButton(
                                     onClick = {
                                         viewModel.triggerAudioFeedback("click")
-                                        showRelaxDialog = true
+                                        showRelaxSettings = true
                                     },
                                     colors = IconButtonDefaults.filledTonalIconButtonColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -201,9 +210,6 @@ fun ModernGameLayout(
                                         contentDescription = Translations.get("settings", currentLang),
                                         modifier = Modifier.size(18.dp)
                                     )
-                                }
-                                if (showRelaxDialog) {
-                                    RelaxSettingsDialog(viewModel = viewModel, onDismiss = { showRelaxDialog = false })
                                 }
                             }
 
@@ -364,14 +370,22 @@ fun ModernGameLayout(
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
-                        val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
+                        val perfectionistHint = remember(
+                            gameState.grid,
+                            gameState.currentPiece,
+                            gameState.holdPiece,
+                            gameState.hasHeldThisTurn,
+                            gameState.nextPieces.firstOrNull(),
+                            gameState.nextPieces.getOrNull(1)
+                        ) {
                             if (isPerfectionistMode && gameState.currentPiece != null) {
                                 viewModel.gameEngine.calculateOptimalPlacement(
                                     grid = gameState.grid,
                                     piece = gameState.currentPiece!!,
                                     holdPiece = gameState.holdPiece,
                                     nextPiece = gameState.nextPieces.firstOrNull(),
-                                    canHold = !gameState.hasHeldThisTurn
+                                    canHold = !gameState.hasHeldThisTurn,
+                                    secondNextPiece = gameState.nextPieces.getOrNull(1)
                                 )
                             } else null
                         }
@@ -499,13 +513,20 @@ fun ModernGameLayout(
                             .padding(2.dp),
                         contentAlignment = Alignment.Center
                     ) {
+                        val sandboxGhostEnabled by viewModel.sandboxGhostEnabled.collectAsStateWithLifecycle()
+                        val sandboxGridLinesEnabled by viewModel.sandboxGridLinesEnabled.collectAsStateWithLifecycle()
+                        val effectiveGhost = if (gameState.gameMode == com.example.game.GameMode.RELAX) sandboxGhostEnabled else ghostVisible
+                        val effectiveGrid = if (gameState.gameMode == com.example.game.GameMode.RELAX) {
+                            if (sandboxGridLinesEnabled) "standard" else "none"
+                        } else gridLineDensity
+
                         GameBoardView(
                             gameState = gameState,
                             blockStyle = blockStyle,
-                            ghostVisible = ghostVisible,
+                            ghostVisible = effectiveGhost,
                             ghostOutlineOnly = ghostOutlineOnly,
                             smoothFallingEnabled = smoothFallingEnabled,
-                            gridLineDensity = gridLineDensity,
+                            gridLineDensity = effectiveGrid,
                             boardColorSkin = boardColorSkin,
                             graphicsQuality = graphicsQuality,
                             viewModel = viewModel,
