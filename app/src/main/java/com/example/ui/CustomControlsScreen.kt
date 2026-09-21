@@ -121,24 +121,7 @@ import androidx.compose.ui.graphics.TileMode
 @Composable
 fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val currentLang by viewModel.language.collectAsStateWithLifecycle()
-    val themeColorKey by viewModel.themeColor.collectAsStateWithLifecycle()
-    val themeColorVal = remember(themeColorKey) {
-        when (themeColorKey) {
-            "indigo" -> Color(0xFFD0BCFF)
-            "red" -> Color(0xFFFF5555)
-            "neon" -> Color(0xFF00FFCC)
-            "amber" -> Color(0xFFF59E0B)
-            "rose" -> Color(0xFFF43F5E)
-            "sky" -> Color(0xFF0EA5E9)
-            "cyber_pink" -> Color(0xFFFF007F)
-            "toxic_green" -> Color(0xFF39FF14)
-            else -> Color(0xFFD0BCFF)
-        }
-    }
-
-    val sandboxScope = rememberCoroutineScope()
-    val sandboxEngine = remember { com.example.game.ControlsSandboxEngine(sandboxScope) }
-    val sandboxState by sandboxEngine.gameState.collectAsStateWithLifecycle()
+    val themeColorVal = MaterialTheme.colorScheme.primary
 
     val controlButtonScale by viewModel.controlButtonScale.collectAsStateWithLifecycle()
     val controlButtonAlpha by viewModel.controlButtonAlpha.collectAsStateWithLifecycle()
@@ -159,13 +142,6 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
-
-    DisposableEffect(Unit) {
-        sandboxEngine.start()
-        onDispose {
-            sandboxEngine.stop()
-        }
-    }
 
     if (showResetDialog) {
         AlertDialog(
@@ -266,7 +242,12 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier
+                        .imePadding()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
                         text = when (currentLang) {
                             Language.RU -> "Вставьте код конфигурации (TTR-CTRL:... или Base64 JSON):"
@@ -449,15 +430,7 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     Language.DE -> "Code"
                     Language.ZH -> "代码"
                     else -> "Code"
-                } to Icons.Default.Share,
-                when (currentLang) {
-                    Language.RU -> "Песочница"
-                    Language.UA -> "Пісочниця"
-                    Language.KK -> "Сынақ"
-                    Language.DE -> "Sandbox"
-                    Language.ZH -> "测试"
-                    else -> "Sandbox"
-                } to Icons.Default.PlayArrow
+                } to Icons.Default.Share
             )
 
             TabRow(
@@ -918,9 +891,7 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 val styles = listOf(
                                     "neon" to "Neon Glow",
                                     "classic" to "Classic Solid",
-                                    "glass" to "Glassmorphism",
-                                    "gold" to "Golden Edge",
-                                    "plasma" to "Plasma Cyber"
+                                    "glass" to "Glassmorphism"
                                 )
                                 Row(
                                     modifier = Modifier
@@ -1006,165 +977,7 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                             }
                         }
 
-                        // Live Interactive Preview Box & Mini Board
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(14.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(8.dp)
-                                                .background(Color(0xFF00E676), CircleShape)
-                                        )
-                                        Text(
-                                            text = when (currentLang) {
-                                                Language.RU -> "Живой предпросмотр"
-                                                Language.UA -> "Живий перегляд"
-                                                Language.KK -> "Тікелей көру"
-                                                Language.DE -> "Live-Vorschau"
-                                                Language.ZH -> "实时动态预览"
-                                                else -> "Live Preview"
-                                            },
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
 
-                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                         IconButton(
-                                             onClick = {
-                                                 sandboxEngine.clearBoard()
-                                                 viewModel.triggerAudioFeedback("click")
-                                             },
-                                             modifier = Modifier.size(48.dp)
-                                         ) {
-                                             Icon(
-                                                 Icons.Default.Refresh,
-                                                 contentDescription = "Clear board",
-                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                 modifier = Modifier.size(20.dp)
-                                             )
-                                         }
-
-                                         IconButton(
-                                             onClick = {
-                                                 viewModel.triggerAudioFeedback("click")
-                                                 selectedTab = 3
-                                             },
-                                             modifier = Modifier.size(48.dp)
-                                         ) {
-                                             Icon(
-                                                 Icons.Default.PlayArrow,
-                                                 contentDescription = "Sandbox",
-                                                 tint = themeColorVal,
-                                                 modifier = Modifier.size(20.dp)
-                                             )
-                                         }
-                                     }
-                                 }
-
-                                 // Interactive Mini Game Board with falling tetrominoes
-                                 Box(
-                                     modifier = Modifier
-                                         .height(160.dp)
-                                         .aspectRatio(0.5f)
-                                         .clip(RoundedCornerShape(10.dp))
-                                         .border(1.5.dp, themeColorVal.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
-                                 ) {
-                                     GameBoardView(
-                                         gameState = sandboxState,
-                                         blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
-                                         ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
-                                         ghostOutlineOnly = viewModel.ghostOutlineOnly.collectAsStateWithLifecycle().value,
-                                         smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
-                                         gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
-                                         boardColorSkin = viewModel.themeColor.collectAsStateWithLifecycle().value
-                                     )
-                                 }
-
-                                 // Interactive Controls Section wired to sandboxEngine
-                                 Box(
-                                     modifier = Modifier
-                                         .fillMaxWidth()
-                                         .padding(vertical = 4.dp),
-                                     contentAlignment = Alignment.Center
-                                 ) {
-                                     GameControlsSection(
-                                         viewModel = viewModel,
-                                         gameState = sandboxState,
-                                         controlStyle = controlStyle,
-                                         leftHandedControls = leftHandedControls,
-                                         controlVerticalPosition = "bottom",
-                                         controlButtonScale = (controlButtonScale * 0.85f).coerceIn(0.55f, 1.15f),
-                                         controlButtonStyle = controlButtonStyle,
-                                         onLeftPress = {
-                                             sandboxEngine.moveLeft()
-                                             viewModel.triggerAudioFeedback("move")
-                                         },
-                                         onRightPress = {
-                                             sandboxEngine.moveRight()
-                                             viewModel.triggerAudioFeedback("move")
-                                         },
-                                         onDownPress = {
-                                             sandboxEngine.softDrop()
-                                             viewModel.triggerAudioFeedback("move")
-                                         },
-                                         onRotatePress = {
-                                             sandboxEngine.rotate()
-                                             viewModel.triggerAudioFeedback("rotate")
-                                         },
-                                         onHardDropPress = {
-                                             sandboxEngine.hardDrop()
-                                             viewModel.triggerAudioFeedback("drop")
-                                         },
-                                         onHoldPress = {
-                                             sandboxEngine.hold()
-                                             viewModel.triggerAudioFeedback("click")
-                                         }
-                                     )
-                                 }
-
-                                 Button(
-                                     onClick = {
-                                         viewModel.triggerAudioFeedback("click")
-                                         selectedTab = 3 // Switch to Sandbox
-                                     },
-                                     modifier = Modifier.fillMaxWidth(),
-                                     shape = RoundedCornerShape(12.dp),
-                                     colors = ButtonDefaults.buttonColors(containerColor = themeColorVal, contentColor = Color.Black)
-                                 ) {
-                                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                     Spacer(modifier = Modifier.width(8.dp))
-                                     Text(
-                                         text = when (currentLang) {
-                                             Language.RU -> "Тестировать в песочнице"
-                                             Language.UA -> "Тестувати в пісочниці"
-                                             Language.KK -> "Сынақ алаңында көру"
-                                             Language.DE -> "In Sandbox testen"
-                                             Language.ZH -> "进入实战沙盒测试"
-                                             else -> "Test in Sandbox"
-                                         },
-                                         fontWeight = FontWeight.Bold
-                                     )
-                                 }
-                            }
-                        }
                     }
                 }
 
@@ -1799,146 +1612,7 @@ fun CustomControlsScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     }
                 }
 
-                // TAB 3: PLAYABLE SANDBOX
-                3 -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Sandbox banner
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(Color(0xFF00E676), CircleShape)
-                                    )
-                                    Text(
-                                        text = when (currentLang) {
-                                            Language.RU -> "Песочница: поле авто-очищается"
-                                            Language.UA -> "Пісочниця: поле авто-очищується"
-                                            Language.KK -> "Сынақ: алаң өздігінен тазарады"
-                                            Language.DE -> "Sandbox: Spielfeld leert sich auto."
-                                            Language.ZH -> "实战沙盒：网格填满自动重置"
-                                            else -> "Sandbox: board auto-clears"
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                TextButton(
-                                    onClick = {
-                                        sandboxEngine.clearBoard()
-                                        viewModel.triggerAudioFeedback("click")
-                                    },
-                                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = themeColorVal)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = when (currentLang) {
-                                            Language.RU -> "Очистить"
-                                            Language.UA -> "Очистити"
-                                            Language.KK -> "Тазарту"
-                                            Language.DE -> "Leeren"
-                                            Language.ZH -> "清屏"
-                                            else -> "Clear"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = themeColorVal
-                                    )
-                                }
-                            }
-                        }
 
-                        // Sandbox Game Board View Container - perfectly centered & responsive
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .aspectRatio(0.5f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(1.5.dp, themeColorVal.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                            ) {
-                                GameBoardView(
-                                    gameState = sandboxState,
-                                    blockStyle = viewModel.blockStyle.collectAsStateWithLifecycle().value,
-                                    ghostVisible = viewModel.ghostVisible.collectAsStateWithLifecycle().value,
-                                    ghostOutlineOnly = viewModel.ghostOutlineOnly.collectAsStateWithLifecycle().value,
-                                    smoothFallingEnabled = viewModel.smoothFallingEnabled.collectAsStateWithLifecycle().value,
-                                    gridLineDensity = viewModel.gridLineDensity.collectAsStateWithLifecycle().value,
-                                    boardColorSkin = viewModel.themeColor.collectAsStateWithLifecycle().value
-                                )
-                            }
-                        }
-
-                        // Sandbox Controls Section
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = controlBottomPadding.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            GameControlsSection(
-                                viewModel = viewModel,
-                                gameState = sandboxState,
-                                controlStyle = controlStyle,
-                                leftHandedControls = leftHandedControls,
-                                controlVerticalPosition = controlVerticalPosition,
-                                controlButtonScale = controlButtonScale,
-                                controlButtonStyle = controlButtonStyle,
-                                onLeftPress = {
-                                    sandboxEngine.moveLeft()
-                                    viewModel.triggerAudioFeedback("move")
-                                },
-                                onRightPress = {
-                                    sandboxEngine.moveRight()
-                                    viewModel.triggerAudioFeedback("move")
-                                },
-                                onDownPress = {
-                                    sandboxEngine.softDrop()
-                                    viewModel.triggerAudioFeedback("move")
-                                },
-                                onRotatePress = {
-                                    sandboxEngine.rotate()
-                                    viewModel.triggerAudioFeedback("rotate")
-                                },
-                                onHardDropPress = {
-                                    sandboxEngine.hardDrop()
-                                    viewModel.triggerAudioFeedback("drop")
-                                },
-                                onHoldPress = {
-                                    sandboxEngine.hold()
-                                    viewModel.triggerAudioFeedback("click")
-                                }
-                            )
-                        }
-                    }
-                }
             }
         }
     }

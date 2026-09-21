@@ -1,5 +1,6 @@
 package com.example.eos
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.example.game.Colors
 import com.example.game.Position
@@ -88,13 +89,18 @@ object EosBattleEngine {
     private var localTier: String = "Bronze"
     private var opponentPuid: String = ""
     private var roomBet: Int = 0
+    private var currentRoomId: String = ""
+    private var bagRandom: java.util.Random? = null
+    private var lastOpponentPacketTime: Long = 0L
 
     private val bag = mutableListOf<Tetromino>()
+    private val roundFinishLock = Any()
     private var lockResets = 0
 
     // Audio & reward callbacks
     var onAudioTrigger: ((String) -> Unit)? = null
     var onMatchCompleted: ((isWinner: Boolean, localScore: Int, oppScore: Int, bet: Int) -> Unit)? = null
+    var onRematchStarted: ((bet: Int) -> Boolean)? = null
 
     fun initializeMatch(
         room: EosRoom,
@@ -108,6 +114,7 @@ object EosBattleEngine {
         localName = myName
         localTier = myTier
         roomBet = room.bet
+        currentRoomId = room.id
 
         val isHost = (room.hostPuid == myPuid)
         opponentPuid = if (isHost) (room.guestPuid ?: "") else room.hostPuid
@@ -132,6 +139,12 @@ object EosBattleEngine {
             opponentLeft = false
         )
 
+        localGridSequence = 0L
+        lastReceivedOpponentSeq = 0L
+        lastSentGridCsv = ""
+        lastSentScore = -1
+        lastSentLines = -1
+
         EosManager.battlePacketListener = { json ->
             handleIncomingBattlePacket(json)
         }
@@ -142,7 +155,12 @@ object EosBattleEngine {
                 val oppMissing = if (isHost) (curRoom?.guestPuid == null) else (curRoom == null)
                 if (oppMissing) {
                     if (_matchState.value.status != EosBattleStatus.IDLE && _matchState.value.status != EosBattleStatus.MATCH_FINISHED) {
-                        finalizeMatch(isLocalWinner = true, reason = "FORFEIT_WIN")
+                        val isLocalSurrender = (EosManager.lastRoomLeaveInitiator == "LOCAL")
+                        if (isLocalSurrender) {
+                            finalizeMatch(isLocalWinner = false, reason = "SURRENDER")
+                        } else {
+                            finalizeMatch(isLocalWinner = true, reason = "FORFEIT_WIN")
+                        }
                     } else if (_matchState.value.status == EosBattleStatus.MATCH_FINISHED) {
                         _matchState.update { it.copy(opponentLeft = true, rematchRequestedByOpponent = false) }
                     }
@@ -179,6 +197,9 @@ object EosBattleEngine {
     }
 
     private fun resetLocalBoard() {
+        val round = _matchState.value.currentRound
+        val seed = (currentRoomId.hashCode().toLong() and 0xFFFFFFFFL) xor (round.toLong() * 0x5DEECE66DL)
+        bagRandom = java.util.Random(seed)
         bag.clear()
         lastSentGridCsv = ""
         lastSentScore = -1
@@ -213,7 +234,12 @@ object EosBattleEngine {
     private fun drawFromBag(): Tetromino {
         if (bag.isEmpty()) {
             bag.addAll(STANDARD_SHAPES)
-            bag.shuffle()
+            val rng = bagRandom
+            if (rng != null) {
+                bag.shuffle(rng)
+            } else {
+                bag.shuffle()
+            }
         }
         return if (bag.isNotEmpty()) bag.removeAt(0) else STANDARD_SHAPES[0]
     }
@@ -251,6 +277,14 @@ object EosBattleEngine {
                     put("t", System.currentTimeMillis())
                 }.toString()
                 EosManager.broadcastP2p(pingJson, channel = 1, isReliable = false)
+
+                if (_matchState.value.status == EosBattleStatus.PLAYING && lastOpponentPacketTime > 0L) {
+                    if (System.currentTimeMillis() - lastOpponentPacketTime > 15_000L) {
+                        Log.w("EosBattleEngine", "Opponent packet timeout (>15s), awarding win by timeout")
+                        finalizeMatch(isLocalWinner = true, reason = "TIMEOUT_WIN")
+                        break
+                    }
+                }
                 delay(2000)
             }
         }
@@ -599,34 +633,37 @@ object EosBattleEngine {
     }
 
     private fun handleRoundFinished(winnerIsLocal: Boolean) {
-        gameLoopJob?.cancel()
-        lockDelayJob?.cancel()
+        synchronized(roundFinishLock) {
+            if (_matchState.value.status != EosBattleStatus.PLAYING) return
+            gameLoopJob?.cancel()
+            lockDelayJob?.cancel()
 
-        val curMatch = _matchState.value
-        val newLocalWins = if (winnerIsLocal) curMatch.localRoundWins + 1 else curMatch.localRoundWins
-        val newOppWins = if (!winnerIsLocal) curMatch.opponentRoundWins + 1 else curMatch.opponentRoundWins
+            val curMatch = _matchState.value
+            val newLocalWins = if (winnerIsLocal) curMatch.localRoundWins + 1 else curMatch.localRoundWins
+            val newOppWins = if (!winnerIsLocal) curMatch.opponentRoundWins + 1 else curMatch.opponentRoundWins
 
-        if (newLocalWins >= curMatch.maxWinsNeeded) {
-            // Local wins match!
-            finalizeMatch(isLocalWinner = true, reason = "VICTORY")
-        } else if (newOppWins >= curMatch.maxWinsNeeded) {
-            // Opponent wins match
-            finalizeMatch(isLocalWinner = false, reason = "DEFEAT")
-        } else {
-            // Round over, advance to next round!
-            _matchState.update {
-                it.copy(
-                    status = EosBattleStatus.ROUND_OVER,
-                    currentRound = it.currentRound + 1,
-                    localRoundWins = newLocalWins,
-                    opponentRoundWins = newOppWins
-                )
-            }
-            nextRoundJob?.cancel()
-            nextRoundJob = engineScope.launch {
-                delay(2500)
-                if (_matchState.value.status == EosBattleStatus.MATCH_FINISHED || _matchState.value.opponentLeft) return@launch
-                startCountdownAndRound()
+            if (newLocalWins >= curMatch.maxWinsNeeded) {
+                // Local wins match!
+                finalizeMatch(isLocalWinner = true, reason = "VICTORY")
+            } else if (newOppWins >= curMatch.maxWinsNeeded) {
+                // Opponent wins match
+                finalizeMatch(isLocalWinner = false, reason = "DEFEAT")
+            } else {
+                // Round over, advance to next round!
+                _matchState.update {
+                    it.copy(
+                        status = EosBattleStatus.ROUND_OVER,
+                        currentRound = it.currentRound + 1,
+                        localRoundWins = newLocalWins,
+                        opponentRoundWins = newOppWins
+                    )
+                }
+                nextRoundJob?.cancel()
+                nextRoundJob = engineScope.launch {
+                    delay(2500)
+                    if (_matchState.value.status == EosBattleStatus.MATCH_FINISHED || _matchState.value.opponentLeft) return@launch
+                    startCountdownAndRound()
+                }
             }
         }
     }
@@ -668,8 +705,19 @@ object EosBattleEngine {
     // ── INCOMING EOS PACKET HANDLING ──
 
     private fun handleIncomingBattlePacket(json: JSONObject) {
+        lastOpponentPacketTime = System.currentTimeMillis()
         when (json.optString("type")) {
+            "BATTLE_PING" -> {
+                // Heartbeat keep-alive packet received
+            }
+
             "BATTLE_GRID" -> {
+                val seq = json.optLong("seq", 0L)
+                if (seq > 0L && seq < lastReceivedOpponentSeq) {
+                    return
+                }
+                if (seq > 0L) lastReceivedOpponentSeq = seq
+
                 val flatCsv = json.optString("grid")
                 val score = json.optInt("score", 0)
                 val lines = json.optInt("lines", 0)
@@ -710,6 +758,12 @@ object EosBattleEngine {
 
             "BATTLE_ROUND_OVER" -> {
                 val toppedOutPuid = json.optString("toppedOutPuid")
+                val round = json.optInt("round", 0)
+                val curRound = _matchState.value.currentRound
+                if (round != 0 && round != curRound) {
+                    // Ignore delayed packet from previous round
+                    return
+                }
                 if (toppedOutPuid == opponentPuid && _matchState.value.status == EosBattleStatus.PLAYING) {
                     // Opponent topped out! Local player wins round!
                     handleRoundFinished(winnerIsLocal = true)
@@ -762,6 +816,20 @@ object EosBattleEngine {
     private fun restartMatchForRematch() {
         if (_matchState.value.opponentLeft) return
 
+        val bet = roomBet
+        if (bet > 0 && onRematchStarted != null) {
+            val success = onRematchStarted?.invoke(bet) ?: false
+            if (!success) {
+                _matchState.update { it.copy(opponentLeft = true, rematchRequestedByLocal = false, finishReason = "INSUFFICIENT_CREDITS") }
+                val payload = JSONObject().apply {
+                    put("type", "LEAVE_ROOM")
+                    put("senderPuid", localPuid)
+                }.toString()
+                EosManager.broadcastP2p(payload)
+                return
+            }
+        }
+
         _matchState.update {
             it.copy(
                 status = EosBattleStatus.COUNTDOWN,
@@ -777,6 +845,12 @@ object EosBattleEngine {
                 ratingDelta = 0
             )
         }
+        localGridSequence = 0L
+        lastReceivedOpponentSeq = 0L
+        lastSentGridCsv = ""
+        lastSentScore = -1
+        lastSentLines = -1
+
         startCountdownAndRound()
     }
 
@@ -793,25 +867,35 @@ object EosBattleEngine {
     private var lastSentGridCsv: String = ""
     private var lastSentScore: Int = -1
     private var lastSentLines: Int = -1
+    private var localGridSequence: Long = 0L
+    private var lastReceivedOpponentSeq: Long = 0L
 
     private fun sendLiveGridSnapshot() {
         val state = _localState.value
-        // Extract 20 visible rows (rows 2..21)
-        val matrix = state.grid.takeLast(20).map { it.clone() }
         val piece = state.currentPiece
         val pos = state.currentPos
+        val isOver = state.isGameOver
 
-        if (piece != null && !state.isGameOver) {
-            for (p in piece.shape) {
-                val r = pos.y + p.y - 2
-                val c = pos.x + p.x
-                if (r in 0 until 20 && c in 0 until 10) {
-                    matrix[r][c] = piece.colorIndex
+        val sb = StringBuilder(400)
+        var first = true
+        for (r in 0 until 20) {
+            val gridRow = state.grid[r + 2]
+            for (c in 0 until 10) {
+                if (!first) sb.append(',') else first = false
+                var cellVal = gridRow[c]
+                if (piece != null && !isOver) {
+                    for (p in piece.shape) {
+                        if (pos.y + p.y - 2 == r && pos.x + p.x == c) {
+                            cellVal = piece.colorIndex
+                            break
+                        }
+                    }
                 }
+                sb.append(cellVal)
             }
         }
 
-        val csv = matrix.flatMap { it.toList() }.joinToString(",")
+        val csv = sb.toString()
 
         // Skip if identical to last sent frame
         if (csv == lastSentGridCsv && state.score == lastSentScore && state.lines == lastSentLines) return
@@ -821,6 +905,7 @@ object EosBattleEngine {
 
         val payload = JSONObject().apply {
             put("type", "BATTLE_GRID")
+            put("seq", ++localGridSequence)
             put("grid", csv)
             put("score", state.score)
             put("lines", state.lines)

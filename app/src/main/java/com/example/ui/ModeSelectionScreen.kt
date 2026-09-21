@@ -439,6 +439,15 @@ fun ModeSelectionScreen(
 
     var selectedCategoryFilter by remember { mutableStateOf("ALL") }
     var selectedInfoMode by remember { mutableStateOf<ModeInfo?>(null) }
+    var showRelaxSettingsDialog by remember { mutableStateOf(false) }
+
+    if (showRelaxSettingsDialog) {
+        RelaxSettingsScreen(
+            viewModel = viewModel,
+            onBack = { showRelaxSettingsDialog = false }
+        )
+        return
+    }
 
     val filterChips = listOf(
         "ALL" to when (currentLang) {
@@ -482,6 +491,8 @@ fun ModeSelectionScreen(
             else -> "Casual / Fun"
         }
     )
+
+    val modeClickDebouncer = rememberClickDebouncer(600L)
 
     Scaffold(
         topBar = {
@@ -661,6 +672,7 @@ fun ModeSelectionScreen(
 
                         ElevatedCard(
                             onClick = {
+                                if (!modeClickDebouncer.canClick()) return@ElevatedCard
                                 if (isPlayable) {
                                     viewModel.triggerAudioFeedback("click")
                                     onPlayMode(modeInfo.mode)
@@ -857,6 +869,36 @@ fun ModeSelectionScreen(
                                     horizontalArrangement = Arrangement.End,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    if (modeInfo.mode == com.example.game.GameMode.RELAX) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                viewModel.triggerAudioFeedback("click")
+                                                showRelaxSettingsDialog = true
+                                            },
+                                            shape = RoundedCornerShape(16.dp),
+                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Tune,
+                                                contentDescription = "Sandbox Settings",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            AdaptiveText(
+                                                text = when (currentLang) {
+                                                    Language.RU -> "НАСТРОЙКИ"
+                                                    Language.UA -> "НАЛАШТУВАННЯ"
+                                                    Language.KK -> "БАПТАУЛАР"
+                                                    Language.DE -> "EINSTELLUNGEN"
+                                                    Language.ZH -> "设置"
+                                                    else -> "SETTINGS"
+                                                },
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                     if (isPlayable) {
                                         val playLabel = when (currentLang) {
                                             Language.RU -> "ИГРАТЬ"

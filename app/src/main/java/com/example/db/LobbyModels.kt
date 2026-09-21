@@ -288,12 +288,12 @@ data class FriendUser(
 
             return FriendUser(
                 uid = map["uid"] as? String ?: "",
-                username = (map["username"] as? String) ?: (map["playerName"] as? String) ?: "",
-                onlineTier = (map["onlineTier"] as? String) ?: (map["rank"] as? String) ?: "BRONZE",
-                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: "",
-                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: "",
-                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: "standard",
-                avatarBase64 = (map["avatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: "",
+                username = (map["username"] as? String) ?: (map["playerName"] as? String) ?: (map["player_name"] as? String) ?: "",
+                onlineTier = (map["onlineTier"] as? String) ?: (map["rank"] as? String) ?: (map["online_tier"] as? String) ?: "BRONZE",
+                avatarEmoji = (map["avatarEmoji"] as? String) ?: (map["custom_avatar_emoji"] as? String) ?: (map["avatar_emoji"] as? String) ?: "",
+                avatarBgColor = (map["avatarBgColor"] as? String) ?: (map["custom_avatar_bg_color"] as? String) ?: (map["avatar_bg_color"] as? String) ?: "",
+                avatarFrame = (map["avatarFrame"] as? String) ?: (map["equipped_avatar_frame"] as? String) ?: (map["avatar_frame"] as? String) ?: "standard",
+                avatarBase64 = (map["avatarBase64"] as? String) ?: (map["custom_avatar_base64"] as? String) ?: (map["avatar_base64"] as? String) ?: "",
                 hasGradient = (map["hasGradient"] as? Boolean) ?: (map["has_nickname_gradient"] as? Boolean) ?: false,
                 isOnline = computedOnline,
                 status = map["status"] as? String ?: "accepted",

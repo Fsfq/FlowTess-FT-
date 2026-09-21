@@ -2606,40 +2606,36 @@ fun MainMenuScreen(
                             }
 
                             // Coins Badge
-                            Surface(
-                                onClick = {
-                                    viewModel.triggerAudioFeedback("click")
-                                    viewModel.openRewardedAdDialog()
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
-                                modifier = Modifier.padding(bottom = 16.dp)
+                            Row(
+                                modifier = Modifier
+                                    .padding(bottom = 16.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        viewModel.triggerAudioFeedback("click")
+                                        viewModel.openRewardedAdDialog()
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.MonetizationOn,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFFD700),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        text = java.text.NumberFormat.getIntegerInstance().format(credits),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFFD700)
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Watch Ad",
-                                        modifier = Modifier.size(18.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.MonetizationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = java.text.NumberFormat.getIntegerInstance().format(credits),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFFD700)
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Watch Ad",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
 
@@ -2783,40 +2779,36 @@ fun MainMenuScreen(
                         }
 
                         // Coins Chip
-                        Surface(
-                            onClick = {
-                                viewModel.triggerAudioFeedback("click")
-                                viewModel.openRewardedAdDialog()
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
-                            modifier = Modifier.padding(bottom = 16.dp)
+                        Row(
+                            modifier = Modifier
+                                .padding(bottom = 16.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    viewModel.triggerAudioFeedback("click")
+                                    viewModel.openRewardedAdDialog()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MonetizationOn,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = java.text.NumberFormat.getIntegerInstance().format(credits),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFD700)
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Watch Ad",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = java.text.NumberFormat.getIntegerInstance().format(credits),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFD700)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Watch Ad",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         val classicBtnText = when (currentLang) {

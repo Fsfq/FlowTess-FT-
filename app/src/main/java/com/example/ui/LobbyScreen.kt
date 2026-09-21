@@ -1236,7 +1236,12 @@ fun LobbyHubView(
                     )
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .imePadding()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
                             text = joinByCodeDesc,
                             style = MaterialTheme.typography.bodySmall,
@@ -1351,7 +1356,12 @@ fun LobbyHubView(
                     )
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .imePadding()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
                             text = protectedRoomPrompt,
                             style = MaterialTheme.typography.bodySmall,

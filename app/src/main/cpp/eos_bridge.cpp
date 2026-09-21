@@ -30,6 +30,8 @@ static EOS_NotificationId g_P2pClosedNotificationId = EOS_INVALID_NOTIFICATIONID
 static EOS_NotificationId g_LobbyMemberStatusNotificationId = EOS_INVALID_NOTIFICATIONID;
 static jobject g_MemberStatusCallbackRef = nullptr;
 static std::mutex g_CallbackMutex;
+static std::recursive_mutex g_EosSdkMutex;
+static const char* g_P2pSocketName = "FlowTessP2PSocket";
 
 struct JniThreadGuard {
     JNIEnv* env = nullptr;
@@ -153,13 +155,15 @@ Java_com_example_eos_EosBridge_nativeCreatePlatform(
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeTick(JNIEnv* env, jobject thiz) {
-    if (g_PlatformHandle != nullptr) {
+    if (g_PlatformHandle != nullptr && g_IsInitialized) {
+        std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
         EOS_Platform_Tick(g_PlatformHandle);
     }
 }
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeShutdown(JNIEnv* env, jobject thiz) {
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
     if (g_PlatformHandle != nullptr) {
         EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
         if (LobbyHandle != nullptr && g_LobbyMemberStatusNotificationId != EOS_INVALID_NOTIFICATIONID) {
@@ -268,7 +272,8 @@ static void EOS_CALL ConnectCreateDeviceIdCallback(const EOS_Connect_CreateDevic
 
 static void EOS_CALL ConnectCreateUserCallback(const EOS_Connect_CreateUserCallbackInfo* Data) {
     LoginContext* ctx = static_cast<LoginContext*>(Data->ClientData);
-    JNIEnv* env = GetEnv();
+    JniThreadGuard guard;
+    JNIEnv* env = guard.get();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string puidStr = "";
@@ -302,7 +307,8 @@ static void EOS_CALL ConnectCreateUserCallback(const EOS_Connect_CreateUserCallb
 
 static void EOS_CALL ConnectLoginCallback(const EOS_Connect_LoginCallbackInfo* Data) {
     LoginContext* ctx = static_cast<LoginContext*>(Data->ClientData);
-    JNIEnv* env = GetEnv();
+    JniThreadGuard guard;
+    JNIEnv* env = guard.get();
 
     if (Data->ResultCode == EOS_EResult::EOS_NotFound && Data->ContinuanceToken != nullptr) {
         LOGI("User not found in EOS Connect, creating user with ContinuanceToken...");
@@ -352,14 +358,26 @@ JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeLoginAnonymous(
     JNIEnv* env, jobject thiz, jstring displayName, jobject callback) {
 
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (g_PlatformHandle == nullptr) {
         LOGE("PlatformHandle is null in nativeLoginAnonymous");
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onLoginResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
         return;
     }
 
     EOS_HConnect ConnectHandle = EOS_Platform_GetConnectInterface(g_PlatformHandle);
     if (ConnectHandle == nullptr) {
         LOGE("ConnectHandle is null");
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onLoginResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
         return;
     }
 
@@ -525,6 +543,8 @@ Java_com_example_eos_EosBridge_nativeSendPacketFull(
     jstring targetPuid, jstring socketName, jbyteArray data,
     jint channel, jboolean isReliable) {
 
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (!targetPuid || !socketName || !data) {
         LOGE("Invalid null argument in nativeSendPacketFull");
         return JNI_FALSE;
@@ -586,6 +606,8 @@ JNIEXPORT jbyteArray JNICALL
 Java_com_example_eos_EosBridge_nativeReceivePacket(
     JNIEnv* env, jobject thiz, jstring socketName) {
 
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (!socketName) {
         LOGE("Invalid null socketName in nativeReceivePacket");
         return nullptr;
@@ -640,6 +662,8 @@ Java_com_example_eos_EosBridge_nativeReceivePacket(
 JNIEXPORT jboolean JNICALL
 Java_com_example_eos_EosBridge_nativeAcceptConnection(
     JNIEnv* env, jobject thiz, jstring remotePuid, jstring socketName) {
+
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
 
     if (!remotePuid || !socketName) {
         LOGE("Invalid null argument in nativeAcceptConnection");
@@ -699,7 +723,8 @@ struct SearchContext {
 
 static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackInfo* Data) {
     CreateLobbyContext* ctx = static_cast<CreateLobbyContext*>(Data->ClientData);
-    JNIEnv* env = GetEnv();
+    JniThreadGuard guard;
+    JNIEnv* env = guard.get();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string lobbyId = Data->LobbyId ? Data->LobbyId : "";
@@ -765,9 +790,22 @@ static void EOS_CALL OnCreateLobbyCallback(const EOS_Lobby_CreateLobbyCallbackIn
                     CreateLobbyContext* ctx = uCtx->createCtx;
                     std::string lobbyId = uCtx->lobbyId;
                     delete uCtx;
-
-                    JNIEnv* env = GetEnv();
+                    JniThreadGuard guard;
+                    JNIEnv* env = guard.get();
                     bool success = (UpData->ResultCode == EOS_EResult::EOS_Success);
+
+                    // If attributes update failed, destroy the newly created ghost lobby to avoid orphaned lobbies
+                    if (!success && g_PlatformHandle != nullptr && !lobbyId.empty()) {
+                        EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
+                        if (LobbyHandle != nullptr) {
+                            EOS_Lobby_DestroyLobbyOptions DesOpts = {};
+                            DesOpts.ApiVersion = EOS_LOBBY_DESTROYLOBBY_API_LATEST;
+                            DesOpts.LocalUserId = g_LocalProductUserId;
+                            DesOpts.LobbyId = lobbyId.c_str();
+                            EOS_Lobby_DestroyLobby(LobbyHandle, &DesOpts, nullptr, nullptr);
+                            LOGE("Destroyed ghost lobby %s after attribute update failure", lobbyId.c_str());
+                        }
+                    }
 
                     if (ctx && ctx->callbackRef && env) {
                         jclass cbClass = env->GetObjectClass(ctx->callbackRef);
@@ -829,13 +867,39 @@ Java_com_example_eos_EosBridge_nativeCreateLobby(
     jstring shortCode, jstring hostName, jstring hostTier,
     jobject callback) {
 
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
         LOGE("Cannot create lobby: platform or local user is null");
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(
+                cbClass,
+                "onLobbyResult",
+                "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
+            );
+            if (methodId) {
+                env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr, nullptr, nullptr, nullptr, nullptr, 0);
+            }
+        }
         return;
     }
 
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
-    if (LobbyHandle == nullptr) return;
+    if (LobbyHandle == nullptr) {
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(
+                cbClass,
+                "onLobbyResult",
+                "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"
+            );
+            if (methodId) {
+                env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr, nullptr, nullptr, nullptr, nullptr, 0);
+            }
+        }
+        return;
+    }
 
     const char* rNameChars = env->GetStringUTFChars(roomName, nullptr);
     const char* codeChars = env->GetStringUTFChars(shortCode, nullptr);
@@ -860,7 +924,9 @@ Java_com_example_eos_EosBridge_nativeCreateLobby(
     CreateOptions.ApiVersion = EOS_LOBBY_CREATELOBBY_API_LATEST;
     CreateOptions.LocalUserId = g_LocalProductUserId;
     CreateOptions.MaxLobbyMembers = 2;
-    CreateOptions.PermissionLevel = EOS_ELobbyPermissionLevel::EOS_LPL_PUBLICADVERTISED;
+    CreateOptions.PermissionLevel = (isPrivate == JNI_TRUE)
+        ? EOS_ELobbyPermissionLevel::EOS_LPL_INVITEONLY
+        : EOS_ELobbyPermissionLevel::EOS_LPL_PUBLICADVERTISED;
     CreateOptions.bPresenceEnabled = EOS_FALSE;
     CreateOptions.bAllowInvites = EOS_TRUE;
     CreateOptions.BucketId = "TetrisLobby:1";
@@ -873,7 +939,8 @@ Java_com_example_eos_EosBridge_nativeCreateLobby(
 
 static void EOS_CALL OnJoinLobbyCallback(const EOS_Lobby_JoinLobbyByIdCallbackInfo* Data) {
     JoinLobbyContext* ctx = static_cast<JoinLobbyContext*>(Data->ClientData);
-    JNIEnv* env = GetEnv();
+    JniThreadGuard guard;
+    JNIEnv* env = guard.get();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string lobbyId = Data->LobbyId ? Data->LobbyId : "";
@@ -951,7 +1018,7 @@ static void EOS_CALL OnJoinLobbyCallback(const EOS_Lobby_JoinLobbyByIdCallbackIn
                     if (EOS_ProductUserId_IsValid(hostUserId)) {
                         EOS_P2P_SocketId SocketId = {};
                         SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
-                        strncpy(SocketId.SocketName, "TetrisP2PSocket", sizeof(SocketId.SocketName) - 1);
+                        strncpy(SocketId.SocketName, g_P2pSocketName, sizeof(SocketId.SocketName) - 1);
 
                         EOS_P2P_AcceptConnectionOptions AcceptOptions = {};
                         AcceptOptions.ApiVersion = EOS_P2P_ACCEPTCONNECTION_API_LATEST;
@@ -1000,14 +1067,33 @@ JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeJoinLobby(
     JNIEnv* env, jobject thiz, jstring lobbyId, jobject callback) {
 
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (!lobbyId || !callback) {
         LOGE("Invalid null argument in nativeJoinLobby");
         return;
     }
 
-    if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) return;
+    if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
+        LOGE("Cannot join lobby: platform or local user is null");
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onLobbyResult", "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr, nullptr, nullptr, nullptr, nullptr, 0);
+        }
+        return;
+    }
+
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
-    if (LobbyHandle == nullptr) return;
+    if (LobbyHandle == nullptr) {
+        LOGE("Cannot join lobby: LobbyHandle is null");
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onLobbyResult", "(ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr, nullptr, nullptr, nullptr, nullptr, 0);
+        }
+        return;
+    }
 
     const char* idChars = env->GetStringUTFChars(lobbyId, nullptr);
     std::string idStr = idChars ? idChars : "";
@@ -1031,6 +1117,7 @@ static void EOS_CALL OnLeaveLobbyCallback(const EOS_Lobby_LeaveLobbyCallbackInfo
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeLeaveLobby(JNIEnv* env, jobject thiz, jstring lobbyId) {
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
     if (!lobbyId) {
         LOGE("Invalid null lobbyId in nativeLeaveLobby");
         return;
@@ -1074,7 +1161,7 @@ static void EOS_CALL OnLobbyMemberStatusReceived(const EOS_Lobby_LobbyMemberStat
             if (P2pHandle != nullptr) {
                 EOS_P2P_SocketId SocketId = {};
                 SocketId.ApiVersion = EOS_P2P_SOCKETID_API_LATEST;
-                strncpy(SocketId.SocketName, "TetrisP2PSocket", sizeof(SocketId.SocketName) - 1);
+                strncpy(SocketId.SocketName, g_P2pSocketName, sizeof(SocketId.SocketName) - 1);
 
                 EOS_P2P_AcceptConnectionOptions AcceptOptions = {};
                 AcceptOptions.ApiVersion = EOS_P2P_ACCEPTCONNECTION_API_LATEST;
@@ -1153,7 +1240,8 @@ Java_com_example_eos_EosBridge_nativeSetupMemberStatusNotification(JNIEnv* env, 
 
 static void EOS_CALL OnLobbySearchFindCallback(const EOS_LobbySearch_FindCallbackInfo* Data) {
     SearchContext* ctx = static_cast<SearchContext*>(Data->ClientData);
-    JNIEnv* env = GetEnv();
+    JniThreadGuard guard;
+    JNIEnv* env = guard.get();
 
     bool success = (Data->ResultCode == EOS_EResult::EOS_Success);
     std::string jsonResult = "[]";
@@ -1276,8 +1364,10 @@ static void EOS_CALL OnLobbySearchFindCallback(const EOS_LobbySearch_FindCallbac
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jobject callback) {
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
+
     if (g_PlatformHandle == nullptr || g_LocalProductUserId == nullptr) {
-        if (callback) {
+        if (callback && env) {
             jclass cbClass = env->GetObjectClass(callback);
             jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
             if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
@@ -1286,7 +1376,14 @@ Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jo
     }
 
     EOS_HLobby LobbyHandle = EOS_Platform_GetLobbyInterface(g_PlatformHandle);
-    if (LobbyHandle == nullptr) return;
+    if (LobbyHandle == nullptr) {
+        if (callback && env) {
+            jclass cbClass = env->GetObjectClass(callback);
+            jmethodID methodId = env->GetMethodID(cbClass, "onSearchResult", "(ZLjava/lang/String;)V");
+            if (methodId) env->CallVoidMethod(callback, methodId, JNI_FALSE, nullptr);
+        }
+        return;
+    }
 
     EOS_Lobby_CreateLobbySearchOptions SearchOpts = {};
     SearchOpts.ApiVersion = EOS_LOBBY_CREATELOBBYSEARCH_API_LATEST;
@@ -1328,6 +1425,7 @@ Java_com_example_eos_EosBridge_nativeSearchLobbies(JNIEnv* env, jobject thiz, jo
 
 JNIEXPORT void JNICALL
 Java_com_example_eos_EosBridge_nativeSearchLobbyByCode(JNIEnv* env, jobject thiz, jstring code, jobject callback) {
+    std::lock_guard<std::recursive_mutex> lock(g_EosSdkMutex);
     if (!code || !callback) {
         LOGE("Invalid null argument in nativeSearchLobbyByCode");
         return;
@@ -1360,6 +1458,19 @@ Java_com_example_eos_EosBridge_nativeSearchLobbyByCode(JNIEnv* env, jobject thiz
         }
         return;
     }
+
+    // Set BUCKET_ID search filter (mandatory for EOS lobby queries)
+    EOS_Lobby_AttributeData bucketAttr = {};
+    bucketAttr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
+    bucketAttr.Key = EOS_LOBBY_SEARCH_BUCKET_ID;
+    bucketAttr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+    bucketAttr.Value.AsUtf8 = "TetrisLobby:1";
+
+    EOS_LobbySearch_SetParameterOptions BucketParamOpts = {};
+    BucketParamOpts.ApiVersion = EOS_LOBBYSEARCH_SETPARAMETER_API_LATEST;
+    BucketParamOpts.Parameter = &bucketAttr;
+    BucketParamOpts.ComparisonOp = EOS_EComparisonOp::EOS_CO_EQUAL;
+    EOS_LobbySearch_SetParameter(SearchHandle, &BucketParamOpts);
 
     // Set CODE search filter directly in Epic Cloud search index
     EOS_Lobby_AttributeData codeAttr = {};

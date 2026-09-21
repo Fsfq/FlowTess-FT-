@@ -68,6 +68,14 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val gridLineDensity by viewModel.gridLineDensity.collectAsStateWithLifecycle()
     val controlVerticalPosition by viewModel.controlVerticalPosition.collectAsStateWithLifecycle()
 
+    val sandboxGhostEnabled by viewModel.sandboxGhostEnabled.collectAsStateWithLifecycle()
+    val sandboxGridLinesEnabled by viewModel.sandboxGridLinesEnabled.collectAsStateWithLifecycle()
+
+    val effectiveGhostVisible = if (gameState.gameMode == com.example.game.GameMode.RELAX) sandboxGhostEnabled else ghostVisible
+    val effectiveGridDensity = if (gameState.gameMode == com.example.game.GameMode.RELAX) {
+        if (sandboxGridLinesEnabled) "standard" else "none"
+    } else gridLineDensity
+
     val screenShakeIntensity by viewModel.screenShakeIntensity.collectAsStateWithLifecycle()
     val scanlinesFilter by viewModel.scanlinesFilter.collectAsStateWithLifecycle()
     val boardColorSkin by viewModel.boardColorSkin.collectAsStateWithLifecycle()
@@ -112,84 +120,18 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         }
     }
 
-    var showExitConfirmDialog by remember { mutableStateOf(false) }
+    var showRelaxSettings by remember { mutableStateOf(false) }
+
+    if (showRelaxSettings) {
+        RelaxSettingsScreen(
+            viewModel = viewModel,
+            onBack = { showRelaxSettings = false }
+        )
+        return
+    }
 
     BackHandler(enabled = !gameState.isGameOver) {
         viewModel.pauseGame()
-        showExitConfirmDialog = true
-    }
-
-    if (showExitConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showExitConfirmDialog = false
-                viewModel.resumeGame()
-            },
-            title = {
-                Text(
-                    text = when (currentLang) {
-                        Language.RU -> "Пауза / Выход"
-                        Language.UA -> "Пауза / Вихід"
-                        Language.KK -> "Кідіріс / Шығу"
-                        Language.DE -> "Pause / Beenden"
-                        Language.ZH -> "暂停 / 退出游戏"
-                        else -> "Pause / Exit"
-                    },
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = when (currentLang) {
-                        Language.RU -> "Игра приостановлена. Выйти в главное меню? Текущий прогресс матча будет зафиксирован."
-                        Language.UA -> "Гру призупинено. Вийти в головне меню? Поточний прогрес матчу буде зафіксовано."
-                        Language.KK -> "Ойын кідіртілді. Басты мәзірге шығу керек пе?"
-                        Language.DE -> "Spiel pausiert. Zum Hauptmenü zurückkehren?"
-                        Language.ZH -> "游戏已暂停。是否返回主菜单？当前得分将会结算。"
-                        else -> "Game paused. Return to main menu? Current score will be saved."
-                    }
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showExitConfirmDialog = false
-                        viewModel.exitGameToMenu(onBack)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(
-                        when (currentLang) {
-                            Language.RU -> "Выйти"
-                            Language.UA -> "Вийти"
-                            Language.KK -> "Шығу"
-                            Language.DE -> "Beenden"
-                            Language.ZH -> "退出"
-                            else -> "Exit"
-                        }
-                    )
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        showExitConfirmDialog = false
-                        viewModel.resumeGame()
-                    }
-                ) {
-                    Text(
-                        when (currentLang) {
-                            Language.RU -> "Продолжить"
-                            Language.UA -> "Продовжити"
-                            Language.KK -> "Жалғастыру"
-                            Language.DE -> "Fortsetzen"
-                            Language.ZH -> "继续游戏"
-                            else -> "Resume"
-                        }
-                    )
-                }
-            }
-        )
     }
 
     DisposableEffect(Unit) {
@@ -211,7 +153,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             shakeX = shakeX,
             shakeY = shakeY,
             blockStyle = blockStyle,
-            ghostVisible = ghostVisible,
+            ghostVisible = effectiveGhostVisible,
             ghostOutlineOnly = ghostOutlineOnly,
             nextCount = nextCount,
             controlStyle = controlStyle,
@@ -220,7 +162,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             leftHandedControls = leftHandedControls,
             controlButtonScale = controlButtonScale,
             controlButtonStyle = controlButtonStyle,
-            gridLineDensity = gridLineDensity,
+            gridLineDensity = effectiveGridDensity,
             controlVerticalPosition = controlVerticalPosition,
             scanlinesFilter = scanlinesFilter,
             boardColorSkin = boardColorSkin,
@@ -316,7 +258,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         if (gameState.gameMode == com.example.game.GameMode.RELAX) {
-                            var showRelaxDialog by remember { mutableStateOf(false) }
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -324,7 +265,7 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 IconButton(
                                     onClick = {
                                         viewModel.triggerAudioFeedback("click")
-                                        showRelaxDialog = true
+                                        showRelaxSettings = true
                                     },
                                     modifier = Modifier.size(38.dp)
                                 ) {
@@ -335,13 +276,6 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
-                            }
-                            
-                            if (showRelaxDialog) {
-                                RelaxSettingsDialog(
-                                    viewModel = viewModel,
-                                    onDismiss = { showRelaxDialog = false }
-                                )
                             }
                         }
 
@@ -485,17 +419,25 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(if (isCompactScreen) 6.dp else 10.dp)
                     ) {
                         val isPerfectionistMode = gameState.gameMode == com.example.game.GameMode.PERFECTIONIST
-                        val perfectionistHint = remember(gameState.grid, gameState.currentPiece, gameState.holdPiece, gameState.hasHeldThisTurn) {
-                        if (isPerfectionistMode && gameState.currentPiece != null) {
-                            viewModel.gameEngine.calculateOptimalPlacement(
-                                grid = gameState.grid,
-                                piece = gameState.currentPiece!!,
-                                holdPiece = gameState.holdPiece,
-                                nextPiece = gameState.nextPieces.firstOrNull(),
-                                canHold = !gameState.hasHeldThisTurn
-                            )
-                        } else null
-                    }
+                        val perfectionistHint = remember(
+                            gameState.grid,
+                            gameState.currentPiece,
+                            gameState.holdPiece,
+                            gameState.hasHeldThisTurn,
+                            gameState.nextPieces.firstOrNull(),
+                            gameState.nextPieces.getOrNull(1)
+                        ) {
+                            if (isPerfectionistMode && gameState.currentPiece != null) {
+                                viewModel.gameEngine.calculateOptimalPlacement(
+                                    grid = gameState.grid,
+                                    piece = gameState.currentPiece!!,
+                                    holdPiece = gameState.holdPiece,
+                                    nextPiece = gameState.nextPieces.firstOrNull(),
+                                    canHold = !gameState.hasHeldThisTurn,
+                                    secondNextPiece = gameState.nextPieces.getOrNull(1)
+                                )
+                            } else null
+                        }
                     val isHoldRecommended = isPerfectionistMode && perfectionistHint?.shouldHold == true && !gameState.hasHeldThisTurn
 
                     val holdPulseTransition = rememberInfiniteTransition(label = "HoldPulse")
@@ -736,10 +678,10 @@ fun GameScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     GameBoardView(
                         gameState = gameState,
                         blockStyle = blockStyle,
-                        ghostVisible = ghostVisible,
+                        ghostVisible = effectiveGhostVisible,
                         ghostOutlineOnly = ghostOutlineOnly,
                         smoothFallingEnabled = smoothFallingEnabled,
-                        gridLineDensity = gridLineDensity,
+                        gridLineDensity = effectiveGridDensity,
                         boardColorSkin = boardColorSkin,
                         graphicsQuality = graphicsQuality,
                         viewModel = viewModel,

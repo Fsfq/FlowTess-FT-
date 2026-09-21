@@ -105,6 +105,14 @@ fun EosGameScreen(
                 viewModel.addRawCredits(bet * 2)
             }
         }
+        EosBattleEngine.onRematchStarted = { bet ->
+            if (viewModel.credits.value >= bet) {
+                viewModel.spendCredits(bet)
+                true
+            } else {
+                false
+            }
+        }
 
         val room = currentRoom
         if (room != null) {
@@ -287,7 +295,7 @@ fun EosGameScreen(
                             Column(horizontalAlignment = Alignment.Start) {
                                 val myNickBrush = if (hasNicknameGradient) rememberAnimatedNicknameBrush(baseColor = themeColor) else null
                                 Text(
-                                    text = playerName.uppercase(),
+                                    text = playerName,
                                     style = if (myNickBrush != null) {
                                         MaterialTheme.typography.labelSmall.copy(brush = myNickBrush, fontWeight = FontWeight.Bold, fontSize = if (isCompactScreen) 10.sp else 11.sp)
                                     } else {
@@ -359,7 +367,7 @@ fun EosGameScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = oppBattleState.name.uppercase(),
+                                    text = oppBattleState.name,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = MaterialTheme.colorScheme.onSurface,
                                         fontWeight = FontWeight.Bold,

@@ -29,12 +29,34 @@ object FirebaseSync {
         db
     }
 
-    // Конвертация файлов в base64 для хранения аватаров/фонов в Firestore
+    // Конвертация файлов в base64 с безопасным сжатием (до 512x512) для защиты от лимита 1МБ в Firestore
     fun fileToBase64(file: java.io.File): String? {
         if (!file.exists()) return null
         return try {
-            val bytes = file.readBytes()
-            android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            val options = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
+            var sampleSize = 1
+            val maxDim = 512
+            while (options.outWidth / sampleSize > maxDim || options.outHeight / sampleSize > maxDim) {
+                sampleSize *= 2
+            }
+            val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+            }
+            val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
+            if (bitmap != null) {
+                val stream = java.io.ByteArrayOutputStream()
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 75, stream)
+                val bytes = stream.toByteArray()
+                bitmap.recycle()
+                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            } else {
+                val bytes = file.readBytes()
+                if (bytes.size > 500_000) return null // Drop oversized payloads
+                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -298,7 +320,8 @@ object FirebaseSync {
 
                 val cloudCredits = (data["credits"] as? Number)?.toInt()
                 if (cloudCredits != null) {
-                    editorTetris.putInt("credits", cloudCredits)
+                    val localCredits = tetrisPrefs.getInt("credits", 750)
+                    editorTetris.putInt("credits", maxOf(localCredits, cloudCredits))
                 }
 
                 val localCubeSkins = profilePrefs.getStringSet("purchased_cube_skins", setOf("neon")) ?: setOf("neon")
@@ -318,18 +341,20 @@ object FirebaseSync {
                 editorProfile.putStringSet("purchased_ranks", localRanks + cloudRanks)
 
                 (data["board_color_skin"] as? String)?.let { editorTetris.putString("board_color_skin", it) }
-                (data["block_style"] as? String)?.let { editorTetris.putString("block_style", it) }
+                (data["block_style"] as? String)?.let { editorTetris.putString("block_style", if (it == "retro") "neon" else it) }
                 val hasGradCloud = data["has_nickname_gradient"] as? Boolean ?: false
                 val hasGradLocal = profilePrefs.getBoolean("has_nickname_gradient", false)
                 editorProfile.putBoolean("has_nickname_gradient", hasGradCloud || hasGradLocal)
 
                 val cloudXp = (data["bonus_xp"] as? Number)?.toInt()
                 if (cloudXp != null) {
-                    editorProfile.putInt("bonus_xp", cloudXp)
+                    val localXp = profilePrefs.getInt("bonus_xp", 0)
+                    editorProfile.putInt("bonus_xp", maxOf(localXp, cloudXp))
                 }
                 val cloudPrestige = (data["prestige_level"] as? Number)?.toInt()
                 if (cloudPrestige != null) {
-                    editorProfile.putInt("prestige_level", cloudPrestige)
+                    val localPrestige = profilePrefs.getInt("prestige_level", 0)
+                    editorProfile.putInt("prestige_level", maxOf(localPrestige, cloudPrestige))
                 }
 
                 (data["custom_tag"] as? String)?.let { editorProfile.putString("custom_tag", it) }

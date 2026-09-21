@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 data class EosRoom(
@@ -56,6 +57,7 @@ object EosManager {
     private var searchLoopJob: Job? = null
     private var joinHandshakeJob: Job? = null
     private var disconnectTimeoutJob: Job? = null
+    private val isHandshakeAccepted = AtomicBoolean(false)
 
     private val isInitialized = AtomicBoolean(false)
 
@@ -75,6 +77,8 @@ object EosManager {
     val localPlayerTier: StateFlow<String> = _localPlayerTier.asStateFlow()
 
     // ── CURRENT ACTIVE ROOM ──
+    @Volatile
+    var lastRoomLeaveInitiator: String? = null
     private val _currentRoom = MutableStateFlow<EosRoom?>(null)
     val currentRoom: StateFlow<EosRoom?> = _currentRoom.asStateFlow()
 
@@ -115,7 +119,12 @@ object EosManager {
     var battlePacketListener: ((JSONObject) -> Unit)? = null
 
     fun init(activity: Activity) {
-        if (isInitialized.getAndSet(true)) return
+        if (isInitialized.getAndSet(true)) {
+            if (tickJob == null || tickJob?.isActive == false) {
+                startTickLoop()
+            }
+            return
+        }
 
         try {
             if (!EosBridge.isLoaded()) {
@@ -248,6 +257,7 @@ object EosManager {
                             text = "Соперник покинул лобби"
                         )
                     } else if (memberPuid == room.hostPuid) {
+                        lastRoomLeaveInitiator = "REMOTE"
                         _currentRoom.value = null
                         _roomChat.value = emptyList()
                     }
@@ -337,117 +347,141 @@ object EosManager {
 
     // ── LOBBY ROOM ACTIONS ──
 
+    fun ensureLoggedIn(timeoutMs: Long = 4000L, onComplete: (Boolean) -> Unit) {
+        val existing = _localPuid.value
+        if (existing != null && _isLoggedIn.value) {
+            onComplete(true)
+            return
+        }
+        if (!_isSdkReady.value) {
+            onComplete(false)
+            return
+        }
+        coroutineScope.launch {
+            loginAnonymous(_localPlayerName.value)
+            val startTime = System.currentTimeMillis()
+            while (_localPuid.value == null && (System.currentTimeMillis() - startTime) < timeoutMs) {
+                delay(150)
+            }
+            onComplete(_localPuid.value != null)
+        }
+    }
+
     fun createRoom(
         name: String,
         bet: Int = 0,
         isPrivate: Boolean = false,
         onComplete: (Boolean, String?) -> Unit = { _, _ -> }
     ) {
-        val puid = _localPuid.value
-        if (puid == null) {
-            onComplete(false, "Not logged in to EOS")
-            return
-        }
+        ensureLoggedIn { ready ->
+            val puid = _localPuid.value
+            if (!ready || puid == null) {
+                onComplete(false, "Not logged in to EOS")
+                return@ensureLoggedIn
+            }
 
-        val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        val shortCode = (1..6).map { chars.random() }.joinToString("")
+            val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+            val shortCode = (1..6).map { chars.random() }.joinToString("")
 
-        EosBridge.createLobby(
-            roomName = name,
-            bet = bet,
-            isPrivate = isPrivate,
-            shortCode = shortCode,
-            hostName = _localPlayerName.value,
-            hostTier = _localPlayerTier.value,
-            callback = object : EosLobbyCallback {
-                override fun onLobbyResult(
-                    success: Boolean,
-                    lobbyId: String?,
-                    hostPuid: String?,
-                    roomName: String?,
-                    hostName: String?,
-                    hostTier: String?,
-                    bet: Int
-                ) {
-                    if (success && lobbyId != null) {
-                        val newRoom = EosRoom(
-                            id = lobbyId,
-                            name = name,
-                            hostPuid = puid,
-                            hostName = _localPlayerName.value,
-                            hostTier = _localPlayerTier.value,
-                            bet = bet,
-                            isPrivate = isPrivate,
-                            code = shortCode,
-                            isHostReady = true,
-                            isGuestReady = false,
-                            status = "waiting"
-                        )
-                        _currentRoom.value = newRoom
-                        _roomChat.value = listOf(
-                            EosChatMessage(
-                                senderName = "System",
-                                senderPuid = "SYSTEM",
-                                text = "Комната создана! Код: $shortCode. Ожидание соперника."
+            EosBridge.createLobby(
+                roomName = name,
+                bet = bet,
+                isPrivate = isPrivate,
+                shortCode = shortCode,
+                hostName = _localPlayerName.value,
+                hostTier = _localPlayerTier.value,
+                callback = object : EosLobbyCallback {
+                    override fun onLobbyResult(
+                        success: Boolean,
+                        lobbyId: String?,
+                        hostPuid: String?,
+                        roomName: String?,
+                        hostName: String?,
+                        hostTier: String?,
+                        bet: Int
+                    ) {
+                        if (success && lobbyId != null) {
+                            val newRoom = EosRoom(
+                                id = lobbyId,
+                                name = name,
+                                hostPuid = puid,
+                                hostName = _localPlayerName.value,
+                                hostTier = _localPlayerTier.value,
+                                bet = bet,
+                                isPrivate = isPrivate,
+                                code = shortCode,
+                                isHostReady = true,
+                                isGuestReady = false,
+                                status = "waiting"
                             )
-                        )
-                        onComplete(true, lobbyId)
-                    } else {
-                        onComplete(false, "Failed to create EOS Lobby")
+                            _currentRoom.value = newRoom
+                            _roomChat.value = listOf(
+                                EosChatMessage(
+                                    senderName = "System",
+                                    senderPuid = "SYSTEM",
+                                    text = "Комната создана! Код: $shortCode. Ожидание соперника."
+                                )
+                            )
+                            onComplete(true, lobbyId)
+                        } else {
+                            onComplete(false, "Failed to create EOS Lobby")
+                        }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
     fun joinRoom(
         roomInput: String,
         onComplete: (Boolean, String?) -> Unit = { _, _ -> }
     ) {
-        val puid = _localPuid.value
-        if (puid == null) {
-            onComplete(false, "Not logged in to EOS")
-            return
-        }
-
         val clean = roomInput.trim()
         if (clean.isBlank()) {
             onComplete(false, "Room ID / Code cannot be blank")
             return
         }
 
-        // 1. Check local list first
-        val matchingRoom = _availableRooms.value.firstOrNull {
-            it.code.equals(clean, ignoreCase = true) || it.id.endsWith(clean, ignoreCase = true)
-        }
+        ensureLoggedIn { ready ->
+            val puid = _localPuid.value
+            if (!ready || puid == null) {
+                onComplete(false, "Not logged in to EOS")
+                return@ensureLoggedIn
+            }
 
-        if (matchingRoom != null) {
-            executeJoinLobby(matchingRoom.id, clean, puid, onComplete)
-        } else if (clean.length in 4..8 && !clean.contains("-")) {
-            // 2. Query Epic Cloud Search Index directly by CODE (works across cities & private rooms)
-            Log.i(TAG, "Searching Epic Cloud for room code: $clean")
-            EosBridge.searchLobbyByCode(clean.uppercase(), object : EosSearchCallback {
-                override fun onSearchResult(success: Boolean, roomsJson: String?) {
-                    if (success && !roomsJson.isNullOrBlank()) {
-                        try {
-                            val arr = JSONArray(roomsJson)
-                            if (arr.length() > 0) {
-                                val obj = arr.getJSONObject(0)
-                                val realLobbyId = obj.getString("id")
-                                Log.i(TAG, "Found Epic lobby $realLobbyId for code $clean")
-                                executeJoinLobby(realLobbyId, clean, puid, onComplete)
-                                return
+            // 1. Check local list first
+            val matchingRoom = _availableRooms.value.firstOrNull {
+                it.code.equals(clean, ignoreCase = true) || it.id.endsWith(clean, ignoreCase = true)
+            }
+
+            if (matchingRoom != null) {
+                executeJoinLobby(matchingRoom.id, clean, puid, onComplete)
+            } else if (clean.length in 4..8 && !clean.contains("-")) {
+                // 2. Query Epic Cloud Search Index directly by CODE (works across cities & private rooms)
+                Log.i(TAG, "Searching Epic Cloud for room code: $clean")
+                EosBridge.searchLobbyByCode(clean.uppercase(), object : EosSearchCallback {
+                    override fun onSearchResult(success: Boolean, roomsJson: String?) {
+                        if (success && !roomsJson.isNullOrBlank()) {
+                            try {
+                                val arr = JSONArray(roomsJson)
+                                if (arr.length() > 0) {
+                                    val obj = arr.getJSONObject(0)
+                                    val realLobbyId = obj.getString("id")
+                                    Log.i(TAG, "Found Epic lobby $realLobbyId for code $clean")
+                                    executeJoinLobby(realLobbyId, clean, puid, onComplete)
+                                    return
+                                }
+                            } catch (e: Throwable) {
+                                Log.e(TAG, "Error parsing search by code result: ${e.message}")
                             }
-                        } catch (e: Throwable) {
-                            Log.e(TAG, "Error parsing search by code result: ${e.message}")
                         }
+                        onComplete(false, "Комната с кодом $clean не найдена")
                     }
-                    onComplete(false, "Комната с кодом $clean не найдена")
-                }
-            })
-        } else {
-            // 3. Direct UUID join
-            executeJoinLobby(clean.lowercase(), clean, puid, onComplete)
+                })
+            } else {
+                // 3. Direct UUID join
+                executeJoinLobby(clean.lowercase(), clean, puid, onComplete)
+            }
         }
     }
 
@@ -504,6 +538,7 @@ object EosManager {
 
     private fun startJoinHandshake(hostPuid: String, guestPuid: String) {
         joinHandshakeJob?.cancel()
+        isHandshakeAccepted.set(false)
         joinHandshakeJob = coroutineScope.launch {
             val joinPayload = JSONObject().apply {
                 put("type", "JOIN_REQUEST")
@@ -518,8 +553,7 @@ object EosManager {
                 attempts++
                 EosBridge.sendPacket(hostPuid, EosConstants.P2P_SOCKET_NAME, joinPayload.toByteArray(Charsets.UTF_8))
                 delay(450)
-                // If host acknowledged and sent accepted payload, stop handshake
-                if (_currentRoom.value?.hostName != "Host" && _currentRoom.value?.hostName != null) {
+                if (isHandshakeAccepted.get()) {
                     Log.i(TAG, "Join handshake completed successfully with host $hostPuid")
                     break
                 }
@@ -528,6 +562,7 @@ object EosManager {
     }
 
     fun leaveRoom() {
+        lastRoomLeaveInitiator = "LOCAL"
         val room = _currentRoom.value
         val puid = _localPuid.value ?: ""
 
@@ -713,7 +748,12 @@ object EosManager {
                     val guestName = json.optString("guestName")
                     val guestTier = json.optString("guestTier", "Bronze")
                     val room = _currentRoom.value
-                    if (room != null) {
+                    val myPuid = _localPuid.value
+                    if (room != null && room.hostPuid == myPuid && room.status != "playing") {
+                        if (room.guestPuid != null && room.guestPuid != guestPuid) {
+                            // Room already occupied by another player
+                            return
+                        }
                         val updated = room.copy(
                             guestPuid = guestPuid,
                             guestName = guestName,
@@ -741,6 +781,7 @@ object EosManager {
                 }
 
                 "JOIN_ACCEPTED" -> {
+                    isHandshakeAccepted.set(true)
                     joinHandshakeJob?.cancel()
                     val roomName = json.optString("roomName")
                     val hostPuid = json.optString("hostPuid")
@@ -766,20 +807,30 @@ object EosManager {
                 }
 
                 "READY_TOGGLE" -> {
-                    val isHost = json.optBoolean("isHost")
+                    val isHostPacket = json.optBoolean("isHost")
                     val isReady = json.optBoolean("isReady")
                     val room = _currentRoom.value
+                    val myPuid = _localPuid.value
                     if (room != null) {
-                        _currentRoom.value = if (isHost) room.copy(isHostReady = isReady) else room.copy(isGuestReady = isReady)
+                        val amIHost = (room.hostPuid == myPuid)
+                        if (amIHost && !isHostPacket) {
+                            // Host receives guest's ready status
+                            _currentRoom.value = room.copy(isGuestReady = isReady)
+                        } else if (!amIHost && isHostPacket) {
+                            // Guest receives host's ready status
+                            _currentRoom.value = room.copy(isHostReady = isReady)
+                        }
                     }
                 }
 
                 "GAME_START" -> {
                     val room = _currentRoom.value
-                    if (room != null) {
+                    val myPuid = _localPuid.value
+                    if (room != null && room.hostPuid != myPuid) {
+                        // Only guest accepts GAME_START from host
                         _currentRoom.value = room.copy(status = "playing")
+                        _gameStartSignal.tryEmit(Unit)
                     }
-                    _gameStartSignal.tryEmit(Unit)
                 }
 
                 "CHAT_ROOM" -> {
