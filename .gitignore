@@ -1,33 +1,54 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Gradle
+.gradle/
+build/
 /build
+app/build/
+*.iml
+.kotlin/
+
+# Local configuration and properties
+local.properties
+/local.properties
+.env
+.env.*
+!.env.example
+
+# Android Studio & IDEs
+.idea/
+*.iws
+*.ipr
 /captures
 .externalNativeBuild
-.cxx
-local.properties
-.env
-.env.example
-debug.keystore
+.cxx/
+app/.cxx/
+.DS_Store
+Thumbs.db
 
-# Firebase / подписи / ключи — никогда не в репозиторий
-google-services.json
-app/google-services.json
+# Keystores and signing credentials (CRITICAL)
 *.jks
 *.keystore
+debug.keystore
+*.p12
+*.key
+*.pem
+*.cer
+*.crt
 
-# Сборки и временные логи
+# Firebase secrets & services
+google-services.json
+app/google-services.json
+
+# APKs, AABs and build artifacts
+*.apk
+*.aab
+*.ap_
 app/debug/
 app/release/
+app/src/debug/
+app/src/release/
+
+# Logs and system traces
+*.log
 .agents/
 .codegraph/
-*.log
-
+audit_report.md
