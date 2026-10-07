@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowTess - Privacy Policy / Политика конфиденциальности</title>
+  <style>
+    :root {
+      --bg: #111318;
+      --surface: #191c20;
+      --surface-container: #1e2229;
+      --surface-container-high: #242831;
+      --primary: #9ccaff;
+      --primary-container: #00497d;
+      --on-surface: #e2e2e9;
+      --on-surface-variant: #c3c7cf;
+      --outline: #43474e;
+      --outline-variant: #2d3139;
+      --radius-card: 18px;
+      --radius-btn: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--on-surface);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 24px 16px 48px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+    }
+
+    header {
+      background-color: var(--surface);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--on-surface);
+      margin-bottom: 4px;
+    }
+
+    .header-subtitle {
+      font-size: 0.875rem;
+      color: var(--on-surface-variant);
+    }
+
+    .lang-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .lang-btn {
+      background-color: var(--surface-container);
+      color: var(--on-surface-variant);
+      border: 1px solid var(--outline-variant);
+      padding: 6px 14px;
+      border-radius: var(--radius-btn);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn:hover {
+      background-color: var(--surface-container-high);
+      color: var(--on-surface);
+    }
+
+    .lang-btn.active {
+      background-color: var(--primary);
+      color: #003258;
+      border-color: var(--primary);
+    }
+
+    .content-block {
+      display: none;
+    }
+
+    .content-block.active {
+      display: block;
+    }
+
+    .card {
+      background-color: var(--surface);
+      border: 1px solid var(--outline-variant);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      font-size: 0.925rem;
+      color: var(--on-surface);
+      margin-bottom: 8px;
+    }
+
+    .card ul {
+      margin-left: 20px;
+      font-size: 0.925rem;
+      color: var(--on-surface);
+    }
+
+    .card li {
+      margin-bottom: 6px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.8rem;
+      color: var(--on-surface-variant);
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-title" id="main-title">Политика конфиденциальности</div>
+      <div class="header-subtitle" id="main-subtitle">FlowTess for Android &bull; Редакция от 08.10.2026 &bull; FsFqX</div>
+      
+      <div class="lang-selector">
+        <button class="lang-btn active" onclick="switchLang('ru')">Русский</button>
+        <button class="lang-btn" onclick="switchLang('en')">English</button>
+        <button class="lang-btn" onclick="switchLang('ua')">Українська</button>
+        <button class="lang-btn" onclick="switchLang('kk')">Қазақша</button>
+        <button class="lang-btn" onclick="switchLang('de')">Deutsch</button>
+        <button class="lang-btn" onclick="switchLang('zh')">中文</button>
+      </div>
+    </header>
+
+    <!-- RU -->
+    <div id="content-ru" class="content-block active">
+      <div class="card">
+        <h3>1. Общие положения</h3>
+        <p>Оператором данных выступает разработчик FsFqX (контактный адрес: <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>). Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации пользователей при использовании мобильного приложения FlowTess для платформы Android.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Обрабатываемые данные</h3>
+        <ul>
+          <li><strong>Локальные данные</strong>: параметры игры, личные рекорды, открытые модификаторы, внутриигровой баланс и статистика сохраняются локально на устройстве в базе данных SQLite (Room) и системных настройках.</li>
+          <li><strong>Данные учетной записи</strong>: при добровольной регистрации через Firebase обрабатываются идентификатор пользователя (UID), адрес электронной почты, отображаемый псевдоним и аватар.</li>
+          <li><strong>Сетевая телеметрия</strong>: для организации P2P-матчей используются облачные реле Epic Online Services (EOS) без раскрытия публичного IP-адреса оппоненту.</li>
+          <li><strong>Финансовые данные не собираются</strong>: все игровые предметы приобретаются исключительно за виртуальную валюту.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. Цели обработки</h3>
+        <p>Информация используется исключительно для функционирования игры: сохранения игрового прогресса, синхронизации таблиц рекордов, обеспечения честного мультиплеера и восстановления доступа к профилю по обращению пользователя.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Сторонние сервисы</h3>
+        <p>В сетевой версии задействованы сервисы Google Firebase, Epic Games EOS и Yandex Mobile Ads SDK. В автономной редакции (FlowTess Lite) сетевой модуль полностью отключен: приложение не выполняет сетевых запросов и не передает данные третьим лицам.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Безопасность данных</h3>
+        <p>Конфиденциальные параметры шифруются на устройстве с использованием Android Keystore (AES-GCM). Файлы резервных копий .FTB валидируются криптографической подписью HMAC-SHA256. Пароли учетных записей не хранятся в открытом виде.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. Права пользователя</h3>
+        <p>Пользователь вправе в любой момент сбросить локальные данные через меню настроек или запросить полное удаление учетной записи и облачных сохранений, направив обращение на <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>.</p>
+      </div>
+    </div>
+
+    <!-- EN -->
+    <div id="content-en" class="content-block">
+      <div class="card">
+        <h3>1. General Provisions</h3>
+        <p>The data controller is developer FsFqX (contact email: <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>). This Privacy Policy governs the processing and protection of user information within the FlowTess mobile application for Android.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Processed Data</h3>
+        <ul>
+          <li><strong>Local Data</strong>: Game configuration, high scores, unlocked cosmetics, and player stats are stored locally in the on-device SQLite database (Room) and system preferences.</li>
+          <li><strong>Account Data</strong>: When voluntarily registering via Firebase, the app processes unique user ID (UID), email address, display handle, and avatar tokens.</li>
+          <li><strong>Network Telemetry</strong>: Peer-to-peer multiplayer matches utilize Epic Online Services (EOS) relay servers without exposing public IP addresses to opponents.</li>
+          <li><strong>Financial Information is not collected</strong>: All transactions utilize in-game virtual currency.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. Purpose of Processing</h3>
+        <p>Information is processed solely to operate game functionality: persisting gameplay state, syncing leaderboard scores, validating anti-cheat determinism, and restoring player accounts upon verified request.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Third-Party Services</h3>
+        <p>The full build interacts with Google Firebase, Epic Games EOS, and Yandex Mobile Ads SDK. In the offline edition (FlowTess Lite), all network stacks are disabled: no telemetry, cloud calls, or third-party transmissions occur.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Data Security</h3>
+        <p>Sensitive preferences are hardware-backed and encrypted via Android Keystore (AES-GCM). Portable .FTB backup files require HMAC-SHA256 integrity signatures. User passwords are never stored in plain text.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. User Rights</h3>
+        <p>Users retain the right to reset local data at any time via in-game settings or request complete permanent deletion of their cloud profile and credentials by contacting <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>.</p>
+      </div>
+    </div>
+
+    <!-- UA -->
+    <div id="content-ua" class="content-block">
+      <div class="card">
+        <h3>1. Загальні положення</h3>
+        <p>Оператором даних виступає розробник FsFqX (контактна пошта: <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>). Ця Політика конфіденційності регулює порядок обробки та захисту інформації користувачів мобільного додатку FlowTess для платформи Android.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Оброблювані дані</h3>
+        <ul>
+          <li><strong>Локальні дані</strong>: налаштування, прогрес, рекорди, відкриті предмети та статистика зберігаються на пристрої в базі даних SQLite (Room) та системних налаштуваннях.</li>
+          <li><strong>Дані облікового запису</strong>: при добровільній реєстрації через Firebase обробляються ідентифікатор (UID), адреса електронної пошти, псевдонім та аватар.</li>
+          <li><strong>Мережева телеметрія</strong>: для P2P-матчів використовуються захищені реле Epic Online Services (EOS) без розкриття публічної IP-адреси опоненту.</li>
+          <li><strong>Фінансові дані не збираються</strong>: всі предмети купуються виключно за внутрішньоігрову валюту.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. Цілі обробки</h3>
+        <p>Дані використовуються виключно для забезпечення гри: збереження прогресу, синхронізації таблиць лідерів, чесного змагального мультиплеєра та відновлення доступу за запитом користувача.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Сторонні сервіси</h3>
+        <p>У мережевій версії задіяні сервіси Google Firebase, Epic Games EOS та Yandex Mobile Ads SDK. В автономній редакції (FlowTess Lite) мережевий стек повністю вимкнено: жодні мережеві запити не здійснюються.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Безпека даних</h3>
+        <p>Конфіденційні параметри шифруються на пристрої за допомогою Android Keystore (AES-GCM). Файли резервних копій .FTB перевіряються підписом HMAC-SHA256. Паролі не зберігаються у відкритому вигляді.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. Права користувача</h3>
+        <p>Користувач має право скинути локальні дані через налаштування або запросити повне видалення облікового запису та хмарних даних, надіславши запит на <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>.</p>
+      </div>
+    </div>
+
+    <!-- KK -->
+    <div id="content-kk" class="content-block">
+      <div class="card">
+        <h3>1. Жалпы ережелер</h3>
+        <p>Деректер операторы FsFqX әзірлеушісі болып табылады (байланыс поштасы: <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>). Осы Саясат Android платформасына арналған FlowTess қосымшасында деректерді қорғау тәртібін белгілейді.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Өңделетін деректер</h3>
+        <ul>
+          <li><strong>Жергілікті деректер</strong>: баптаулар, ойын барысы, рекордтар, ашылған заттар құрылғыдағы SQLite (Room) қорында және жүйелік параметрлерде сақталады.</li>
+          <li><strong>Тіркелгі деректері</strong>: Firebase арқылы тіркелгенде сәйкестендіргіш (UID), электрондық пошта мекенжайы, ойыншы аты мен аватар өңделеді.</li>
+          <li><strong>Желілік деректер</strong>: P2P матчтары үшін Epic Online Services (EOS) қауіпсіз релелері пайдаланылады, қарсыласқа жеке IP мекенжайы ашылмайды.</li>
+          <li><strong>Қаржылық деректер жиналмайды</strong>: барлық заттар тек ойын ішіндегі валютаға сатып алынады.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. Өңдеу мақсаттары</h3>
+        <p>Ақпарат тек ойын қызметі үшін қолданылады: жетістіктерді сақтау, көшбасшылар тізімін жаңарту, әділ желілік жарыстарды қамтамасыз ету және тіркелгіні қалпына келтіру.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Үшінші тарап қызметтері</h3>
+        <p>Желілік нұсқада Google Firebase, Epic Games EOS және Yandex Mobile Ads SDK қызметтері бар. Автономды нұсқада (FlowTess Lite) желі толықтай өшірілген және ешқандай дерек сыртқа жіберілмейді.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Деректер қауіпсіздігі</h3>
+        <p>Құпия параметрлер Android Keystore (AES-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Құпиясөздер ашық күйде сақталмайды.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. Пайдаланушы құқықтары</h3>
+        <p>Пайдаланушы баптаулар арқылы жергілікті деректерді өшіре алады немесе <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a> поштасына жазып, бұлтты тіркелгіні толық өшіруді талап етуге құқылы.</p>
+      </div>
+    </div>
+
+    <!-- DE -->
+    <div id="content-de" class="content-block">
+      <div class="card">
+        <h3>1. Allgemeine Bestimmungen</h3>
+        <p>Verantwortlicher für die Datenverarbeitung ist der Entwickler FsFqX (Kontakt: <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>). Diese Datenschutzerklärung regelt die Erfassung und den Schutz von Informationen in der Android-Anwendung FlowTess.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Verarbeitete Daten</h3>
+        <ul>
+          <li><strong>Lokale Daten</strong>: Spieleinstellungen, Rekorde, freigeschaltete Elemente und Statistiken werden lokal in SQLite (Room) und den Geräteeinstellungen gespeichert.</li>
+          <li><strong>Kontodaten</strong>: Bei freiwilliger Registrierung über Firebase werden Benutzer-ID (UID), E-Mail-Adresse, Spielername und Avatar verarbeitet.</li>
+          <li><strong>Netzwerk-Telemetrie</strong>: Für P2P-Mehrspielerduelle werden Relay-Server von Epic Online Services (EOS) genutzt, ohne die öffentliche IP-Adresse preiszugeben.</li>
+          <li><strong>Zahlungsdaten werden nicht erhoben</strong>: Alle Gegenstände werden ausschließlich über In-Game-Währung erworben.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. Verarbeitungszwecke</h3>
+        <p>Die Verarbeitung erfolgt ausschließlich zur Bereitstellung der Spielfunktionen: Speichern des Spielstands, Ranglisten-Synchronisation, Anti-Cheat-Sicherung und Kontowiederherstellung auf Anfrage.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Drittanbieter-Dienste</h3>
+        <p>Die Online-Version nutzt Google Firebase, Epic Games EOS und Yandex Mobile Ads SDK. In der Offline-Edition (FlowTess Lite) ist das gesamte Netzwerkmodul deaktiviert: es finden keinerlei externe Datenübertragungen statt.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Datensicherheit</h3>
+        <p>Vertrauliche Parameter werden mittels Android Keystore (AES-GCM) verschlüsselt. .FTB-Sicherungsdateien sind mit HMAC-SHA256-Signaturen geschützt. Passwörter werden niemals im Klartext gespeichert.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. Nutzerrechte</h3>
+        <p>Nutzer können lokale Daten jederzeit über die Einstellungen zurücksetzen oder die vollständige Löschung ihres Kontos per E-Mail an <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a> anfordern.</p>
+      </div>
+    </div>
+
+    <!-- ZH -->
+    <div id="content-zh" class="content-block">
+      <div class="card">
+        <h3>1. 基本条款</h3>
+        <p>数据控制者为开发者 FsFqX（联络邮箱：<a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a>）。本政策阐明 Android 版 FlowTess 应用程序在数据处理与隐私保护方面的具体规范。</p>
+      </div>
+
+      <div class="card">
+        <h3>2. 处理的数据</h3>
+        <ul>
+          <li><strong>本地数据</strong>：游戏设置、历史高分、解锁物品和统计数据均保存在本地 SQLite（Room）数据库和系统加密偏好中。</li>
+          <li><strong>账户数据</strong>：通过 Firebase 自愿注册时，仅处理用户唯一标识（UID）、电子邮箱、昵称及头像标识。</li>
+          <li><strong>网络通信</strong>：多人联机对战通过 Epic Online Services（EOS）中继转发，绝不向对战对手暴露公网 IP 地址。</li>
+          <li><strong>不收集金融支付数据</strong>：游戏内所有物品仅通过虚拟游戏币兑换。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>3. 处理目的</h3>
+        <p>数据仅用于核心游戏功能：存档保存、排行榜同步、公平竞技防作弊检测以及应用户要求的账户恢复。</p>
+      </div>
+
+      <div class="card">
+        <h3>4. 第三方服务</h3>
+        <p>标准联机版使用 Google Firebase、Epic Games EOS 及 Yandex Mobile Ads SDK。在单机离线版（FlowTess Lite）中，网络模块已彻底停用，不发起任何网络请求，也不向第三方传输任何信息。</p>
+      </div>
+
+      <div class="card">
+        <h3>5. 数据安全</h3>
+        <p>机密配置由 Android Keystore 硬件级加密保护（AES-GCM）。.FTB 备份文件通过 HMAC-SHA256 签名校验完整性。用户密码绝不明文存储。</p>
+      </div>
+
+      <div class="card">
+        <h3>6. 用户权利</h3>
+        <p>用户可随时在应用设置中重置本地数据，或发送邮件至 <a href="mailto:ezik02021@gmail.com" style="color: var(--primary);">ezik02021@gmail.com</a> 申请永久删除云端账户及相关游戏数据。</p>
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2026 FsFqX. All rights reserved. &bull; <a href="https://github.com/Fsfq/FlowTess-FT-">GitHub Repository</a>
+    </footer>
+  </div>
+
+  <script>
+    const titles = {
+      ru: { title: "Политика конфиденциальности", subtitle: "FlowTess for Android • Редакция от 08.10.2026 • FsFqX" },
+      en: { title: "Privacy Policy", subtitle: "FlowTess for Android • Effective October 8, 2026 • FsFqX" },
+      ua: { title: "Політика конфіденційності", subtitle: "FlowTess for Android • Редакція від 08.10.2026 • FsFqX" },
+      kk: { title: "Құпиялылық саясаты", subtitle: "FlowTess for Android • Редакция: 08.10.2026 • FsFqX" },
+      de: { title: "Datenschutzerklärung", subtitle: "FlowTess for Android • Fassung vom 08.10.2026 • FsFqX" },
+      zh: { title: "隐私政策", subtitle: "FlowTess for Android • 生效日期：2026年10月8日 • FsFqX" }
+    };
+
+    function switchLang(lang) {
+      document.querySelectorAll('.content-block').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+
+      const target = document.getElementById('content-' + lang);
+      if (target) target.classList.add('active');
+
+      const meta = titles[lang] || titles.en;
+      document.getElementById('main-title').textContent = meta.title;
+      document.getElementById('main-subtitle').textContent = meta.subtitle;
+
+      event.target.classList.add('active');
+      history.replaceState(null, '', '#' + lang);
+    }
+
+    // Auto-detect from hash or browser
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    if (['ru', 'en', 'ua', 'kk', 'de', 'zh'].includes(hash)) {
+      const btn = Array.from(document.querySelectorAll('.lang-btn')).find(b => b.textContent.toLowerCase().includes(hash));
+      if (btn) btn.click();
+    }
+  </script>
+</body>
+</html>
