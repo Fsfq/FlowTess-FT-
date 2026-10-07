@@ -1,7 +1,7 @@
 # FlowTess Privacy Policy / Политика конфиденциальности
 
 Effective Date: October 8, 2026  
-Data Controller: FsFqX (ezik02021@gmail.com)  
+Data Controller: FsFqX (developer FsFq, contact: fsfqx77@gmail.com)  
 Application: FlowTess for Android  
 
 ---
@@ -19,7 +19,7 @@ Application: FlowTess for Android
 ## Русский (RU)
 
 ### 1. Общие положения
-Оператором данных выступает разработчик FsFqX (контактный адрес: ezik02021@gmail.com). Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации пользователей при использовании мобильного приложения FlowTess для платформы Android.
+Оператором данных выступает FsFqX (разработчик FsFq, контактный адрес: fsfqx77@gmail.com). Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации пользователей при использовании мобильного приложения FlowTess для платформы Android.
 
 ### 2. Обрабатываемые данные
 * **Локальные данные**: параметры игры, личные рекорды, открытые модификаторы, внутриигровой баланс и статистика сохраняются локально на устройстве в базе данных SQLite (Room) и системных настройках.
@@ -37,14 +37,14 @@ Application: FlowTess for Android
 Конфиденциальные параметры шифруются на устройстве с использованием Android Keystore (AES-GCM). Файлы резервных копий .FTB валидируются криптографической подписью HMAC-SHA256. Пароли учетных записей не хранятся в открытом виде.
 
 ### 6. Права пользователя
-Пользователь вправе в любой момент сбросить локальные данные через меню настроек или запросить полное удаление учетной записи и облачных сохранений, направив обращение на ezik02021@gmail.com.
+Пользователь вправе в любой момент сбросить локальные данные через меню настроек или запросить полное удаление учетной записи и облачных сохранений, направив обращение на fsfqx77@gmail.com.
 
 ---
 
 ## English (EN)
 
 ### 1. General Provisions
-The data controller is developer FsFqX (contact email: ezik02021@gmail.com). This Privacy Policy governs the processing and protection of user information within the FlowTess mobile application for Android.
+The data controller is FsFqX (developer FsFq, contact email: fsfqx77@gmail.com). This Privacy Policy governs the processing and protection of user information within the FlowTess mobile application for Android.
 
 ### 2. Processed Data
 * **Local Data**: Game configuration, high scores, unlocked cosmetics, and player stats are stored locally in the on-device SQLite database (Room) and system preferences.
@@ -62,14 +62,14 @@ The full build interacts with Google Firebase, Epic Games EOS, and Yandex Mobile
 Sensitive preferences are hardware-backed and encrypted via Android Keystore (AES-GCM). Portable .FTB backup files require HMAC-SHA256 integrity signatures. User passwords are never stored in plain text.
 
 ### 6. User Rights
-Users retain the right to reset local data at any time via in-game settings or request complete permanent deletion of their cloud profile and credentials by contacting ezik02021@gmail.com.
+Users retain the right to reset local data at any time via in-game settings or request complete permanent deletion of their cloud profile and credentials by contacting fsfqx77@gmail.com.
 
 ---
 
 ## Українська (UA)
 
 ### 1. Загальні положення
-Оператором даних виступає розробник FsFqX (контактна пошта: ezik02021@gmail.com). Ця Політика конфіденційності регулює порядок обробки та захисту інформації користувачів мобільного додатку FlowTess для платформи Android.
+Оператором даних виступає FsFqX (розробник FsFq, контактна пошта: fsfqx77@gmail.com). Ця Політика конфіденційності регулює порядок обробки та захисту інформації користувачів мобільного додатку FlowTess для платформи Android.
 
 ### 2. Оброблювані дані
 * **Локальні дані**: налаштування, прогрес, рекорди, відкриті предмети та статистика зберігаються на пристрої в базі даних SQLite (Room) та системних налаштуваннях.
@@ -87,14 +87,14 @@ Users retain the right to reset local data at any time via in-game settings or r
 Конфіденційні параметри шифруються на пристрої за допомогою Android Keystore (AES-GCM). Файли резервних копій .FTB перевіряються підписом HMAC-SHA256. Паролі не зберігаються у відкритому вигляді.
 
 ### 6. Права користувача
-Користувач має право скинути локальні дані через налаштування або запросити повне видалення облікового запису та хмарних даних, надіславши запит на ezik02021@gmail.com.
+Користувач має право скинути локальні дані через налаштування або запросити повне видалення облікового запису та хмарних даних, надіславши запит на fsfqx77@gmail.com.
 
 ---
 
 ## Қазақша (KK)
 
 ### 1. Жалпы ережелер
-Деректер операторы FsFqX әзірлеушісі болып табылады (байланыс поштасы: ezik02021@gmail.com). Осы Саясат Android платформасына арналған FlowTess қосымшасында деректерді қорғау тәртібін белгілейді.
+Деректер операторы FsFqX (әзірлеуші FsFq, байланыс поштасы: fsfqx77@gmail.com). Осы Саясат Android платформасына арналған FlowTess қосымшасында деректерді қорғау тәртібін белгілейді.
 
 ### 2. Өңделетін деректер
 * **Жергілікті деректер**: баптаулар, ойын барысы, рекордтар, ашылған заттар құрылғыдағы SQLite (Room) қорында және жүйелік параметрлерде сақталады.
@@ -112,14 +112,14 @@ Users retain the right to reset local data at any time via in-game settings or r
 Құпия параметрлер Android Keystore (AES-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Құпиясөздер ашық күйде сақталмайды.
 
 ### 6. Пайдаланушы құқықтары
-Пайдаланушы баптаулар арқылы жергілікті деректерді өшіре алады немесе ezik02021@gmail.com поштасына жазып, бұлтты тіркелгіні толық өшіруді талап етуге құқылы.
+Пайдаланушы баптаулар арқылы жергілікті деректерді өшіре алады немесе fsfqx77@gmail.com поштасына жазып, бұлтты тіркелгіні толық өшіруді талап етуге құқылы.
 
 ---
 
 ## Deutsch (DE)
 
 ### 1. Allgemeine Bestimmungen
-Verantwortlicher für die Datenverarbeitung ist der Entwickler FsFqX (Kontakt: ezik02021@gmail.com). Diese Datenschutzerklärung regelt die Erfassung und den Schutz von Informationen in der Android-Anwendung FlowTess.
+Verantwortlicher für die Datenverarbeitung ist FsFqX (Entwickler FsFq, Kontakt: fsfqx77@gmail.com). Diese Datenschutzerklärung regelt die Erfassung und den Schutz von Informationen in der Android-Anwendung FlowTess.
 
 ### 2. Verarbeitete Daten
 * **Lokale Daten**: Spieleinstellungen, Rekorde, freigeschaltete Elemente und Statistiken werden lokal in SQLite (Room) und den Geräteeinstellungen gespeichert.
@@ -137,14 +137,14 @@ Die Online-Version nutzt Google Firebase, Epic Games EOS und Yandex Mobile Ads S
 Vertrauliche Parameter werden mittels Android Keystore (AES-GCM) verschlüsselt. .FTB-Sicherungsdateien sind mit HMAC-SHA256-Signaturen geschützt. Passwörter werden niemals im Klartext gespeichert.
 
 ### 6. Nutzerrechte
-Nutzer können lokale Daten jederzeit über die Einstellungen zurücksetzen oder die vollständige Löschung ihres Kontos per E-Mail an ezik02021@gmail.com anfordern.
+Nutzer können lokale Daten jederzeit über die Einstellungen zurücksetzen oder die vollständige Löschung ihres Kontos per E-Mail an fsfqx77@gmail.com anfordern.
 
 ---
 
 ## 中文 (ZH)
 
 ### 1. 基本条款
-数据控制者为开发者 FsFqX（联络邮箱：ezik02021@gmail.com）。本政策阐明 Android 版 FlowTess 应用程序在数据处理与隐私保护方面的具体规范。
+数据控制者为 FsFqX（开发者 FsFq，联络邮箱：fsfqx77@gmail.com）。本政策阐明 Android 版 FlowTess 应用程序在数据处理与隐私保护方面的具体规范。
 
 ### 2. 处理的数据
 * **本地数据**：游戏设置、历史高分、解锁物品和统计数据均保存在本地 SQLite（Room）数据库和系统加密偏好中。
@@ -162,4 +162,4 @@ Nutzer können lokale Daten jederzeit über die Einstellungen zurücksetzen oder
 机密配置由 Android Keystore 硬件级加密保护（AES-GCM）。.FTB 备份文件通过 HMAC-SHA256 签名校验完整性。用户密码绝不明文存储。
 
 ### 6. 用户权利
-用户可随时在应用设置中重置本地数据，或发送邮件至 ezik02021@gmail.com 申请永久删除云端账户及相关游戏数据。
+用户可随时在应用设置中重置本地数据，或发送邮件至 fsfqx77@gmail.com 申请永久删除云端账户及相关游戏数据。
