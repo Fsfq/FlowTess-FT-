@@ -58,7 +58,6 @@
       max-width: 820px;
     }
 
-    /* Top Brand Ribbon */
     .brand-ribbon {
       display: flex;
       align-items: center;
@@ -98,107 +97,107 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--md-sys-shape-corner-full);
       background-color: var(--md-sys-color-surface-container-high);
       border: 1px solid var(--md-sys-color-outline);
-      color: var(--md-sys-color-primary);
-      padding: 4px 12px;
-      border-radius: var(--md-sys-shape-corner-full);
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 500;
+      color: var(--md-sys-color-primary);
     }
 
-    /* Header Container */
-    header {
-      background-color: var(--md-sys-color-surface);
+    .header-card {
+      background-color: var(--md-sys-color-surface-container);
       border: 1px solid var(--md-sys-color-outline);
       border-radius: var(--md-sys-shape-corner-extra-large);
-      padding: 28px 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      padding: 28px 24px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
     .header-title {
       font-size: 1.75rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
-      color: var(--md-sys-color-on-surface);
+      letter-spacing: -0.02em;
       margin-bottom: 6px;
+      color: #ffffff;
     }
 
     .header-subtitle {
-      font-size: 0.925rem;
+      font-size: 0.95rem;
       color: var(--md-sys-color-on-surface-variant);
       margin-bottom: 20px;
     }
 
-    /* Language Switcher Tabs */
-    .lang-selector {
+    .lang-switcher {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      background-color: var(--md-sys-color-surface-container);
-      padding: 6px;
-      border-radius: var(--md-sys-shape-corner-large);
-      border: 1px solid var(--md-sys-color-outline-variant);
+      padding-top: 16px;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .lang-btn {
-      background: transparent;
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline);
       color: var(--md-sys-color-on-surface-variant);
-      border: none;
-      padding: 8px 16px;
-      border-radius: var(--md-sys-shape-corner-medium);
-      font-size: 0.875rem;
+      padding: 6px 14px;
+      border-radius: var(--md-sys-shape-corner-full);
+      font-size: 0.85rem;
       font-weight: 600;
-      font-family: inherit;
       cursor: pointer;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .lang-btn:hover {
-      background-color: var(--md-sys-color-surface-container-high);
-      color: var(--md-sys-color-on-surface);
+      background: var(--md-sys-color-surface-container-highest);
+      color: #ffffff;
+      border-color: var(--md-sys-color-primary);
     }
 
     .lang-btn.active {
-      background-color: var(--md-sys-color-primary);
+      background: var(--md-sys-color-primary);
       color: var(--md-sys-color-on-primary);
+      border-color: var(--md-sys-color-primary);
+      box-shadow: 0 2px 8px rgba(156, 202, 255, 0.35);
     }
 
-    /* Cards */
     .content-block {
       display: none;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .content-block.active {
-      display: block;
+      display: flex;
     }
 
     .md3-card {
-      background-color: var(--md-sys-color-surface);
+      background-color: var(--md-sys-color-surface-container);
       border: 1px solid var(--md-sys-color-outline);
       border-radius: var(--md-sys-shape-corner-large);
-      padding: 22px;
-      margin-bottom: 14px;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
     }
 
     .md3-card:hover {
-      border-color: rgba(156, 202, 255, 0.35);
-      background-color: var(--md-sys-color-surface-container-low);
+      border-color: rgba(156, 202, 255, 0.3);
     }
 
     .card-header {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       margin-bottom: 12px;
     }
 
     .card-icon-container {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--md-sys-shape-corner-medium);
+      width: 38px;
+      height: 38px;
+      border-radius: var(--md-sys-shape-corner-full);
       background-color: var(--md-sys-color-primary-container);
       color: var(--md-sys-color-primary);
       display: flex;
@@ -208,17 +207,20 @@
     }
 
     .card-title {
-      font-size: 1.125rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: var(--md-sys-color-primary);
-      line-height: 1.3;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .card-body {
+      color: var(--md-sys-color-on-surface);
+      font-size: 0.925rem;
+      line-height: 1.65;
     }
 
     .card-body p {
-      font-size: 0.95rem;
-      color: var(--md-sys-color-on-surface);
-      line-height: 1.65;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .card-body p:last-child {
@@ -226,870 +228,701 @@
     }
 
     .card-body ul {
-      margin: 8px 0 8px 18px;
-      list-style-type: disc;
+      margin: 8px 0 10px 0;
+      padding-left: 0;
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .card-body li {
-      font-size: 0.95rem;
-      color: var(--md-sys-color-on-surface);
-      line-height: 1.6;
-      margin-bottom: 8px;
+      position: relative;
+      padding-left: 18px;
+      color: var(--md-sys-color-on-surface-variant);
     }
 
-    .card-body li:last-child {
-      margin-bottom: 0;
+    .card-body li::before {
+      content: "•";
+      position: absolute;
+      left: 4px;
+      color: var(--md-sys-color-primary);
+      font-weight: bold;
     }
 
     .card-body strong {
-      color: var(--md-sys-color-on-surface);
-      font-weight: 700;
+      color: #ffffff;
+      font-weight: 600;
     }
 
     .text-link {
       color: var(--md-sys-color-primary);
       text-decoration: none;
-      border-bottom: 1px dotted var(--md-sys-color-primary);
-      transition: color 0.15s ease, border-color 0.15s ease;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(156, 202, 255, 0.4);
+      transition: border-color 0.2s;
     }
 
     .text-link:hover {
-      color: #d1e4ff;
-      border-bottom-style: solid;
+      border-bottom-color: var(--md-sys-color-primary);
     }
 
-    /* Actions Ribbon at Bottom */
     .actions-ribbon {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 24px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .btn-action {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
-      padding: 12px 20px;
+      padding: 10px 18px;
       border-radius: var(--md-sys-shape-corner-medium);
       font-size: 0.9rem;
       font-weight: 600;
       text-decoration: none;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      flex: 1 1 200px;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
     }
 
     .btn-primary {
       background-color: var(--md-sys-color-primary);
       color: var(--md-sys-color-on-primary);
-      border: 1px solid var(--md-sys-color-primary);
     }
 
     .btn-primary:hover {
-      background-color: #bad9ff;
+      background-color: #b8d7ff;
+      box-shadow: 0 4px 12px rgba(156, 202, 255, 0.4);
     }
 
     .btn-outlined {
-      background-color: var(--md-sys-color-surface);
-      color: var(--md-sys-color-primary);
+      background-color: transparent;
       border: 1px solid var(--md-sys-color-outline);
+      color: var(--md-sys-color-on-surface);
     }
 
     .btn-outlined:hover {
-      background-color: var(--md-sys-color-surface-container);
+      background-color: var(--md-sys-color-surface-container-high);
       border-color: var(--md-sys-color-primary);
+      color: #ffffff;
     }
 
     footer {
-      text-align: center;
-      margin-top: 36px;
+      margin-top: 40px;
       padding-top: 20px;
       border-top: 1px solid var(--md-sys-color-outline-variant);
-      font-size: 0.85rem;
+      text-align: center;
+      font-size: 0.8rem;
       color: var(--md-sys-color-on-surface-variant);
-    }
-
-    footer a {
-      color: var(--md-sys-color-primary);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
     }
 
     @media (max-width: 600px) {
       body {
         padding: 16px 12px 48px;
       }
-      header {
+      .header-card {
         padding: 20px 16px;
         border-radius: var(--md-sys-shape-corner-large);
       }
       .header-title {
         font-size: 1.4rem;
       }
-      .lang-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-      }
       .md3-card {
-        padding: 16px;
+        padding: 16px 14px;
       }
     }
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="brand-ribbon">
-      <a href="https://github.com/Fsfq/FlowTess-FT-" class="brand-logo" target="_blank" rel="noopener">
+      <div class="brand-logo">
         <div class="brand-avatar">FT</div>
-        <div class="brand-text">FlowTess</div>
-      </a>
-      <div class="version-badge" id="version-badge">FlowTess 0.98.4 Alpha</div>
+        <span class="brand-text">FlowTess</span>
+      </div>
+      <div class="version-badge">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span>v0.98.4</span>
+      </div>
     </div>
 
-    <header>
-      <h1 class="header-title" id="main-title">Политика конфиденциальности</h1>
-      <p class="header-subtitle" id="main-subtitle">FlowTess for Android • Редакция от 17.10.2026 • FsFqX</p>
+    <header class="header-card">
+      <h1 class="header-title" id="page-title">Политика конфиденциальности</h1>
+      <p class="header-subtitle" id="page-subtitle">FlowTess и FlowTess Lite для Android</p>
       
-      <div class="lang-selector">
-        <button class="lang-btn active" onclick="switchLang('ru', this)">Русский</button>
-        <button class="lang-btn" onclick="switchLang('en', this)">English</button>
-        <button class="lang-btn" onclick="switchLang('ua', this)">Українська</button>
-        <button class="lang-btn" onclick="switchLang('kk', this)">Қазақша</button>
-        <button class="lang-btn" onclick="switchLang('de', this)">Deutsch</button>
-        <button class="lang-btn" onclick="switchLang('zh', this)">中文</button>
+      <div class="lang-switcher">
+        <button type="button" class="lang-btn active" onclick="switchLang('RU')">Русский</button>
+        <button type="button" class="lang-btn" onclick="switchLang('EN')">English</button>
+        <button type="button" class="lang-btn" onclick="switchLang('UA')">Українська</button>
+        <button type="button" class="lang-btn" onclick="switchLang('KK')">Қазақша</button>
+        <button type="button" class="lang-btn" onclick="switchLang('DE')">Deutsch</button>
+        <button type="button" class="lang-btn" onclick="switchLang('ZH')">中文</button>
       </div>
     </header>
 
-    <!-- RU -->
-    <div id="content-ru" class="content-block active">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. Оператор и сфера действия</h2>
-        </div>
-        <div class="card-body">
-  <p>Оператор данных: FsFqX (разработчик FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Правила действуют для мобильных приложений FlowTess и FlowTess Lite на платформе Android. Игровой прогресс, рекорды и настройки хранятся локально на устройстве. Сетевые функции используют защищенные сервисы Firebase и Epic Online Services.</p>
-        </div>
-      </section>
+    <main>
+      <!-- RU -->
+      <div id="content-ru" class="content-block active">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. Оператор и сфера действия</h2>
+          </div>
+          <div class="card-body">
+          <p>Оператор данных: FsFqX (разработчик FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Правила действуют для мобильных приложений FlowTess и FlowTess Lite на платформе Android. Игровой прогресс, рекорды и настройки хранятся локально на устройстве. Сетевые функции используют защищенные сервисы Firebase и Epic Online Services.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. Обрабатываемые данные</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li><strong>Локальные данные:</strong> параметры управления, личные рекорды, открытые темы и статистика хранятся локально на устройстве в базе данных SQLite (Room) и зашифрованных настройках.</li>
+            <li><strong>Данные учетной записи:</strong> при добровольной регистрации через Firebase или входе через Google обрабатываются идентификатор (UID), адрес электронной почты, отображаемый никнейм и токен аватара.</li>
+            <li><strong>Сетевая телеметрия:</strong> для многопользовательских матчей используются реле Epic Online Services (EOS) без раскрытия публичного IP-адреса оппоненту. Для локальных матчей по Wi-Fi используется сетевое обнаружение NSD mDNS исключительно внутри локальной подсети.</li>
+            <li><strong>Идентификаторы устройства и реклама:</strong> в сетевой версии может обрабатываться рекламный идентификатор (AAID / GAID) для показа релевантной рекламы и аналитики сбоев.</li>
+            <li><strong>Финансовые данные не собираются:</strong> приложение не запрашивает платежные реквизиты, все покупки осуществляются за виртуальную игровую валюту.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. Цели и правовые основания обработки</h2>
+          </div>
+          <div class="card-body">
+          <p>Обработка данных осуществляется на законных основаниях (согласие пользователя и выполнение условий обслуживания): обеспечение игрового процесса, сохранение прогресса, синхронизация таблиц лидеров, детерминированная проверка честной игры (античит) и предотвращение мошенничества.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. Сторонние сервисы и реклама</h2>
+          </div>
+          <div class="card-body">
+          <p>В сетевой версии приложения используются надежные сторонние платформы:</p>
+          <ul>
+            <li><strong>Google Firebase:</strong> аутентификация учетных записей, облачное хранение прогресса (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> P2P-матчмейкинг и облачные ретрансляторы трафика.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> отображение рекламы. Пользователь может в любой момент ограничить сбор рекламного идентификатора в настройках Android: Настройки -> Google -> Реклама -> Сбросить или удалить рекламный идентификатор.</li>
+            <li><strong>Автономная версия FlowTess Lite:</strong> сетевой стек полностью отключен, приложение не выполняет сетевых запросов и не обращается к внешним SDK.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. Безопасность данных и шифрование</h2>
+          </div>
+          <div class="card-body">
+          <p>Все внешние соединения выполняются по защищенным протоколам HTTPS и TLS 1.3. Конфиденциальные параметры шифруются аппаратно с использованием Android Keystore (AES-256-GCM). Локальные резервные копии .FTB защищены криптографической подписью HMAC-SHA256 для защиты от повреждения и модификации. Пароли пользователей никогда не хранятся в открытом виде.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. Хранение и удаление учетной записи</h2>
+          </div>
+          <div class="card-body">
+          <p>Данные учетной записи хранятся до тех пор, пока аккаунт активен.</p>
+          <ul>
+            <li><strong>Самостоятельное удаление в приложении:</strong> вы можете мгновенно и безвозвратно удалить свой аккаунт и все связанные облачные данные непосредственно в игре: Профиль -> Настройки (значок шестеренки) -> вкладка Аккаунт -> Опасная зона -> Удалить аккаунт.</li>
+            <li><strong>Удаление по запросу:</strong> вы также можете направить запрос на удаление учетной записи и всех связанных записей на адрес электронной почты: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> с темой 'Запрос на удаление аккаунта'. Запрос обрабатывается в течение 30 дней.</li>
+            <li><strong>При удалении аккаунта безвозвратно стираются:</strong> профиль игрока, запись в базе Firebase Auth, сохраненные таблицы лидеров, резервные данные и уникальный никнейм.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. Защита данных несовершеннолетних</h2>
+          </div>
+          <div class="card-body">
+          <p>Приложение не предназначено для детей младше 13 лет (или младше 16 лет в странах Европейского Союза). Мы сознательно не собираем личную информацию несовершеннолетних. Если родителю или опекуну стало известно, что ребенок предоставил личные данные без согласия, свяжитесь с нами по адресу <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для немедленного удаления информации.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. Права пользователя и контакты</h2>
+          </div>
+          <div class="card-body">
+          <p>В соответствии с законодательством о защите данных (GDPR, CCPA), пользователь имеет право на доступ к своим данным, их исправление, экспорт, ограничение обработки и полное удаление. По любым вопросам конфиденциальности и обращениям обращайтесь к разработчику по электронной почте: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. Обрабатываемые данные</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li><strong>Локальные данные:</strong> параметры управления, личные рекорды, открытые темы и статистика хранятся локально на устройстве в базе данных SQLite (Room) и зашифрованных настройках.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Данные учетной записи:</strong> при добровольной регистрации через Firebase или входе через Google обрабатываются идентификатор (UID</li>
-</ul>
-        </div>
-      </section>
+      <!-- EN -->
+      <div id="content-en" class="content-block">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. Data Controller and Scope</h2>
+          </div>
+          <div class="card-body">
+          <p>Data controller: FsFqX studio (lead developer FsFq, contact: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). These rules apply to FlowTess and FlowTess Lite applications on Android. Gameplay progress, high scores, and settings are stored locally on the device. Online services utilize encrypted Firebase and Epic Online Services infrastructure.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. Categories of Processed Data</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li><strong>Local Data:</strong> Control schemes, high scores, unlocked themes, and gameplay statistics are stored locally in the on-device SQLite database (Room) and encrypted preferences.</li>
+            <li><strong>Account Data:</strong> When voluntarily registering via Firebase or signing in with Google, we process unique user ID (UID), email address, player nickname, and avatar tokens.</li>
+            <li><strong>Network Telemetry:</strong> P2P multiplayer duels route through Epic Online Services (EOS) TURN relay servers without exposing public IP addresses to peers. Local Wi-Fi duels use NSD mDNS strictly within the local area network.</li>
+            <li><strong>Device Identifiers & Advertising:</strong> In the connected edition, advertising identifiers (AAID / GAID) may be processed for relevant ad delivery and crash telemetry.</li>
+            <li><strong>No Financial Data:</strong> We never collect payment card or banking data; all cosmetics and crates are unlocked strictly with in-game virtual currency.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. Purposes and Legal Basis</h2>
+          </div>
+          <div class="card-body">
+          <p>Data processing relies on lawful grounds (user consent and service fulfillment): delivering core gameplay functionality, persisting progress, synchronizing global leaderboards, deterministic anti-cheat validation, and fraud prevention.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. Third-Party Services and Advertising</h2>
+          </div>
+          <div class="card-body">
+          <p>The connected build integrates trusted third-party providers:</p>
+          <ul>
+            <li><strong>Google Firebase:</strong> User authentication and secure cloud persistence (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> Competitive matchmaking and cloud-relayed multiplayer connections.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> In-app advertisement delivery. You can opt out of ad personalization via Android Settings: Settings -> Google -> Ads -> Reset or delete advertising ID.</li>
+            <li><strong>FlowTess Lite Edition:</strong> Completely isolated offline sandbox with zero network activity and zero external SDK telemetry.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. Data Security and Encryption</h2>
+          </div>
+          <div class="card-body">
+          <p>All network traffic is encrypted in transit using HTTPS and TLS 1.3. Critical preferences are encrypted at rest using hardware-backed Android Keystore (AES-256-GCM). Portable .FTB backup archives require cryptographic HMAC-SHA256 integrity validation. User passwords are encrypted by Firebase Auth and never stored in plain text.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. Data Retention and Account Deletion</h2>
+          </div>
+          <div class="card-body">
+          <p>Account data is retained for the duration of active account usage.</p>
+          <ul>
+            <li><strong>In-App Account Deletion:</strong> You can permanently delete your account and all associated cloud progress directly inside the game: Profile -> Settings (gear icon) -> Account tab -> Danger Zone -> Delete Account.</li>
+            <li><strong>Deletion via Email Request:</strong> You may also request account erasure by sending an email to <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> with the subject 'Account Deletion Request'. Inquiries are resolved within 30 days.</li>
+            <li><strong>Deletion permanently purges:</strong> user profile document, Firebase Auth credentials, cloud progress, leaderboard entries, and claimed nickname reservation.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. Children's Privacy Protection</h2>
+          </div>
+          <div class="card-body">
+          <p>The application is not directed to children under 13 years of age (or under 16 in the European Union). We do not knowingly collect personal data from minors. If a parent or guardian discovers that a child has provided personal information without consent, contact us at <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> for prompt deletion.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. User Rights and Contact Details</h2>
+          </div>
+          <div class="card-body">
+          <p>Under applicable data protection laws (GDPR, CCPA), users retain rights of access, rectification, portability, processing restriction, and erasure of their personal data. For all privacy inquiries, data requests, or complaints, contact us at: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. Цели и правовые основания обработки</h2>
-        </div>
-        <div class="card-body">
-  <p>Обработка данных осуществляется на законных основаниях (согласие пользователя и выполнение условий обслуживания): обеспечение игрового процесса, сохранение прогресса, синхронизация таблиц лидеров, детерминированная проверка честной игры (античит) и предотвращение мошенничества.</p>
-        </div>
-      </section>
+      <!-- UA -->
+      <div id="content-ua" class="content-block">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. Оператор та сфера дії</h2>
+          </div>
+          <div class="card-body">
+          <p>Оператор даних: FsFqX (розробник FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Правила діють для додатків FlowTess та FlowTess Lite на платформі Android. Ігровий прогрес, рекорди та налаштування зберігаються локально на пристрої. Мережеві функції використовують захищені сервіси Firebase та Epic Online Services.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. Категорії оброблюваних даних</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li><strong>Локальні дані:</strong> налаштування керування, рекорди, відкриті теми та статистика зберігаються на пристрої в базі даних SQLite (Room) та системних налаштуваннях.</li>
+            <li><strong>Дані акаунта:</strong> при добровільній реєстрації через Firebase або Google обробляються ідентифікатор (UID), електронна пошта, ігровий нікнейм та аватар.</li>
+            <li><strong>Мережева телеметрія:</strong> для мережевих матчів використовуються реле Epic Online Services (EOS) без розкриття публічної IP-адреси опоненту. Для локальних дуелей через Wi-Fi задіяно протокол NSD mDNS виключно в межах домашньої мережі.</li>
+            <li><strong>Ідентифікатори пристрою та реклама:</strong> у мережевій версії може оброблятися рекламний ідентифікатор (AAID / GAID) для показу реклами та аналітики.</li>
+            <li><strong>Фінансові дані не збираються:</strong> додаток не запитує банківські дані, усі предмети купуються за віртуальну валюту.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. Цілі та правові підстави обробки</h2>
+          </div>
+          <div class="card-body">
+          <p>Обробка здійснюється на законних підставах (згода користувача та виконання умов сервісу): забезпечення ігрового процесу, збереження прогресу, синхронізація таблиць лідерів, детермінована античит-перевірка та захист від шахрайства.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. Сторонні сервіси та реклама</h2>
+          </div>
+          <div class="card-body">
+          <p>У мережевій версії використовуються перевірені сервіси:</p>
+          <ul>
+            <li><strong>Google Firebase:</strong> автентифікація користувачів, хмарне збереження (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> організація змагальних матчів через безпечні реле.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> показ реклами. Користувач може вимкнути збір рекламного ідентифікатора в меню: Налаштування -> Google -> Реклама -> Скинути або видалити рекламний ідентифікатор.</li>
+            <li><strong>Автономна версія FlowTess Lite:</strong> мережевий модуль повністю вимкнено, додаток працює повністю офлайн.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. Безпека даних та шифрування</h2>
+          </div>
+          <div class="card-body">
+          <p>Усі зовнішні з'єднання захищені сучасними протоколами HTTPS та TLS 1.3. Конфіденційні параметри шифруються апаратно через Android Keystore (AES-256-GCM). Файли резервних копій .FTB підписуються криптографічним ключем HMAC-SHA256. Паролі користувачів не зберігаються у відкритому вигляді.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. Зберігання та видалення акаунта</h2>
+          </div>
+          <div class="card-body">
+          <p>Дані зберігаються, доки акаунт залишається активним.</p>
+          <ul>
+            <li><strong>Самостійне видалення в додатку:</strong> ви можете безповоротно видалити свій акаунт та всі хмарні дані безпосередньо у грі: Профіль -> Налаштування (шестірня) -> вкладка Акаунт -> Небезпечна зона -> Видалити акаунт.</li>
+            <li><strong>Запит електронною поштою:</strong> ви також можете надіслати запит на видалення на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> із темою 'Account Deletion Request'. Запит виконується протягом 30 днів.</li>
+            <li><strong>При видаленні безповоротно стираються:</strong> дані профілю, обліковий запис Firebase Auth, рекорди, хмарні збереження та нікнейм.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. Захист даних неповнолітніх</h2>
+          </div>
+          <div class="card-body">
+          <p>Додаток не орієнтований на дітей віком до 13 років (або до 16 років у країнах ЄС). Ми свідомо не збираємо персональні дані неповнолітніх. Якщо батьки або опікуни виявили факт передачі даних дитиною без їхньої згоди, зверніться на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для негайного видалення таких відомостей.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. Права користувача та контакти</h2>
+          </div>
+          <div class="card-body">
+          <p>Відповідно до законодавства (GDPR, CCPA), користувач має право на доступ до своїх даних, їх виправлення, експорт, обмеження обробки та повне видалення. З усіх питань конфіденційності звертайтеся за адресою: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. Сторонние сервисы и реклама</h2>
-        </div>
-        <div class="card-body">
-  <p>В сетевой версии приложения используются надежные сторонние платформы:</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Google Firebase:</strong> аутентификация учетных записей, облачное хранение прогресса (Cloud Firestore).</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Epic Games (EOS):</strong> P2P-матчмейкинг и облачные ретрансляторы трафика.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Yandex Mobile Ads SDK:</strong> отображение рекламы. Пользователь может в любой момент ограничить сбор рекламного идентификатора в настройках Android: Настройки -> Google -> Реклама -> Сбросить или удалить рекламный идентификатор.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Автономная версия FlowTess Lite:</strong> сетевой стек полностью отключен, приложение не выполняет сетевых запросов и не обращается к внешним SDK.</li>
-</ul>
-        </div>
-      </section>
+      <!-- KK -->
+      <div id="content-kk" class="content-block">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. Оператор және қолданылу аясы</h2>
+          </div>
+          <div class="card-body">
+          <p>Деректер операторы: FsFqX (әзірлеуші FsFq, байланыс: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Ережелер Android платформасындағы FlowTess және FlowTess Lite қолданбаларына қолданылады. Ойын барысы, рекордтар мен баптаулар құрылғыда жергілікті сақталады. Желілік қызметтер Firebase және Epic Online Services қорғалған серверлерін пайдаланады.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. Өңделетін деректер санаттары</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li><strong>Жергілікті деректер:</strong> басқару баптаулары, рекордтар, ашылған элементтер құрылғыдағы SQLite (Room) қорында сақталады.</li>
+            <li><strong>Тіркелгі деректері:</strong> Firebase немесе Google арқылы кірген кезде пайдаланушы коды (UID), электрондық пошта, ойыншы лақап аты және аватар өңделеді.</li>
+            <li><strong>Желілік телеметрия:</strong> онлайн матчтар үшін Epic Online Services (EOS) қауіпсіз релелері пайдаланылады, қарсыласқа жеке IP мекенжайы көрсетілмейді. Жергілікті Wi-Fi ойыны үшін үй желісі ішінде ғана NSD mDNS қолданылады.</li>
+            <li><strong>Жарнама идентификаторлары:</strong> желілік нұсқада жарнама көрсету үшін құрылғының жарнамалық коды (AAID) өңделуі мүмкін.</li>
+            <li><strong>Қаржылық деректер жиналмайды:</strong> төлем карталары сұралмайды, барлық элементтер ойын ішіндегі виртуалды монеталарға беріледі.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. Өңдеу мақсаттары мен негіздері</h2>
+          </div>
+          <div class="card-body">
+          <p>Деректерді өңдеу заңды негіздерге сүйенеді (пайдаланушы келісімі және қызмет көрсету шарттары): ойын процесін жүргізу, жетістіктерді сақтау, көшбасшылар тақтасын жаңарту, әділ ойынды қорғау (античит) және алаяқтықтың алдын алу.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. Үшінші тарап қызметтері мен жарнама</h2>
+          </div>
+          <div class="card-body">
+          <p>Желілік нұсқада сенімді қызметтер жұмыс істейді:</p>
+          <ul>
+            <li><strong>Google Firebase:</strong> қауіпсіз тіркелу және бұлттық деректер қоры (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> желілік ойын байланысы мен бұлттық релелер.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> жарнама ұсыну. Пайдаланушы жарнамалық идентификаторды Android баптауларында өшіре алады: Баптаулар -> Google -> Жарнама.</li>
+            <li><strong>FlowTess Lite оффлайн нұсқасы:</strong> желі толық сөндірілген, сыртқы сервистерге ешқандай сұраныс жіберілмейді.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. Деректер қауіпсіздігі және шифрлау</h2>
+          </div>
+          <div class="card-body">
+          <p>Барлық сыртқы байланыстар HTTPS және TLS 1.3 қауіпсіз хаттамаларымен жүргізіледі. Құпия деректер Android Keystore (AES-256-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Парольдер ашық мәтін түрінде сақталмайды.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. Деректерді сақтау және тіркелгіні өшіру</h2>
+          </div>
+          <div class="card-body">
+          <p>Деректер тіркелгі белсенді болған уақыт бойы сақталады.</p>
+          <ul>
+            <li><strong>Қосымша ішінде өшіру:</strong> ойыншы өз тіркелгісін және барлық бұлттық деректерін ойын ішінде өшіре алады: Профиль -> Баптаулар -> Тіркелгі қойындысы -> Қауіпті аймақ -> Тіркелгіні өшіру.</li>
+            <li><strong>Пошта арқылы сұраныс:</strong> сонымен қатар <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына өшіру туралы сұраныс жіберуге болады. Сұраныс 30 күн ішінде толық орындалады.</li>
+            <li>Өшіру барысында тіркелгі деректері, Firebase Auth жазбасы, рекордтар және ойыншы аты толықтай жойылады.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. Кәмелетке толмағандар құпиялылығы</h2>
+          </div>
+          <div class="card-body">
+          <p>Қосымша 13 жасқа толмаған балаларға арналмаған (Еуропалық Одақ елдерінде 16 жасқа дейін). Біз кәмелетке толмағандардың жеке деректерін мақсатты түрде жинамаймыз. Егер баланың рұқсатсыз деректер бергені анықталса, <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына хабарласу қажет, деректер дереу өшіріледі.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. Пайдаланушы құқықтары және байланыс</h2>
+          </div>
+          <div class="card-body">
+          <p>Құпиялылық заңнамасына (GDPR, CCPA) сәйкес, пайдаланушы өз деректеріне қол жеткізуге, оларды түзетуге, көшіріп алуға және толық жоюға құқылы. Барлық сұрақтар бойынша мына поштаға хабарласыңыз: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. Безопасность данных и шифрование</h2>
-        </div>
-        <div class="card-body">
-  <p>Все внешние соединения выполняются по защищенным протоколам HTTPS и TLS 1.3. Конфиденциальные параметры шифруются аппаратно с использованием Android Keystore (AES-256-GCM). Локальные резервные копии .FTB защищены криптографической подписью HMAC-SHA256 для защиты от повреждения и модификации. Пароли пользователей никогда не хранятся в открытом виде.</p>
-        </div>
-      </section>
+      <!-- DE -->
+      <div id="content-de" class="content-block">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. Verantwortlicher und Geltungsbereich</h2>
+          </div>
+          <div class="card-body">
+          <p>Verantwortlicher: FsFqX (Entwickler FsFq, E-Mail: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Diese Bestimmungen gelten für FlowTess und FlowTess Lite unter Android. Spielstände, Rekorde und Einstellungen werden lokal auf dem Gerät gespeichert. Online-Dienste nutzen die verschlüsselte Infrastruktur von Firebase und Epic Online Services.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. Kategorien verarbeiteter Daten</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li><strong>Lokale Daten:</strong> Steuerungsoptionen, Rekorde, freigeschaltete Skins und Statistiken werden lokal in SQLite (Room) und geschützten App-Einstellungen gespeichert.</li>
+            <li><strong>Kontodaten:</strong> Bei freiwilliger Anmeldung via Firebase oder Google werden Benutzer-ID (UID), E-Mail-Adresse, Spielername und Avatar verarbeitet.</li>
+            <li><strong>Netzwerk-Telemetrie:</strong> Für Mehrspieler-Duelle werden Epic Online Services (EOS) Relay-Server genutzt, ohne Ihre öffentliche IP-Adresse für Mitspieler offenzulegen. Lokale Wi-Fi-Duelle nutzen NSD mDNS ausschließlich im lokalen Netzwerk.</li>
+            <li><strong>Geräte-IDs und Werbung:</strong> In der Online-Version kann die Werbe-ID (AAID) zur Anzeige von Werbung und Fehleranalyse verarbeitet werden.</li>
+            <li><strong>Keine Finanzdaten:</strong> Es werden keine Bank- oder Kreditkartendaten erhoben, alle Transaktionen erfolgen mit virtueller Spielwährung.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. Zwecke und Rechtsgrundlagen</h2>
+          </div>
+          <div class="card-body">
+          <p>Die Verarbeitung erfolgt auf Basis berechtigter Interessen und Einwilligung: Bereitstellung von Spielfunktionen, Speichern des Fortschritts, globale Bestenlisten, deterministischer Anti-Cheat-Schutz und Betrugsprävention.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. Drittanbieter-Dienste und Werbung</h2>
+          </div>
+          <div class="card-body">
+          <p>Die vernetzte Version nutzt folgende Drittanbieter:</p>
+          <ul>
+            <li><strong>Google Firebase:</strong> Authentifizierung und Cloud-Speicherung (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> Sichere P2P-Duelle über Cloud-Relays.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> Einbindung von Werbeanzeigen. Nutzer können die Erfassung der Werbe-ID in den Systemeinstellungen deaktivieren: Einstellungen -> Google -> Werbung -> Werbe-ID löschen oder zurücksetzen.</li>
+            <li><strong>FlowTess Lite Edition:</strong> Vollständig isolierter Offline-Betrieb ohne jegliche Netzwerkverbindungen oder SDK-Aufrufe.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. Datensicherheit und Verschlüsselung</h2>
+          </div>
+          <div class="card-body">
+          <p>Jegliche Datenübertragung erfolgt verschlüsselt über HTTPS und TLS 1.3. Sensible Konfigurationsdaten werden durch Android Keystore (AES-256-GCM) hardwarenah geschützt. Lokale .FTB-Backups sind mit HMAC-SHA256-Signaturen gegen Manipulation gesichert. Passwörter werden niemals unverschlüsselt gespeichert.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. Speicherdauer und Kontolöschung</h2>
+          </div>
+          <div class="card-body">
+          <p>Daten werden gespeichert, solange das Benutzerkonto besteht.</p>
+          <ul>
+            <li><strong>Direkte Kontolöschung in der App:</strong> Sie können Ihr Konto und alle Cloud-Daten jederzeit in der App löschen: Profil -> Einstellungen (Zahnrad-Symbol) -> Tab Konto -> Gefahrenbereich -> Konto löschen.</li>
+            <li><strong>Löschung per E-Mail:</strong> Alternativ können Sie eine Anfrage an <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> mit dem Betreff 'Account Deletion Request' senden. Die Löschung wird innerhalb von 30 Tagen durchgeführt.</li>
+            <li>Bei der Löschung werden Profil, Firebase Auth-Konto, Bestenlisten-Einträge und Cloud-Spielstände unwiderruflich entfernt.</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. Schutz von Minderjährigen</h2>
+          </div>
+          <div class="card-body">
+          <p>Die Anwendung richtet sich nicht an Kinder unter 13 Jahren (bzw. unter 16 Jahren in der EU). Wir erheben wissentlich keine personenbezogenen Daten von Minderjährigen. Sollten Erziehungsberechtigte feststellen, dass ein Kind ohne Einwilligung Daten übermittelt hat, bitten wir um Kontaktaufnahme unter <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> zur umgehenden Löschung.</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. Betroffenenrechte und Kontakt</h2>
+          </div>
+          <div class="card-body">
+          <p>Gemäß DSGVO und geltendem Datenschutzrecht haben Sie das Recht auf Auskunft, Berichtigung, Datenübertragbarkeit, Einschränkung der Verarbeitung und Löschung Ihrer Daten. Für Datenschutzanfragen wenden Sie sich bitte an: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. Хранение и удаление учетной записи</h2>
-        </div>
-        <div class="card-body">
-  <p>Данные учетной записи хранятся до тех пор, пока аккаунт активен.</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Самостоятельное удаление в приложении:</strong> вы можете мгновенно и безвозвратно удалить свой аккаунт и все связанные облачные данные непосредственно в игре: Профиль -> Настройки (значок шестеренки) -> вкладка Аккаунт -> Опасная зона -> Удалить аккаунт.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Удаление по запросу:</strong> вы также можете направить запрос на удаление учетной записи и всех связанных записей на адрес электронной почты: fsfqx77@gmail.com с темой 'Запрос на удаление аккаунта'. Запрос обрабатывается в течение 30 дней.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>При удалении аккаунта безвозвратно стираются:</strong> профиль игрока, запись в базе Firebase Auth, сохраненные таблицы лидеров, резервные данные и уникальный никнейм.</li>
-</ul>
-        </div>
-      </section>
+      <!-- ZH -->
+      <div id="content-zh" class="content-block">
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+            <h2 class="card-title">1. 控制者与适用范围</h2>
+          </div>
+          <div class="card-body">
+          <p>数据控制者：FsFqX 工作室（开发者 FsFq，联络邮箱：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>）。本准则适用于 Android 平台的 FlowTess 与 FlowTess Lite。游戏存档、单机记录与偏好设置均保存在本地设备中。在线服务采用 Firebase 与 Epic Online Services 加密通道。</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
+            <h2 class="card-title">2. 处理的数据类别</h2>
+          </div>
+          <div class="card-body">
+          <ul>
+            <li>本地数据：操作设置、最高分、解锁皮肤和游戏统计均保存在设备本地 SQLite（Room）数据库和系统加密配置中。</li>
+            <li>账户数据：通过 Firebase 或 Google 登录时，处理用户唯一标识（UID）、电子邮箱、游戏昵称及头像标识。</li>
+            <li>网络通信：联机对战通过 Epic Online Services（EOS）云端中继进行，绝不向对手公开真实公网 IP 地址。本地 Wi-Fi 局域网对战仅在局域网内部使用 NSD mDNS 协议。</li>
+            <li>设备标识与广告：联机版可能处理广告标识符（AAID / GAID）以提供广告展示和崩溃诊断。</li>
+            <li>不收集金融数据：应用不索取任何银行卡或支付凭据，游戏道具仅支持虚拟游戏币兑换。</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
+            <h2 class="card-title">3. 处理目的与法律依据</h2>
+          </div>
+          <div class="card-body">
+          <p>数据处理基于合法基础（用户授权与服务履行）：保障游戏正常运行、保存关卡进度、同步全球排行榜、进行基于确定性算法的防作弊验证以及防范安全攻击。</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
+            <h2 class="card-title">4. 第三方服务与广告披露</h2>
+          </div>
+          <div class="card-body">
+          <p>标准联网版本集成以下可靠的第三方技术：</p>
+          <ul>
+            <li>Google Firebase：账户鉴权与云端存档同步（Cloud Firestore）。</li>
+            <li>Epic Games（EOS）：多人竞技匹配与云端网络中继。</li>
+            <li>Yandex Mobile Ads SDK：广告展示。用户可随时在系统设置中重置或关闭广告跟踪：设置 -> Google -> 广告 -> 重置或删除广告 ID。</li>
+            <li>FlowTess Lite 纯单机版：网络组件已彻底停用，不发起任何网络连接，亦不调用任何外部分析或广告 SDK。</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <h2 class="card-title">5. 数据安全与加密措施</h2>
+          </div>
+          <div class="card-body">
+          <p>所有外部网络通信均通过 HTTPS 及 TLS 1.3 加密协议传输。敏感本地配置由 Android Keystore（AES-256-GCM）硬件级密钥库加密保护。.FTB 备份文件通过 HMAC-SHA256 签名校验防篡改。用户密码绝不明文存储。</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
+            <h2 class="card-title">6. 数据留存与账户注销机制</h2>
+          </div>
+          <div class="card-body">
+          <p>账户数据在用户持有账户期间予以保留。</p>
+          <ul>
+            <li>应用内自主注销：您可随时在游戏内即时且永久注销账户并清除云端数据：个人资料 -> 设置（齿轮图标） -> 账户选项卡 -> 危险区域 -> 注销账户。</li>
+            <li>邮件注销申请：您亦可发送邮件至 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，邮件主题注明 'Account Deletion Request'，我们将在30天内核实并执行删除。</li>
+            <li>注销后将彻底清除：用户资料、Firebase Auth 登录凭证、云端存档记录、排行榜积分及唯一昵称占位。</li>
+          </ul>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
+            <h2 class="card-title">7. 未成年人隐私保护</h2>
+          </div>
+          <div class="card-body">
+          <p>本应用不面向未满 13 周岁的儿童（或欧盟成员国未满 16 周岁的未成年人）。我们绝不故意收集未成年人的个人数据。若监护人发现儿童未经同意提交了个人信息，请联络 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，我们将立即予以彻底删除。</p>
+          </div>
+        </section>
+        <section class="md3-card">
+          <div class="card-header">
+            <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+            <h2 class="card-title">8. 用户权利与联系方式</h2>
+          </div>
+          <div class="card-body">
+          <p>根据适用隐私法律法规（包括 GDPR 与 CCPA），用户对其个人数据享有查阅权、更正权、可携权、限制处理权及永久删除权。如有任何隐私疑虑或权益诉求，请随时联络：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>。</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. Защита данных несовершеннолетних</h2>
-        </div>
-        <div class="card-body">
-  <p>Приложение не предназначено для детей младше 13 лет (или младше 16 лет в странах Европейского Союза). Мы сознательно не собираем личную информацию несовершеннолетних. Если родителю или опекуну стало известно, что ребенок предоставил личные данные без согласия, свяжитесь с нами по адресу <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для немедленного удаления информации.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. Права пользователя и контакты</h2>
-        </div>
-        <div class="card-body">
-  <p>В соответствии с законодательством о защите данных (GDPR, CCPA</p>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- EN -->
-    <div id="content-en" class="content-block">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. Data Controller and Scope</h2>
-        </div>
-        <div class="card-body">
-  <p>Data controller: FsFqX studio (lead developer FsFq, contact: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). These rules apply to FlowTess and FlowTess Lite applications on Android. Gameplay progress, high scores, and settings are stored locally on the device. Online services utilize encrypted Firebase and Epic Online Services infrastructure.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. Categories of Processed Data</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li><strong>Local Data:</strong> Control schemes, high scores, unlocked themes, and gameplay statistics are stored locally in the on-device SQLite database (Room) and encrypted preferences.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Account Data:</strong> When voluntarily registering via Firebase or signing in with Google, we process unique user ID (UID</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. Purposes and Legal Basis</h2>
-        </div>
-        <div class="card-body">
-  <p>Data processing relies on lawful grounds (user consent and service fulfillment): delivering core gameplay functionality, persisting progress, synchronizing global leaderboards, deterministic anti-cheat validation, and fraud prevention.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. Third-Party Services and Advertising</h2>
-        </div>
-        <div class="card-body">
-  <p>The connected build integrates trusted third-party providers:</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Google Firebase:</strong> User authentication and secure cloud persistence (Cloud Firestore).</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Epic Games (EOS):</strong> Competitive matchmaking and cloud-relayed multiplayer connections.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Yandex Mobile Ads SDK:</strong> In-app advertisement delivery. You can opt out of ad personalization via Android Settings: Settings -> Google -> Ads -> Reset or delete advertising ID.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>FlowTess Lite Edition:</strong> Completely isolated offline sandbox with zero network activity and zero external SDK telemetry.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. Data Security and Encryption</h2>
-        </div>
-        <div class="card-body">
-  <p>All network traffic is encrypted in transit using HTTPS and TLS 1.3. Critical preferences are encrypted at rest using hardware-backed Android Keystore (AES-256-GCM). Portable .FTB backup archives require cryptographic HMAC-SHA256 integrity validation. User passwords are encrypted by Firebase Auth and never stored in plain text.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. Data Retention and Account Deletion</h2>
-        </div>
-        <div class="card-body">
-  <p>Account data is retained for the duration of active account usage.</p>
-  <p>" +</p>
-<ul>
-  <li><strong>In-App Account Deletion:</strong> You can permanently delete your account and all associated cloud progress directly inside the game: Profile -> Settings (gear icon) -> Account tab -> Danger Zone -> Delete Account.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Deletion via Email Request:</strong> You may also request account erasure by sending an email to fsfqx77@gmail.com with the subject 'Account Deletion Request'. Inquiries are resolved within 30 days.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Deletion permanently purges:</strong> user profile document, Firebase Auth credentials, cloud progress, leaderboard entries, and claimed nickname reservation.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. Children's Privacy Protection</h2>
-        </div>
-        <div class="card-body">
-  <p>The application is not directed to children under 13 years of age (or under 16 in the European Union). We do not knowingly collect personal data from minors. If a parent or guardian discovers that a child has provided personal information without consent, contact us at <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> for prompt deletion.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. User Rights and Contact Details</h2>
-        </div>
-        <div class="card-body">
-  <p>Under applicable data protection laws (GDPR, CCPA</p>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- UA -->
-    <div id="content-ua" class="content-block">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. Оператор та сфера дії</h2>
-        </div>
-        <div class="card-body">
-  <p>Оператор даних: FsFqX (розробник FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Правила діють для додатків FlowTess та FlowTess Lite на платформі Android. Ігровий прогрес, рекорди та налаштування зберігаються локально на пристрої. Мережеві функції використовують захищені сервіси Firebase та Epic Online Services.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. Категорії оброблюваних даних</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li><strong>Локальні дані:</strong> налаштування керування, рекорди, відкриті теми та статистика зберігаються на пристрої в базі даних SQLite (Room) та системних налаштуваннях.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Дані акаунта:</strong> при добровільній реєстрації через Firebase або Google обробляються ідентифікатор (UID</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. Цілі та правові підстави обробки</h2>
-        </div>
-        <div class="card-body">
-  <p>Обробка здійснюється на законних підставах (згода користувача та виконання умов сервісу): забезпечення ігрового процесу, збереження прогресу, синхронізація таблиць лідерів, детермінована античит-перевірка та захист від шахрайства.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. Сторонні сервіси та реклама</h2>
-        </div>
-        <div class="card-body">
-  <p>У мережевій версії використовуються перевірені сервіси:</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Google Firebase:</strong> автентифікація користувачів, хмарне збереження (Cloud Firestore).</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Epic Games (EOS):</strong> організація змагальних матчів через безпечні реле.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Yandex Mobile Ads SDK:</strong> показ реклами. Користувач може вимкнути збір рекламного ідентифікатора в меню: Налаштування -> Google -> Реклама -> Скинути або видалити рекламний ідентифікатор.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Автономна версія FlowTess Lite:</strong> мережевий модуль повністю вимкнено, додаток працює повністю офлайн.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. Безпека даних та шифрування</h2>
-        </div>
-        <div class="card-body">
-  <p>Усі зовнішні з'єднання захищені сучасними протоколами HTTPS та TLS 1.3. Конфіденційні параметри шифруються апаратно через Android Keystore (AES-256-GCM). Файли резервних копій .FTB підписуються криптографічним ключем HMAC-SHA256. Паролі користувачів не зберігаються у відкритому вигляді.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. Зберігання та видалення акаунта</h2>
-        </div>
-        <div class="card-body">
-  <p>Дані зберігаються, доки акаунт залишається активним.</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Самостійне видалення в додатку:</strong> ви можете безповоротно видалити свій акаунт та всі хмарні дані безпосередньо у грі: Профіль -> Налаштування (шестірня) -> вкладка Акаунт -> Небезпечна зона -> Видалити акаунт.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Запит електронною поштою:</strong> ви також можете надіслати запит на видалення на fsfqx77@gmail.com із темою 'Account Deletion Request'. Запит виконується протягом 30 днів.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>При видаленні безповоротно стираються:</strong> дані профілю, обліковий запис Firebase Auth, рекорди, хмарні збереження та нікнейм.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. Захист даних неповнолітніх</h2>
-        </div>
-        <div class="card-body">
-  <p>Додаток не орієнтований на дітей віком до 13 років (або до 16 років у країнах ЄС). Ми свідомо не збираємо персональні дані неповнолітніх. Якщо батьки або опікуни виявили факт передачі даних дитиною без їхньої згоди, зверніться на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для негайного видалення таких відомостей.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. Права користувача та контакти</h2>
-        </div>
-        <div class="card-body">
-  <p>Відповідно до законодавства (GDPR, CCPA</p>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- KK -->
-    <div id="content-kk" class="content-block">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. Оператор және қолданылу аясы</h2>
-        </div>
-        <div class="card-body">
-  <p>Деректер операторы: FsFqX (әзірлеуші FsFq, байланыс: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Ережелер Android платформасындағы FlowTess және FlowTess Lite қолданбаларына қолданылады. Ойын барысы, рекордтар мен баптаулар құрылғыда жергілікті сақталады. Желілік қызметтер Firebase және Epic Online Services қорғалған серверлерін пайдаланады.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. Өңделетін деректер санаттары</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li><strong>Жергілікті деректер:</strong> басқару баптаулары, рекордтар, ашылған элементтер құрылғыдағы SQLite (Room) қорында сақталады.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Тіркелгі деректері:</strong> Firebase немесе Google арқылы кірген кезде пайдаланушы коды (UID</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. Өңдеу мақсаттары мен негіздері</h2>
-        </div>
-        <div class="card-body">
-  <p>Деректерді өңдеу заңды негіздерге сүйенеді (пайдаланушы келісімі және қызмет көрсету шарттары): ойын процесін жүргізу, жетістіктерді сақтау, көшбасшылар тақтасын жаңарту, әділ ойынды қорғау (античит) және алаяқтықтың алдын алу.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. Үшінші тарап қызметтері мен жарнама</h2>
-        </div>
-        <div class="card-body">
-  <p>Желілік нұсқада сенімді қызметтер жұмыс істейді:</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Google Firebase:</strong> қауіпсіз тіркелу және бұлттық деректер қоры (Cloud Firestore).</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Epic Games (EOS):</strong> желілік ойын байланысы мен бұлттық релелер.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Yandex Mobile Ads SDK:</strong> жарнама ұсыну. Пайдаланушы жарнамалық идентификаторды Android баптауларында өшіре алады: Баптаулар -> Google -> Жарнама.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>FlowTess Lite оффлайн нұсқасы:</strong> желі толық сөндірілген, сыртқы сервистерге ешқандай сұраныс жіберілмейді.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. Деректер қауіпсіздігі және шифрлау</h2>
-        </div>
-        <div class="card-body">
-  <p>Барлық сыртқы байланыстар HTTPS және TLS 1.3 қауіпсіз хаттамаларымен жүргізіледі. Құпия деректер Android Keystore (AES-256-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Парольдер ашық мәтін түрінде сақталмайды.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. Деректерді сақтау және тіркелгіні өшіру</h2>
-        </div>
-        <div class="card-body">
-  <p>Деректер тіркелгі белсенді болған уақыт бойы сақталады.</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Қосымша ішінде өшіру:</strong> ойыншы өз тіркелгісін және барлық бұлттық деректерін ойын ішінде өшіре алады: Профиль -> Баптаулар -> Тіркелгі қойындысы -> Қауіпті аймақ -> Тіркелгіні өшіру.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Пошта арқылы сұраныс:</strong> сонымен қатар fsfqx77@gmail.com поштасына өшіру туралы сұраныс жіберуге болады. Сұраныс 30 күн ішінде толық орындалады.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>Өшіру барысында тіркелгі деректері, Firebase Auth жазбасы, рекордтар және ойыншы аты толықтай жойылады.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. Кәмелетке толмағандар құпиялылығы</h2>
-        </div>
-        <div class="card-body">
-  <p>Қосымша 13 жасқа толмаған балаларға арналмаған (Еуропалық Одақ елдерінде 16 жасқа дейін). Біз кәмелетке толмағандардың жеке деректерін мақсатты түрде жинамаймыз. Егер баланың рұқсатсыз деректер бергені анықталса, <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына хабарласу қажет, деректер дереу өшіріледі.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. Пайдаланушы құқықтары және байланыс</h2>
-        </div>
-        <div class="card-body">
-  <p>Құпиялылық заңнамасына (GDPR, CCPA) сәйкес, пайдаланушы өз деректеріне қол жеткізуге, оларды түзетуге, көшіріп алуға және толық жоюға құқылы. Барлық сұрақтар бойынша мына поштаға хабарласыңыз: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
-  <p>)</p>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- DE -->
-    <div id="content-de" class="content-block">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. Verantwortlicher und Geltungsbereich</h2>
-        </div>
-        <div class="card-body">
-  <p>Verantwortlicher: FsFqX (Entwickler FsFq, E-Mail: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Diese Bestimmungen gelten für FlowTess und FlowTess Lite unter Android. Spielstände, Rekorde und Einstellungen werden lokal auf dem Gerät gespeichert. Online-Dienste nutzen die verschlüsselte Infrastruktur von Firebase und Epic Online Services.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. Kategorien verarbeiteter Daten</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li><strong>Lokale Daten:</strong> Steuerungsoptionen, Rekorde, freigeschaltete Skins und Statistiken werden lokal in SQLite (Room) und geschützten App-Einstellungen gespeichert.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Kontodaten:</strong> Bei freiwilliger Anmeldung via Firebase oder Google werden Benutzer-ID (UID</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. Zwecke und Rechtsgrundlagen</h2>
-        </div>
-        <div class="card-body">
-  <p>Die Verarbeitung erfolgt auf Basis berechtigter Interessen und Einwilligung: Bereitstellung von Spielfunktionen, Speichern des Fortschritts, globale Bestenlisten, deterministischer Anti-Cheat-Schutz und Betrugsprävention.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. Drittanbieter-Dienste und Werbung</h2>
-        </div>
-        <div class="card-body">
-  <p>Die vernetzte Version nutzt folgende Drittanbieter:</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Google Firebase:</strong> Authentifizierung und Cloud-Speicherung (Cloud Firestore).</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Epic Games (EOS):</strong> Sichere P2P-Duelle über Cloud-Relays.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Yandex Mobile Ads SDK:</strong> Einbindung von Werbeanzeigen. Nutzer können die Erfassung der Werbe-ID in den Systemeinstellungen deaktivieren: Einstellungen -> Google -> Werbung -> Werbe-ID löschen oder zurücksetzen.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>FlowTess Lite Edition:</strong> Vollständig isolierter Offline-Betrieb ohne jegliche Netzwerkverbindungen oder SDK-Aufrufe.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. Datensicherheit und Verschlüsselung</h2>
-        </div>
-        <div class="card-body">
-  <p>Jegliche Datenübertragung erfolgt verschlüsselt über HTTPS und TLS 1.3. Sensible Konfigurationsdaten werden durch Android Keystore (AES-256-GCM) hardwarenah geschützt. Lokale .FTB-Backups sind mit HMAC-SHA256-Signaturen gegen Manipulation gesichert. Passwörter werden niemals unverschlüsselt gespeichert.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. Speicherdauer und Kontolöschung</h2>
-        </div>
-        <div class="card-body">
-  <p>Daten werden gespeichert, solange das Benutzerkonto besteht.</p>
-  <p>" +</p>
-<ul>
-  <li><strong>Direkte Kontolöschung in der App:</strong> Sie können Ihr Konto und alle Cloud-Daten jederzeit in der App löschen: Profil -> Einstellungen (Zahnrad-Symbol) -> Tab Konto -> Gefahrenbereich -> Konto löschen.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li><strong>Löschung per E-Mail:</strong> Alternativ können Sie eine Anfrage an fsfqx77@gmail.com mit dem Betreff 'Account Deletion Request' senden. Die Löschung wird innerhalb von 30 Tagen durchgeführt.</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>Bei der Löschung werden Profil, Firebase Auth-Konto, Bestenlisten-Einträge und Cloud-Spielstände unwiderruflich entfernt.</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. Schutz von Minderjährigen</h2>
-        </div>
-        <div class="card-body">
-  <p>Die Anwendung richtet sich nicht an Kinder unter 13 Jahren (bzw. unter 16 Jahren in der EU). Wir erheben wissentlich keine personenbezogenen Daten von Minderjährigen. Sollten Erziehungsberechtigte feststellen, dass ein Kind ohne Einwilligung Daten übermittelt hat, bitten wir um Kontaktaufnahme unter <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> zur umgehenden Löschung.</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. Betroffenenrechte und Kontakt</h2>
-        </div>
-        <div class="card-body">
-  <p>Gemäß DSGVO und geltendem Datenschutzrecht haben Sie das Recht auf Auskunft, Berichtigung, Datenübertragbarkeit, Einschränkung der Verarbeitung und Löschung Ihrer Daten. Für Datenschutzanfragen wenden Sie sich bitte an: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
-  <p>)</p>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- ZH -->
-    <div id="content-zh" class="content-block">
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
-          <h2 class="card-title">1. 控制者与适用范围</h2>
-        </div>
-        <div class="card-body">
-  <p>数据控制者：FsFqX 工作室（开发者 FsFq，联络邮箱：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>）。本准则适用于 Android 平台的 FlowTess 与 FlowTess Lite。游戏存档、单机记录与偏好设置均保存在本地设备中。在线服务采用 Firebase 与 Epic Online Services 加密通道。</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/></svg></div>
-          <h2 class="card-title">2. 处理的数据类别</h2>
-        </div>
-        <div class="card-body">
-<ul>
-  <li>本地数据：操作设置、最高分、解锁皮肤和游戏统计均保存在设备本地 SQLite（Room）数据库和系统加密配置中。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>账户数据：通过 Firebase 或 Google 登录时，处理用户唯一标识（UID）、电子邮箱、游戏昵称及头像标识。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>网络通信：联机对战通过 Epic Online Services（EOS）云端中继进行，绝不向对手公开真实公网 IP 地址。本地 Wi-Fi 局域网对战仅在局域网内部使用 NSD mDNS 协议。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>设备标识与广告：联机版可能处理广告标识符（AAID / GAID）以提供广告展示和崩溃诊断。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>不收集金融数据：应用不索取任何银行卡或支付凭据，游戏道具仅支持虚拟游戏币兑换。</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 21h12v2H1zM5.245 8.07l2.83-2.827 8.99 8.99-2.83 2.828zM12.317 1l2.828 2.83-8.99 8.99-2.828-2.83zM21.5 13.924l-1.414-1.414-2.828 2.828 1.414 1.415z"/></svg></div>
-          <h2 class="card-title">3. 处理目的与法律依据</h2>
-        </div>
-        <div class="card-body">
-  <p>数据处理基于合法基础（用户授权与服务履行）：保障游戏正常运行、保存关卡进度、同步全球排行榜、进行基于确定性算法的防作弊验证以及防范安全攻击。</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg></div>
-          <h2 class="card-title">4. 第三方服务与广告披露</h2>
-        </div>
-        <div class="card-body">
-  <p>标准联网版本集成以下可靠的第三方技术：</p>
-  <p>" +</p>
-<ul>
-  <li>Google Firebase：账户鉴权与云端存档同步（Cloud Firestore）。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>Epic Games（EOS）：多人竞技匹配与云端网络中继。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>Yandex Mobile Ads SDK：广告展示。用户可随时在系统设置中重置或关闭广告跟踪：设置 -> Google -> 广告 -> 重置或删除广告 ID。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>FlowTess Lite 纯单机版：网络组件已彻底停用，不发起任何网络连接，亦不调用任何外部分析或广告 SDK。</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-          <h2 class="card-title">5. 数据安全与加密措施</h2>
-        </div>
-        <div class="card-body">
-  <p>所有外部网络通信均通过 HTTPS 及 TLS 1.3 加密协议传输。敏感本地配置由 Android Keystore（AES-256-GCM）硬件级密钥库加密保护。.FTB 备份文件通过 HMAC-SHA256 签名校验防篡改。用户密码绝不明文存储。</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7zm-4.12 4.46L12 13.34l-1.88-1.88-1.06 1.06L10.94 14.4l-1.88 1.88 1.06 1.06L12 15.46l1.88 1.88 1.06-1.06-1.88-1.88 1.88-1.88-1.06-1.06z"/></svg></div>
-          <h2 class="card-title">6. 数据留存与账户注销机制</h2>
-        </div>
-        <div class="card-body">
-  <p>账户数据在用户持有账户期间予以保留。</p>
-  <p>" +</p>
-<ul>
-  <li>应用内自主注销：您可随时在游戏内即时且永久注销账户并清除云端数据：个人资料 -> 设置（齿轮图标） -> 账户选项卡 -> 危险区域 -> 注销账户。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>邮件注销申请：您亦可发送邮件至 fsfqx77@gmail.com，邮件主题注明 'Account Deletion Request'，我们将在30天内核实并执行删除。</li>
-</ul>
-  <p>" +</p>
-<ul>
-  <li>注销后将彻底清除：用户资料、Firebase Auth 登录凭证、云端存档记录、排行榜积分及唯一昵称占位。</li>
-</ul>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></div>
-          <h2 class="card-title">7. 未成年人隐私保护</h2>
-        </div>
-        <div class="card-body">
-  <p>本应用不面向未满 13 周岁的儿童（或欧盟成员国未满 16 周岁的未成年人）。我们绝不故意收集未成年人的个人数据。若监护人发现儿童未经同意提交了个人信息，请联络 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，我们将立即予以彻底删除。</p>
-        </div>
-      </section>
-
-      <section class="md3-card">
-        <div class="card-header">
-          <div class="card-icon-container"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
-          <h2 class="card-title">8. 用户权利与联系方式</h2>
-        </div>
-        <div class="card-body">
-  <p>根据适用隐私法律法规（包括 GDPR 与 CCPA），用户对其个人数据享有查阅权、更正权、可携权、限制处理权及永久删除权。如有任何隐私疑虑或权益诉求，请随时联络：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>。</p>
-  <p>)</p>
-        </div>
-      </section>
-
-    </div>
-
+    </main>
 
     <div class="actions-ribbon">
       <a href="mailto:fsfqx77@gmail.com?subject=FlowTess%20Privacy%20Inquiry" class="btn-action btn-outlined">
@@ -1097,85 +930,42 @@
         <span>fsfqx77@gmail.com</span>
       </a>
       <a href="https://github.com/Fsfq/FlowTess-FT-" class="btn-action btn-primary" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1.07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
         <span>GitHub Repository</span>
       </a>
     </div>
 
     <footer>
-      <p>&copy; 2026 FsFqX (developer FsFq). All rights reserved. &bull; FlowTess for Android</p>
+      <p id="footer-text">Редакция от 14.10.2026. Разработчик: FsFqX / FsFq. Все права защищены.</p>
     </footer>
   </div>
 
   <script>
-    const metaTitles = {
-  "ru": {
-    "title": "Политика конфиденциальности",
-    "subtitle": "FlowTess for Android • Редакция от 17.10.2026 • FsFqX",
-    "badge": "Редакция от 17.10.2026"
-  },
-  "en": {
-    "title": "Privacy Policy",
-    "subtitle": "FlowTess for Android • Effective October 17, 2026 • FsFqX",
-    "badge": "Effective October 17, 2026"
-  },
-  "ua": {
-    "title": "Політика конфіденційності",
-    "subtitle": "FlowTess for Android • Редакція від 17.10.2026 • FsFqX",
-    "badge": "Редакція від 17.10.2026"
-  },
-  "kk": {
-    "title": "Құпиялылық саясаты",
-    "subtitle": "FlowTess for Android • Редакциясы: 17.10.2026 • FsFqX",
-    "badge": "17.10.2026 редакциясы"
-  },
-  "de": {
-    "title": "Datenschutzerklärung",
-    "subtitle": "FlowTess for Android • Fassung vom 17.10.2026 • FsFqX",
-    "badge": "Fassung vom 17.10.2026"
-  },
-  "zh": {
-    "title": "隐私政策",
-    "subtitle": "FlowTess for Android • 生效日期：2026年10月17日 • FsFqX",
-    "badge": "2026年10月17日修订"
-  }
-};
+    const metaTitles = {"RU":{"docTitle":"Политика конфиденциальности","appSubtitle":"FlowTess и FlowTess Lite для Android"},"EN":{"docTitle":"Privacy Policy","appSubtitle":"FlowTess and FlowTess Lite for Android"},"UA":{"docTitle":"Політика конфіденційності","appSubtitle":"FlowTess та FlowTess Lite для Android"},"KK":{"docTitle":"Құпиялылық саясаты","appSubtitle":"Android үшін FlowTess және FlowTess Lite"},"DE":{"docTitle":"Datenschutzerklärung","appSubtitle":"FlowTess und FlowTess Lite für Android"},"ZH":{"docTitle":"隐私政策","appSubtitle":"Android 版 FlowTess 与 FlowTess Lite"}};
 
-    function switchLang(lang, btn) {
-      document.querySelectorAll('.content-block').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    function switchLang(lang) {
+      document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.includes('Русский') && lang === 'RU' ||
+          b.textContent.includes('English') && lang === 'EN' ||
+          b.textContent.includes('Українська') && lang === 'UA' ||
+          b.textContent.includes('Қазақша') && lang === 'KK' ||
+          b.textContent.includes('Deutsch') && lang === 'DE' ||
+          b.textContent.includes('中文') && lang === 'ZH');
+      });
 
-      const target = document.getElementById('content-' + lang);
-      if (target) target.classList.add('active');
+      document.querySelectorAll('.content-block').forEach(c => {
+        c.classList.remove('active');
+      });
 
-      const meta = metaTitles[lang] || metaTitles.en;
-      document.getElementById('main-title').textContent = meta.title;
-      document.getElementById('main-subtitle').textContent = meta.subtitle;
-
-      if (btn) {
-        btn.classList.add('active');
-      } else {
-        const matchingBtn = Array.from(document.querySelectorAll('.lang-btn')).find(b => b.textContent.toLowerCase().includes(lang));
-        if (matchingBtn) matchingBtn.classList.add('active');
+      const target = document.getElementById('content-' + lang.toLowerCase());
+      if (target) {
+        target.classList.add('active');
       }
 
-      history.replaceState(null, '', '#' + lang);
-    }
-
-    // Auto-detect from hash or browser
-    const hash = window.location.hash.replace('#', '').toLowerCase();
-    if (['ru', 'en', 'ua', 'kk', 'de', 'zh'].includes(hash)) {
-      const btn = Array.from(document.querySelectorAll('.lang-btn')).find(b => {
-        const text = b.textContent.toLowerCase();
-        if (hash === 'ru') return text.includes('рус');
-        if (hash === 'en') return text.includes('eng');
-        if (hash === 'ua') return text.includes('укр');
-        if (hash === 'kk') return text.includes('қаз');
-        if (hash === 'de') return text.includes('deu');
-        if (hash === 'zh') return text.includes('中');
-        return false;
-      });
-      if (btn) switchLang(hash, btn);
+      if (metaTitles[lang]) {
+        document.getElementById('page-title').textContent = metaTitles[lang].docTitle;
+        document.getElementById('page-subtitle').textContent = metaTitles[lang].appSubtitle;
+      }
     }
   </script>
 </body>
