@@ -314,7 +314,7 @@
       </div>
       <div class="version-badge">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-        <span>v0.98.4</span>
+        <span>v0.98.5</span>
       </div>
     </div>
 
@@ -340,7 +340,7 @@
             <h2 class="card-title">1. Оператор и сфера действия</h2>
           </div>
           <div class="card-body">
-          <p>Оператор данных: FsFqX (разработчик FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Обработка персональных данных осуществляется в строгом соответствии с Федеральным законом РФ от 27.07.2006 № 152-ФЗ "О персональных данных", а также нормами GDPR и CCPA. Настоящие правила действуют для мобильных приложений FlowTess и FlowTess Lite на платформе Android. Первичная запись и хранение игрового прогресса, рекордов и настроек осуществляются локально на устройстве пользователя (ч. 5 ст. 18 ФЗ-152). Сетевые функции используют защищенные сервисы Firebase и Epic Online Services.</p>
+          <p>Оператор данных: FsFqX (разработчик FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Обработка персональных данных регулируется Федеральным законом РФ от 27.07.2006 № 152-ФЗ "О персональных данных", а также международными регламентами GDPR (ЕС) и CCPA (США). Правила действуют для мобильных приложений FlowTess и FlowTess Lite на платформе Android. Игровой прогресс, рекорды и локальные настройки записываются и хранятся на устройстве пользователя (ч. 5 ст. 18 ФЗ-152). Сетевые службы работают через защищенную инфраструктуру Firebase и Epic Online Services.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -350,11 +350,11 @@
           </div>
           <div class="card-body">
           <ul>
-            <li><strong>Локальные данные:</strong> параметры управления, личные рекорды, открытые темы и статистика хранятся локально на устройстве в базе данных SQLite (Room) и зашифрованных настройках.</li>
-            <li><strong>Данные учетной записи:</strong> при добровольной регистрации через Firebase или входе через Google обрабатываются идентификатор (UID), адрес электронной почты, отображаемый никнейм и токен аватара.</li>
-            <li><strong>Сетевая телеметрия:</strong> для многопользовательских матчей используются реле Epic Online Services (EOS) без раскрытия публичного IP-адреса оппоненту. Для локальных матчей по Wi-Fi используется сетевое обнаружение NSD mDNS исключительно внутри локальной подсети.</li>
-            <li><strong>Идентификаторы устройства и реклама:</strong> в сетевой версии может обрабатываться рекламный идентификатор (AAID / GAID) для показа релевантной рекламы и аналитики сбоев.</li>
-            <li><strong>Финансовые данные не собираются:</strong> приложение не запрашивает платежные реквизиты, все покупки осуществляются за виртуальную игровую валюту.</li>
+            <li><strong>Локальные данные:</strong> раскладка управления, рекорды, открытые темы и статистика матчей хранятся на устройстве в базе данных SQLite (Room) и системных настройках.</li>
+            <li><strong>Данные профиля:</strong> при регистрации через Firebase или Google обрабатываются идентификатор пользователя (UID), адрес электронной почты, никнейм и токен аватара.</li>
+            <li><strong>Сетевая телеметрия:</strong> многопользовательские дуэли маршрутизируются через защищенные реле Epic Online Services (EOS) без раскрытия публичного IP-адреса сопернику. Локальные матчи по Wi-Fi используют сетевое обнаружение NSD mDNS внутри домашней подсети.</li>
+            <li><strong>Идентификаторы устройства и реклама:</strong> в сетевой версии обрабатывается рекламный идентификатор (AAID / GAID) для аналитики стабильности и показа рекламы.</li>
+            <li><strong>Платежные данные:</strong> приложение не запрашивает и не хранит платежные реквизиты. Все внутриигровые предметы приобретаются за виртуальную валюту.</li>
           </ul>
           </div>
         </section>
@@ -364,7 +364,7 @@
             <h2 class="card-title">3. Цели и правовые основания обработки</h2>
           </div>
           <div class="card-body">
-          <p>В соответствии со ст. 6 Федерального закона № 152-ФЗ и международными стандартами, обработка данных осуществляется на законных основаниях (согласие пользователя и выполнение условий обслуживания): обеспечение игрового процесса, сохранение прогресса, синхронизация таблиц лидеров, детерминированная проверка честной игры (античит) и предотвращение мошенничества.</p>
+          <p>Обработка данных выполняется на основании согласия пользователя и исполнения условий обслуживания (ст. 6 Федерального закона № 152-ФЗ, ст. 6 GDPR). Цели: обеспечение игрового процесса, сохранение прогресса, синхронизация глобальных таблиц лидеров, детерминированная проверка честной игры (античит) и предотвращение модификации сетевых пакетов.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -373,12 +373,12 @@
             <h2 class="card-title">4. Сторонние сервисы и реклама</h2>
           </div>
           <div class="card-body">
-          <p>В сетевой версии приложения используются надежные сторонние платформы:</p>
+          <p>Для работы сетевой версии задействованы внешние платформы:</p>
           <ul>
-            <li><strong>Google Firebase:</strong> аутентификация учетных записей, облачное хранение прогресса (Cloud Firestore).</li>
-            <li><strong>Epic Games (EOS):</strong> P2P-матчмейкинг и облачные ретрансляторы трафика.</li>
-            <li><strong>Yandex Mobile Ads SDK:</strong> отображение рекламы. Пользователь может в любой момент ограничить сбор рекламного идентификатора в настройках Android: Настройки -> Google -> Реклама -> Сбросить или удалить рекламный идентификатор.</li>
-            <li><strong>Автономная версия FlowTess Lite:</strong> сетевой стек полностью отключен, приложение не выполняет сетевых запросов и не обращается к внешним SDK.</li>
+            <li><strong>Google Firebase:</strong> аутентификация учетных записей, облачное хранилище Cloud Firestore.</li>
+            <li><strong>Epic Games (EOS):</strong> организация P2P-матчей и сквозная ретрансляция сетевого трафика.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> показ рекламы. Сброс или отключение рекламного идентификатора доступны в настройках Android: Настройки -> Google -> Реклама.</li>
+            <li><strong>FlowTess Lite:</strong> полностью автономная сборка. Сетевой стек отключен, приложение не отправляет внешних запросов и не содержит рекламных SDK.</li>
           </ul>
           </div>
         </section>
@@ -388,7 +388,7 @@
             <h2 class="card-title">5. Безопасность данных и шифрование</h2>
           </div>
           <div class="card-body">
-          <p>Все внешние соединения выполняются по защищенным протоколам HTTPS и TLS 1.3. Конфиденциальные параметры шифруются аппаратно с использованием Android Keystore (AES-256-GCM). Локальные резервные копии .FTB защищены криптографической подписью HMAC-SHA256 для защиты от повреждения и модификации. Пароли пользователей никогда не хранятся в открытом виде.</p>
+          <p>Внешний трафик передается по защищенным протоколам HTTPS и TLS 1.3. Локальные параметры шифруются аппаратным модулем Android Keystore (алгоритм AES-256-GCM). Резервные файлы .FTB подписываются криптографическим хэшем HMAC-SHA256 для защиты от повреждений и подделки. Пароли пользователей обрабатываются сервисом Firebase Auth и не хранятся в открытом виде.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -397,11 +397,11 @@
             <h2 class="card-title">6. Хранение и удаление учетной записи</h2>
           </div>
           <div class="card-body">
-          <p>Данные учетной записи хранятся до тех пор, пока аккаунт активен.</p>
+          <p>Данные учетной записи хранятся до момента ее удаления пользователем.</p>
           <ul>
-            <li><strong>Самостоятельное удаление в приложении:</strong> вы можете мгновенно и безвозвратно удалить свой аккаунт и все связанные облачные данные непосредственно в игре: Профиль -> Настройки (значок шестеренки) -> вкладка Аккаунт -> Опасная зона -> Удалить аккаунт.</li>
-            <li><strong>Удаление по запросу:</strong> вы также можете направить запрос на удаление учетной записи и всех связанных записей на адрес электронной почты: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> с темой 'Запрос на удаление аккаунта'. Запрос обрабатывается в течение 30 дней.</li>
-            <li><strong>При удалении аккаунта безвозвратно стираются:</strong> профиль игрока, запись в базе Firebase Auth, сохраненные таблицы лидеров, резервные данные и уникальный никнейм.</li>
+            <li><strong>Удаление в приложении:</strong> мгновенно очистить учетную запись и все связанные облачные данные можно по пути: Главное меню -> Профиль -> Опасная зона -> Удалить аккаунт. Действие необратимо.</li>
+            <li><strong>Запрос по почте:</strong> запрос на удаление можно направить на адрес <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> с темой 'Запрос на удаление аккаунта'. Срок обработки: до 30 дней.</li>
+            <li><strong>При удалении стираются:</strong> профиль игрока, запись в Firebase Auth, позиции в таблицах лидеров, резервные копии и привязка никнейма.</li>
           </ul>
           </div>
         </section>
@@ -411,7 +411,7 @@
             <h2 class="card-title">7. Защита данных несовершеннолетних</h2>
           </div>
           <div class="card-body">
-          <p>Приложение не предназначено для детей младше 13 лет (или младше 16 лет в странах Европейского Союза). Мы сознательно не собираем личную информацию несовершеннолетних. Если родителю или опекуну стало известно, что ребенок предоставил личные данные без согласия, свяжитесь с нами по адресу <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для немедленного удаления информации.</p>
+          <p>Приложение не предназначено для детей младше 13 лет (в странах Европейского Союза: младше 16 лет). Профиль и сбор сетевых идентификаторов для детской аудитории не предусмотрены. Если родитель или опекун обнаружил факт создания учетной записи ребенком, направьте обращение на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для немедленной очистки данных.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -420,7 +420,7 @@
             <h2 class="card-title">8. Права пользователя и контакты</h2>
           </div>
           <div class="card-body">
-          <p>В соответствии с Федеральным законом РФ № 152-ФЗ (ст. 14, 15) и нормами GDPR/CCPA, субъект персональных данных имеет право на доступ к своим данным, их уточнение, блокирование, отзыв согласия и полное удаление. Отзыв согласия и удаление аккаунта производятся непосредственно в игре (Профиль -> Настройки -> Аккаунт -> Удалить аккаунт) либо по официальному обращению на email: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          <p>Пользователь имеет право на получение сведений об обработке своих данных, их выгрузку, исправление неточностей, блокирование и отзыв согласия (ст. 14, 15 Федерального закона № 152-ФЗ, Chapter 3 GDPR). По вопросам реализации прав и защите персональных данных обращайтесь к разработчику: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
           </div>
         </section>
       </div>
@@ -431,7 +431,7 @@
             <h2 class="card-title">1. Data Controller and Scope</h2>
           </div>
           <div class="card-body">
-          <p>Data controller: FsFqX studio (lead developer FsFq, contact: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Personal data processing complies with Federal Law No. 152-FZ "On Personal Data" (Russian Federation) as well as GDPR and CCPA standards. These rules apply to FlowTess and FlowTess Lite applications on Android. Primary storage of gameplay progress, high scores, and settings is conducted locally on the user's device in accordance with Art. 18 Part 5 of Law No. 152-FZ. Online services utilize encrypted Firebase and Epic Online Services infrastructure.</p>
+          <p>Data controller: FsFqX studio (lead developer FsFq, contact: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Personal data processing complies with Federal Law No. 152-FZ 'On Personal Data' (Russian Federation) as well as GDPR (EU) and CCPA (USA) standards. These rules apply to FlowTess and FlowTess Lite on Android. Primary storage of gameplay progress, high scores, and local settings is performed directly on the user's device in accordance with Art. 18 Part 5 of Law No. 152-FZ. Online services operate through encrypted Firebase and Epic Online Services infrastructure.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -442,10 +442,10 @@
           <div class="card-body">
           <ul>
             <li><strong>Local Data:</strong> Control schemes, high scores, unlocked themes, and gameplay statistics are stored locally in the on-device SQLite database (Room) and encrypted preferences.</li>
-            <li><strong>Account Data:</strong> When voluntarily registering via Firebase or signing in with Google, we process unique user ID (UID), email address, player nickname, and avatar tokens.</li>
-            <li><strong>Network Telemetry:</strong> P2P multiplayer duels route through Epic Online Services (EOS) TURN relay servers without exposing public IP addresses to peers. Local Wi-Fi duels use NSD mDNS strictly within the local area network.</li>
-            <li><strong>Device Identifiers & Advertising:</strong> In the connected edition, advertising identifiers (AAID / GAID) may be processed for relevant ad delivery and crash telemetry.</li>
-            <li><strong>No Financial Data:</strong> We never collect payment card or banking data; all cosmetics and crates are unlocked strictly with in-game virtual currency.</li>
+            <li><strong>Account Data:</strong> When registering via Firebase or signing in with Google, we process unique user ID (UID), email address, player nickname, and avatar tokens.</li>
+            <li><strong>Network Telemetry:</strong> Multiplayer duels route through Epic Online Services (EOS) TURN relay servers without exposing public IP addresses to opponents. Local Wi-Fi duels use NSD mDNS strictly within the local area network.</li>
+            <li><strong>Device Identifiers & Advertising:</strong> In the connected edition, advertising identifiers (AAID / GAID) may be processed for stability telemetry and relevant ad delivery.</li>
+            <li><strong>No Financial Data:</strong> We never collect payment card or banking information. All in-game items are unlocked strictly with virtual currency.</li>
           </ul>
           </div>
         </section>
@@ -455,7 +455,7 @@
             <h2 class="card-title">3. Purposes and Legal Basis</h2>
           </div>
           <div class="card-body">
-          <p>Under Article 6 of Federal Law No. 152-FZ and international data regulations, data processing relies on lawful grounds (user consent and service fulfillment): delivering core gameplay functionality, persisting progress, synchronizing global leaderboards, deterministic anti-cheat validation, and fraud prevention.</p>
+          <p>Data processing relies on lawful grounds of user consent and service fulfillment (Article 6 of Federal Law No. 152-FZ, Article 6 GDPR): delivering gameplay functionality, persisting progress, synchronizing global leaderboards, deterministic anti-cheat validation, and packet tampering prevention.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -464,12 +464,12 @@
             <h2 class="card-title">4. Third-Party Services and Advertising</h2>
           </div>
           <div class="card-body">
-          <p>The connected build integrates trusted third-party providers:</p>
+          <p>The connected build integrates the following external platforms:</p>
           <ul>
-            <li><strong>Google Firebase:</strong> User authentication and secure cloud persistence (Cloud Firestore).</li>
-            <li><strong>Epic Games (EOS):</strong> Competitive matchmaking and cloud-relayed multiplayer connections.</li>
-            <li><strong>Yandex Mobile Ads SDK:</strong> In-app advertisement delivery. You can opt out of ad personalization via Android Settings: Settings -> Google -> Ads -> Reset or delete advertising ID.</li>
-            <li><strong>FlowTess Lite Edition:</strong> Completely isolated offline sandbox with zero network activity and zero external SDK telemetry.</li>
+            <li><strong>Google Firebase:</strong> User authentication and cloud storage (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> P2P matchmaking and cloud-relayed multiplayer connections.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> In-app advertisement delivery. You can opt out of ad personalization via Android Settings: Settings -> Google -> Ads.</li>
+            <li><strong>FlowTess Lite:</strong> Completely isolated offline sandbox with zero network activity and zero external SDK calls.</li>
           </ul>
           </div>
         </section>
@@ -479,7 +479,7 @@
             <h2 class="card-title">5. Data Security and Encryption</h2>
           </div>
           <div class="card-body">
-          <p>All network traffic is encrypted in transit using HTTPS and TLS 1.3. Critical preferences are encrypted at rest using hardware-backed Android Keystore (AES-256-GCM). Portable .FTB backup archives require cryptographic HMAC-SHA256 integrity validation. User passwords are encrypted by Firebase Auth and never stored in plain text.</p>
+          <p>All external network traffic is encrypted in transit using HTTPS and TLS 1.3. Local sensitive configurations are encrypted at rest using hardware-backed Android Keystore (AES-256-GCM). Portable .FTB backup archives require cryptographic HMAC-SHA256 signature validation. Passwords are authenticated by Firebase Auth and never stored in plain text.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -488,11 +488,11 @@
             <h2 class="card-title">6. Data Retention and Account Deletion</h2>
           </div>
           <div class="card-body">
-          <p>Account data is retained for the duration of active account usage.</p>
+          <p>Account data is retained until the user deletes the account.</p>
           <ul>
-            <li><strong>In-App Account Deletion:</strong> You can permanently delete your account and all associated cloud progress directly inside the game: Profile -> Settings (gear icon) -> Account tab -> Danger Zone -> Delete Account.</li>
-            <li><strong>Deletion via Email Request:</strong> You may also request account erasure by sending an email to <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> with the subject 'Account Deletion Request'. Inquiries are resolved within 30 days.</li>
-            <li><strong>Deletion permanently purges:</strong> user profile document, Firebase Auth credentials, cloud progress, leaderboard entries, and claimed nickname reservation.</li>
+            <li><strong>In-App Deletion:</strong> You can permanently erase your account and associated cloud data at any time via: Main Menu -> Profile -> Danger Zone -> Delete Account. This action is irreversible.</li>
+            <li><strong>Email Request:</strong> You can also request complete account erasure by contacting <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> with the subject 'Account Deletion Request'. Processing takes up to 30 days.</li>
+            <li><strong>Purged Data:</strong> Deletion permanently wipes user profile documents, Firebase Auth records, leaderboard ranks, backup files, and reserved nicknames.</li>
           </ul>
           </div>
         </section>
@@ -502,7 +502,7 @@
             <h2 class="card-title">7. Children's Privacy Protection</h2>
           </div>
           <div class="card-body">
-          <p>The application is not directed to children under 13 years of age (or under 16 in the European Union). We do not knowingly collect personal data from minors. If a parent or guardian discovers that a child has provided personal information without consent, contact us at <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> for prompt deletion.</p>
+          <p>The application is not directed to children under 13 years of age (or under 16 in the European Union). Profiles and network identifier collection are not available for children. If a parent or guardian discovers that a child has created an account, contact <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> for immediate data erasure.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -511,7 +511,7 @@
             <h2 class="card-title">8. User Rights and Contact Details</h2>
           </div>
           <div class="card-body">
-          <p>Under Federal Law No. 152-FZ (Articles 14, 15) as well as GDPR and CCPA regulations, data subjects retain full rights to access, rectify, restrict, revoke consent, and permanently delete their data. Consent withdrawal and account erasure can be completed directly in-game (Profile -> Settings -> Account -> Delete Account) or by emailing: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          <p>Under Federal Law No. 152-FZ (Articles 14, 15) and GDPR (Chapter 3), users retain full rights to access, rectify, restrict, export, and revoke consent for their data. For inquiries regarding data rights and privacy inquiries, contact the developer at: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
           </div>
         </section>
       </div>
@@ -522,7 +522,7 @@
             <h2 class="card-title">1. Оператор та сфера дії</h2>
           </div>
           <div class="card-body">
-          <p>Оператор даних: FsFqX (розробник FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Обробка персональних даних регулюється нормами Закону № 152-ФЗ "Про персональні дані", а також регламентами GDPR та CCPA. Правила діють для додатків FlowTess та FlowTess Lite на платформі Android. Первинний запис та зберігання ігрового прогресу, рекордів і налаштувань здійснюються локально на пристрої користувача (ч. 5 ст. 18 № 152-ФЗ). Мережеві функції використовують захищені сервіси Firebase та Epic Online Services.</p>
+          <p>Оператор даних: FsFqX (розробник FsFq, контакт: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Обробка даних регулюється Законом № 152-ФЗ "Про персональні дані" за місцем реєстрації оператора, а також регламентами GDPR (ЄС) та CCPA (США). Правила діють для додатків FlowTess та FlowTess Lite на платформі Android. Збереження ігрового прогресу, рекордів та налаштувань здійснюється локально на пристрої користувача (ч. 5 ст. 18 № 152-ФЗ). Мережеві служби працюють через захищену інфраструктуру Firebase та Epic Online Services.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -533,10 +533,10 @@
           <div class="card-body">
           <ul>
             <li><strong>Локальні дані:</strong> налаштування керування, рекорди, відкриті теми та статистика зберігаються на пристрої в базі даних SQLite (Room) та системних налаштуваннях.</li>
-            <li><strong>Дані акаунта:</strong> при добровільній реєстрації через Firebase або Google обробляються ідентифікатор (UID), електронна пошта, ігровий нікнейм та аватар.</li>
-            <li><strong>Мережева телеметрія:</strong> для мережевих матчів використовуються реле Epic Online Services (EOS) без розкриття публічної IP-адреси опоненту. Для локальних дуелей через Wi-Fi задіяно протокол NSD mDNS виключно в межах домашньої мережі.</li>
-            <li><strong>Ідентифікатори пристрою та реклама:</strong> у мережевій версії може оброблятися рекламний ідентифікатор (AAID / GAID) для показу реклами та аналітики.</li>
-            <li><strong>Фінансові дані не збираються:</strong> додаток не запитує банківські дані, усі предмети купуються за віртуальну валюту.</li>
+            <li><strong>Дані профілю:</strong> при добровільній реєстрації через Firebase або Google обробляються ідентифікатор (UID), електронна пошта, нікнейм та токен аватара.</li>
+            <li><strong>Мережева телеметрія:</strong> мережеві матчі маршрутизуються через захищені реле Epic Online Services (EOS) без розкриття публічної IP-адреси опоненту. Локальні дуелі через Wi-Fi використовують протокол NSD mDNS виключно в межах домашньої мережі.</li>
+            <li><strong>Ідентифікатори пристрою та реклама:</strong> у мережевій версії обробляється рекламний ідентифікатор (AAID / GAID) для показу реклами та аналітики стабільності.</li>
+            <li><strong>Фінансові дані:</strong> додаток не збирає банківські дані. Усі предмети відкриваються за віртуальну валюту.</li>
           </ul>
           </div>
         </section>
@@ -546,7 +546,7 @@
             <h2 class="card-title">3. Цілі та правові підстави обробки</h2>
           </div>
           <div class="card-body">
-          <p>Відповідно до ст. 6 Закону № 152-ФЗ та міжнародних правових норм, обробка здійснюється на законних підставах (згода користувача та виконання умов сервісу): забезпечення ігрового процесу, збереження прогресу, синхронізація таблиць лідерів, детермінована античит-перевірка та захист від шахрайства.</p>
+          <p>Обробка здійснюється на законних підставах згоди користувача та виконання умов сервісу (ст. 6 Закону № 152-ФЗ, ст. 6 GDPR): забезпечення гри, збереження прогресу, синхронізація таблиць лідерів, детермінована античит-перевірка та захист від шахрайства.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -555,12 +555,12 @@
             <h2 class="card-title">4. Сторонні сервіси та реклама</h2>
           </div>
           <div class="card-body">
-          <p>У мережевій версії використовуються перевірені сервіси:</p>
+          <p>Для роботи мережевої версії задіяно зовнішні сервіси:</p>
           <ul>
-            <li><strong>Google Firebase:</strong> автентифікація користувачів, хмарне збереження (Cloud Firestore).</li>
-            <li><strong>Epic Games (EOS):</strong> організація змагальних матчів через безпечні реле.</li>
-            <li><strong>Yandex Mobile Ads SDK:</strong> показ реклами. Користувач може вимкнути збір рекламного ідентифікатора в меню: Налаштування -> Google -> Реклама -> Скинути або видалити рекламний ідентифікатор.</li>
-            <li><strong>Автономна версія FlowTess Lite:</strong> мережевий модуль повністю вимкнено, додаток працює повністю офлайн.</li>
+            <li><strong>Google Firebase:</strong> автентифікація облікових записів, хмарна база даних Cloud Firestore.</li>
+            <li><strong>Epic Games (EOS):</strong> змагальні матчі та ретрансляція трафіку.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> показ реклами. Користувач може скинути рекламний ідентифікатор у системних налаштуваннях: Налаштування -> Google -> Реклама.</li>
+            <li><strong>FlowTess Lite:</strong> автономна версія без мережевого модуля, додаток працює повністю офлайн і не звертається до зовнішніх SDK.</li>
           </ul>
           </div>
         </section>
@@ -570,7 +570,7 @@
             <h2 class="card-title">5. Безпека даних та шифрування</h2>
           </div>
           <div class="card-body">
-          <p>Усі зовнішні з'єднання захищені сучасними протоколами HTTPS та TLS 1.3. Конфіденційні параметри шифруються апаратно через Android Keystore (AES-256-GCM). Файли резервних копій .FTB підписуються криптографічним ключем HMAC-SHA256. Паролі користувачів не зберігаються у відкритому вигляді.</p>
+          <p>Зовнішні з'єднання захищені протоколами HTTPS та TLS 1.3. Конфіденційні параметри шифруються апаратно через Android Keystore (AES-256-GCM). Резервні копії .FTB підписуються криптографічним ключем HMAC-SHA256. Паролі користувачів обробляються Firebase Auth і не зберігаються у відкритому вигляді.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -579,11 +579,11 @@
             <h2 class="card-title">6. Зберігання та видалення акаунта</h2>
           </div>
           <div class="card-body">
-          <p>Дані зберігаються, доки акаунт залишається активним.</p>
+          <p>Дані облікового запису зберігаються до моменту їх видалення користувачем.</p>
           <ul>
-            <li><strong>Самостійне видалення в додатку:</strong> ви можете безповоротно видалити свій акаунт та всі хмарні дані безпосередньо у грі: Профіль -> Налаштування (шестірня) -> вкладка Акаунт -> Небезпечна зона -> Видалити акаунт.</li>
-            <li><strong>Запит електронною поштою:</strong> ви також можете надіслати запит на видалення на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> із темою 'Account Deletion Request'. Запит виконується протягом 30 днів.</li>
-            <li><strong>При видаленні безповоротно стираються:</strong> дані профілю, обліковий запис Firebase Auth, рекорди, хмарні збереження та нікнейм.</li>
+            <li><strong>Видалення у додатку:</strong> повністю стерти свій акаунт та хмарні дані можна за шляхом: Головне меню -> Профіль -> Небезпечна зона -> Видалити акаунт. Дія незворотна.</li>
+            <li><strong>Запит електронною поштою:</strong> запит на видалення можна надіслати на адресу <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> із темою 'Запит на видалення акаунта'. Термін обробки: до 30 днів.</li>
+            <li><strong>При видаленні стираються:</strong> профіль, запис Firebase Auth, таблиці рекордів, резервні файли та закріплений нікнейм.</li>
           </ul>
           </div>
         </section>
@@ -593,7 +593,7 @@
             <h2 class="card-title">7. Захист даних неповнолітніх</h2>
           </div>
           <div class="card-body">
-          <p>Додаток не орієнтований на дітей віком до 13 років (або до 16 років у країнах ЄС). Ми свідомо не збираємо персональні дані неповнолітніх. Якщо батьки або опікуни виявили факт передачі даних дитиною без їхньої згоди, зверніться на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для негайного видалення таких відомостей.</p>
+          <p>Додаток не орієнтований на дітей віком до 13 років (або до 16 років у країнах ЄС). Профілі та збір мережевих даних для дітей не підтримуються. Якщо батьки або опікуни виявили реєстрацію дитиною, зверніться на <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> для негайного видалення даних.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -602,7 +602,7 @@
             <h2 class="card-title">8. Права користувача та контакти</h2>
           </div>
           <div class="card-body">
-          <p>Відповідно до Закону № 152-ФЗ (ст. 14, 15) та нормативів GDPR/CCPA, користувач має право на доступ до своїх даних, їх уточнення, блокування, відкликання згоди та повне видалення. З усіх питань конфіденційності звертайтеся за адресою: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          <p>Користувач має право на отримання інформації про обробку даних, їх вивантаження, виправлення, блокування та відкликання згоди (ст. 14, 15 Закону № 152-ФЗ, GDPR). З усіх питань звертайтеся до розробника: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
           </div>
         </section>
       </div>
@@ -613,7 +613,7 @@
             <h2 class="card-title">1. Оператор және қолданылу аясы</h2>
           </div>
           <div class="card-body">
-          <p>Деректер операторы: FsFqX (әзірлеуші FsFq, байланыс: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Дербес деректерді өңдеу № 152-ФЗ "Дербес деректер туралы" Заңына және GDPR/CCPA халықаралық талаптарына сәйкес келеді. Ережелер Android платформасындағы FlowTess және FlowTess Lite қолданбаларына қолданылады. Ойын барысы, рекордтар мен баптаулар бастапқыда пайдаланушының құрылғысында жергілікті сақталады (№ 152-ФЗ 18-бап 5-бөлім). Желілік қызметтер Firebase және Epic Online Services қорғалған серверлерін пайдаланады.</p>
+          <p>Деректер операторы: FsFqX (әзірлеуші FsFq, байланыс: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Деректерді өңдеу оператор орналасқан елдің № 152-ФЗ "Дербес деректер туралы" Заңына және халықаралық GDPR (ЕО) мен CCPA (АҚШ) талаптарына сәйкес реттеледі. Ережелер Android жүйесіндегі FlowTess және FlowTess Lite қолданбаларына қолданылады. Ойын барысы, рекордтар мен баптаулар құрылғыда жергілікті сақталады (№ 152-ФЗ 18-бап 5-бөлім). Желілік қызметтер Firebase және Epic Online Services қорғалған серверлері арқылы жұмыс істейді.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -626,8 +626,8 @@
             <li><strong>Жергілікті деректер:</strong> басқару баптаулары, рекордтар, ашылған элементтер құрылғыдағы SQLite (Room) қорында сақталады.</li>
             <li><strong>Тіркелгі деректері:</strong> Firebase немесе Google арқылы кірген кезде пайдаланушы коды (UID), электрондық пошта, ойыншы лақап аты және аватар өңделеді.</li>
             <li><strong>Желілік телеметрия:</strong> онлайн матчтар үшін Epic Online Services (EOS) қауіпсіз релелері пайдаланылады, қарсыласқа жеке IP мекенжайы көрсетілмейді. Жергілікті Wi-Fi ойыны үшін үй желісі ішінде ғана NSD mDNS қолданылады.</li>
-            <li><strong>Жарнама идентификаторлары:</strong> желілік нұсқада жарнама көрсету үшін құрылғының жарнамалық коды (AAID) өңделуі мүмкін.</li>
-            <li><strong>Қаржылық деректер жиналмайды:</strong> төлем карталары сұралмайды, барлық элементтер ойын ішіндегі виртуалды монеталарға беріледі.</li>
+            <li><strong>Жарнама идентификаторлары:</strong> желілік нұсқада жарнама көрсету үшін құрылғының жарнамалық коды (AAID / GAID) өңделуі мүмкін.</li>
+            <li><strong>Қаржылық деректер:</strong> төлем карталары сұралмайды, барлық элементтер виртуалды монеталарға беріледі.</li>
           </ul>
           </div>
         </section>
@@ -637,7 +637,7 @@
             <h2 class="card-title">3. Өңдеу мақсаттары мен негіздері</h2>
           </div>
           <div class="card-body">
-          <p>№ 152-ФЗ Заңының 6-бабына және халықаралық нормаларға сәйкес деректерді өңдеу заңды негіздерге сүйенеді (пайдаланушы келісімі және қызмет көрсету шарттары): ойын процесін жүргізу, жетістіктерді сақтау, көшбасшылар тақтасын жаңарту, әділ ойынды қорғау (античит) және алаяқтықтың алдын алу.</p>
+          <p>№ 152-ФЗ Заңының 6-бабы мен GDPR нормаларына сәйкес өңдеу пайдаланушы келісімі мен қызмет көрсету шарттарына негізделеді: ойын процесін жүргізу, жетістіктерді сақтау, көшбасшылар тақтасын жаңарту, әділ ойынды қорғау (античит) және қауіпсіздікті қамтамасыз ету.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -646,12 +646,12 @@
             <h2 class="card-title">4. Үшінші тарап қызметтері мен жарнама</h2>
           </div>
           <div class="card-body">
-          <p>Желілік нұсқада сенімді қызметтер жұмыс істейді:</p>
+          <p>Желілік нұсқа үшін сыртқы сервистер жұмыс істейді:</p>
           <ul>
             <li><strong>Google Firebase:</strong> қауіпсіз тіркелу және бұлттық деректер қоры (Cloud Firestore).</li>
             <li><strong>Epic Games (EOS):</strong> желілік ойын байланысы мен бұлттық релелер.</li>
             <li><strong>Yandex Mobile Ads SDK:</strong> жарнама ұсыну. Пайдаланушы жарнамалық идентификаторды Android баптауларында өшіре алады: Баптаулар -> Google -> Жарнама.</li>
-            <li><strong>FlowTess Lite оффлайн нұсқасы:</strong> желі толық сөндірілген, сыртқы сервистерге ешқандай сұраныс жіберілмейді.</li>
+            <li><strong>FlowTess Lite:</strong> желі толық сөндірілген автономды нұсқа, сыртқы сервистерге ешқандай сұраныс жіберілмейді.</li>
           </ul>
           </div>
         </section>
@@ -661,7 +661,7 @@
             <h2 class="card-title">5. Деректер қауіпсіздігі және шифрлау</h2>
           </div>
           <div class="card-body">
-          <p>Барлық сыртқы байланыстар HTTPS және TLS 1.3 қауіпсіз хаттамаларымен жүргізіледі. Құпия деректер Android Keystore (AES-256-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Парольдер ашық мәтін түрінде сақталмайды.</p>
+          <p>Барлық байланыстар HTTPS және TLS 1.3 қауіпсіз хаттамаларымен жүргізіледі. Құпия деректер Android Keystore (AES-256-GCM) арқылы шифрланады. .FTB резервтік файлдары HMAC-SHA256 қолтаңбасымен қорғалған. Парольдер ашық мәтін түрінде сақталмайды.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -672,8 +672,8 @@
           <div class="card-body">
           <p>Деректер тіркелгі белсенді болған уақыт бойы сақталады.</p>
           <ul>
-            <li><strong>Қосымша ішінде өшіру:</strong> ойыншы өз тіркелгісін және барлық бұлттық деректерін ойын ішінде өшіре алады: Профиль -> Баптаулар -> Тіркелгі қойындысы -> Қауіпті аймақ -> Тіркелгіні өшіру.</li>
-            <li><strong>Пошта арқылы сұраныс:</strong> сонымен қатар <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына өшіру туралы сұраныс жіберуге болады. Сұраныс 30 күн ішінде толық орындалады.</li>
+            <li><strong>Қосымша ішінде өшіру:</strong> ойыншы өз тіркелгісін және барлық бұлттық деректерін мына жол арқылы өшіре алады: Басты мәзір -> Профиль -> Қауіпті аймақ -> Тіркелгіні өшіру. Әрекет қайтарылмайды.</li>
+            <li><strong>Пошта арқылы сұраныс:</strong> <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына өшіру туралы сұраныс жіберуге болады. Сұраныс 30 күн ішінде орындалады.</li>
             <li>Өшіру барысында тіркелгі деректері, Firebase Auth жазбасы, рекордтар және ойыншы аты толықтай жойылады.</li>
           </ul>
           </div>
@@ -684,7 +684,7 @@
             <h2 class="card-title">7. Кәмелетке толмағандар құпиялылығы</h2>
           </div>
           <div class="card-body">
-          <p>Қосымша 13 жасқа толмаған балаларға арналмаған (Еуропалық Одақ елдерінде 16 жасқа дейін). Біз кәмелетке толмағандардың жеке деректерін мақсатты түрде жинамаймыз. Егер баланың рұқсатсыз деректер бергені анықталса, <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына хабарласу қажет, деректер дереу өшіріледі.</p>
+          <p>Қосымша 13 жасқа толмаған балаларға арналмаған (Еуропалық Одақ елдерінде: 16 жасқа дейін). Балаларға арналған профиль немесе желілік деректерді жинау қарастырылмаған. Егер баланың рұқсатсыз тіркелгені анықталса, <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> поштасына хабарласу қажет, деректер дереу жойылады.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -693,7 +693,7 @@
             <h2 class="card-title">8. Пайдаланушы құқықтары және байланыс</h2>
           </div>
           <div class="card-body">
-          <p>№ 152-ФЗ Заңы (14, 15-баптар) мен GDPR/CCPA талаптарына сәйкес, пайдаланушы өз деректеріне қол жеткізуге, оларды түзетуге, бұғаттауға, келісімді қайтарып алуға және толық жоюға құқылы. Барлық сұрақтар бойынша мына поштаға хабарласыңыз: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          <p>№ 152-ФЗ Заңы (14, 15-баптар) мен GDPR талаптарына сәйкес, пайдаланушы өз деректеріне қол жеткізуге, оларды түзетуге, бұғаттауға, келісімді қайтарып алуға және толық жоюға құқылы. Барлық сұрақтар бойынша мына поштаға хабарласыңыз: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
           </div>
         </section>
       </div>
@@ -704,7 +704,7 @@
             <h2 class="card-title">1. Verantwortlicher und Geltungsbereich</h2>
           </div>
           <div class="card-body">
-          <p>Verantwortlicher: FsFqX (Entwickler FsFq, E-Mail: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Die Datenverarbeitung erfolgt im Einklang mit dem Bundesgesetz Nr. 152-FZ "Über personenbezogene Daten" sowie DSGVO und CCPA. Diese Bestimmungen gelten für FlowTess und FlowTess Lite unter Android. Spielstände, Rekorde und Einstellungen werden primär lokal auf dem Gerät gespeichert (Art. 18 Abs. 5 Nr. 152-FZ). Online-Dienste nutzen die verschlüsselte Infrastruktur von Firebase und Epic Online Services.</p>
+          <p>Verantwortlicher: FsFqX (Entwickler FsFq, E-Mail: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>). Die Datenverarbeitung erfolgt auf Grundlage des russischen Bundesgesetzes Nr. 152-FZ 'Über personenbezogene Daten' sowie der DSGVO (EU) und des CCPA (USA). Diese Bestimmungen gelten für FlowTess und FlowTess Lite unter Android. Spielstände, Rekorde und lokale Konfigurationen werden primär auf dem Gerät gespeichert (Art. 18 Abs. 5 Nr. 152-FZ). Online-Dienste nutzen die verschlüsselte Infrastruktur von Firebase und Epic Online Services.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -714,11 +714,11 @@
           </div>
           <div class="card-body">
           <ul>
-            <li><strong>Lokale Daten:</strong> Steuerungsoptionen, Rekorde, freigeschaltete Skins und Statistiken werden lokal in SQLite (Room) und geschützten App-Einstellungen gespeichert.</li>
-            <li><strong>Kontodaten:</strong> Bei freiwilliger Anmeldung via Firebase oder Google werden Benutzer-ID (UID), E-Mail-Adresse, Spielername und Avatar verarbeitet.</li>
-            <li><strong>Netzwerk-Telemetrie:</strong> Für Mehrspieler-Duelle werden Epic Online Services (EOS) Relay-Server genutzt, ohne Ihre öffentliche IP-Adresse für Mitspieler offenzulegen. Lokale Wi-Fi-Duelle nutzen NSD mDNS ausschließlich im lokalen Netzwerk.</li>
-            <li><strong>Geräte-IDs und Werbung:</strong> In der Online-Version kann die Werbe-ID (AAID) zur Anzeige von Werbung und Fehleranalyse verarbeitet werden.</li>
-            <li><strong>Keine Finanzdaten:</strong> Es werden keine Bank- oder Kreditkartendaten erhoben, alle Transaktionen erfolgen mit virtueller Spielwährung.</li>
+            <li><strong>Lokale Daten:</strong> Steuerungsbelegung, Rekorde, freigeschaltete Skins und Spielstatistiken werden lokal in SQLite (Room) und geschützten App-Einstellungen gespeichert.</li>
+            <li><strong>Kontodaten:</strong> Bei freiwilliger Registrierung via Firebase oder Google werden Benutzer-ID (UID), E-Mail-Adresse, Spielername und Avatar-Token verarbeitet.</li>
+            <li><strong>Netzwerk-Telemetrie:</strong> Mehrspieler-Duelle werden über Epic Online Services (EOS) Relay-Server vermittelt, ohne Mitspielern Ihre öffentliche IP-Adresse offenzulegen. Lokale Wi-Fi-Duelle nutzen NSD mDNS ausschließlich im Heimnetzwerk.</li>
+            <li><strong>Geräte-IDs und Werbung:</strong> In der vernetzten Version kann die Werbe-ID (AAID / GAID) zur Stabilitätsanalyse und Werbeeinblendung verarbeitet werden.</li>
+            <li><strong>Keine Finanzdaten:</strong> Es werden keine Bank- oder Kartendaten erhoben. Alle virtuellen Gegenstände werden mit Spielwährung erworben.</li>
           </ul>
           </div>
         </section>
@@ -728,7 +728,7 @@
             <h2 class="card-title">3. Zwecke und Rechtsgrundlagen</h2>
           </div>
           <div class="card-body">
-          <p>Gemäß Art. 6 des Gesetzes Nr. 152-FZ und internationalen Standards erfolgt die Verarbeitung auf gesetzlicher Grundlage (Einwilligung und Vertragserfüllung): Bereitstellung von Spielfunktionen, Speichern des Fortschritts, globale Bestenlisten, deterministischer Anti-Cheat-Schutz und Betrugsprävention.</p>
+          <p>Die Datenverarbeitung stützt sich auf Einwilligung und Vertragserfüllung (Art. 6 des Gesetzes Nr. 152-FZ, Art. 6 DSGVO): Spielfunktionen, Speichern des Fortschritts, globale Bestenlisten, deterministischer Anti-Cheat-Schutz und Betrugsprävention.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -737,12 +737,12 @@
             <h2 class="card-title">4. Drittanbieter-Dienste und Werbung</h2>
           </div>
           <div class="card-body">
-          <p>Die vernetzte Version nutzt folgende Drittanbieter:</p>
+          <p>Für die Online-Funktionen werden externe Plattformen genutzt:</p>
           <ul>
-            <li><strong>Google Firebase:</strong> Authentifizierung und Cloud-Speicherung (Cloud Firestore).</li>
-            <li><strong>Epic Games (EOS):</strong> Sichere P2P-Duelle über Cloud-Relays.</li>
-            <li><strong>Yandex Mobile Ads SDK:</strong> Einbindung von Werbeanzeigen. Nutzer können die Erfassung der Werbe-ID in den Systemeinstellungen deaktivieren: Einstellungen -> Google -> Werbung -> Werbe-ID löschen oder zurücksetzen.</li>
-            <li><strong>FlowTess Lite Edition:</strong> Vollständig isolierter Offline-Betrieb ohne jegliche Netzwerkverbindungen oder SDK-Aufrufe.</li>
+            <li><strong>Google Firebase:</strong> Authentifizierung und Cloud-Datenbank (Cloud Firestore).</li>
+            <li><strong>Epic Games (EOS):</strong> P2P-Matchmaking und verschlüsselte Netzwerk-Relays.</li>
+            <li><strong>Yandex Mobile Ads SDK:</strong> Bereitstellung von Werbung. Die Werbe-ID kann in den Android-Einstellungen zurückgesetzt oder deaktiviert werden: Einstellungen -> Google -> Werbung.</li>
+            <li><strong>FlowTess Lite:</strong> Vollständig isolierte Offline-Version ohne Netzwerkzugriff oder Analyse-SDKs.</li>
           </ul>
           </div>
         </section>
@@ -752,7 +752,7 @@
             <h2 class="card-title">5. Datensicherheit und Verschlüsselung</h2>
           </div>
           <div class="card-body">
-          <p>Jegliche Datenübertragung erfolgt verschlüsselt über HTTPS und TLS 1.3. Sensible Konfigurationsdaten werden durch Android Keystore (AES-256-GCM) hardwarenah geschützt. Lokale .FTB-Backups sind mit HMAC-SHA256-Signaturen gegen Manipulation gesichert. Passwörter werden niemals unverschlüsselt gespeichert.</p>
+          <p>Die Netzwerkkommunikation erfolgt geschützt über HTTPS und TLS 1.3. Lokale Schlüssel werden über Android Keystore (AES-256-GCM) hardwarenah verschlüsselt. .FTB-Backupdateien sind durch HMAC-SHA256-Signaturen manipulationssicher. Passwörter werden über Firebase Auth verarbeitet und niemals im Klartext gespeichert.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -761,11 +761,11 @@
             <h2 class="card-title">6. Speicherdauer und Kontolöschung</h2>
           </div>
           <div class="card-body">
-          <p>Daten werden gespeichert, solange das Benutzerkonto besteht.</p>
+          <p>Kontodaten bleiben bis zur Löschung durch den Nutzer gespeichert.</p>
           <ul>
-            <li><strong>Direkte Kontolöschung in der App:</strong> Sie können Ihr Konto und alle Cloud-Daten jederzeit in der App löschen: Profil -> Einstellungen (Zahnrad-Symbol) -> Tab Konto -> Gefahrenbereich -> Konto löschen.</li>
-            <li><strong>Löschung per E-Mail:</strong> Alternativ können Sie eine Anfrage an <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> mit dem Betreff 'Account Deletion Request' senden. Die Löschung wird innerhalb von 30 Tagen durchgeführt.</li>
-            <li>Bei der Löschung werden Profil, Firebase Auth-Konto, Bestenlisten-Einträge und Cloud-Spielstände unwiderruflich entfernt.</li>
+            <li><strong>Löschung in der App:</strong> Sie können Ihr Konto und alle Cloud-Daten jederzeit löschen über: Hauptmenü -> Profil -> Gefahrenbereich -> Konto löschen. Dieser Vorgang ist unwiderruflich.</li>
+            <li><strong>Löschung per E-Mail:</strong> Alternativ können Sie einen Löschantrag an <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> mit dem Betreff 'Account Deletion Request' senden. Die Bearbeitungszeit beträgt bis zu 30 Tage.</li>
+            <li><strong>Gelöschte Daten:</strong> Das Spielerprofil, der Firebase Auth-Eintrag, Bestenlisten-Einträge, Backups und der reservierte Nickname werden dauerhaft entfernt.</li>
           </ul>
           </div>
         </section>
@@ -775,7 +775,7 @@
             <h2 class="card-title">7. Schutz von Minderjährigen</h2>
           </div>
           <div class="card-body">
-          <p>Die Anwendung richtet sich nicht an Kinder unter 13 Jahren (bzw. unter 16 Jahren in der EU). Wir erheben wissentlich keine personenbezogenen Daten von Minderjährigen. Sollten Erziehungsberechtigte feststellen, dass ein Kind ohne Einwilligung Daten übermittelt hat, bitten wir um Kontaktaufnahme unter <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> zur umgehenden Löschung.</p>
+          <p>Die App ist nicht für Kinder unter 13 Jahren (in der EU: unter 16 Jahren) bestimmt. Profile und die Erhebung von Online-Daten für Kinder finden nicht statt. Sollten Erziehungsberechtigte feststellen, dass ein Kind ein Konto erstellt hat, wenden Sie sich bitte an <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a> zur sofortigen Löschung.</p>
           </div>
         </section>
         <section class="md3-card">
@@ -784,7 +784,7 @@
             <h2 class="card-title">8. Betroffenenrechte und Kontakt</h2>
           </div>
           <div class="card-body">
-          <p>Gemäß dem Bundesgesetz Nr. 152-FZ (Art. 14, 15) sowie DSGVO/CCPA haben Nutzer das Recht auf Auskunft, Berichtigung, Sperrung, Widerruf der Einwilligung und vollständige Löschung. Für Datenschutzanfragen wenden Sie sich bitte an: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
+          <p>Gemäß Gesetz Nr. 152-FZ (Art. 14, 15) und DSGVO (Kapitel 3) haben Nutzer das Recht auf Auskunft, Berichtigung, Einschränkung, Datenübertragbarkeit und Löschung. Bei Datenschutzanfragen wenden Sie sich bitte an: <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>.</p>
           </div>
         </section>
       </div>
@@ -795,7 +795,7 @@
             <h2 class="card-title">1. 控制者与适用范围</h2>
           </div>
           <div class="card-body">
-          <p>数据控制者：FsFqX 工作室（主开发者 FsFq，联络邮箱：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>）。个人数据处理严格遵守第 152-FZ 号《个人数据法》及 GDPR、CCPA 国际标准。本准则适用于 Android 平台的 FlowTess 与 FlowTess Lite。根据第 152-FZ 号法律第18条第5款，单机记录、本地进度与设置均优先保存在本地设备中。在线服务采用 Firebase 与 Epic Online Services 加密通道。</p>
+          <p>数据控制者：FsFqX 工作室（主开发者 FsFq，联络邮箱：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>）。个人数据处理依据控制者所在地俄罗斯联邦第 152-FZ 号《个人数据法》，并遵循国际 GDPR（欧盟）与 CCPA（美国）隐私标准。本准则适用于 Android 平台的 FlowTess 与 FlowTess Lite。本地游戏进度、最高分与设置优先存储于用户本地设备（第 152-FZ 号法律第18条第5款）。在线服务运行于 Firebase 与 Epic Online Services 加密通道。</p>
           </div>
         </section>
         <section class="md3-card">
@@ -808,7 +808,7 @@
             <li>本地数据：操作设置、最高分、解锁皮肤和游戏统计均保存在设备本地 SQLite（Room）数据库和系统加密配置中。</li>
             <li>账户数据：通过 Firebase 或 Google 登录时，处理用户唯一标识（UID）、电子邮箱、游戏昵称及头像标识。</li>
             <li>网络通信：联机对战通过 Epic Online Services（EOS）云端中继进行，绝不向对手公开真实公网 IP 地址。本地 Wi-Fi 局域网对战仅在局域网内部使用 NSD mDNS 协议。</li>
-            <li>设备标识与广告：联机版可能处理广告标识符（AAID / GAID）以提供广告展示和崩溃诊断。</li>
+            <li>设备标识与广告：联机版可能处理广告标识符（AAID / GAID）以提供广告展示和稳定性分析。</li>
             <li>不收集金融数据：应用不索取任何银行卡或支付凭据，游戏道具仅支持虚拟游戏币兑换。</li>
           </ul>
           </div>
@@ -819,7 +819,7 @@
             <h2 class="card-title">3. 处理目的与法律依据</h2>
           </div>
           <div class="card-body">
-          <p>根据第 152-FZ 号法律第 6 条及国际隐私规范，数据处理均基于合法依据（用户明确同意与服务条款履行）：提供核心游戏功能、保存关卡进度、同步全球排行榜、进行基于确定性算法的反作弊验证以及防范安全攻击。</p>
+          <p>数据处理基于用户同意与服务协议履行（第 152-FZ 号法律第 6 条、GDPR 第 6 条）：提供核心游戏功能、保存关卡进度、同步全球排行榜、进行基于确定性算法的反作弊验证以及防范安全攻击。</p>
           </div>
         </section>
         <section class="md3-card">
@@ -828,11 +828,11 @@
             <h2 class="card-title">4. 第三方服务与广告披露</h2>
           </div>
           <div class="card-body">
-          <p>标准联网版本集成以下可靠的第三方技术：</p>
+          <p>联网版本集成以下外部技术支持：</p>
           <ul>
             <li>Google Firebase：账户鉴权与云端存档同步（Cloud Firestore）。</li>
             <li>Epic Games（EOS）：多人竞技匹配与云端网络中继。</li>
-            <li>Yandex Mobile Ads SDK：广告展示。用户可随时在系统设置中重置或关闭广告跟踪：设置 -> Google -> 广告 -> 重置或删除广告 ID。</li>
+            <li>Yandex Mobile Ads SDK：广告展示。用户可随时在系统设置中重置或关闭广告跟踪：设置 -> Google -> 广告。</li>
             <li>FlowTess Lite 纯单机版：网络组件已彻底停用，不发起任何网络连接，亦不调用任何外部分析或广告 SDK。</li>
           </ul>
           </div>
@@ -843,7 +843,7 @@
             <h2 class="card-title">5. 数据安全与加密措施</h2>
           </div>
           <div class="card-body">
-          <p>所有外部网络通信均通过 HTTPS 及 TLS 1.3 加密协议传输。敏感本地配置由 Android Keystore（AES-256-GCM）硬件级密钥库加密保护。.FTB 备份文件通过 HMAC-SHA256 签名校验防篡改。用户密码绝不明文存储。</p>
+          <p>所有外部网络通信均通过 HTTPS 及 TLS 1.3 加密协议传输。敏感本地配置由 Android Keystore（AES-256-GCM）硬件级密钥库加密保护。.FTB 备份文件通过 HMAC-SHA256 签名校验防篡改。用户密码由 Firebase Auth 处理，绝不明文存储。</p>
           </div>
         </section>
         <section class="md3-card">
@@ -852,11 +852,11 @@
             <h2 class="card-title">6. 数据留存与账户注销机制</h2>
           </div>
           <div class="card-body">
-          <p>账户数据在用户持有账户期间予以保留。</p>
+          <p>账户数据在用户注销前持续保留。</p>
           <ul>
-            <li>应用内自主注销：您可随时在游戏内即时且永久注销账户并清除云端数据：个人资料 -> 设置（齿轮图标） -> 账户选项卡 -> 危险区域 -> 注销账户。</li>
+            <li>应用内自主注销：您可随时在游戏内即时且永久注销账户并清除云端数据：主菜单 -> 个人资料 -> 危险区域 -> 注销账户。此操作不可逆。</li>
             <li>邮件注销申请：您亦可发送邮件至 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，邮件主题注明 'Account Deletion Request'，我们将在30天内核实并执行删除。</li>
-            <li>注销后将彻底清除：用户资料、Firebase Auth 登录凭证、云端存档记录、排行榜积分及唯一昵称占位。</li>
+            <li>注销后清除：用户资料、Firebase Auth 登录凭证、云端存档记录、排行榜积分及唯一昵称占位。</li>
           </ul>
           </div>
         </section>
@@ -866,7 +866,7 @@
             <h2 class="card-title">7. 未成年人隐私保护</h2>
           </div>
           <div class="card-body">
-          <p>本应用不面向未满 13 周岁的儿童（或欧盟成员国未满 16 周岁的未成年人）。我们绝不故意收集未成年人的个人数据。若监护人发现儿童未经同意提交了个人信息，请联络 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，我们将立即予以彻底删除。</p>
+          <p>本应用不面向未满 13 周岁的儿童（或欧盟成员国未满 16 周岁的未成年人）。应用不支持儿童个人资料及网络标识符收集。若监护人发现儿童创建了账户，请联络 <a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>，我们将立即予以彻底删除。</p>
           </div>
         </section>
         <section class="md3-card">
@@ -875,7 +875,7 @@
             <h2 class="card-title">8. 用户权利与联系方式</h2>
           </div>
           <div class="card-body">
-          <p>根据第 152-FZ 号法律（第14、15条）以及 GDPR 和 CCPA 规范，用户拥有查询、更正、限制处理、撤回同意以及彻底删除个人数据的完整权利。注销与撤回授权可在游戏内直接完成（个人资料 -> 设置 -> 账户 -> 注销账户），或发送邮件至：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>。</p>
+          <p>根据第 152-FZ 号法律（第14、15条）以及 GDPR（第3章）规范，用户拥有查询、更正、限制处理、导出以及撤回同意的完整权利。如有隐私权益相关需求，请联络开发者：<a href="mailto:fsfqx77@gmail.com" class="text-link">fsfqx77@gmail.com</a>。</p>
           </div>
         </section>
       </div>
