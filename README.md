@@ -8,9 +8,9 @@
 
 FlowTess - аркадная мобильная головоломка для Android. Сочетает классику блоков, свободный режим Zeta, кастомный 1v1 мультиплеер, кейсы с рулеткой и глубокую настройку визуала под чистый OLED.
 
-Версия: **FT-0.98.5 Alpha**
+Версия: **FT-0.98.8.5 Alpha (64)**
 
-### 10 реальных режимов
+### 9 одиночных режимов
 
 1. **Стандарт (Classic)**: Базовый тетрис на стакане 10x20. Скорость растет с 1 по 20 уровень, классический генератор 7 фигур, удержание и проекция.
 2. **Расширенный (Extended)**: Огромное поле 12x24 и нестандартные пятиблочные фигуры (пентамино).
@@ -18,10 +18,9 @@ FlowTess - аркадная мобильная головоломка для And
 4. **Zeta**: Поле 8x8 без гравитации и таймера. Выставляй фигуры из драфта по три штуки, зачищай линии и выбивай комбо.
 5. **Блиц (Time Attack)**: Гонка со временем. За каждую сброшенную линию накидываются спасительные секунды.
 6. **Зеркало (Mirror)**: Поле и фигуры периодически отражаются по горизонтали. Ломает привычную моторику пальцев.
-7. **Песочница (Relax)**: Режим без проигрыша. Спокойная игра с настройкой гравитации под себя.
-8. **Идеал (Perfectionist)**: Ассистент в реальном времени. Специальный серый контур прямо на лету рассчитывает и показывает лучший дроп.
-9. **Шаблон (Pattern)**: Головоломка. Нужно заполнить заранее заданный силуэт на поле за жесткий лимит ходов.
-10. **Память (Memory)**: Тест на визуальную память. Силуэт показывают ровно на 3 секунды, после чего его нужно вслепую повторить.
+7. **Шаблон (Pattern)**: Головоломка. Нужно заполнить заранее заданный силуэт на поле за жесткий лимит ходов.
+8. **Память (Memory)**: Тест на визуальную память. Силуэт показывают ровно на 3 секунды, после чего его нужно вслепую повторить.
+9. **Хаб обучения (Training Hub)**: Интерактивный тренировочный полигон. Проекция лучшего хода алгоритма Деллашери, бессмертие, регулировка гравитации и задержки фиксации, генератор очереди и инструменты правки поля.
 
 ### Мультиплеер
 
@@ -57,9 +56,9 @@ FlowTess - аркадная мобильная головоломка для And
 
 FlowTess is an arcade mobile puzzle game for Android. It mixes classic block stacking, unhurried Zeta placement, real-time 1v1 multiplayer, CS-style case opening, and clean OLED customization.
 
-Current version: **FT-0.98.5 Alpha**
+Current version: **FT-0.98.8.5 Alpha (64)**
 
-### 10 Real Game Modes
+### 9 Singleplayer Game Modes
 
 1. **Standard (Classic)**: Pure 10x20 matrix action. Gravity climbs from level 1 up to 20, standard 7-bag generator, hold slot, and ghost piece.
 2. **Extended**: Giant 12x24 matrix filled with complex 5-block shapes (pentaminoes).
@@ -67,10 +66,9 @@ Current version: **FT-0.98.5 Alpha**
 4. **Zeta**: 8x8 grid without falling blocks or countdowns. Draft three shapes at a time, clear rows, and rack up combo multipliers.
 5. **Blitz (Time Attack)**: High-speed race against the clock. Every line clear gives extra seconds to stay alive.
 6. **Mirror**: Matrix and falling pieces flip horizontally. Puts finger muscle memory to the test.
-7. **Sandbox (Relax)**: Zero stress, zero game over. Dial in gravity and play at your own pace.
-8. **Perfection (Perfectionist)**: Real-time helper mode. A discreet gray ghost outline calculates and displays the optimal placement on the fly.
-9. **Blueprint (Pattern)**: Tactical puzzle. Fill a target silhouette on the board within a strict move budget.
-10. **Memory Puzzle**: Visual recall test. You get 3 seconds to memorize a shape silhouette before rebuilding it from memory.
+7. **Blueprint (Pattern)**: Tactical puzzle. Fill a target silhouette on the board within a strict move budget.
+8. **Memory Puzzle**: Visual recall test. You get 3 seconds to memorize a shape silhouette before rebuilding it from memory.
+9. **Training Hub**: Comprehensive practice arena. Features Dellacherie best-move projection, immortality, custom gravity and lock delay, piece pool randomizers, and board manipulation tools.
 
 ### Real-Time Multiplayer
 
@@ -106,9 +104,9 @@ Proprietary software. Protected under the FsFqX Proprietary License. Decompilati
 
 FlowTess - мобільна головоломка для Android. Поєднує класику блоків, режим Zeta, онлайн-дуелі 1 на 1, кейси з рулеткою та плоский дизайн під OLED екрани.
 
-Версія: **FT-0.98.5 Alpha**
+Версія: **FT-0.98.8.5 Alpha (64)**
 
-### 10 ігрових режимів
+### 9 одиночних ігрових режимів
 
 1. **Стандарт (Classic)**: Традиційний тетріс 10x20 зі зростанням швидкості від 1 до 20 рівня.
 2. **Розширений (Extended)**: Поле 12x24 та складні п'ятиблокові фігури (пентаміно).
@@ -116,10 +114,9 @@ FlowTess - мобільна головоломка для Android. Поєдну�
 4. **Zeta**: Поле 8x8 без падіння блоків. Розстановка фігур з пулу та комбо ліній.
 5. **Бліц (Time Attack)**: Гонка на час з додаванням секунд за кожну зачищену лінію.
 6. **Дзеркало (Mirror)**: Поле та фігури дзеркально відбиваються по горизонталі.
-7. **Пісочниця (Relax)**: Вільна гра без програшу з налаштуванням швидкості.
-8. **Ідеал (Perfectionist)**: Режим з підказкою. Сірий контур розраховує і показує найкраще положення фігури.
-9. **Шаблон (Pattern)**: Заповнення цільового силуету за фіксовану кількість ходів.
-10. **Пам'ять (Memory)**: Силует показується на 3 секунди, після чого його потрібно відтворити по пам'яті.
+7. **Шаблон (Pattern)**: Заповнення цільового силуету за фіксовану кількість ходів.
+8. **Пам'ять (Memory)**: Силует показується на 3 секунди, після чого його потрібно відтворити по пам'яті.
+9. **Хаб навчання (Training Hub)**: Інтерактивний тренувальний полігон. Проекція найкращого ходу Деллашері, безсмертя, налаштування гравітації та затримки фіксації, генератор черги та інструменти редагування поля.
 
 ### Мультиплеєр та гардероб
 
@@ -142,9 +139,9 @@ FlowTess - мобільна головоломка для Android. Поєдну�
 
 FlowTess - Android-қа арналған мобильді басқатырғыш. Классикалық тетрис, Zeta блоктық режимі, 1-ге 1 мультиплеер, кейстер рулеткасы және таза OLED дизайны бар.
 
-Нұсқасы: **FT-0.98.5 Alpha**
+Нұсқасы: **FT-0.98.8.5 Alpha (64)**
 
-### 10 нақты ойын режимі
+### 9 жеке ойын режимі
 
 1. **Стандарт (Classic)**: 10x20 торындағы классикалық тетрис, жылдамдығы 1-ден 20-деңгейге дейін өседі.
 2. **Кеңейтілген (Extended)**: Үлкен 12x24 торы және бес блокты күрделі пентамино фигуралары.
@@ -152,10 +149,9 @@ FlowTess - Android-қа арналған мобильді басқатырғыш
 4. **Zeta**: Құлаусыз 8x8 торы. Фигураларды еркін қойып, комбо жинау.
 5. **Блиц (Time Attack)**: Уақытпен жарыс, жойылған әр сызық үшін қосымша секунд беріледі.
 6. **Айна (Mirror)**: Тор мен фигуралар көлденеңінен шағылысады.
-7. **Құмсалғыш (Relax)**: Жеңіліссіз, еркін ережелермен ойнау режимі.
-8. **Мінсіз (Perfectionist)**: Кеңесші режимі. Сұр контур фигураның ең тиімді орнын бірден көрсетеді.
-9. **Үлгі (Pattern)**: Белгіленген жүріс санында мақсатты сұлбаны толық толтыру.
-10. **Жады (Memory)**: Сұлба 3 секунд қана көрсетіледі, оны есте сақтап қайта құрастыру қажет.
+7. **Үлгі (Pattern)**: Белгіленген жүріс санында мақсатты сұлбаны толық толтыру.
+8. **Жады (Memory)**: Сұлба 3 секунд қана көрсетіледі, оны есте сақтап қайта құрастыру қажет.
+9. **Оқу хабы (Training Hub)**: Интерактивті жаттығу алаңы. Деллашери тиімді жүріс проекциясы, өлмеу режимі, құлау мен бекіту кідірісін реттеу, пішіндер кезегінің генераторы және өрісті баптау құралдары.
 
 ### Мультиплеер және гардероб
 
@@ -178,9 +174,9 @@ FlowTess - Android-қа арналған мобильді басқатырғыш
 
 FlowTess ist ein mobiles Android-Puzzlespiel. Es kombiniert klassische fallende Blöcke, den freien Zeta-Modus, 1v1-Mehrspieler, Kisten mit Roulette und ein schlichtes OLED-Interface.
 
-Version: **FT-0.98.5 Alpha**
+Version: **FT-0.98.8.5 Alpha (64)**
 
-### 10 echte Spielmodi
+### 9 Einzelspieler-Modi
 
 1. **Standard (Classic)**: Klassisches 10x20 Tetris mit ansteigender Geschwindigkeit von Stufe 1 bis 20.
 2. **Erweitert (Extended)**: Grosses 12x24 Spielfeld mit komplexen 5-Block-Pentaminos.
@@ -188,10 +184,9 @@ Version: **FT-0.98.5 Alpha**
 4. **Zeta**: 8x8 Spielfeld ohne Zeitdruck. Platziere gedraftete Figuren und löse Kettenreaktionen aus.
 5. **Blitz (Time Attack)**: Zeitrennen, bei dem jede geräumte Reihe zusätzliche Sekunden bringt.
 6. **Spiegel (Mirror)**: Spielfeld und Blöcke spiegeln sich horizontal und fordern die Fingerfertigkeit heraus.
-7. **Sandbox (Relax)**: Entspanntes Spielen ohne Game Over mit anpassbarem Tempo.
-8. **Perfektion (Perfectionist)**: Echtzeit-Hilfe. Ein grauer Schatten zeigt direkt die beste Platzierung an.
-9. **Muster (Pattern)**: Fülle eine vorgegebene Schablone mit begrenzten Zügen aus.
-10. **Gedächtnis (Memory)**: Die Schablone wird nur 3 Sekunden lang gezeigt und muss aus dem Gedächtnis nachgebaut werden.
+7. **Muster (Pattern)**: Fülle eine vorgegebene Schablone mit begrenzten Zügen aus.
+8. **Gedächtnis (Memory)**: Die Schablone wird nur 3 Sekunden lang gezeigt und muss aus dem Gedächtnis nachgebaut werden.
+9. **Trainings-Hub**: Interaktive Trainings-Arena mit Dellacherie-Zugempfehlungen, Unsterblichkeit, einstellbarer Gravitation und Lock-Delay, Figuren-Generator und Spielfeld-Werkzeugen.
 
 ### Mehrspieler und Kisten
 
@@ -214,9 +209,9 @@ Proprietäre Software (Closed Source). Geschützt unter der FsFqX-Lizenz. Jede D
 
 FlowTess 是一款专为 Android 打造的高清无拖影方块益智游戏。融合经典下落消除、Zeta 自由放置玩法、实时 1 对 1 联机对战、开箱轮盘以及纯平 OLED 视觉设计。
 
-当前版本：**FT-0.98.5 Alpha**
+当前版本：**FT-0.98.8.5 Alpha (64)**
 
-### 10 种真实游戏模式
+### 9 种单人游戏模式
 
 1. **标准（Classic）**：10x20 标准矩阵消除，重力速度随 1 至 20 级递增，标准 7 包随机生成器，支持暂存与投影。
 2. **扩展（Extended）**：12x24 超大棋盘网格，加入复杂的五联骨牌（Pentamino）。
@@ -224,10 +219,9 @@ FlowTess 是一款专为 Android 打造的高清无拖影方块益智游戏。�
 4. **Zeta**：8x8 无重力下落网格，每轮三块自由拖拽摆放，消除行与列累积连环加成。
 5. **闪击（Time Attack）**：限时竞速挑战，每成功消除行即补充时间。
 6. **镜界（Mirror）**：棋盘与下落方块水平镜像翻转，反向考验肌肉记忆。
-7. **沙盒（Relax）**：无失败惩罚的轻松模式，自由调节重力速度随心玩。
-8. **完美（Perfectionist）**：实时辅助模式，灰色落点投影实时运算并提示当前最优位置。
-9. **图形模板（Pattern）**：战术残局解密，在限定步数内精准填满目标剪影轮廓。
-10. **记忆大师（Memory）**：视觉记忆考验，目标轮廓仅显示 3 秒，随后需凭记忆拼装复原。
+7. **图形模板（Pattern）**：战术残局解密，在限定步数内精准填满目标剪影轮廓。
+8. **记忆大师（Memory）**：视觉记忆考验，目标轮廓仅显示 3 秒，随后需凭记忆拼装复原。
+9. **训练中心（Training Hub）**：综合专项练习工坊，集成戴拉谢里AI最优解推演、不死模式、自由下落流速与锁定延迟调节、方块生成器及棋盘矩阵编辑工具。
 
 ### 多人联机与个性化
 
