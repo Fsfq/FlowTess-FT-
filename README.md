@@ -8,7 +8,7 @@
 
 FlowTess - аркадная мобильная головоломка для Android. Сочетает классику блоков, свободный режим Zeta, кастомный 1v1 мультиплеер, кейсы с рулеткой и глубокую настройку визуала под чистый OLED.
 
-Версия: **FT-0.98.8.6 Alpha (66)**
+Версия: **FT-0.98.8.7 Alpha (67)**
 
 ### 9 одиночных режимов
 
@@ -56,7 +56,7 @@ FlowTess - аркадная мобильная головоломка для And
 
 FlowTess is an arcade mobile puzzle game for Android. It mixes classic block stacking, unhurried Zeta placement, real-time 1v1 multiplayer, CS-style case opening, and clean OLED customization.
 
-Current version: **FT-0.98.8.6 Alpha (66)**
+Current version: **FT-0.98.8.7 Alpha (67)**
 
 ### 9 Singleplayer Game Modes
 
@@ -104,7 +104,7 @@ Proprietary software. Protected under the FsFqX Proprietary License. Decompilati
 
 FlowTess - мобільна головоломка для Android. Поєднує класику блоків, режим Zeta, онлайн-дуелі 1 на 1, кейси з рулеткою та плоский дизайн під OLED екрани.
 
-Версія: **FT-0.98.8.6 Alpha (66)**
+Версія: **FT-0.98.8.7 Alpha (67)**
 
 ### 9 одиночних ігрових режимів
 
@@ -139,7 +139,7 @@ FlowTess - мобільна головоломка для Android. Поєдну�
 
 FlowTess - Android-қа арналған мобильді басқатырғыш. Классикалық тетрис, Zeta блоктық режимі, 1-ге 1 мультиплеер, кейстер рулеткасы және таза OLED дизайны бар.
 
-Нұсқасы: **FT-0.98.8.6 Alpha (66)**
+Нұсқасы: **FT-0.98.8.7 Alpha (67)**
 
 ### 9 жеке ойын режимі
 
@@ -174,7 +174,7 @@ FlowTess - Android-қа арналған мобильді басқатырғыш
 
 FlowTess ist ein mobiles Android-Puzzlespiel. Es kombiniert klassische fallende Blöcke, den freien Zeta-Modus, 1v1-Mehrspieler, Kisten mit Roulette und ein schlichtes OLED-Interface.
 
-Version: **FT-0.98.8.6 Alpha (66)**
+Version: **FT-0.98.8.7 Alpha (67)**
 
 ### 9 Einzelspieler-Modi
 
@@ -209,7 +209,7 @@ Proprietäre Software (Closed Source). Geschützt unter der FsFqX-Lizenz. Jede D
 
 FlowTess 是一款专为 Android 打造的高清无拖影方块益智游戏。融合经典下落消除、Zeta 自由放置玩法、实时 1 对 1 联机对战、开箱轮盘以及纯平 OLED 视觉设计。
 
-当前版本：**FT-0.98.8.6 Alpha (66)**
+当前版本：**FT-0.98.8.7 Alpha (67)**
 
 ### 9 种单人游戏模式
 
